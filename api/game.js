@@ -18,6 +18,7 @@ function admin(b) {
   const want = process.env.ADMIN_KEY || "", got = String(b.key || "");
   if (want.length < 24 || got.length !== want.length || !timingSafeEqual(Buffer.from(got), Buffer.from(want))) throw fail(403, "forbidden");
 }
+const isMember = async (s, code, pid) => !!(code && (await s.query(`select 1 from league_members where code = $1 and player = $2`, [code, pid]))[0]);
 const ACT_KINDS = ["bet", "won", "cash", "wheel", "defis", "duel", "duelwin", "join"];
 const EMOS = ["🔥", "😂", "👏", "😱"];
 // violation de l'index unique sur le pseudo
@@ -325,6 +326,104 @@ const ACTIONS = {
     if (!r) throw fail(404, "unknown");
     return { id: r.id, name: r.name, bal: Math.round(r.bal), peak: Math.round(r.peak), won: r.won, lost: r.lost, av: r.avatar_v || 0,
       bets: (r.bets && r.bets.list) || [], best: (r.bets && r.bets.best) || null, since: Math.round(Number(r.since)) };
+  },
+
+  // ---- Côté dark : paris inventés par les membres (anonymes, pari mutuel) ----
+  // Règles : le créateur ne peut pas parier sur son pari ; il donne le résultat après la fin ;
+  // 12 h pour contester (2 contestations = annulé, tout le monde remboursé) ; 2 signalements = pari masqué.
+  // Les jetons restent gérés par chaque téléphone (comme les duels).
+  async dark_create(s, b) {
+    const p = await me(s, b.token);
+    const code = cleanName(b.code, 8).toUpperCase();
+    if (!(await isMember(s, code, p.id))) throw fail(403, "not_member");
+    const q = cleanName(b.question, 140);
+    if (q.length < 6) throw fail(400, "question");
+    const opts = (Array.isArray(b.options) ? b.options : []).map((o) => cleanName(o, 40)).filter(Boolean).slice(0, 4);
+    if (opts.length < 2 || new Set(opts.map((o) => o.toLowerCase())).size !== opts.length) throw fail(400, "options");
+    const closes = Number(b.closes);
+    if (!Number.isFinite(closes) || closes < Date.now() + 5 * 60e3 || closes > Date.now() + 30 * 86400e3) throw fail(400, "closes");
+    const n = (await s.query(`select count(*)::int as n from dark_bets where creator = $1 and created_at > now() - interval '1 day'`, [p.id]))[0].n;
+    if (n >= 15) throw fail(429, "slow_down");
+    const r = await s.query(
+      `insert into dark_bets (code, creator, question, options, closes) values ($1, $2, $3, $4::jsonb, to_timestamp($5::float8 / 1000)) returning id`,
+      [code, p.id, q, JSON.stringify(opts), closes]);
+    return { id: r[0].id };
+  },
+
+  async dark_list(s, b) {
+    const p = await me(s, b.token);
+    const code = cleanName(b.code, 8).toUpperCase();
+    if (!(await isMember(s, code, p.id))) throw fail(403, "not_member");
+    const rows = await s.query(
+      `select d.id, d.question, d.options, extract(epoch from d.closes) * 1000 as closes, d.result,
+         extract(epoch from d.resolved_at) * 1000 as resolved, d.creator = $2 as mine,
+         coalesce((select jsonb_object_agg(opt, tot) from (select opt, sum(amount)::int as tot from dark_stakes x where x.bet = d.id group by opt) z), '{}') as pools,
+         (select count(*)::int from dark_stakes x where x.bet = d.id) as players,
+         (select jsonb_build_object('opt', opt, 'amount', amount) from dark_stakes x where x.bet = d.id and x.player = $2) as my,
+         (select count(*)::int from dark_flags f where f.bet = d.id and f.kind = 'contest') as contests,
+         (select count(*)::int from dark_flags f where f.bet = d.id and f.kind = 'report') as reports,
+         exists (select 1 from dark_flags f where f.bet = d.id and f.player = $2 and f.kind = 'contest') as my_contest,
+         exists (select 1 from dark_flags f where f.bet = d.id and f.player = $2 and f.kind = 'report') as my_report
+       from dark_bets d where d.code = $1 and d.created_at > now() - interval '30 days'
+       order by (d.result is null) desc, d.closes asc limit 80`, [code, p.id]);
+    const now = Date.now();
+    return {
+      bets: rows.filter((r) => r.reports < 2).map((r) => {
+        const resolved = r.resolved != null ? Math.round(Number(r.resolved)) : null;
+        let state = "open";
+        if (Number(r.closes) <= now) state = "closed";
+        if (r.result != null) state = r.contests >= 2 ? "void" : now - resolved > 12 * 3600e3 ? "final" : "contest";
+        if (r.result == null && now - Number(r.closes) > 7 * 86400e3) state = "void";   // jamais tranché en 7 jours
+        return { id: r.id, question: r.question, options: r.options, closes: Math.round(Number(r.closes)), result: r.result, resolved,
+          mine: r.mine, pools: r.pools, players: r.players, my: r.my, contests: r.contests, myContest: r.my_contest, myReport: r.my_report, state };
+      }),
+    };
+  },
+
+  async dark_stake(s, b) {
+    const p = await me(s, b.token);
+    const id = int(b.id, 0, 1e15), opt = int(b.opt, 0, 3), amount = int(b.amount, 1, 1e6);
+    const d = (await s.query(`select d.* from dark_bets d where d.id = $1`, [id]))[0];
+    if (!d || !(await isMember(s, d.code, p.id))) throw fail(404, "unknown");
+    if (String(d.creator) === String(p.id)) throw fail(400, "own_bet");
+    if (new Date(d.closes).getTime() <= Date.now()) throw fail(400, "closed");
+    if (opt >= d.options.length) throw fail(400, "option");
+    const cur = (await s.query(`select opt from dark_stakes where bet = $1 and player = $2`, [id, p.id]))[0];
+    if (cur && cur.opt !== opt) throw fail(400, "other_option");
+    await s.query(
+      `insert into dark_stakes (bet, player, opt, amount) values ($1, $2, $3, $4)
+       on conflict (bet, player) do update set amount = dark_stakes.amount + excluded.amount`, [id, p.id, opt, amount]);
+    return { ok: true };
+  },
+
+  async dark_resolve(s, b) {
+    const p = await me(s, b.token);
+    const id = int(b.id, 0, 1e15), result = int(b.result, 0, 3);
+    const r = await s.query(
+      `update dark_bets set result = $3, resolved_at = now()
+       where id = $1 and creator = $2 and result is null and closes <= now() and jsonb_array_length(options) > $3 returning id`, [id, p.id, result]);
+    if (!r[0]) throw fail(400, "unavailable");
+    return { ok: true };
+  },
+
+  // contester un résultat (12 h après) ou signaler un pari déplacé
+  async dark_flag(s, b) {
+    const p = await me(s, b.token);
+    const id = int(b.id, 0, 1e15), kind = b.kind === "report" ? "report" : "contest";
+    const d = (await s.query(`select code, creator from dark_bets where id = $1`, [id]))[0];
+    if (!d || !(await isMember(s, d.code, p.id))) throw fail(404, "unknown");
+    if (String(d.creator) === String(p.id)) throw fail(400, "own_bet");
+    await s.query(`insert into dark_flags (bet, player, kind) values ($1, $2, $3) on conflict do nothing`, [id, p.id, kind]);
+    return { ok: true };
+  },
+
+  async dark_delete(s, b) {
+    const p = await me(s, b.token);
+    const r = await s.query(
+      `delete from dark_bets d where d.id = $1 and d.creator = $2 and not exists (select 1 from dark_stakes x where x.bet = d.id) returning id`,
+      [int(b.id, 0, 1e15), p.id]);
+    if (!r[0]) throw fail(400, "locked");
+    return { ok: true };
   },
 
   // ---- Fil d'activité ----

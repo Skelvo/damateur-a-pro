@@ -320,6 +320,32 @@ body.gated{padding-bottom:calc(24px + var(--safe-b))}
 .cmask{position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 999px #000a;outline:2px solid #fff8;pointer-events:none}
 .cempty{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:6px;color:var(--mute)}.cempty .i{width:48px;height:48px}
 .zoom{display:flex;align-items:center;gap:10px;margin:0 6px 6px;color:var(--mute)}.zoom input{flex:1;accent-color:var(--sel)}
+/* côté dark */
+body.darkside{--acc:#ff3b3b;--acc-ink:#fff;--bg:#120707;--bg2:#170909;--card:#1f0d0d;--card2:#2a1212;--card3:#361717;--line:#3d1a1a;--line2:#552424;--mute:#c39a9a;--mute2:#8a5d5d;
+  background:radial-gradient(900px 480px at 50% -160px,#ff1e1e55,transparent 72%),repeating-linear-gradient(0deg,#ffffff05 0 1px,transparent 1px 3px),var(--bg)}
+body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
+.darkbtn{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid #6b1d1d;border-radius:14px;padding:12px 14px;margin:0 0 12px;
+  background:linear-gradient(135deg,#3a0c0c,#170808 75%);color:#ffd9d9;box-shadow:0 0 22px -8px #ff2a2a}
+.darkbtn .dkic{width:40px;height:40px;border-radius:12px;background:#ff3b3b22;display:grid;place-items:center;color:#ff5a5a}.darkbtn .dkic .i{width:26px;height:26px}
+.darkbtn>span:nth-child(2){flex:1}.darkbtn .arr{font:800 28px "Barlow Condensed";color:#ff6b6b}.darkbtn b{display:block;font:800 19px "Barlow Condensed";text-transform:uppercase;letter-spacing:.6px;color:#ff6b6b}.darkbtn small{color:#d8a3a3;font-size:12.5px}
+.dkwarn{text-align:center;padding:14px 4px 4px}.dkwarn .dkbig{width:76px;height:76px;margin:0 auto 8px;border-radius:22px;background:#ff3b3b22;display:grid;place-items:center;color:#ff4b4b;animation:dkpulse 1.6s infinite}
+.dkwarn .dkbig .i{width:48px;height:48px}.dkwarn h2{margin:0 0 8px;font:800 28px "Barlow Condensed";text-transform:uppercase;color:#ff5a5a}
+.dkwarn p,.dkwarn li{color:var(--mute);font-size:14.5px;text-align:left}.dkwarn b{color:var(--ink)}.dkwarn ul{padding-left:18px;margin:10px 0 16px}.dkwarn li{margin-bottom:6px}
+@keyframes dkpulse{50%{box-shadow:0 0 30px #ff2a2a88}}
+.btn.dkgo{background:linear-gradient(180deg,#ff4d4d,#c81e1e);color:#fff}
+.dkhead{border-radius:18px;padding:16px;margin:2px 0 12px;background:linear-gradient(135deg,#4a0d0d,#1a0808 70%);border:1px solid #7a2020;box-shadow:0 0 30px -10px #ff2a2a}
+.dkhead small{color:#ffb3b3;font-weight:700;text-transform:uppercase;letter-spacing:1px;font-size:12px}.dkhead h2{margin:2px 0 4px;font:800 30px/1 "Barlow Condensed";text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.dkhead h2 .i{width:30px;height:30px;color:#ff4b4b}.dkhead p{margin:0;color:#d8a3a3;font-size:14px}
+.dkbet{position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
+.dkq{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:4px}.dkq b{font-size:16px;line-height:1.25}.dkq .tag{flex:none}
+.dkbet .mut{display:block;color:var(--mute);font-size:12.5px}.dkbet .mut .i{width:14px;height:14px;vertical-align:-2px}
+.dkopts{display:grid;gap:6px;margin:10px 0 6px}
+.dkopt{position:relative;overflow:hidden;display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:1px solid var(--line2);background:var(--card2);border-radius:10px;padding:10px 12px}
+.dkopt .bar{position:absolute;left:0;top:0;bottom:0;background:#ff3b3b22}.dkopt b,.dkopt small,.dkopt i{position:relative}.dkopt b{flex:1}.dkopt small{color:var(--mute);font-size:12.5px}
+.dkopt.mine{border-color:#ff5a5a}.dkopt.win{border-color:var(--win)}.dkopt.win .bar{background:#35d07f33}.dkopt i{font-style:normal;color:var(--win);font-weight:800}
+.dkopt:disabled{opacity:1;cursor:default}
+.dkres{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.dkres small{width:100%;color:var(--mute)}.dkres .btn{flex:1;padding:9px;font-size:15px}
+.dkrep{position:absolute;right:10px;bottom:8px;font-size:12px;color:var(--mute2)!important}
 /* ligues vivantes */
 .champ{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#4a3a05,var(--card) 70%);border:1px solid #8a6d10;border-radius:14px;padding:10px 14px;margin-bottom:12px}
 .champ .i{width:30px;height:30px;color:var(--sel);flex:none}.champ small{display:block;color:#e8d79a;font-size:12px;text-transform:uppercase;letter-spacing:.8px;font-weight:700}.champ b{font:800 19px "Barlow Condensed"}
@@ -1166,7 +1192,7 @@ function refreshLayer(){if(!U.open)return;const sc=$(".sheet")?$(".sheet").scrol
   if($(".sheet"))$(".sheet").scrollTop=sc}
 
 /* ---------- rendu global ---------- */
-function render(){document.body.dataset.sp=U.sp;$("#bal").textContent=tok(S.bal);
+function render(){document.body.dataset.sp=U.sp;document.body.classList.toggle("darkside",U.tab==="l"&&!!U.dark);$("#bal").textContent=tok(S.bal);
   $("#hello").textContent=S.name?"Salut "+S.name+" · "+DIVS[divOf(S.peak)][0]:"Paris gratuits · du district aux pros";
   document.querySelectorAll(".nav button").forEach(b=>b.dataset.tab===U.tab?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
   const op=S.bets.filter(b=>b.st==="open").length,nb=$("#nb");nb.hidden=!op;nb.textContent=op;
@@ -1254,6 +1280,18 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"tab":U.tab=d.tab;U.open=null;layer("");render();window.scrollTo({top:0});if(d.tab==="l")loadBoards();break;
     case"lgsel":U.lg.code=d.code;U.lg.feed=null;U.lg.view=U.lg.view||"rank";render();loadBoards();break;
     case"lgmode":U.lg.mode=d.v;render();break;
+    case"dkwarn":U.open="dkwarn";layer(viewDarkWarn());break;
+    case"dkenter":U.dark=true;U.open=null;layer("");render();loadDark();window.scrollTo({top:0});break;
+    case"dkexit":U.dark=false;render();window.scrollTo({top:0});break;
+    case"dknew":U.open="dknew";U.dkf={type:"yn",opts:["",""],when:"soir"};layer(viewDarkNew());break;
+    case"dkset":dkSet(d);break;
+    case"dkcreate":darkCreate();break;
+    case"dkpick":U.open="dkstake";U.dks={id:d.id,opt:+d.opt,amount:20};layer(viewDarkStake());break;
+    case"dkamt":U.dks.amount=+d.v;layer(viewDarkStake());break;
+    case"dkbet":darkStake();break;
+    case"dkres":darkResolve(d.id,+d.opt);break;
+    case"dkflag":darkFlag(d.id,d.kind);break;
+    case"dkdel":darkDelete(d.id);break;
     case"lgview":U.lg.view=d.v;render();if(d.v==="feed")loadActFeed();if(d.v==="duels")loadDuels();break;
     case"react":reactTo(d.id,d.e);break;
     case"prof":openProfile(d.id);break;
@@ -1407,10 +1445,13 @@ function viewLeagues(){const L=U.lg,d=L.data;
   if(!d)return h+`<div class="skel"></div><div class="skel" style="height:90px"></div>`;
   h+=`<div class="lgchips"><button data-act="lgsel" data-code="" aria-pressed="${!L.code}">${ic("fire")} Général</button>${d.leagues.map(l=>`<button data-act="lgsel" data-code="${esc(l.code)}" aria-pressed="${L.code===l.code}">${esc(l.name)}</button>`).join("")}</div>`;
   const cur=d.leagues.find(l=>l.code===L.code);
+  if(cur&&U.dark)return viewDark(cur);
+  if(!cur)U.dark=false;
   if(cur)h+=`<div class="lgcard"><h3>${esc(cur.name)}</h3><small>${cur.n} membre${cur.n>1?"s":""}${cur.mine?" · tu l’as créée":""}</small>
     <div class="lgcode"><div><small>Code de la ligue</small><br><b>${esc(cur.code)}</b></div><button class="btn gold" data-act="lginv">${ic("share")} Inviter</button></div></div>`;
   else h+=`<div class="lgcard"><h3>Classement général</h3><small>Tous les joueurs${d.rank?` · tu es <b style="color:var(--sel)">${d.rank}<sup>e</sup></b> sur ${d.total}`:""}</small></div>`;
   if(cur&&d.last)h+=`<div class="champ">${ic("trophy")}<div><small>Vainqueur${d.last.winners.length>1?"s":""} de la semaine dernière</small><b>${d.last.winners.map(w=>esc(w.name)+` <span class="pos">+${tok(w.gain)}</span>`).join(" · ")}</b></div></div>`;
+  if(cur)h+=`<button class="darkbtn" data-act="dkwarn"><span class="dkic">${DK_ICON}</span><span><b>Le côté dark</b><small>Paris inventés et anonymes entre membres</small></span><span class="arr">›</span></button>`;
   if(cur){const nd=(L.duels||[]).filter(x=>x.status==="open"&&String(x.a)!==String(d.me)).length;
     h+=`<div class="seg tabs3"><button data-act="lgview" data-v="rank" aria-pressed="${L.view==="rank"}">Classement</button><button data-act="lgview" data-v="feed" aria-pressed="${L.view==="feed"}">Activité</button><button data-act="lgview" data-v="duels" aria-pressed="${L.view==="duels"}">Duels${nd?` <span class="pill">${nd}</span>`:""}</button></div>`;
     if(L.view==="feed")return h+viewFeed()+lgFooter(cur);
@@ -1529,6 +1570,90 @@ async function savePhoto(){const im=PH.img;if(!im)return;const B=PH.box,O=320,k=
   catch(e){b.disabled=false;b.textContent="Valider ma photo";toast(e.code==="image"?"Image trop lourde, zoome un peu plus.":"Pas de connexion au serveur.","bad")}}
 async function deletePhoto(){if(!confirm("Supprimer ta photo de profil ?"))return;
   try{await api("set_avatar",{img:null});S.avatar=null;S.avv=0;save();closeLayer();toast("Photo supprimée.")}catch(e){toast("Pas de connexion au serveur.","bad")}}
+
+/* ---------- côté dark : paris inventés, anonymes, en pari mutuel ---------- */
+const DK_ICON=`<svg viewBox="0 0 24 24" class="i" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l3.5 4.5M20 4l-3.5 4.5"/><path d="M12 21c-4.4 0-7-3-7-7.2C5 9.6 8 7 12 7s7 2.6 7 6.8C19 18 16.4 21 12 21z"/><path d="M8.5 13.5l2 .8M15.5 13.5l-2 .8M10 17.5c1.3.7 2.7.7 4 0"/></svg>`;
+function viewDarkWarn(){const cur=U.lg.data.leagues.find(l=>l.code===U.lg.code);
+  return`<div class="dkwarn"><div class="dkbig">${DK_ICON}</div><h2>Tu entres dans le côté dark</h2>
+  <p>Ici, ce sont les membres de <b>« ${esc(cur?cur.name:"ta ligue")} »</b> qui inventent les paris, <b>anonymement</b> : « Léo sera en retard demain ? », « Combien de temps avant que le prof s’énerve ? »…</p>
+  <ul><li>Les mises vont dans un <b>pot commun</b> : les gagnants se le partagent.</li>
+  <li>Le créateur ne peut pas parier sur son propre pari. C’est lui qui donne le résultat, et les autres ont <b>12 h pour contester</b>.</li>
+  <li><b>Rien de méchant</b> : pas de moqueries, rien sur la santé, le physique, la famille ou la vie privée de quelqu’un. Si ça blesse, ce n’est plus drôle.</li>
+  <li>Tout le monde peut <b>signaler</b> un pari : à 2 signalements, il disparaît.</li></ul>
+  <button class="btn wide dkgo" data-act="dkenter">${DK_ICON} J’entre, j’ai compris</button><button class="link" data-act="close" style="display:block;margin:12px auto 0">Non merci, je reste dans la lumière</button></div>`}
+function loadDark(){const c=U.lg.code;if(!c||!S.tok)return Promise.resolve();
+  return api("dark_list",{code:c}).then(j=>{U.dk={code:c,bets:j.bets,at:Date.now()};settleDark(c,j.bets);if(U.tab==="l"&&U.dark&&!U.open)render()}).catch(()=>{U.dk=U.dk||{code:c,bets:[],err:1};if(U.tab==="l"&&U.dark&&!U.open)render()})}
+const potOf=b=>Object.values(b.pools||{}).reduce((a,v)=>a+v,0);
+function dkGain(b,opt,x){const T=potOf(b)+x,P=((b.pools||{})[opt]||0)+x;return P?Math.floor(x*T/P):x}
+function leftTxt(t){const m=Math.round((t-Date.now())/6e4);return m<60?`${m} min`:m<1440?`${Math.floor(m/60)} h ${String(m%60).padStart(2,"0")}`:`${Math.round(m/1440)} j`}
+function viewDark(cur){const D=U.dk&&U.dk.code===cur.code?U.dk.bets:null;if(!D)loadDark();else if(Date.now()-U.dk.at>3e4)setTimeout(loadDark,0);
+  let h=`<div class="dkhead"><div><small>${esc(cur.name)}</small><h2>${DK_ICON} Le côté dark</h2><p>Paris inventés par les membres. Personne ne sait qui les a créés.</p></div></div>
+  <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:12px"><button class="btn" data-act="dknew">${ic("plus")} Inventer un pari</button><button class="btn ghost" data-act="dkexit">Quitter</button></div>`;
+  if(!D)return h+`<div class="skel"></div><div class="skel"></div>`;
+  if(!D.length)return h+`<div class="empty">${DK_ICON}<b>Rien de louche pour l’instant</b>Lance le premier pari : retards, profs, sorties, défis entre potes…</div>`;
+  return h+D.map(b=>{const T=potOf(b),open=b.state==="open",my=b.my;
+    const tag=open?`<span class="tag open">${leftTxt(b.closes)}</span>`:b.state==="closed"?`<span class="tag void">En attente du résultat</span>`:b.state==="contest"?`<span class="tag open">Résultat · 12 h pour contester</span>`:b.state==="final"?`<span class="tag won">Terminé</span>`:`<span class="tag lost">Annulé · remboursé</span>`;
+    const opts=b.options.map((o,k)=>{const P=(b.pools||{})[k]||0,pct=T?Math.round(P/T*100):0,win=b.result===k&&b.state!=="void",mine=my&&my.opt===k;
+      const can=open&&!b.mine&&(!my||my.opt===k);
+      return`<button class="dkopt${win?" win":""}${mine?" mine":""}" ${can?`data-act="dkpick" data-id="${esc(b.id)}" data-opt="${k}"`:"disabled"}>
+        <span class="bar" style="width:${pct}%"></span><b>${esc(o)}</b><small>${pct} % · ${tok(P)}</small>${win?`<i>✓</i>`:""}</button>`}).join("");
+    let foot="";
+    if(b.mine)foot=b.state==="closed"?`<div class="dkres"><small>C’est ton pari (personne ne le sait). Qu’est-ce qui s’est passé ?</small>${b.options.map((o,k)=>`<button class="btn ghost" data-act="dkres" data-id="${esc(b.id)}" data-opt="${k}">${esc(o)}</button>`).join("")}</div>`
+      :`<small class="mut">${ic("info")} C’est ton pari : tu ne peux pas miser dessus${open&&!b.players?` · <button class="link" data-act="dkdel" data-id="${esc(b.id)}">Supprimer</button>`:""}</small>`;
+    else if(b.state==="contest"&&!b.myContest)foot=`<small class="mut">Pas d’accord avec le résultat ? <button class="link" data-act="dkflag" data-kind="contest" data-id="${esc(b.id)}">Contester</button> (${b.contests}/2)</small>`;
+    else if(b.myContest)foot=`<small class="mut">Tu as contesté ce résultat (${b.contests}/2).</small>`;
+    return`<div class="dkbet"><div class="dkq"><b>${esc(b.question)}</b>${tag}</div>
+      <small class="mut">Pot : <b>${tok(T)}</b> jetons · ${b.players} joueur${b.players>1?"s":""}${my?` · toi : ${tok(my.amount)} sur « ${esc(b.options[my.opt])} »`:""}</small>
+      <div class="dkopts">${opts}</div>${foot}
+      ${b.mine||b.myReport?"":`<button class="link dkrep" data-act="dkflag" data-kind="report" data-id="${esc(b.id)}">Signaler</button>`}</div>`}).join("")+
+    `<p class="note">Pari mutuel : les gagnants se partagent tout le pot, au prorata de leur mise. Si personne n’a misé sur le bon choix, ou si le pari est annulé, tout le monde est remboursé.</p>`}
+function viewDarkNew(){const f=U.dkf;
+  const W=[["1h","Dans 1 h"],["soir","Ce soir 20 h"],["dem8","Demain 8 h"],["dem18","Demain 18 h"],["3j","Dans 3 jours"]];
+  return`<div class="grab"><h3>Inventer un pari</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
+  <div class="form"><label>Ta question<input id="dk-q" maxlength="140" placeholder="ex. Léo arrivera en retard demain ?" value="${esc(f.q||"")}"></label>
+  <div class="seg"><button data-act="dkset" data-f="type" data-v="yn" aria-pressed="${f.type==="yn"}">Oui / Non</button><button data-act="dkset" data-f="type" data-v="multi" aria-pressed="${f.type==="multi"}">Plusieurs choix</button></div>
+  ${f.type==="multi"?f.opts.map((o,i)=>`<input class="dk-o" data-i="${i}" maxlength="40" placeholder="Choix ${i+1}${i===0?" (ex. moins de 5 min)":i===1?" (ex. 5 à 15 min)":""}" value="${esc(o)}">`).join("")+(f.opts.length<4?`<button class="link" data-act="dkset" data-f="add">${ic("plus")} Ajouter un choix</button>`:""):""}
+  <label>Fin des paris</label><div class="chips">${W.map(([k,l])=>`<button data-act="dkset" data-f="when" data-v="${k}" aria-pressed="${f.when===k}">${l}</button>`).join("")}</div>
+  <p class="note">Ton nom ne sera jamais affiché. Tu ne pourras pas miser sur ce pari, et c’est toi qui donneras le résultat après la fin. Rappel : rien de méchant ni de personnel.</p>
+  <button class="btn wide dkgo" data-act="dkcreate">${DK_ICON} Lancer le pari</button></div>`}
+function dkKeep(){const f=U.dkf,q=$("#dk-q");if(q)f.q=q.value;document.querySelectorAll(".dk-o").forEach(x=>f.opts[+x.dataset.i]=x.value)}
+function dkSet(d){dkKeep();const f=U.dkf;if(d.f==="type")f.type=d.v;else if(d.f==="add"&&f.opts.length<4)f.opts.push("");else if(d.f==="when")f.when=d.v;layer(viewDarkNew())}
+function dkWhen(k){const d=new Date();if(k==="1h")return Date.now()+H;if(k==="3j")return Date.now()+3*DAY;
+  if(k==="soir"){d.setHours(20,0,0,0);if(d<Date.now()+10*6e4)d.setDate(d.getDate()+1);return+d}
+  d.setDate(d.getDate()+1);d.setHours(k==="dem8"?8:18,0,0,0);return+d}
+async function darkCreate(){dkKeep();const f=U.dkf,q=(f.q||"").trim(),opts=f.type==="yn"?["Oui","Non"]:f.opts.map(o=>o.trim()).filter(Boolean);
+  if(q.length<6){toast("Écris une vraie question.","bad");return}if(opts.length<2){toast("Il faut au moins 2 choix.","bad");return}
+  const b=$("[data-act=dkcreate]");b.disabled=true;
+  try{await api("dark_create",{code:U.lg.code,question:q,options:opts,closes:dkWhen(f.when)});closeLayer();await loadDark();toast(`${DK_ICON} Pari lancé, anonymement.`,"win")}
+  catch(e){b.disabled=false;toast(e.code==="options"?"Les choix doivent être différents.":e.code==="slow_down"?"Beaucoup de paris aujourd’hui !":"Pas de connexion au serveur.","bad")}}
+function viewDarkStake(){const q=U.dks,b=U.dk.bets.find(x=>String(x.id)===String(q.id));if(!b)return"";
+  return`<div class="grab"><h3>Miser</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
+  <p style="margin:0 0 6px;font-weight:700">${esc(b.question)}</p><p class="note" style="margin-top:0">Ton choix : <b style="color:var(--acc)">${esc(b.options[q.opt])}</b></p>
+  <div class="chips">${[10,20,50,100,250].map(v=>`<button data-act="dkamt" data-v="${v}" aria-pressed="${q.amount===v}">${v}</button>`).join("")}</div>
+  <div class="sum"><div><small>Mise</small><b>${tok(q.amount)}</b></div><div class="g"><small>Gain si ça passe (aujourd’hui)</small><b>${tok(dkGain(b,q.opt,q.amount))}</b></div></div>
+  <p class="note">Le gain change jusqu’à la fin des paris : plus il y a de mises sur les autres choix, plus tu gagnes.</p>
+  <button class="btn wide dkgo" data-act="dkbet" ${q.amount>S.bal?"disabled":""}>Miser ${tok(q.amount)} jetons</button>`}
+async function darkStake(){const q=U.dks;if(q.amount>S.bal){toast("Pas assez de jetons.","bad");return}const b=$("[data-act=dkbet]");b.disabled=true;
+  try{await api("dark_stake",{id:q.id,opt:q.opt,amount:q.amount});S.bal-=q.amount;S.dk=S.dk||{};const e=S.dk[q.id]||(S.dk[q.id]={code:U.lg.code,opt:q.opt,amount:0});e.amount+=q.amount;
+    save();bump();closeLayer();await loadDark();toast("Mise enregistrée. Croise les doigts…","win")}
+  catch(e){b.disabled=false;toast(e.code==="closed"?"Trop tard, les paris sont fermés.":e.code==="other_option"?"Tu as déjà misé sur un autre choix.":"Pas de connexion au serveur.","bad");loadDark()}}
+async function darkResolve(id,opt){const b=U.dk.bets.find(x=>String(x.id)===String(id));if(!b||!confirm(`Résultat : « ${b.options[opt]} » ?\nLes autres auront 12 h pour contester.`))return;
+  try{await api("dark_resolve",{id,result:opt});await loadDark();toast("Résultat enregistré.","win")}catch(e){toast("Impossible pour l’instant.","bad")}}
+async function darkFlag(id,kind){if(!confirm(kind==="report"?"Signaler ce pari comme méchant ou déplacé ? À 2 signalements, il disparaît.":"Contester ce résultat ? À 2 contestations, le pari est annulé et tout le monde est remboursé."))return;
+  try{await api("dark_flag",{id,kind});await loadDark();toast(kind==="report"?"Signalement envoyé.":"Contestation enregistrée.")}catch(e){toast("Pas de connexion au serveur.","bad")}}
+async function darkDelete(id){if(!confirm("Supprimer ton pari ?"))return;try{await api("dark_delete",{id});await loadDark()}catch(e){toast("Impossible : quelqu’un a déjà misé.","bad")}}
+// gains : chaque téléphone se règle une seule fois quand le pari est définitif (ou annulé)
+function settleDark(code,bets){if(!S.dk)return;let ch=false;
+  for(const b of bets){const e=S.dk[b.id];if(!e||e.settled)continue;
+    if(b.state==="void"){e.settled=1;ch=true;S.bal+=e.amount;toast(`Pari dark annulé : ${tok(e.amount)} jetons remboursés.`)}
+    else if(b.state==="final"){e.settled=1;ch=true;const T=potOf(b),W=(b.pools||{})[b.result]||0;
+      if(!W){S.bal+=e.amount;toast("Personne n’avait vu juste : mise remboursée.")}
+      else if(e.opt===b.result){const g=Math.floor(e.amount*T/W);S.bal+=g;toast(`${DK_ICON} Pari dark gagné : +${tok(g)} jetons !`,"win");confetti()}
+      else toast(`Pari dark perdu : « ${esc(b.question)} »`)}}
+  for(const id in S.dk)if(S.dk[id].code===code&&!S.dk[id].settled&&!bets.some(b=>String(b.id)===String(id))){S.dk[id].settled=1;S.bal+=S.dk[id].amount;ch=true}   // pari masqué (signalé) : remboursé
+  if(ch){S.peak=Math.max(S.peak,S.bal);save();render();bump()}}
+async function checkDarkAll(){const codes=[...new Set(Object.values(S.dk||{}).filter(x=>!x.settled).map(x=>x.code))];
+  for(const c of codes){try{const j=await api("dark_list",{code:c});settleDark(c,j.bets)}catch(e){}}}
 
 /* ---------- duels ---------- */
 async function loadDuels(){if(!S.tok)return;try{const j=await api("duels",{});U.lg.duels=j.duels;U.lg.duelsAt=Date.now();await checkDuels(j.duels,j.me)}catch(e){}
@@ -1782,7 +1907,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.19";
+const VERSION="1.20";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -1797,6 +1922,7 @@ if(GATE)renderGate();else{
 render();
 if(!S.name){U.open="welcome";layer(viewWelcome(false))}else{syncSoon();joinFromLink()}
 loadFeeds();
+setTimeout(()=>{if(S.dk&&Object.values(S.dk).some(x=>!x.settled))checkDarkAll();},5000);
 setTimeout(()=>{if(S.name)loadBoards();if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},3000);
 setInterval(()=>{if(!document.hidden&&S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},12e4);
 setInterval(()=>{if(document.hidden)return;

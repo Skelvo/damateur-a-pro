@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "7";
+const SCHEMA_VERSION = "8";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -103,6 +103,29 @@ const STATEMENTS = [
   `alter table players add column if not exists avatar text`,
   `alter table players add column if not exists avatar_v int not null default 0`,
   `alter table players add column if not exists bets jsonb`,
+  // côté dark : paris inventés par les membres d'une ligue (anonymes, pari mutuel)
+  `create table if not exists dark_bets (
+     id bigserial primary key,
+     code text not null references leagues(code) on delete cascade,
+     creator bigint not null references players(id) on delete cascade,
+     question text not null,
+     options jsonb not null,
+     closes timestamptz not null,
+     result int,
+     resolved_at timestamptz,
+     created_at timestamptz not null default now())`,
+  `create index if not exists dark_bets_code on dark_bets(code, created_at desc)`,
+  `create table if not exists dark_stakes (
+     bet bigint not null references dark_bets(id) on delete cascade,
+     player bigint not null references players(id) on delete cascade,
+     opt int not null,
+     amount int not null,
+     primary key (bet, player))`,
+  `create table if not exists dark_flags (
+     bet bigint not null references dark_bets(id) on delete cascade,
+     player bigint not null references players(id) on delete cascade,
+     kind text not null,
+     primary key (bet, player, kind))`,
   `create table if not exists rate_hits (key text not null, win bigint not null, n int not null default 0, primary key (key, win))`,
 ];
 
