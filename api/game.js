@@ -25,7 +25,7 @@ const isTaken = (e) => e && (e.code === "23505" || /players_name_u|duplicate key
 
 // Semaine en cours (lundi, heure de Paris) : sert au classement « cette semaine »
 const WEEK = `to_char(date_trunc('week', now() at time zone 'Europe/Paris'), 'YYYY-MM-DD')`;
-const BOARD_COLS = `p.id, p.name, p.bal::float8 as bal, p.peak::float8 as peak, p.won, p.lost,
+const BOARD_COLS = `p.id, p.name, p.bal::float8 as bal, p.peak::float8 as peak, p.won, p.lost, p.avatar_v,
   (case when p.week = ${WEEK} then p.bal - coalesce(p.week_bal, p.bal) else 0 end)::float8 as week_gain`;
 
 async function me(s, token) {
@@ -137,6 +137,10 @@ const ACTIONS = {
          bal = $2::numeric, peak = greatest(peak, $3::numeric, $2::numeric), won = $4::int, lost = $5::int, seen_at = now()
        where id = $1`,
       [p.id, num(b.bal, 0, MAX_BAL), num(b.peak, 0, MAX_BAL), int(b.won, 0, 1e7), int(b.lost, 0, 1e7)]);
+    if (Array.isArray(b.bets)) {
+      const json = JSON.stringify({ list: b.bets.slice(0, 40), best: b.best && typeof b.best === "object" ? b.best : null });
+      if (json.length <= 60000) await s.query(`update players set bets = $2::jsonb where id = $1`, [p.id, json]);
+    }
     const name = cleanName(b.name, 18);
     if (name && name !== p.name) {
       try {
@@ -288,8 +292,39 @@ const ACTIONS = {
     }
     return {
       me: p.id, leagues, code: code && leagues.some((l) => l.code === code) ? code : "", total, rank, last,
-      rows: rows.map((r) => ({ id: r.id, name: r.name, bal: Math.round(r.bal), peak: Math.round(r.peak), won: r.won, lost: r.lost, week: Math.round(r.week_gain), tr: trophies[r.id] || 0 })),
+      rows: rows.map((r) => ({ id: r.id, name: r.name, bal: Math.round(r.bal), peak: Math.round(r.peak), won: r.won, lost: r.lost, week: Math.round(r.week_gain), tr: trophies[r.id] || 0, av: r.avatar_v || 0 })),
     };
+  },
+
+  // ---- Photo de profil ----
+  async set_avatar(s, b) {
+    const p = await me(s, b.token);
+    if (b.img == null) {
+      await s.query(`update players set avatar = null, avatar_v = 0 where id = $1`, [p.id]);
+      return { v: 0 };
+    }
+    const img = String(b.img);
+    if (!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(img) || img.length > 160000) throw fail(400, "image");
+    const r = await s.query(`update players set avatar = $2, avatar_v = avatar_v + 1 where id = $1 returning avatar_v`, [p.id, img]);
+    return { v: r[0].avatar_v };
+  },
+
+  // ---- Fiche d'un joueur (visible si on partage une ligue avec lui) ----
+  async profile(s, b) {
+    const p = await me(s, b.token);
+    const id = String(int(b.id, 0, 1e15));
+    if (id !== String(p.id)) {
+      const ok = (await s.query(
+        `select 1 from league_members a join league_members c on c.code = a.code where a.player = $1 and c.player = $2 limit 1`, [p.id, id]))[0];
+      if (!ok) throw fail(403, "not_friend");
+    }
+    const r = (await s.query(
+      `select id, name, bal::float8 as bal, peak::float8 as peak, won, lost, avatar_v, bets, extract(epoch from created_at) * 1000 as since,
+         (select count(*)::int from weekly w where w.player = players.id) as weeks
+       from players where id = $1`, [id]))[0];
+    if (!r) throw fail(404, "unknown");
+    return { id: r.id, name: r.name, bal: Math.round(r.bal), peak: Math.round(r.peak), won: r.won, lost: r.lost, av: r.avatar_v || 0,
+      bets: (r.bets && r.bets.list) || [], best: (r.bets && r.bets.best) || null, since: Math.round(Number(r.since)) };
   },
 
   // ---- Fil d'activité ----
@@ -311,12 +346,12 @@ const ACTIONS = {
     const inL = code && (await s.query(`select 1 from league_members where code = $1 and player = $2`, [code, p.id]))[0];
     if (!inL) throw fail(403, "not_member");
     const rows = await s.query(
-      `select a.id, a.player, pl.name, a.kind, a.data, extract(epoch from a.at) * 1000 as ms,
+      `select a.id, a.player, pl.name, pl.avatar_v, a.kind, a.data, extract(epoch from a.at) * 1000 as ms,
          coalesce((select jsonb_object_agg(emo, n) from (select emo, count(*)::int as n from reactions r where r.act = a.id group by emo) x), '{}') as reacts,
          (select emo from reactions r where r.act = a.id and r.player = $2) as mine
        from activity a join league_members m on m.player = a.player and m.code = $1 join players pl on pl.id = a.player
        where a.at > now() - interval '7 days' order by a.at desc limit 60`, [code, p.id]);
-    return { me: p.id, items: rows.map((r) => ({ id: r.id, who: r.player, name: r.name, kind: r.kind, data: r.data, at: Math.round(Number(r.ms)), reacts: r.reacts, mine: r.mine })) };
+    return { me: p.id, items: rows.map((r) => ({ id: r.id, who: r.player, name: r.name, av: r.avatar_v || 0, kind: r.kind, data: r.data, at: Math.round(Number(r.ms)), reacts: r.reacts, mine: r.mine })) };
   },
 
   async react(s, b) {
@@ -378,7 +413,7 @@ const ACTIONS = {
     // les duels jamais relevés avant le coup d'envoi expirent
     await s.query(`update duels set status = 'expired' where status = 'open' and t < now()`);
     const rows = await s.query(
-      `select d.id, d.code, d.a, pa.name as aname, d.b, pb.name as bname, d.mid, d.mlabel, d.opts, extract(epoch from d.t) * 1000 as tms,
+      `select d.id, d.code, d.a, pa.name as aname, pa.avatar_v as aav, d.b, pb.name as bname, pb.avatar_v as bav, d.mid, d.mlabel, d.opts, extract(epoch from d.t) * 1000 as tms,
          d.ka, d.kb, d.stake, d.status, d.res, d.winner
        from duels d join players pa on pa.id = d.a left join players pb on pb.id = d.b
        where ${code ? "d.code = $2" : "d.code in (select code from league_members where player = $1)"}
@@ -490,8 +525,23 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.setHeader("Access-Control-Max-Age", "86400");
   if (req.method === "OPTIONS") return res.status(204).end();
-  if (req.method === "GET") return res.status(200).json({ ok: true, service: "damateur-a-pro" });
+  if (req.method === "GET") {
+    const q = req.query || Object.fromEntries(new URL(req.url || "/", "http://x").searchParams);
+    if (q.avatar) {
+      try {
+        const s = await db();
+        const r = (await s.query(`select avatar from players where id = $1`, [String(int(q.avatar, 0, 1e15))]))[0];
+        if (!r || !r.avatar) return res.status(404).json({ error: "none" });
+        const buf = Buffer.from(r.avatar.slice(r.avatar.indexOf(",") + 1), "base64");
+        res.setHeader("Content-Type", "image/jpeg");
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        return res.status(200).end(buf);
+      } catch (e) { return res.status(500).json({ error: "server" }); }
+    }
+    return res.status(200).json({ ok: true, service: "damateur-a-pro" });
+  }
   if (req.method !== "POST") return res.status(405).json({ error: "method" });
+  res.setHeader("Cache-Control", "no-store");
   try {
     let b = req.body;
     if (typeof b === "string") b = JSON.parse(b || "{}");

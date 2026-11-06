@@ -292,6 +292,26 @@ body.gated{padding-bottom:calc(24px + var(--safe-b))}
 .steps b{color:var(--ink)}.steps .i{width:20px;height:20px;vertical-align:-4px}.steps small{display:block;color:var(--mute);font-size:12.5px;margin-top:3px}
 .xcode{text-align:center;background:var(--card);border:1px dashed var(--sel);border-radius:14px;padding:12px}
 .xcode small{display:block;color:var(--mute);font-size:12.5px}.xcode b{display:block;font:800 34px/1.2 "Barlow Condensed";letter-spacing:4px;color:var(--sel);margin:4px 0 8px}
+/* avatars, profil, photo */
+.av{position:relative;overflow:hidden}.av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}.av i{font-style:normal}
+.pod .av{width:46px;height:46px;margin:0 auto 6px;border-radius:50%;display:grid;place-items:center;font:800 22px "Barlow Condensed";color:#0b1310}
+.prow .av,.act .av,.duel .vs .av{border-radius:50%!important}
+.pod,.prow,.act [data-act=prof],.duel [data-act=prof]{cursor:pointer}
+.avbtn{position:relative;border:0;background:none;padding:0}.avbtn .av{width:58px;height:58px;border-radius:50%;background:var(--acc);display:grid;place-items:center;font:800 28px "Barlow Condensed";color:var(--acc-ink)}
+.avbtn .cam{position:absolute;right:-3px;bottom:-3px;width:22px;height:22px;border-radius:50%;background:var(--sel);color:var(--sel-ink);display:grid;place-items:center;border:2px solid #0b1310;z-index:2}.avbtn .cam .i{width:13px;height:13px;stroke-width:3}
+.phero{display:flex;align-items:center;gap:14px;margin:4px 0 14px}.phero h2{margin:0;font:800 28px/1 "Barlow Condensed";text-transform:uppercase}.phero .div{display:inline-flex;align-items:center;gap:6px;margin-top:5px;font:700 13px Barlow;color:var(--sel)}.phero .div .i{width:16px;height:16px}
+.av.big{width:84px;height:84px;border-radius:50%;flex:none;display:grid;place-items:center;font:800 40px "Barlow Condensed";color:#0b1310;box-shadow:0 0 0 3px var(--acc)}
+.pstats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:6px}.pstats div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 10px}
+.pstats small{display:block;color:var(--mute);font-size:11px;text-transform:uppercase;letter-spacing:.6px;font-weight:700}.pstats b{font:800 21px/1.15 "Barlow Condensed";font-variant-numeric:tabular-nums}
+.pbet{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}.pbh{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.pbh b{font:800 15px "Barlow Condensed";text-transform:uppercase;letter-spacing:.5px}.pleg{display:flex;gap:8px;align-items:flex-start;padding:4px 0}.pleg .st{width:20px;height:20px;font-size:11px;margin-top:1px}
+.pleg div{min-width:0}.pleg b{display:block;font-weight:600;font-size:14px}.pleg small{color:var(--mute);font-size:12px}.pbf{display:block;color:var(--mute);font-size:12.5px;margin-top:4px}
+.crop{position:relative;width:min(260px,72vw);aspect-ratio:1;margin:4px auto 12px;border-radius:20px;overflow:hidden;background:#000;touch-action:none;user-select:none;-webkit-user-select:none}
+.cimg{position:absolute;inset:0}.cimg img{position:absolute;left:0;top:0;transform-origin:0 0;max-width:none;pointer-events:none;-webkit-user-drag:none}
+.cimg img.cur{width:100%;height:100%;object-fit:cover;transform:none}
+.cmask{position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 999px #000a;outline:2px solid #fff8;pointer-events:none}
+.cempty{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:6px;color:var(--mute)}.cempty .i{width:48px;height:48px}
+.zoom{display:flex;align-items:center;gap:10px;margin:0 6px 6px;color:var(--mute)}.zoom input{flex:1;accent-color:var(--sel)}
 /* ligues vivantes */
 .champ{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#4a3a05,var(--card) 70%);border:1px solid #8a6d10;border-radius:14px;padding:10px 14px;margin-bottom:12px}
 .champ .i{width:30px;height:30px;color:var(--sel);flex:none}.champ small{display:block;color:#e8d79a;font-size:12px;text-transform:uppercase;letter-spacing:.8px;font-weight:700}.champ b{font:800 19px "Barlow Condensed"}
@@ -1083,7 +1103,7 @@ function viewCareer(){const di=divOf(S.peak),nx=DIVS[di+1],pr=nx?cl((S.peak-DIVS
   const legs=S.bets.flatMap(b=>b.legs);
   const BD=[["ticket","Premier pari",S.bets.length>0],["trophy","Premier gain",W.length>0],["fire","Série de 3",streak>=3],["chart","Cote 5+",bestO>=5],
     ["card","Roi des cartons",legs.some(l=>l.r==="w"&&["yc","rc"].includes(l.mk))],["broken","Raquette !",legs.some(l=>l.r==="w"&&l.mk==="rk"&&l.k===0)],["posts","Buteur",legs.some(l=>l.r==="w"&&["pm","px","dr"].includes(l.mk))],["coin","10 000 jetons",S.peak>=10000]];
-  let h=`<div class="pcard"><span class="bgnum">${di+1}</span><div class="who"><div class="av">${esc((S.name||"?")[0].toUpperCase())}</div><div><h2>${esc(S.name||"Joueur")}</h2><span class="div">${ic("trophy")}${esc(DIVS[di][0])}</span></div></div>
+  let h=`<div class="pcard"><span class="bgnum">${di+1}</span><div class="who"><button class="avbtn" data-act="photo" aria-label="Changer ma photo">${avatar(S.pid||"me",S.name||"?",S.avv,"av",true)}<span class="cam">${ic("plus")}</span></button><div><h2>${esc(S.name||"Joueur")}</h2><span class="div">${ic("trophy")}${esc(DIVS[di][0])}</span></div></div>
     <div class="prog"><div class="l"><span>Record : ${tok(S.peak)} jetons</span><span>${nx?"Prochain : "+esc(nx[0])+" ("+tok(nx[1])+")":"Sommet atteint !"}</span></div><div class="t"><i style="width:${pr*100}%"></i></div></div></div>
   <div class="kpis" style="grid-template-columns:1fr"><div class="kgrid"><div><small>Solde</small><b>${tok(S.bal)}</b></div><div><small>Plus gros gain</small><b class="pos">${tok(best)}</b></div><div><small>Série</small><b>${streak}</b></div></div></div>
   <div class="h2"><h2>De l’amateur au pro</h2><span>Ta division suit ton record</span></div>
@@ -1227,6 +1247,10 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"lgmode":U.lg.mode=d.v;render();break;
     case"lgview":U.lg.view=d.v;render();if(d.v==="feed")loadActFeed();if(d.v==="duels")loadDuels();break;
     case"react":reactTo(d.id,d.e);break;
+    case"prof":openProfile(d.id);break;
+    case"photo":openPhoto();break;
+    case"phdel":deletePhoto();break;
+    case"phok":savePhoto();break;
     case"daccept":acceptDuel(d.id,+d.k);break;
     case"dnew":if(!S.tok){toast("Connexion au serveur nécessaire.","bad");break}U.open="duel";layer(viewDuelNew(findMatch(d.mid)));break;
     case"dset":U.dn[d.f]=d.f==="code"?d.v:+d.v;layer(viewDuelNew(findMatch($("[data-act=dgo]").dataset.mid)));break;
@@ -1329,8 +1353,8 @@ let askedName=false;
 function askNewName(){if(askedName||U.open==="welcome")return;askedName=true;U.open="welcome";layer(viewWelcome(true,`Le pseudo « ${esc(S.name)} » est déjà pris par un autre joueur. Choisis-en un autre pour apparaître dans les classements.`))}
 let syncT=0;
 function syncSoon(){if(!S.name)return;clearTimeout(syncT);syncT=setTimeout(async()=>{if(!(await ensureSession()))return;
-  try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,...myStats()});if(j.name_taken)askNewName()}catch(e){if(e.code==="no_session"&&await ensureSession())syncSoon()}},2000)}
-async function syncNow(){clearTimeout(syncT);if(!(await ensureSession()))return false;try{await api("sync",{name:S.name,bal:S.bal,peak:S.peak,...myStats()});return true}catch(e){return false}}
+  try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,...myStats(),...betsPayload()});if(j.name_taken)askNewName()}catch(e){if(e.code==="no_session"&&await ensureSession())syncSoon()}},2000)}
+async function syncNow(){clearTimeout(syncT);if(!(await ensureSession()))return false;try{await api("sync",{name:S.name,bal:S.bal,peak:S.peak,...myStats(),...betsPayload()});return true}catch(e){return false}}
 const pickKey=s=>s.mk+(s.line!=null?s.line:"");
 function sendPicks(sel){const picks=sel.filter(s=>!PMK[s.mk]).map(s=>({mid:s.mid,mk:pickKey(s),k:s.k}));if(!picks.length)return;ensureSession().then(ok=>ok&&api("picks",{picks}).catch(()=>{}));
   for(const p of picks){const c=CROWD[p.mid];if(c&&c.data){const m=((c.data[p.mk]??={}));m[p.k]=(m[p.k]||0)+1}}}
@@ -1387,9 +1411,9 @@ function viewLeagues(){const L=U.lg,d=L.data;
   const val=r=>L.mode==="week"?(r.week>0?"+":"")+tok(r.week):tok(r.bal);
   if(!rows.length)h+=`<div class="empty">Personne pour l’instant.</div>`;
   if(rows.length>=3){const P=[rows[1],rows[0],rows[2]],H=[64,90,48];
-    h+=`<div class="podium">${P.map((r,i)=>`<div class="pod"><div class="av" style="background:${avc(r.name)}">${esc(r.name[0].toUpperCase())}</div><b>${esc(r.name)}${r.id===d.me?" (toi)":""}</b><span class="${L.mode==="week"?(r.week>=0?"pos":"neg"):""}">${val(r)}</span>
+    h+=`<div class="podium">${P.map((r,i)=>`<div class="pod" data-act="prof" data-id="${esc(r.id)}">${avatar(r.id,r.name,r.av,"av")}<b>${esc(r.name)}${r.id===d.me?" (toi)":""}</b><span class="${L.mode==="week"?(r.week>=0?"pos":"neg"):""}">${val(r)}</span>
       <div class="blk" style="height:${H[i]}px;background:${["#c9d3dc","#ffd23f","#e0975a"][i]}">${[2,1,3][i]}</div></div>`).join("")}</div>`}
-  h+=rows.map((r,i)=>i<3&&rows.length>=3?"":`<div class="prow${r.id===d.me?" me":""}"><span class="rk">${i+1}</span><span class="av" style="background:${avc(r.name)}">${esc(r.name[0].toUpperCase())}</span>
+  h+=rows.map((r,i)=>i<3&&rows.length>=3?"":`<div class="prow${r.id===d.me?" me":""}" data-act="prof" data-id="${esc(r.id)}"><span class="rk">${i+1}</span>${avatar(r.id,r.name,r.av,"av")}
     <div><b>${esc(r.name)}${r.id===d.me?" (toi)":""}${r.tr?` <span class="trs">${ic("trophy")}${r.tr>1?r.tr:""}</span>`:""}</b><small>${r.won} gagné${r.won>1?"s":""} · ${r.lost} perdu${r.lost>1?"s":""} · record ${tok(r.peak)}</small></div>
     <span class="v ${L.mode==="week"?(r.week>=0?"pos":"neg"):""}">${val(r)}</span></div>`).join("");
   if(!cur&&d.rank&&!rows.some(r=>r.id===d.me))h+=`<div class="note" style="text-align:center">…</div>`;
@@ -1418,12 +1442,84 @@ function actText(a){const d=a.data||{};const legs=(d.legs||[]).map(esc).join(" +
 function viewFeed(){const F=U.lg.feed;if(!F){loadActFeed();return`<div class="skel" style="height:80px"></div><div class="skel" style="height:80px"></div>`}
   if(Date.now()-(U.lg.feedAt||0)>3e4)setTimeout(loadActFeed,0);
   if(!F.length)return`<div class="empty">${ic("group")}<b>Rien pour l’instant</b>Les paris, gains et duels des membres s’afficheront ici.</div>`;
-  return F.map(a=>`<div class="act"><span class="av" style="background:${avc(a.name)}">${esc(a.name[0].toUpperCase())}</span><div>
+  return F.map(a=>`<div class="act"><span data-act="prof" data-id="${esc(a.who)}">${avatar(a.who,a.name,a.av,"av")}</span><div>
     <p><b>${esc(a.name)}${String(a.who)===String(U.lg.data.me)?" (toi)":""}</b> ${actText(a)}</p><small>${ago(a.at)}</small>
     <div class="reacts">${EMOS.map(e=>{const n=(a.reacts||{})[e]||0;return`<button data-act="react" data-id="${esc(a.id)}" data-e="${e}" aria-pressed="${a.mine===e}">${e}${n?` <span>${n}</span>`:""}</button>`}).join("")}</div></div></div>`).join("")}
 async function reactTo(id,e){const a=(U.lg.feed||[]).find(x=>String(x.id)===String(id));if(!a)return;const r=a.reacts=a.reacts||{};
   if(a.mine){r[a.mine]=Math.max(0,(r[a.mine]||1)-1)}if(a.mine===e)a.mine=null;else{a.mine=e;r[e]=(r[e]||0)+1}render();
   api("react",{act:id,emo:e}).catch(()=>{})}
+
+/* ---------- avatars ---------- */
+const avUrl=(id,v)=>API+"?avatar="+encodeURIComponent(id)+"&v="+v;
+function avatar(id,name,v,cls,mine){const meNow=mine||(U.lg.data&&String(id)===String(U.lg.data.me));
+  const src=meNow&&S.avatar?S.avatar:v?avUrl(id,v):"";
+  return`<span class="${cls}" style="background:${avc(name||"?")}">${src?`<img src="${src}" alt="" decoding="async" onerror="this.remove()">`:""}<i>${esc((name||"?")[0].toUpperCase())}</i></span>`}
+// résumé des paris envoyé au serveur (visible par les membres de mes ligues)
+function betsPayload(){const B=S.bets.slice(-40).reverse().map(b=>({at:b.at,st:b.st,stake:b.stake,odds:b.odds,pay:b.pay||0,
+    legs:b.legs.slice(0,8).map(L=>({l:String(L.l).slice(0,60),ml:String(L.ml||"").slice(0,60),mt:String(L.mt||"").slice(0,40),r:L.r||null}))}));
+  const W=S.bets.filter(b=>b.st==="won");return{bets:B,best:{odds:W.reduce((a,b)=>Math.max(a,b.odds),0),pay:W.reduce((a,b)=>Math.max(a,b.pay||0),0)}}}
+
+/* ---------- fiche d'un joueur ---------- */
+async function openProfile(id){const me=U.lg.data&&String(id)===String(U.lg.data.me)||String(id)===String(S.pid);
+  U.open="prof";layer(`<div class="grab"><h3>Profil</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div><div class="skel" style="height:140px"></div><div class="skel"></div>`);
+  if(me){const p={id:S.pid,name:S.name,bal:S.bal,peak:S.peak,...myStats(),...betsPayload(),av:S.avv,me:true};p.bets=p.bets;layer(viewProfile(p));return}
+  try{const p=await api("profile",{id});if(U.open==="prof")layer(viewProfile(p))}
+  catch(e){if(U.open==="prof")layer(`<div class="grab"><h3>Profil</h3><button class="x" data-act="close">${ic("x")}</button></div><div class="empty">${ic("info")}<b>${e.code==="not_friend"?"Profil privé":"Pas de connexion"}</b>${e.code==="not_friend"?"Tu ne vois que les joueurs de tes ligues.":"Réessaie dans un instant."}</div>`)}}
+function viewProfile(p){const done=p.won+p.lost,rate=done?Math.round(p.won/done*100):0,B=p.bets||[],open=B.filter(b=>b.st==="open"),past=B.filter(b=>b.st!=="open").slice(0,12);
+  const row=(U.lg.data&&U.lg.data.rows||[]).find(r=>String(r.id)===String(p.id)),tr=row?row.tr:0;
+  const bet=b=>{const tag=b.st==="won"?`<span class="tag won">+${tok(b.pay)}</span>`:b.st==="lost"?`<span class="tag lost">Perdu</span>`:b.st==="void"?`<span class="tag void">Remboursé</span>`:b.st==="cashed"?`<span class="tag cashed">Encaissé +${tok(b.pay)}</span>`:`<span class="tag open">En cours</span>`;
+    return`<div class="pbet"><div class="pbh"><b>${b.legs.length>1?"Combiné · "+b.legs.length:"Simple"}</b>${tag}</div>
+      ${b.legs.map(L=>`<div class="pleg">${L.r==="w"?`<span class="st w">✓</span>`:L.r==="l"?`<span class="st l">✗</span>`:L.r==="v"?`<span class="st v">↺</span>`:`<span class="st p"></span>`}<div><b>${esc(L.l)}</b><small>${esc(L.ml)}</small></div></div>`).join("")}
+      <small class="pbf">Mise ${tok(b.stake)} · cote ${fr(+b.odds||1)} · ${new Date(b.at).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})}</small></div>`};
+  return`<div class="grab"><h3>Profil</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
+  <div class="phero">${avatar(p.id,p.name,p.av,"av big",p.me)}<div><h2>${esc(p.name)}</h2><span class="div">${ic("trophy")}${esc(DIVS[divOf(p.peak)][0])}${tr?` · ${tr} semaine${tr>1?"s":""} gagnée${tr>1?"s":""}`:""}</span>
+    ${p.me?`<button class="link" data-act="photo">Changer ma photo</button>`:""}</div></div>
+  <div class="pstats"><div><small>Jetons</small><b>${tok(p.bal)}</b></div><div><small>Record</small><b>${tok(p.peak)}</b></div><div><small>Réussite</small><b>${rate} %</b></div>
+    <div><small>Gagnés</small><b class="pos">${p.won}</b></div><div><small>Meilleure cote</small><b>${p.best&&p.best.odds?fr(p.best.odds):"—"}</b></div><div><small>Plus gros gain</small><b class="pos">${p.best&&p.best.pay?"+"+tok(p.best.pay):"—"}</b></div></div>
+  <div class="grp">Paris en cours (${open.length})</div>${open.length?open.map(bet).join(""):`<p class="note">Aucun pari en cours.</p>`}
+  <div class="grp">Derniers paris</div>${past.length?past.map(bet).join(""):`<p class="note">Pas encore de pari terminé.</p>`}`}
+
+/* ---------- photo de profil : choisir, déplacer, zoomer, valider ---------- */
+const PH={img:null,x:0,y:0,z:1,min:1,box:260,pts:new Map(),d0:0,z0:1};
+function openPhoto(){U.open="photo";layer(`<div class="grab"><h3>Ma photo</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
+  <div class="crop" id="crop"><div class="cimg" id="cimg">${S.avatar?`<img class="cur" src="${S.avatar}" alt="">`:""}</div><div class="cmask"></div>${S.avatar?"":`<div class="cempty">${ic("user")}<span>Aucune photo</span></div>`}</div>
+  <label class="zoom" id="zoomw" hidden>${ic("target")}<input type="range" id="zoom" min="1" max="4" step="0.01" value="1" aria-label="Zoom"></label>
+  <p class="note" id="phhint" style="text-align:center">${S.avatar?"Ta photo actuelle.":"Choisis une photo dans ta galerie ou prends-en une."}</p>
+  <label class="btn ghost wide" style="margin-bottom:8px">${ic("plus")} ${S.avatar?"Choisir une autre photo":"Choisir une photo"}<input type="file" id="phfile" accept="image/*" hidden></label>
+  <button class="btn gold wide" data-act="phok" id="phok" hidden>Valider ma photo</button>
+  ${S.avatar?`<button class="link" data-act="phdel" style="display:block;margin:10px auto 0;color:var(--loss)">Supprimer ma photo</button>`:""}`);
+  $("#phfile").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(f)loadPhoto(f)})}
+function loadPhoto(file){const url=URL.createObjectURL(file),img=new Image();
+  img.onload=()=>{PH.img=img;const B=PH.box=$("#crop").clientWidth;PH.min=Math.max(B/img.naturalWidth,B/img.naturalHeight);PH.z=1;PH.x=0;PH.y=0;
+    const w=$("#cimg");w.innerHTML="";w.appendChild(img);img.style.width=img.naturalWidth+"px";img.style.height=img.naturalHeight+"px";
+    const em=$(".cempty");if(em)em.remove();$("#zoomw").hidden=false;$("#zoom").value=1;$("#phok").hidden=false;
+    $("#phhint").textContent="Fais glisser pour placer ta photo, pince ou utilise le curseur pour zoomer.";placePhoto();bindCrop()};
+  img.onerror=()=>toast("Impossible de lire cette image.","bad");img.src=url}
+// garde la photo toujours plus grande que le cercle
+function placePhoto(){const im=PH.img;if(!im)return;const s=PH.min*PH.z,w=im.naturalWidth*s,h=im.naturalHeight*s,B=PH.box;
+  PH.x=cl(PH.x,(B-w)/2,(w-B)/2);PH.y=cl(PH.y,(B-h)/2,(h-B)/2);
+  im.style.transform=`translate(${(B-w)/2+PH.x}px,${(B-h)/2+PH.y}px) scale(${s})`}
+function bindCrop(){const el=$("#crop");if(el._b)return;el._b=1;
+  el.addEventListener("pointerdown",e=>{if(!PH.img)return;el.setPointerCapture(e.pointerId);PH.pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(PH.pts.size===2){const[a,b]=[...PH.pts.values()];PH.d0=Math.hypot(a.x-b.x,a.y-b.y);PH.z0=PH.z}});
+  el.addEventListener("pointermove",e=>{const p=PH.pts.get(e.pointerId);if(!p)return;const n={x:e.clientX,y:e.clientY};
+    if(PH.pts.size===1){PH.x+=n.x-p.x;PH.y+=n.y-p.y}
+    PH.pts.set(e.pointerId,n);
+    if(PH.pts.size===2){const[a,b]=[...PH.pts.values()];const d=Math.hypot(a.x-b.x,a.y-b.y);if(PH.d0)PH.z=cl(PH.z0*d/PH.d0,1,4);$("#zoom").value=PH.z}
+    placePhoto()});
+  const up=e=>{PH.pts.delete(e.pointerId);PH.d0=0};el.addEventListener("pointerup",up);el.addEventListener("pointercancel",up);
+  el.addEventListener("wheel",e=>{e.preventDefault();PH.z=cl(PH.z*(e.deltaY<0?1.08:1/1.08),1,4);$("#zoom").value=PH.z;placePhoto()},{passive:false});
+  $("#zoom").addEventListener("input",e=>{PH.z=+e.target.value;placePhoto()})}
+async function savePhoto(){const im=PH.img;if(!im)return;const B=PH.box,O=320,k=O/B,s=PH.min*PH.z,w=im.naturalWidth*s,h=im.naturalHeight*s;
+  const c=document.createElement("canvas");c.width=c.height=O;const g=c.getContext("2d");g.fillStyle="#0b1310";g.fillRect(0,0,O,O);
+  g.drawImage(im,((B-w)/2+PH.x)*k,((B-h)/2+PH.y)*k,w*k,h*k);
+  let url=c.toDataURL("image/jpeg",.85);if(url.length>150000)url=c.toDataURL("image/jpeg",.65);
+  const b=$("#phok");b.disabled=true;b.textContent="Envoi…";
+  try{if(!(await ensureSession()))throw{code:"offline"};const j=await api("set_avatar",{img:url});S.avatar=url;S.avv=j.v;save();closeLayer();bump();toast("Photo de profil enregistrée !","win");
+    if(U.lg.data)loadBoards()}
+  catch(e){b.disabled=false;b.textContent="Valider ma photo";toast(e.code==="image"?"Image trop lourde, zoome un peu plus.":"Pas de connexion au serveur.","bad")}}
+async function deletePhoto(){if(!confirm("Supprimer ta photo de profil ?"))return;
+  try{await api("set_avatar",{img:null});S.avatar=null;S.avv=0;save();closeLayer();toast("Photo supprimée.")}catch(e){toast("Pas de connexion au serveur.","bad")}}
 
 /* ---------- duels ---------- */
 async function loadDuels(){if(!S.tok)return;try{const j=await api("duels",{});U.lg.duels=j.duels;U.lg.duelsAt=Date.now();await checkDuels(j.duels,j.me)}catch(e){}
@@ -1458,9 +1554,9 @@ function viewDuels(cur){const D=(U.lg.duels||[]).filter(x=>x.code===cur.code),me
     else if(x.status==="expired")st=`<span class="tag void">Expiré</span>`;
     else st=x.winner==null?`<span class="tag void">Nul</span>`:`<span class="tag ${String(x.winner)===me?"won":iA||iB?"lost":"cashed"}">${String(x.winner)===me?"Gagné":esc(String(x.winner)===String(x.a)?x.aname:x.bname)+" gagne"}</span>`;
     return`<div class="duel"><div class="dh2"><b>${esc(x.mlabel)}</b>${st}</div><small>${fDay(x.t)} · ${fTime(x.t)} · mise ${tok(x.stake)} chacun</small>
-      <div class="vs"><div class="${x.status==="done"&&String(x.winner)===String(x.a)?"w":""}"><span class="av" style="background:${avc(x.aname)}">${esc(x.aname[0].toUpperCase())}</span><b>${esc(x.aname)}${iA?" (toi)":""}</b><em>${esc(duelPick(x,x.ka))}</em></div>
+      <div class="vs"><div class="${x.status==="done"&&String(x.winner)===String(x.a)?"w":""}"><span data-act="prof" data-id="${esc(x.a)}">${avatar(x.a,x.aname,x.aav,"av")}</span><b>${esc(x.aname)}${iA?" (toi)":""}</b><em>${esc(duelPick(x,x.ka))}</em></div>
       <span class="vsx">VS</span>
-      <div class="${x.status==="done"&&String(x.winner)===String(x.b)?"w":""}">${x.b?`<span class="av" style="background:${avc(x.bname||"?")}">${esc((x.bname||"?")[0].toUpperCase())}</span><b>${esc(x.bname||"?")}${iB?" (toi)":""}</b><em>${esc(duelPick(x,x.kb))}</em>`:`<span class="av q">?</span><b>Qui relève ?</b>`}</div></div>${act}</div>`}).join("")}
+      <div class="${x.status==="done"&&String(x.winner)===String(x.b)?"w":""}">${x.b?`<span data-act="prof" data-id="${esc(x.b)}">${avatar(x.b,x.bname||"?",x.bav,"av")}</span><b>${esc(x.bname||"?")}${iB?" (toi)":""}</b><em>${esc(duelPick(x,x.kb))}</em>`:`<span class="av q">?</span><b>Qui relève ?</b>`}</div></div>${act}</div>`}).join("")}
 async function acceptDuel(id,k){const x=(U.lg.duels||[]).find(y=>String(y.id)===String(id));if(!x)return;
   if(x.stake>S.bal){toast("Pas assez de jetons pour relever ce duel.","bad");return}
   if(!confirm(`Relever le duel ${x.mlabel} avec « ${duelPick(x,k)} » pour ${tok(x.stake)} jetons ?`))return;
@@ -1671,7 +1767,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.17";
+const VERSION="1.18";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

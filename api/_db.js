@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "6";
+const SCHEMA_VERSION = "7";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -99,6 +99,10 @@ const STATEMENTS = [
      winner bigint,
      created_at timestamptz not null default now())`,
   `create index if not exists duels_code on duels(code, created_at desc)`,
+  // photo de profil (JPEG recadré sur le téléphone, en base64) + paris visibles par les potes
+  `alter table players add column if not exists avatar text`,
+  `alter table players add column if not exists avatar_v int not null default 0`,
+  `alter table players add column if not exists bets jsonb`,
   `create table if not exists rate_hits (key text not null, win bigint not null, n int not null default 0, primary key (key, win))`,
 ];
 
