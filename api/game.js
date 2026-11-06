@@ -18,6 +18,8 @@ function admin(b) {
   const want = process.env.ADMIN_KEY || "", got = String(b.key || "");
   if (want.length < 24 || got.length !== want.length || !timingSafeEqual(Buffer.from(got), Buffer.from(want))) throw fail(403, "forbidden");
 }
+const ACT_KINDS = ["bet", "won", "cash", "wheel", "defis", "duel", "duelwin", "join"];
+const EMOS = ["🔥", "😂", "👏", "😱"];
 // violation de l'index unique sur le pseudo
 const isTaken = (e) => e && (e.code === "23505" || /players_name_u|duplicate key/i.test(String(e.message)));
 
@@ -124,6 +126,10 @@ const ACTIONS = {
   // Si le pseudo demandé est déjà pris, le reste est enregistré et on répond name_taken.
   async sync(s, b) {
     const p = await me(s, b.token);
+    await s.query(
+      `insert into weekly (player, week, gain)
+         select id, week, bal - coalesce(week_bal, bal) from players where id = $1 and week is not null and week <> ${WEEK}
+       on conflict do nothing`, [p.id]);
     await s.query(
       `update players set
          week_bal = case when week is distinct from ${WEEK} then bal else week_bal end,
@@ -251,8 +257,23 @@ const ACTIONS = {
     const leagues = await myLeagues(s, p.id);
     const code = cleanName(b.code, 8).toUpperCase();
     let rows, total = null, rank = null;
+    let trophies = {}, last = null;
     if (code && leagues.some((l) => l.code === code)) {
       rows = await s.query(`select ${BOARD_COLS} from players p join league_members m on m.player = p.id where m.code = $1`, [code]);
+      // gains par semaine des membres (y compris la semaine passée de ceux qui n'ont pas encore rouvert l'app)
+      const wk = await s.query(
+        `with mem as (select player from league_members where code = $1),
+         g as (select w.player, w.week, w.gain from weekly w join mem on mem.player = w.player
+               union all
+               select p.id, p.week, p.bal - coalesce(p.week_bal, p.bal) from players p join mem on mem.player = p.id
+                 where p.week is not null and p.week <> ${WEEK}
+                   and not exists (select 1 from weekly w2 where w2.player = p.id and w2.week = p.week)),
+         r as (select player, week, gain::float8 as gain, rank() over (partition by week order by gain desc) as rk from g)
+         select r.player, r.week, r.gain, r.rk, pl.name from r join players pl on pl.id = r.player where r.rk = 1 and r.gain > 0 order by r.week desc`, [code]);
+      for (const w of wk) trophies[w.player] = (trophies[w.player] || 0) + 1;
+      const prev = (await s.query(`select to_char(date_trunc('week', now() at time zone 'Europe/Paris') - interval '7 days', 'YYYY-MM-DD') as w`))[0].w;
+      const lw = wk.filter((w) => w.week === prev);
+      if (lw.length) last = { week: prev, winners: lw.map((w) => ({ id: w.player, name: w.name, gain: Math.round(w.gain) })) };
     } else {
       // général : les 100 meilleurs de la semaine et au total, plus ma place
       rows = await s.query(
@@ -266,9 +287,105 @@ const ACTIONS = {
         `select count(*)::int + 1 as r from players where seen_at > now() - interval '60 days' and bal > (select bal from players where id = $1)`, [p.id]))[0].r;
     }
     return {
-      me: p.id, leagues, code: code && leagues.some((l) => l.code === code) ? code : "", total, rank,
-      rows: rows.map((r) => ({ id: r.id, name: r.name, bal: Math.round(r.bal), peak: Math.round(r.peak), won: r.won, lost: r.lost, week: Math.round(r.week_gain) })),
+      me: p.id, leagues, code: code && leagues.some((l) => l.code === code) ? code : "", total, rank, last,
+      rows: rows.map((r) => ({ id: r.id, name: r.name, bal: Math.round(r.bal), peak: Math.round(r.peak), won: r.won, lost: r.lost, week: Math.round(r.week_gain), tr: trophies[r.id] || 0 })),
     };
+  },
+
+  // ---- Fil d'activité ----
+  async act(s, b) {
+    const p = await me(s, b.token);
+    const kind = String(b.kind || "");
+    if (!ACT_KINDS.includes(kind)) throw fail(400, "kind");
+    const json = JSON.stringify(b.data && typeof b.data === "object" ? b.data : {});
+    if (json.length > 2000) throw fail(400, "too_big");
+    const n = (await s.query(`select count(*)::int as n from activity where player = $1 and at > now() - interval '1 hour'`, [p.id]))[0].n;
+    if (n >= 120) return { ok: true };
+    await s.query(`insert into activity (player, kind, data) values ($1, $2, $3::jsonb)`, [p.id, kind, json]);
+    return { ok: true };
+  },
+
+  async feed(s, b) {
+    const p = await me(s, b.token);
+    const code = cleanName(b.code, 8).toUpperCase();
+    const inL = code && (await s.query(`select 1 from league_members where code = $1 and player = $2`, [code, p.id]))[0];
+    if (!inL) throw fail(403, "not_member");
+    const rows = await s.query(
+      `select a.id, a.player, pl.name, a.kind, a.data, extract(epoch from a.at) * 1000 as ms,
+         coalesce((select jsonb_object_agg(emo, n) from (select emo, count(*)::int as n from reactions r where r.act = a.id group by emo) x), '{}') as reacts,
+         (select emo from reactions r where r.act = a.id and r.player = $2) as mine
+       from activity a join league_members m on m.player = a.player and m.code = $1 join players pl on pl.id = a.player
+       where a.at > now() - interval '7 days' order by a.at desc limit 60`, [code, p.id]);
+    return { me: p.id, items: rows.map((r) => ({ id: r.id, who: r.player, name: r.name, kind: r.kind, data: r.data, at: Math.round(Number(r.ms)), reacts: r.reacts, mine: r.mine })) };
+  },
+
+  async react(s, b) {
+    const p = await me(s, b.token);
+    const emo = String(b.emo || "");
+    if (!EMOS.includes(emo)) throw fail(400, "emo");
+    const id = int(b.act, 0, 1e15);
+    const cur = (await s.query(`select emo from reactions where act = $1 and player = $2`, [id, p.id]))[0];
+    if (cur && cur.emo === emo) await s.query(`delete from reactions where act = $1 and player = $2`, [id, p.id]);
+    else await s.query(`insert into reactions (act, player, emo) values ($1, $2, $3) on conflict (act, player) do update set emo = excluded.emo`, [id, p.id, emo]);
+    return { ok: true };
+  },
+
+  // ---- Duels entre membres d'une ligue (sur le résultat d'un vrai match) ----
+  // Les jetons restent gérés par chaque téléphone : le serveur garde l'état du duel et son vainqueur.
+  async duel_create(s, b) {
+    const p = await me(s, b.token);
+    const code = cleanName(b.code, 8).toUpperCase();
+    if (!(await s.query(`select 1 from league_members where code = $1 and player = $2`, [code, p.id]))[0]) throw fail(403, "not_member");
+    const t = Number(b.t), stake = int(b.stake, 1, 1e6), ka = int(b.ka, 0, 2);
+    if (!Number.isFinite(t) || t < Date.now() + 60e3) throw fail(400, "started");
+    const opts = (Array.isArray(b.opts) ? b.opts : []).slice(0, 3).map((x) => cleanName(x, 32));
+    const n = (await s.query(`select count(*)::int as n from duels where a = $1 and created_at > now() - interval '1 day'`, [p.id]))[0].n;
+    if (n >= 20) throw fail(429, "slow_down");
+    const r = await s.query(
+      `insert into duels (code, a, mid, mlabel, opts, t, ka, stake) values ($1, $2, $3, $4, $5::jsonb, to_timestamp($6::float8 / 1000), $7, $8) returning id`,
+      [code, p.id, cleanName(b.mid, 80), cleanName(b.mlabel, 80), JSON.stringify(opts), t, ka, stake]);
+    return { id: r[0].id };
+  },
+
+  async duel_accept(s, b) {
+    const p = await me(s, b.token);
+    const kb = int(b.kb, 0, 2);
+    const r = await s.query(
+      `update duels d set b = $2, kb = $3, status = 'live'
+       where d.id = $1 and d.status = 'open' and d.a <> $2 and d.ka <> $3 and d.t > now()
+         and exists (select 1 from league_members m where m.code = d.code and m.player = $2)
+       returning id, stake`, [int(b.id, 0, 1e15), p.id, kb]);
+    if (!r[0]) throw fail(400, "unavailable");
+    return { ok: true, stake: r[0].stake };
+  },
+
+  // Le premier téléphone qui voit le match terminé donne le résultat (0, 1 ou 2) ; un duel jamais relevé expire.
+  async duel_result(s, b) {
+    const p = await me(s, b.token);
+    const id = int(b.id, 0, 1e15), res = int(b.res, 0, 2);
+    const d = (await s.query(`select d.* from duels d join league_members m on m.code = d.code and m.player = $2 where d.id = $1`, [id, p.id]))[0];
+    if (!d) throw fail(404, "unknown");
+    if (d.status === "live" && new Date(d.t).getTime() < Date.now()) {
+      const winner = d.ka === res ? d.a : d.kb === res ? d.b : null;
+      await s.query(`update duels set status = 'done', res = $2, winner = $3 where id = $1 and status = 'live'`, [id, res, winner]);
+    }
+    return { ok: true };
+  },
+
+  async duels(s, b) {
+    const p = await me(s, b.token);
+    const code = cleanName(b.code, 8).toUpperCase();
+    // les duels jamais relevés avant le coup d'envoi expirent
+    await s.query(`update duels set status = 'expired' where status = 'open' and t < now()`);
+    const rows = await s.query(
+      `select d.id, d.code, d.a, pa.name as aname, d.b, pb.name as bname, d.mid, d.mlabel, d.opts, extract(epoch from d.t) * 1000 as tms,
+         d.ka, d.kb, d.stake, d.status, d.res, d.winner
+       from duels d join players pa on pa.id = d.a left join players pb on pb.id = d.b
+       where ${code ? "d.code = $2" : "d.code in (select code from league_members where player = $1)"}
+         and (d.a = $1 or d.b = $1 or d.status = 'open' or d.created_at > now() - interval '3 days')
+         and exists (select 1 from league_members m where m.code = d.code and m.player = $1)
+       order by d.created_at desc limit 40`, code ? [p.id, code] : [p.id]);
+    return { me: p.id, duels: rows.map((d) => ({ ...d, t: Math.round(Number(d.tms)), tms: undefined })) };
   },
 
   // Enregistre les choix du joueur (un par match et par marché) pour « ce que parient les autres »

@@ -292,6 +292,25 @@ body.gated{padding-bottom:calc(24px + var(--safe-b))}
 .steps b{color:var(--ink)}.steps .i{width:20px;height:20px;vertical-align:-4px}.steps small{display:block;color:var(--mute);font-size:12.5px;margin-top:3px}
 .xcode{text-align:center;background:var(--card);border:1px dashed var(--sel);border-radius:14px;padding:12px}
 .xcode small{display:block;color:var(--mute);font-size:12.5px}.xcode b{display:block;font:800 34px/1.2 "Barlow Condensed";letter-spacing:4px;color:var(--sel);margin:4px 0 8px}
+/* ligues vivantes */
+.champ{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#4a3a05,var(--card) 70%);border:1px solid #8a6d10;border-radius:14px;padding:10px 14px;margin-bottom:12px}
+.champ .i{width:30px;height:30px;color:var(--sel);flex:none}.champ small{display:block;color:#e8d79a;font-size:12px;text-transform:uppercase;letter-spacing:.8px;font-weight:700}.champ b{font:800 19px "Barlow Condensed"}
+.tabs3 button{position:relative}.pill{display:inline-grid;place-items:center;min-width:18px;height:18px;border-radius:9px;background:var(--sel);color:var(--sel-ink);font:800 11px Barlow;padding:0 5px;margin-left:3px}
+.trs{display:inline-flex;align-items:center;gap:1px;color:var(--sel);font:800 13px "Barlow Condensed";vertical-align:1px}.trs .i{width:14px;height:14px}
+.act{display:flex;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
+.act .av{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font:800 17px "Barlow Condensed";color:#0b1310;flex:none}
+.act>div{flex:1;min-width:0}.act p{margin:0;font-size:14.5px;line-height:1.35}.act p .i{width:15px;height:15px;color:var(--sel);vertical-align:-2px}.act .mut{color:var(--mute)}
+.act small{color:var(--mute2);font-size:12px}
+.reacts{display:flex;gap:6px;margin-top:6px}.reacts button{border:1px solid var(--line2);background:var(--card);border-radius:999px;padding:3px 9px;font-size:15px;line-height:1.2}
+.reacts button span{font:700 12px Barlow;color:var(--mute)}.reacts button[aria-pressed="true"]{border-color:var(--sel);background:color-mix(in srgb,var(--sel) 15%,var(--card))}
+.duel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
+.duel .dh2{display:flex;justify-content:space-between;align-items:center;gap:8px}.duel .dh2 b{font-weight:700}.duel>small{color:var(--mute);font-size:12.5px}
+.duel .vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-top:10px;text-align:center}
+.duel .vs>div{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border-radius:12px;min-width:0}.duel .vs>div.w{background:color-mix(in srgb,var(--win) 15%,transparent);outline:1px solid var(--win)}
+.duel .vs .av{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;font:800 18px "Barlow Condensed";color:#0b1310}.duel .vs .av.q{background:var(--card3);color:var(--mute)}
+.duel .vs b{font-size:14px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.duel .vs em{font-style:normal;color:var(--sel);font:800 16px "Barlow Condensed"}
+.duel .vsx{font:800 italic 22px "Barlow Condensed";color:var(--mute2)}
+.dacc{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px}.dacc small{width:100%;color:var(--mute)}.dacc .btn{flex:1;padding:10px;font-size:16px}
 /* joueurs */
 .phead,.prow2{display:grid;grid-template-columns:1fr 64px 64px 64px;gap:6px;align-items:center}
 .phead{font:700 11px Barlow;text-transform:uppercase;letter-spacing:.8px;color:var(--mute);margin:2px 0 4px}.phead span{text-align:center}
@@ -553,7 +572,7 @@ const LS="dap.v2";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(LS));if(x&&x.v===2)return x}catch(e){}return{v:2,name:"",bal:1000,peak:1000,bonus:"",bets:[],org:[],orgMode:false,sim:true,seen:0}})();
 const saveLocal=()=>{try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}};
 const save=()=>{saveLocal();syncSoon()};
-const U={lg:{code:"",data:null,err:null,loading:false,mode:"week"},tab:"m",sp:"foot",lv:-1,dep:"",sel:[],combo:true,stake:20,open:null,dtab:"p",btab:"o"};
+const U={lg:{code:"",data:null,err:null,loading:false,mode:"week",view:"rank"},tab:"m",sp:"foot",lv:-1,dep:"",sel:[],combo:true,stake:20,open:null,dtab:"p",btab:"o"};
 const REG=new Map(),FEED={},MCC=new Map(),MKC=new Map(),ONE=new Map();
 
 /* ---------- simulateurs (un match = un tirage) ---------- */
@@ -949,7 +968,7 @@ function viewDetail(m){const st=status(m),mks=markets(m),res=mks.find(x=>x.id===
     let g="";for(const mk of mks){if(mk.d.grp!==g){g=mk.d.grp;h+=`<div class="grp">${esc(g)}</div>`}
       const n=mk.sels.length;h+=`<div class="mkt"><h4>${ic(mk.d.ic,mk.d.cls||"")}${esc(mk.title)}${mk.line!=null?`<small>ligne ${fr(mk.line,1)}</small>`:""}</h4>
       <div class="odds c${n===3?3:2}">${mk.sels.map((s,k)=>oddBtn(m,mk,k,s)).join("")}</div>${crowd(m,mk)}</div>`;
-      if(mk.id==="res")h+=playersBlock(m)}
+      if(mk.id==="res")h+=duelButton(m)+playersBlock(m)}
     if(m.src==="espn"&&m.sp!=="foot")h+=`<p class="note">Pour ce flux, seuls les paris que l’on peut régler automatiquement sont proposés.</p>`}
   if(U.sel.length&&canBet(m))h+=slipPanel();
   return h}
@@ -1032,7 +1051,7 @@ function cashValue(b){if(b.st!=="open"||b.legs.some(L=>L.r==="l"||L.r==="v"))ret
 function cashOut(id){const b=S.bets.find(x=>x.id===id);const v=b&&cashValue(b);if(!v){toast("Encaissement plus possible pour ce pari.","bad");render();return}
   if(!confirm(`Encaisser ce pari maintenant pour ${tok(v)} jetons ?\n(Gain possible si tu attends : ${tok(b.stake*b.odds)})`))return;
   const v2=cashValue(b);if(!v2){toast("Le match a bougé : encaissement plus possible.","bad");render();return}
-  b.st="cashed";b.pay=v2;b.done=Date.now();S.bal+=v2;S.peak=Math.max(S.peak,S.bal);save();render();bump();toast(`${ic("coin")} Encaissé : +${tok(v2)} jetons`,"win")}
+  b.st="cashed";b.pay=v2;postAct("cash",{pay:v2,stake:b.stake});b.done=Date.now();S.bal+=v2;S.peak=Math.max(S.peak,S.bal);save();render();bump();toast(`${ic("coin")} Encaissé : +${tok(v2)} jetons`,"win")}
 function legStatus(L){return L.r==="w"?`<span class="st w">✓</span>`:L.r==="l"?`<span class="st l">✗</span>`:L.r==="v"?`<span class="st v">↺</span>`:`<span class="st p"></span>`}
 function viewBets(){const B=S.bets.slice().reverse(),op=B.filter(b=>b.st==="open"),cl_=B.filter(b=>b.st!=="open");
   const W=cl_.filter(b=>b.st==="won").length,Lo=cl_.filter(b=>b.st==="lost").length,rate=W+Lo?W/(W+Lo):0;
@@ -1155,7 +1174,8 @@ async function settle(){if(settling)return;settling=true;
         if(!live.length){b.st="void";b.pay=b.stake;S.bal+=b.stake;voids++}
         else{const G=b.groups||{};let o=1;const by={};live.forEach(L=>(by[L.mid]=by[L.mid]||[]).push(L));
           for(const mid in by){const all=b.legs.filter(L=>L.mid===mid);o*=G[mid]&&all.every(L=>L.r==="w")?G[mid]:by[mid].reduce((a,L)=>a*L.o,1)}
-          b.odds=Math.round(o*100)/100;b.pay=Math.round(b.stake*b.odds);b.st="won";S.bal+=b.pay;gain+=b.pay;won++}}}
+          b.odds=Math.round(o*100)/100;b.pay=Math.round(b.stake*b.odds);b.st="won";S.bal+=b.pay;gain+=b.pay;won++;
+          if(won<=3)postAct("won",{pay:b.pay,odds:b.odds,legs:b.legs.slice(0,3).map(L=>L.l)})}}}
     if(won||lost||voids){S.peak=Math.max(S.peak,S.bal);save();render();bump();
       if(won){toast(`${ic("trophy")} ${won} pari${won>1?"s":""} gagné${won>1?"s":""} : +${tok(gain)} jetons !`,"win");confetti()}
       if(lost)toast(`${lost} pari${lost>1?"s":""} perdu${lost>1?"s":""}. La revanche ?`);
@@ -1193,6 +1213,8 @@ function place(){const n=U.sel.length;if(!n)return;const stake=Math.floor(U.stak
   S.bal-=cost;const at=Date.now();
   if(combo)S.bets.push({id:"b"+at,at,stake,odds:slipOdds(),groups:comboInfo().groups,legs:U.sel.map(leg),st:"open"});
   else U.sel.forEach((s,i)=>S.bets.push({id:"b"+at+"-"+i,at,stake,odds:s.o,legs:[leg(s)],st:"open"}));
+  {const placed=combo?[S.bets[S.bets.length-1]]:S.bets.slice(-n);
+    postAct("bet",{legs:U.sel.slice(0,4).map(s=>s.l+(s.mk==="res"||PMK[s.mk]?"":" ("+s.mt+")")),stake:cost,odds:combo?slipOdds():(n===1?U.sel[0].o:null),n:combo?n:1})}
   sendPicks(U.sel);U.sel=[];save();setTimeout(checkDefis,900);U.open=null;layer("");U.tab="b";U.btab="o";render();bump();window.scrollTo({top:0,behavior:"smooth"});
   toast(`${ic("ticket")} Pari validé ! Bonne chance.`,"win")}
 
@@ -1201,8 +1223,15 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
   e.stopPropagation();
   switch(a){
     case"tab":U.tab=d.tab;U.open=null;layer("");render();window.scrollTo({top:0});if(d.tab==="l")loadBoards();break;
-    case"lgsel":U.lg.code=d.code;render();loadBoards();break;
+    case"lgsel":U.lg.code=d.code;U.lg.feed=null;U.lg.view=U.lg.view||"rank";render();loadBoards();break;
     case"lgmode":U.lg.mode=d.v;render();break;
+    case"lgview":U.lg.view=d.v;render();if(d.v==="feed")loadActFeed();if(d.v==="duels")loadDuels();break;
+    case"react":reactTo(d.id,d.e);break;
+    case"daccept":acceptDuel(d.id,+d.k);break;
+    case"dnew":if(!S.tok){toast("Connexion au serveur nécessaire.","bad");break}U.open="duel";layer(viewDuelNew(findMatch(d.mid)));break;
+    case"dset":U.dn[d.f]=d.f==="code"?d.v:+d.v;layer(viewDuelNew(findMatch($("[data-act=dgo]").dataset.mid)));break;
+    case"dback":U.open=d.mid;layer(viewDetail(findMatch(d.mid)));break;
+    case"dgo":createDuel(d.mid);break;
     case"lgnew":U.open="lgform";layer(viewLgForm("new"));setTimeout(()=>$("#lg-in")&&$("#lg-in").focus(),60);break;
     case"lgjoin":U.open="lgform";layer(viewLgForm("join"));setTimeout(()=>$("#lg-in")&&$("#lg-in").focus(),60);break;
     case"lgok":lgSubmit(d.kind);break;
@@ -1348,6 +1377,11 @@ function viewLeagues(){const L=U.lg,d=L.data;
   if(cur)h+=`<div class="lgcard"><h3>${esc(cur.name)}</h3><small>${cur.n} membre${cur.n>1?"s":""}${cur.mine?" · tu l’as créée":""}</small>
     <div class="lgcode"><div><small>Code de la ligue</small><br><b>${esc(cur.code)}</b></div><button class="btn gold" data-act="lginv">${ic("share")} Inviter</button></div></div>`;
   else h+=`<div class="lgcard"><h3>Classement général</h3><small>Tous les joueurs${d.rank?` · tu es <b style="color:var(--sel)">${d.rank}<sup>e</sup></b> sur ${d.total}`:""}</small></div>`;
+  if(cur&&d.last)h+=`<div class="champ">${ic("trophy")}<div><small>Vainqueur${d.last.winners.length>1?"s":""} de la semaine dernière</small><b>${d.last.winners.map(w=>esc(w.name)+` <span class="pos">+${tok(w.gain)}</span>`).join(" · ")}</b></div></div>`;
+  if(cur){const nd=(L.duels||[]).filter(x=>x.status==="open"&&String(x.a)!==String(d.me)).length;
+    h+=`<div class="seg tabs3"><button data-act="lgview" data-v="rank" aria-pressed="${L.view==="rank"}">Classement</button><button data-act="lgview" data-v="feed" aria-pressed="${L.view==="feed"}">Activité</button><button data-act="lgview" data-v="duels" aria-pressed="${L.view==="duels"}">Duels${nd?` <span class="pill">${nd}</span>`:""}</button></div>`;
+    if(L.view==="feed")return h+viewFeed()+lgFooter(cur);
+    if(L.view==="duels")return h+viewDuels(cur)+lgFooter(cur)}
   h+=`<div class="seg"><button data-act="lgmode" data-v="week" aria-pressed="${L.mode==="week"}">Cette semaine</button><button data-act="lgmode" data-v="total" aria-pressed="${L.mode==="total"}">Jetons</button></div>`;
   const key=L.mode==="week"?"week":"bal",rows=d.rows.slice().sort((a,b)=>b[key]-a[key]||b.bal-a.bal).slice(0,cur?60:50);
   const val=r=>L.mode==="week"?(r.week>0?"+":"")+tok(r.week):tok(r.bal);
@@ -1356,12 +1390,102 @@ function viewLeagues(){const L=U.lg,d=L.data;
     h+=`<div class="podium">${P.map((r,i)=>`<div class="pod"><div class="av" style="background:${avc(r.name)}">${esc(r.name[0].toUpperCase())}</div><b>${esc(r.name)}${r.id===d.me?" (toi)":""}</b><span class="${L.mode==="week"?(r.week>=0?"pos":"neg"):""}">${val(r)}</span>
       <div class="blk" style="height:${H[i]}px;background:${["#c9d3dc","#ffd23f","#e0975a"][i]}">${[2,1,3][i]}</div></div>`).join("")}</div>`}
   h+=rows.map((r,i)=>i<3&&rows.length>=3?"":`<div class="prow${r.id===d.me?" me":""}"><span class="rk">${i+1}</span><span class="av" style="background:${avc(r.name)}">${esc(r.name[0].toUpperCase())}</span>
-    <div><b>${esc(r.name)}${r.id===d.me?" (toi)":""}</b><small>${r.won} gagné${r.won>1?"s":""} · ${r.lost} perdu${r.lost>1?"s":""} · record ${tok(r.peak)}</small></div>
+    <div><b>${esc(r.name)}${r.id===d.me?" (toi)":""}${r.tr?` <span class="trs">${ic("trophy")}${r.tr>1?r.tr:""}</span>`:""}</b><small>${r.won} gagné${r.won>1?"s":""} · ${r.lost} perdu${r.lost>1?"s":""} · record ${tok(r.peak)}</small></div>
     <span class="v ${L.mode==="week"?(r.week>=0?"pos":"neg"):""}">${val(r)}</span></div>`).join("");
   if(!cur&&d.rank&&!rows.some(r=>r.id===d.me))h+=`<div class="note" style="text-align:center">…</div>`;
-  h+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px"><button class="btn" data-act="lgnew">${ic("plus")} Créer</button><button class="btn ghost" data-act="lgjoin">Rejoindre</button></div>
-  <p class="note">« Cette semaine » = jetons gagnés depuis lundi : le classement repart à zéro chaque semaine, tout le monde a sa chance.${cur?` <button class="link" data-act="lgleave" style="color:var(--loss)">Quitter la ligue</button>`:""}</p>`;
-  return h+foot()}
+  return h+`<p class="note">« Cette semaine » = jetons gagnés depuis lundi : le classement repart à zéro chaque semaine. Le meilleur de la semaine gagne un trophée ${ic("trophy")}.</p>`+lgFooter(cur)}
+function lgFooter(cur){return`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px"><button class="btn" data-act="lgnew">${ic("plus")} Créer</button><button class="btn ghost" data-act="lgjoin">Rejoindre</button></div>
+  ${cur?`<p class="note"><button class="link" data-act="lgleave" style="color:var(--loss)">Quitter la ligue</button></p>`:""}`+foot()}
+
+/* ---------- fil d'activité de la ligue ---------- */
+const EMOS=["🔥","😂","👏","😱"];
+function postAct(kind,data){if(!S.name)return;ensureSession().then(ok=>ok&&api("act",{kind,data}).catch(()=>{}))}
+function ago(t){const m=Math.round((Date.now()-t)/6e4);return m<1?"à l’instant":m<60?`il y a ${m} min`:m<1440?`il y a ${Math.round(m/60)} h`:`il y a ${Math.round(m/1440)} j`}
+async function loadActFeed(){const c=U.lg.code;if(!c)return;try{const j=await api("feed",{code:c});if(U.lg.code===c){U.lg.feed=j.items;U.lg.feedAt=Date.now()}}catch(e){U.lg.feed=U.lg.feed||[]}
+  if(U.tab==="l"&&!U.open)render()}
+function actText(a){const d=a.data||{};const legs=(d.legs||[]).map(esc).join(" + ");
+  switch(a.kind){
+    case"bet":return`a parié <b>${tok(d.stake||0)}</b> sur ${legs||"un match"}${d.n>1&&d.odds?` <span class="mut">(combiné · cote ${fr(+d.odds)})</span>`:d.odds?` <span class="mut">@ ${fr(+d.odds)}</span>`:""}`;
+    case"won":return`a gagné <b class="pos">+${tok(d.pay||0)}</b> ${ic("trophy")}${legs?` <span class="mut">${legs}</span>`:""}`;
+    case"cash":return`a encaissé <b>${tok(d.pay||0)}</b> avant la fin`;
+    case"wheel":return`a gagné <b>${tok(d.v||0)}</b> à la roue de la chance`;
+    case"defis":return`a réussi les 3 défis du jour`;
+    case"duel":if(d.acc)return`relève le duel de ${esc(d.opp||"?")} : <b>${esc(d.pick||"")}</b> sur ${esc(d.mlabel||"")} <span class="mut">(${tok(d.stake||0)} jetons)</span>`;
+      return`lance un duel : <b>${esc(d.pick||"")}</b> sur ${esc(d.mlabel||"")} <span class="mut">(${tok(d.stake||0)} jetons)</span>`;
+    case"duelwin":return`remporte son duel${d.opp?` contre ${esc(d.opp)}`:""} : <b class="pos">+${tok(d.pay||0)}</b>`;
+    case"join":return`a rejoint la ligue`;
+  }return""}
+function viewFeed(){const F=U.lg.feed;if(!F){loadActFeed();return`<div class="skel" style="height:80px"></div><div class="skel" style="height:80px"></div>`}
+  if(Date.now()-(U.lg.feedAt||0)>3e4)setTimeout(loadActFeed,0);
+  if(!F.length)return`<div class="empty">${ic("group")}<b>Rien pour l’instant</b>Les paris, gains et duels des membres s’afficheront ici.</div>`;
+  return F.map(a=>`<div class="act"><span class="av" style="background:${avc(a.name)}">${esc(a.name[0].toUpperCase())}</span><div>
+    <p><b>${esc(a.name)}${String(a.who)===String(U.lg.data.me)?" (toi)":""}</b> ${actText(a)}</p><small>${ago(a.at)}</small>
+    <div class="reacts">${EMOS.map(e=>{const n=(a.reacts||{})[e]||0;return`<button data-act="react" data-id="${esc(a.id)}" data-e="${e}" aria-pressed="${a.mine===e}">${e}${n?` <span>${n}</span>`:""}</button>`}).join("")}</div></div></div>`).join("")}
+async function reactTo(id,e){const a=(U.lg.feed||[]).find(x=>String(x.id)===String(id));if(!a)return;const r=a.reacts=a.reacts||{};
+  if(a.mine){r[a.mine]=Math.max(0,(r[a.mine]||1)-1)}if(a.mine===e)a.mine=null;else{a.mine=e;r[e]=(r[e]||0)+1}render();
+  api("react",{act:id,emo:e}).catch(()=>{})}
+
+/* ---------- duels ---------- */
+async function loadDuels(){if(!S.tok)return;try{const j=await api("duels",{});U.lg.duels=j.duels;U.lg.duelsAt=Date.now();await checkDuels(j.duels,j.me)}catch(e){}
+  if(U.tab==="l"&&!U.open)render()}
+const myDuel=id=>(S.duel||{})[id];
+async function checkDuels(D,me){let changed=false;S.duel=S.duel||{};
+  for(const x of D){const mine=myDuel(x.id);if(!mine)continue;
+    if(x.status==="live"&&Date.now()>x.t+90*6e4){let m=REG.get(x.mid);if(!m&&mine.snap&&!mine.ref){mine.ref=1;await espnRefetch({...mine.snap,t:x.t});m=REG.get(x.mid)}
+      const sc=m&&status(m)==="post"&&!m.cancel&&finalScore(m);
+      if(sc){const res=m.sp==="tennis"?(sc[0]>sc[1]?0:1):cmp3(sc);await api("duel_result",{id:x.id,res}).catch(()=>{});x.status="done";x.res=res;
+        x.winner=x.ka===res?x.a:x.kb===res?x.b:null}
+      else if(m&&(m.cancel||status(m)==="cancel")){x.status="done";x.winner=null}}
+    if(mine.settled)continue;
+    if(x.status==="done"){mine.settled=1;changed=true;
+      if(x.winner==null){S.bal+=mine.stake;toast(`Duel ${esc(x.mlabel)} : personne n’a vu juste, mise remboursée.`)}
+      else if(String(x.winner)===String(me)){S.bal+=2*mine.stake;toast(`${ic("trophy")} Duel gagné : +${tok(2*mine.stake)} jetons !`,"win");confetti();
+        postAct("duelwin",{mlabel:x.mlabel,pay:2*mine.stake,opp:String(x.a)===String(me)?x.bname:x.aname})}
+      else toast(`Duel perdu sur ${esc(x.mlabel)}. La revanche ?`)}
+    else if(x.status==="expired"){mine.settled=1;changed=true;S.bal+=mine.stake;toast(`Personne n’a relevé ton duel ${esc(x.mlabel)} : ${tok(mine.stake)} jetons remboursés.`)}}
+  if(changed){S.peak=Math.max(S.peak,S.bal);save();render();bump()}}
+function duelPick(x,k){return(x.opts||[])[k]||["1","N","2"][k]}
+function viewDuels(cur){const D=(U.lg.duels||[]).filter(x=>x.code===cur.code),me=String(U.lg.data.me);
+  if(!U.lg.duels){loadDuels();return`<div class="skel" style="height:90px"></div>`}
+  if(Date.now()-(U.lg.duelsAt||0)>3e4)setTimeout(loadDuels,0);
+  let h=`<div class="info">${ic("info")}<span>Ouvre un match à venir et touche <b style="color:var(--ink)">Défier ma ligue</b> : tu choisis ton pronostic et ta mise. Le premier qui relève avec un autre pronostic mise autant, et le gagnant empoche tout.</span></div>`;
+  if(!D.length)return h+`<div class="empty">${ic("target")}<b>Aucun duel</b>Lance le premier !</div>`;
+  return h+D.map(x=>{const iA=String(x.a)===me,iB=String(x.b)===me,start=Date.now()<x.t;
+    let st="",act="";
+    if(x.status==="open"){st=`<span class="tag open">En attente</span>`;
+      if(!iA&&start)act=`<div class="dacc"><small>Relever le défi (${tok(x.stake)} jetons) :</small>${(x.opts||[]).map((o,k)=>k===x.ka?"":`<button class="btn ghost" data-act="daccept" data-id="${esc(x.id)}" data-k="${k}">${esc(o)}</button>`).join("")}</div>`}
+    else if(x.status==="live")st=`<span class="tag open">${start?"Relevé":"En cours"}</span>`;
+    else if(x.status==="expired")st=`<span class="tag void">Expiré</span>`;
+    else st=x.winner==null?`<span class="tag void">Nul</span>`:`<span class="tag ${String(x.winner)===me?"won":iA||iB?"lost":"cashed"}">${String(x.winner)===me?"Gagné":esc(String(x.winner)===String(x.a)?x.aname:x.bname)+" gagne"}</span>`;
+    return`<div class="duel"><div class="dh2"><b>${esc(x.mlabel)}</b>${st}</div><small>${fDay(x.t)} · ${fTime(x.t)} · mise ${tok(x.stake)} chacun</small>
+      <div class="vs"><div class="${x.status==="done"&&String(x.winner)===String(x.a)?"w":""}"><span class="av" style="background:${avc(x.aname)}">${esc(x.aname[0].toUpperCase())}</span><b>${esc(x.aname)}${iA?" (toi)":""}</b><em>${esc(duelPick(x,x.ka))}</em></div>
+      <span class="vsx">VS</span>
+      <div class="${x.status==="done"&&String(x.winner)===String(x.b)?"w":""}">${x.b?`<span class="av" style="background:${avc(x.bname||"?")}">${esc((x.bname||"?")[0].toUpperCase())}</span><b>${esc(x.bname||"?")}${iB?" (toi)":""}</b><em>${esc(duelPick(x,x.kb))}</em>`:`<span class="av q">?</span><b>Qui relève ?</b>`}</div></div>${act}</div>`}).join("")}
+async function acceptDuel(id,k){const x=(U.lg.duels||[]).find(y=>String(y.id)===String(id));if(!x)return;
+  if(x.stake>S.bal){toast("Pas assez de jetons pour relever ce duel.","bad");return}
+  if(!confirm(`Relever le duel ${x.mlabel} avec « ${duelPick(x,k)} » pour ${tok(x.stake)} jetons ?`))return;
+  try{await api("duel_accept",{id,kb:k});S.bal-=x.stake;S.duel=S.duel||{};S.duel[id]={stake:x.stake,snap:null};const m=REG.get(x.mid);if(m&&m.src==="espn")S.duel[id].snap={path:m.path,sp:m.sp,lv:m.lv};
+    save();bump();toast(`${ic("target")} Défi relevé ! Que le meilleur gagne.`,"win");postAct("duel",{mlabel:x.mlabel,pick:duelPick(x,k),stake:x.stake,acc:1,opp:x.aname});await loadDuels()}
+  catch(e){toast(e.code==="unavailable"?"Trop tard : ce duel a déjà été relevé ou le match a commencé.":"Pas de connexion au serveur.","bad");loadDuels()}}
+// création depuis la fiche d'un match
+function duelButton(m){if(m.src!=="espn"||status(m)!=="pre"||m.t-Date.now()<2*6e4||!U.lg.data||!U.lg.data.leagues.length)return"";
+  return`<button class="btn ghost wide" data-act="dnew" data-mid="${esc(m.id)}" style="margin:6px 0 4px">${ic("target")} Défier ma ligue sur ce match</button>`}
+function viewDuelNew(m){const L=U.lg.data.leagues,res=markets(m).find(x=>x.id==="res"),opts=res.sels.map(x=>x.l);U.dn=U.dn||{k:0,stake:50,code:L[0].code};if(!L.some(l=>l.code===U.dn.code))U.dn.code=L[0].code;
+  return`<div class="grab"><h3>Défier ma ligue</h3><button class="x" data-act="dback" data-mid="${esc(m.id)}" aria-label="Retour">${ic("x")}</button></div>
+  <p class="note" style="margin-top:0">${esc(m.h)} – ${esc(m.a)} · ${fDay(m.t)} ${fTime(m.t)}</p>
+  ${L.length>1?`<div class="lgchips">${L.map(l=>`<button data-act="dset" data-f="code" data-v="${esc(l.code)}" aria-pressed="${U.dn.code===l.code}">${esc(l.name)}</button>`).join("")}</div>`:""}
+  <div class="grp" style="margin-top:4px">Ton pronostic</div><div class="odds c${opts.length}">${opts.map((o,k)=>`<button class="odd" data-act="dset" data-f="k" data-v="${k}" aria-pressed="${U.dn.k===k}"><span>${esc(o)}</span></button>`).join("")}</div>
+  <div class="grp">Mise (chacun)</div><div class="chips">${[20,50,100,250].map(v=>`<button data-act="dset" data-f="stake" data-v="${v}" aria-pressed="${U.dn.stake===v}">${v}</button>`).join("")}</div>
+  <p class="note">Le premier membre qui relève avec un autre pronostic mise ${tok(U.dn.stake)} jetons aussi. Le gagnant prend les ${tok(2*U.dn.stake)}. Si personne ne relève avant le coup d’envoi, ou si personne n’a vu juste, ta mise est remboursée.</p>
+  <button class="btn gold wide" data-act="dgo" data-mid="${esc(m.id)}" ${U.dn.stake>S.bal?"disabled":""}>${ic("target")} Lancer le duel · ${tok(U.dn.stake)} jetons</button>`}
+async function createDuel(mid){const m=findMatch(mid);if(!m||status(m)!=="pre")return;const res=markets(m).find(x=>x.id==="res"),opts=res.sels.map(x=>x.l),q=U.dn;
+  if(q.stake>S.bal){toast("Pas assez de jetons.","bad");return}const b=$("[data-act=dgo]");b.disabled=true;
+  try{if(!(await ensureSession()))throw{code:"offline"};
+    const j=await api("duel_create",{code:q.code,mid:m.id,mlabel:m.h+" – "+m.a,opts,t:m.t,ka:q.k,stake:q.stake});
+    S.bal-=q.stake;S.duel=S.duel||{};S.duel[j.id]={stake:q.stake,snap:{path:m.path,sp:m.sp,lv:m.lv}};save();bump();
+    postAct("duel",{mlabel:m.h+" – "+m.a,pick:opts[q.k],stake:q.stake});U.lg.code=q.code;U.lg.view="duels";U.lg.duels=null;U.open=null;layer("");U.tab="l";render();loadBoards();loadDuels();
+    toast(`${ic("target")} Duel lancé ! Tes potes peuvent le relever dans Ligues › Duels.`,"win")}
+  catch(e){b.disabled=false;toast(e.code==="started"?"Le match commence trop tôt pour un duel.":e.code==="slow_down"?"Beaucoup de duels aujourd’hui !":"Pas de connexion au serveur.","bad")}}
 function viewLgForm(kind){const nw=kind==="new";
   return`<div class="grab"><h3>${nw?"Nouvelle ligue":"Rejoindre une ligue"}</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   <div class="form"><label>${nw?"Nom de la ligue":"Code de la ligue"}<input id="lg-in" maxlength="${nw?24:5}" ${nw?'placeholder="ex. Les potes du dimanche"':'placeholder="ex. K7RZP" autocapitalize="characters" style="text-transform:uppercase;letter-spacing:4px;font-weight:800"'} autocomplete="off"></label>
@@ -1370,7 +1494,7 @@ function viewLgForm(kind){const nw=kind==="new";
 const LGERR={unknown:"Aucune ligue avec ce code.",full:"Cette ligue est pleine (60 joueurs).",too_many:"Tu es déjà dans 12 ligues : quittes-en une d’abord.",slow_down:"Doucement ! Réessaie dans un moment.",name:"Donne un nom à ta ligue."};
 async function lgSubmit(kind){const v=($("#lg-in").value||"").trim();if(!v){$("#lg-in").focus();return}const b=$("[data-act=lgok]");b.disabled=true;
   try{if(!(await ensureSession()))throw{code:"offline"};
-    const j=kind==="new"?await api("create_league",{name:v}):await api("join_league",{code:v});
+    const j=kind==="new"?await api("create_league",{name:v}):await api("join_league",{code:v});if(kind!=="new"&&!j.already)postAct("join",{});
     U.lg.code=j.code;U.open=null;layer("");U.tab="l";await loadBoards();render();
     toast(kind==="new"?`${ic("trophy")} Ligue créée ! Code : <b>${esc(j.code)}</b>`:j.already?"Tu es déjà dans cette ligue.":`${ic("group")} Bienvenue dans « ${esc(j.name)} » !`,"win");if(kind==="new")lgInvite()}
   catch(e){b.disabled=false;toast(LGERR[e.code]||"Pas de connexion au serveur.","bad")}}
@@ -1423,7 +1547,7 @@ function defisCard(){const D=defisState(),done=D.filter(d=>d.got).length;
   ${done===3?`<button class="btn gold wide" data-act="defiall" style="margin-top:8px">${ic("gift")} Bonus des 3 défis : +${DEFI_BONUS}</button>`:""}</div>`}
 function claimDefi(id){const D=defisState(),d=D.find(x=>x.id===id);if(!d||d.got||d.n<d.g)return;S.dch.got.push(id);S.bal+=d.r;S.peak=Math.max(S.peak,S.bal);save();render();bump();
   toast(`${ic("target")} Défi réussi : +${d.r} jetons`,"win")}
-function claimAll(){const D=defisState();if(S.dch.all||D.some(d=>!d.got))return;S.dch.all=true;S.bal+=DEFI_BONUS;S.peak=Math.max(S.peak,S.bal);save();render();bump();confetti();
+function claimAll(){const D=defisState();if(S.dch.all||D.some(d=>!d.got))return;S.dch.all=true;postAct("defis",{});S.bal+=DEFI_BONUS;S.peak=Math.max(S.peak,S.bal);save();render();bump();confetti();
   toast(`${ic("gift")} Les 3 défis du jour : +${DEFI_BONUS} jetons !`,"win")}
 function checkDefis(){const D=defisState();for(const d of D)if(d.n>=d.g&&!d.got&&!S.dch.seen.includes(d.id)){S.dch.seen.push(d.id);saveLocal();
   toast(`${ic("target")} Défi réussi : « ${esc(d.t)} ». Récupère +${d.r} dans l’onglet Matchs.`,"win")}}
@@ -1454,7 +1578,7 @@ let spinning=false;
 function spin(){if(spinning||S.bonus===today())return;spinning=true;
   const i=fairIndex(WHEEL.length),v=WHEEL[i];
   // le gain est enregistré tout de suite (recharger la page ne permet pas de relancer)
-  S.bonus=today();S.wheel={d:today(),v};S.bal+=v;S.peak=Math.max(S.peak,S.bal);save();
+  S.bonus=today();S.wheel={d:today(),v};S.bal+=v;S.peak=Math.max(S.peak,S.bal);save();if(v>=200)postAct("wheel",{v});
   const w=$("#wheel"),b=$("#spin"),jit=(Math.random()-.5)*(360/WHEEL.length)*.7,deg=360*7-i*(360/WHEEL.length)+jit;
   if(b){b.disabled=true;b.textContent="Ça tourne…"}
   const end=()=>{spinning=false;$("#bal").textContent=tok(S.bal);bump();
@@ -1547,7 +1671,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.16";
+const VERSION="1.17";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -1562,6 +1686,8 @@ if(GATE)renderGate();else{
 render();
 if(!S.name){U.open="welcome";layer(viewWelcome(false))}else{syncSoon();joinFromLink()}
 loadFeeds();
+setTimeout(()=>{if(S.name)loadBoards();if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},3000);
+setInterval(()=>{if(!document.hidden&&S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},12e4);
 setInterval(()=>{if(document.hidden)return;
   const anyLive=[...REG.values()].some(m=>m.src==="espn"&&m.state==="in");const stale=Object.values(FEED).some(f=>f.at&&Date.now()-f.at>(anyLive?6e4:5*6e4));
   if(stale){for(const sp in SP)for(const lv in SP[sp].feeds)if(FEED[sp+lv]&&Date.now()-FEED[sp+lv].at>(anyLive?6e4:5*6e4))loadFeed(sp,+lv).then(()=>{if(!U.open)render();settle()})}

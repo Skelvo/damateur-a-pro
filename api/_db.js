@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "5";
+const SCHEMA_VERSION = "6";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -64,6 +64,41 @@ const STATEMENTS = [
      player bigint not null references players(id) on delete cascade,
      state jsonb,
      expires timestamptz not null)`,
+  // ligues vivantes : fil d'activité, réactions, gains de chaque semaine, duels
+  `create table if not exists activity (
+     id bigserial primary key,
+     player bigint not null references players(id) on delete cascade,
+     kind text not null,
+     data jsonb not null default '{}',
+     at timestamptz not null default now())`,
+  `create index if not exists activity_player_at on activity(player, at desc)`,
+  `create table if not exists reactions (
+     act bigint not null references activity(id) on delete cascade,
+     player bigint not null references players(id) on delete cascade,
+     emo text not null,
+     primary key (act, player))`,
+  `create table if not exists weekly (
+     player bigint not null references players(id) on delete cascade,
+     week text not null,
+     gain numeric not null,
+     primary key (player, week))`,
+  `create table if not exists duels (
+     id bigserial primary key,
+     code text not null references leagues(code) on delete cascade,
+     a bigint not null references players(id) on delete cascade,
+     b bigint references players(id) on delete set null,
+     mid text not null,
+     mlabel text not null,
+     opts jsonb not null default '[]',
+     t timestamptz not null,
+     ka int not null,
+     kb int,
+     stake int not null,
+     status text not null default 'open',
+     res int,
+     winner bigint,
+     created_at timestamptz not null default now())`,
+  `create index if not exists duels_code on duels(code, created_at desc)`,
   `create table if not exists rate_hits (key text not null, win bigint not null, n int not null default 0, primary key (key, win))`,
 ];
 
