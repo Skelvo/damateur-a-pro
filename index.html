@@ -508,17 +508,17 @@ const ic=(id,cls="")=>`<svg class="i ${cls}"><use href="#i-${id}"/></svg>`;
 
 /* ---------- référentiel sports / niveaux ---------- */
 const SP={
-  foot:{n:"Football",sub:"District → Europe",ic:"ball",c:"#35d07f",dur:115,
+  foot:{n:"Football",sub:"France · Europe",ic:"ball",c:"#35d07f",dur:115,
     lv:["Départementale 4","Départementale 3","Départementale 2","Départementale 1","Régional 3","Régional 2","Régional 1","National 3","National 2","National 1","Ligue 2","Ligue 1","Premier League","La Liga","Ligue des champions",
       "Coupe de France","Serie A","Bundesliga","Europa League","Conference League","Championship","Liga Portugal","Eredivisie","Pro League","Ligue des nations"],base:15,
     tiers:[["District",[0,1,2,3]],["Ligue régionale",[4,5,6]],["National",[7,8,9]],["Pro France",[10,11,15]],["Europe",[12,13,16,17,20,21,22,23]],["Coupes d’Europe",[14,18,19]],["Sélections",[24]]],dep:4,simMax:11,
     feeds:{10:["soccer/fra.2"],11:["soccer/fra.1"],12:["soccer/eng.1"],13:["soccer/esp.1"],14:["soccer/uefa.champions"],15:["soccer/fra.coupe_de_france"],16:["soccer/ita.1"],17:["soccer/ger.1"],
       18:["soccer/uefa.europa"],19:["soccer/uefa.europa.conf"],20:["soccer/eng.2"],21:["soccer/por.1"],22:["soccer/ned.1"],23:["soccer/bel.1"],24:["soccer/uefa.nations"]}},
-  rugby:{n:"Rugby",sub:"Régional → Tests",ic:"rugby",c:"#ff7a45",dur:100,
+  rugby:{n:"Rugby",sub:"Top 14 · Tests",ic:"rugby",c:"#ff7a45",dur:100,
     lv:["Régionale 3","Régionale 2","Régionale 1","Fédérale 3","Fédérale 2","Fédérale 1","Nationale 2","Nationale","Pro D2","Top 14","Champions Cup","Premiership","URC","Six Nations","Tests internationaux"],base:11,
     tiers:[["Régional",[0,1,2]],["Fédéral",[3,4,5]],["National",[6,7]],["Pro",[8,9,10,11,12]],["International",[13,14]]],dep:3,simMax:9,
     feeds:{9:["rugby/270559"],10:["rugby/271937"],11:["rugby/267979"],12:["rugby/270557"],13:["rugby/180659"],14:["rugby/289234"]}},
-  tennis:{n:"Tennis",sub:"Club → ATP/WTA",ic:"tennis",c:"#d7f25a",dur:120,
+  tennis:{n:"Tennis",sub:"ATP · WTA",ic:"tennis",c:"#d7f25a",dur:120,
     lv:["Tournoi de club","Open départemental","Open régional","Open national","ITF World Tour","Challenger","ATP / WTA Tour"],
     base:7,tiers:[["Amateur",[0,1,2,3]],["Pro",[4,5,6]]],dep:2,simMax:5,
     feeds:{6:["tennis/atp","tennis/wta"]}}
@@ -758,7 +758,7 @@ function finalScore(m){const st=realStats(m);if(!st)return null;return st.g||st.
 function matchesFor(sp,lv){const cfg=SP[sp],out=[],levels=lv<0?cfg.lv.map((_,i)=>i):[lv];
   for(const l of levels){const f=cfg.feeds[l]&&FEED[sp+l];
     if(cfg.feeds[l]&&f&&f.ok)out.push(...f.list);
-    out.push(...S.org.filter(m=>m.sp===sp&&m.lv===l));out.push(...AM.list.filter(m=>m.sp===sp&&m.lv===l))}
+  }
   out.forEach(m=>{if(!REG.has(m.id))REG.set(m.id,m)});
   return out.map(m=>REG.get(m.id)||m).sort((a,b)=>a.t-b.t)}
 const loadingPro=(sp,lv)=>{const cfg=SP[sp];return(lv<0?Object.keys(cfg.feeds):[lv]).some(l=>cfg.feeds[l]&&(!FEED[sp+l]||FEED[sp+l].ok===null))};
@@ -827,14 +827,11 @@ function ladder(){const cfg=SP[U.sp],now=Date.now();
   const chip=l=>{const c=cnt(l),bars=Array.from({length:5},(_,i)=>`<i class="${(i+1)/5<=Math.min(l+1,n)/n+.001||i===0?"on":""}" style="height:${6+i*3.5}px"></i>`).join("");
     return`<button class="lvl${c?"":" zero"}" data-act="lv" data-lv="${l}" aria-pressed="${U.lv===l}"><span class="bars">${bars}</span><span>${esc(cfg.lv[l])}<em>${c?c+" match"+(c>1?"s":""):(cfg.feeds[l]&&FEED[U.sp+l]&&FEED[U.sp+l].ok===false?"Hors ligne":"—")}</em></span></button>`};
   return`<div class="ladder" id="ladder"><div class="tier"><small>Tous</small><div><button class="lvl star" data-act="lv" data-lv="-1" aria-pressed="${U.lv<0}">${ic("fire")}<span>À la une<em>Prochains</em></span></button></div></div>
-    ${cfg.tiers.map(([t,ix])=>`<div class="tier"><small>${t}</small><div>${ix.map(chip).join("")}</div></div>`).join("")}</div>`}
+    ${cfg.tiers.map(([t,ix])=>[t,ix.filter(l=>cfg.feeds[l])]).filter(([,ix])=>ix.length).map(([t,ix])=>`<div class="tier"><small>${t}</small><div>${ix.map(chip).join("")}</div></div>`).join("")}</div>`}
 function viewMatches(){const cfg=SP[U.sp];let h=installBanner()+`<div class="sports">${Object.entries(SP).map(([k,s])=>`<button class="sport" style="--c:${s.c}" data-act="sp" data-sp="${k}" aria-pressed="${U.sp===k}">${ballArt(k,"ghost")}${ballArt(k,"ball")}<span>${s.n}</span><small>${s.sub}</small></button>`).join("")}</div>`;
   h+=ladder();
   let list=matchesFor(U.sp,U.lv);
   const isDep=U.lv>=0&&U.lv<cfg.dep;
-  if(isDep||U.lv<0&&U.dep){if(U.dep)list=list.filter(m=>!m.dep||m.dep===U.dep)}
-  if(isDep||U.lv<0)h+=`<div class="filters"><select class="sel" id="dep" aria-label="Département"><option value="">Tous les départements</option>${DEP.map(d=>`<option${d===U.dep?" selected":""}>${d}</option>`).join("")}</select></div>`;
-  if(S.orgMode||U.lv<0||(U.lv<=cfg.simMax&&!cfg.feeds[U.lv]))h+=`<button class="btn ghost wide" data-act="addm" style="margin-bottom:12px">${ic("plus")} Ajouter un vrai match ${U.sp==="tennis"?"de tournoi":"amateur"}</button>`;
   if(S.bonus!==today())h+=`<button class="btn gold wide wheelbtn" data-act="wheel" style="margin-bottom:12px">${wheelMini()} Roue de la chance du jour</button>`;
   h+=defisCard();
   const now=Date.now();
@@ -855,9 +852,8 @@ function viewMatches(){const cfg=SP[U.sp];let h=installBanner()+`<div class="spo
 function emptyLevel(){const cfg=SP[U.sp],l=U.lv;
   if(l>=0&&cfg.feeds[l]&&FEED[U.sp+l]&&FEED[U.sp+l].ok===false)
     return`<div class="empty">${ic("info")}<b>Flux live indisponible</b>Impossible de joindre le flux des matchs pros pour l’instant.<br><button class="btn ghost" style="margin-top:12px" data-act="retry">Réessayer</button></div>`;
-  if(l>=0&&!cfg.feeds[l]&&l<=AMX[U.sp])return`<div class="empty">${ic(cfg.ic)}<b>Aucun match pour l’instant</b>Les matchs amateurs sont ajoutés par les joueurs. Tu connais un match à ce niveau ? Ajoute-le, tes amis pourront parier dessus.<br><button class="btn" style="margin-top:12px" data-act="addm">${ic("plus")} Ajouter un vrai match</button></div>`;
   return`<div class="empty">${ic(cfg.ic)}<b>Pas de match</b>Rien de prévu dans les prochains jours ici.</div>`}
-function foot(){return`<p class="foot">Jeu 100 % gratuit : jetons fictifs sans aucune valeur, rien à acheter, rien à gagner. Matchs pros, scores et stats en direct depuis un flux public ; matchs amateurs ajoutés et validés par les joueurs. Cotes calculées par un modèle statistique, à titre indicatif.<br>Les jeux d’argent comportent des risques : <a href="https://www.joueurs-info-service.fr" target="_blank" rel="noopener">Joueurs Info Service</a>, 09 74 75 13 13 (appel non surtaxé).</p>`}
+function foot(){return`<p class="foot">Jeu 100 % gratuit : jetons fictifs sans aucune valeur, rien à acheter, rien à gagner. Matchs pros, scores et stats en direct depuis un flux public ; cotes calculées par un modèle statistique, à titre indicatif.<br>Les jeux d’argent comportent des risques : <a href="https://www.joueurs-info-service.fr" target="_blank" rel="noopener">Joueurs Info Service</a>, 09 74 75 13 13 (appel non surtaxé).</p>`}
 
 /* ---------- rendu : fiche match ---------- */
 function viewDetail(m){const st=status(m),mks=markets(m),res=mks.find(x=>x.id==="res"),rs=realStats(m)||(st==="live"&&m.src!=="espn"?null:m.st);
@@ -1383,7 +1379,7 @@ function spin(){if(spinning||S.bonus===today())return;spinning=true;
 /* ---------- accueil ---------- */
 function viewWelcome(rename,msg){return`<div class="welcome">${rename?`<div class="grab"><h3>Ton pseudo</h3><button class="x" data-act="close">${ic("x")}</button></div>${msg?`<p class="warn" style="text-align:left">${msg}</p>`:""}`:`
   <svg width="64" height="64" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="11" fill="#13241c"/><path d="M6 31h8v-6h8v-6h8v-7" fill="none" stroke="#35d07f" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M27 9l5 3-5 3" fill="none" stroke="#35d07f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="13" r="5" fill="#f2f6f3"/><path d="M12 9.8l2.5 1.8-1 3h-3l-1-3z" fill="#13241c"/></svg>
-  <div class="big">D’amateur<br><em>à pro</em></div><p class="note" style="font-size:15px">Parie gratuitement sur le foot, le rugby et le tennis, du district au plus haut niveau. Fais monter ta carrière de la Départementale 4 à la Ligue des champions.</p>
+  <div class="big">D’amateur<br><em>à pro</em></div><p class="note" style="font-size:15px">Parie gratuitement sur les vrais matchs de foot, de rugby et de tennis, en direct. Fais monter ta carrière de la Départementale 4 à la Ligue des champions.</p>
   <div class="feat"><div>${ic("card","yc")}Cartons, corners, hors-jeux</div><div>${ic("posts")}Essais, pénalités ratées</div><div>${ic("broken")}Doubles fautes, raquettes cassées</div></div>`}
   <div class="form" style="text-align:left"><label>Ton pseudo<input id="w-name" maxlength="18" value="${esc(S.name)}" placeholder="ex. Le Pronostiqueur" autocomplete="nickname"></label>
   <p class="warn" id="w-err" hidden></p>
@@ -1465,7 +1461,6 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 if(GATE)renderGate();else{
 render();
 if(!S.name){U.open="welcome";layer(viewWelcome(false))}else{syncSoon();joinFromLink()}
-loadAm().then(()=>{if(!U.open)render();settle()});setInterval(()=>{if(!document.hidden)loadAm().then(()=>{if(!U.open)render()})},12e4);
 loadFeeds();
 setInterval(()=>{if(document.hidden)return;
   const anyLive=[...REG.values()].some(m=>m.src==="espn"&&m.state==="in");const stale=Object.values(FEED).some(f=>f.at&&Date.now()-f.at>(anyLive?6e4:5*6e4));
