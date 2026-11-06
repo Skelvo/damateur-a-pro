@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "9";
+const SCHEMA_VERSION = "10";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -131,6 +131,20 @@ const STATEMENTS = [
   `alter table dark_bets add column if not exists unit text`,
   `alter table dark_bets add column if not exists result_num numeric`,
   `alter table dark_stakes add column if not exists guess numeric`,
+  // prono du week-end : matchs choisis par le serveur, scores exacts devinés par les joueurs
+  `create table if not exists prono_weeks (
+     week text primary key,
+     matches jsonb not null,
+     updated_at timestamptz not null default now())`,
+  `create table if not exists prono_picks (
+     week text not null,
+     player bigint not null references players(id) on delete cascade,
+     mid text not null,
+     sh int not null,
+     sa int not null,
+     joker boolean not null default false,
+     at timestamptz not null default now(),
+     primary key (week, player, mid))`,
   `create table if not exists rate_hits (key text not null, win bigint not null, n int not null default 0, primary key (key, win))`,
 ];
 

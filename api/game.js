@@ -2,6 +2,7 @@
 // et « ce que parient les autres ». Tout passe par POST /api/game {action, ...}.
 import { db, hashToken, newToken, ipKey, overLimit } from "./_db.js";
 import { timingSafeEqual } from "node:crypto";
+import { buildWeek, refreshResults, points } from "./_prono.js";
 
 const ORIGINS = [
   "https://skelvo.fr", "https://www.skelvo.fr", "https://skelvo.github.io",
@@ -17,6 +18,27 @@ const fail = (status, error) => Object.assign(new Error(error), { status, error 
 function admin(b) {
   const want = process.env.ADMIN_KEY || "", got = String(b.key || "");
   if (want.length < 24 || got.length !== want.length || !timingSafeEqual(Buffer.from(got), Buffer.from(want))) throw fail(403, "forbidden");
+}
+// La semaine du prono : construite au premier appel (matchs du week-end), résultats rafraîchis toutes les 3 min
+async function pronoWeek(s, noRefresh) {
+  const w = (await s.query(
+    `select ${WEEK} as w,
+       extract(epoch from ((date_trunc('week', now() at time zone 'Europe/Paris') + interval '4 days') at time zone 'Europe/Paris')) * 1000 as fri,
+       extract(epoch from ((date_trunc('week', now() at time zone 'Europe/Paris') + interval '7 days') at time zone 'Europe/Paris')) * 1000 as mon`))[0];
+  const from = Math.round(Number(w.fri)), to = Math.round(Number(w.mon));
+  let row = (await s.query(`select matches, extract(epoch from updated_at) * 1000 as up from prono_weeks where week = $1`, [w.w]))[0];
+  if (!row || (!row.matches.length && Date.now() - Number(row.up) > 30 * 60e3)) {
+    const matches = await buildWeek(from, to);
+    await s.query(`insert into prono_weeks (week, matches) values ($1, $2::jsonb) on conflict (week) do update set matches = case when jsonb_array_length(prono_weeks.matches) = 0 then excluded.matches else prono_weeks.matches end, updated_at = now()`,
+      [w.w, JSON.stringify(matches)]);
+    row = (await s.query(`select matches, extract(epoch from updated_at) * 1000 as up from prono_weeks where week = $1`, [w.w]))[0];
+  } else if (!noRefresh && Date.now() - Number(row.up) > 3 * 60e3) {
+    const M = row.matches;
+    if (await refreshResults(M)) await s.query(`update prono_weeks set matches = $2::jsonb, updated_at = now() where week = $1`, [w.w, JSON.stringify(M)]);
+    else await s.query(`update prono_weeks set updated_at = now() where week = $1`, [w.w]);
+    row.matches = M;
+  }
+  return { week: w.w, from, to, matches: row.matches };
 }
 const isMember = async (s, code, pid) => !!(code && (await s.query(`select 1 from league_members where code = $1 and player = $2`, [code, pid]))[0]);
 const ACT_KINDS = ["bet", "won", "cash", "wheel", "defis", "duel", "duelwin", "join"];
@@ -437,6 +459,85 @@ const ACTIONS = {
       `delete from dark_bets d where d.id = $1 and d.creator = $2 and not exists (select 1 from dark_stakes x where x.bet = d.id) returning id`,
       [int(b.id, 0, 1e15), p.id]);
     if (!r[0]) throw fail(400, "locked");
+    return { ok: true };
+  },
+
+  // ---- Prono du week-end ----
+  async prono_get(s, b) {
+    const p = await me(s, b.token);
+    const wk = await pronoWeek(s);
+    const mine = await s.query(`select mid, sh, sa, joker from prono_picks where week = $1 and player = $2`, [wk.week, p.id]);
+    const now = Date.now();
+    const code = cleanName(b.code, 8).toUpperCase();
+    let board = null;
+    if (await isMember(s, code, p.id)) {
+      const mem = await s.query(`select pl.id, pl.name, pl.avatar_v from league_members m join players pl on pl.id = m.player where m.code = $1`, [code]);
+      const ids = mem.map((x) => x.id);
+      const picks = await s.query(`select week, player, mid, sh, sa, joker from prono_picks where player = any($1::bigint[])`, [ids]);
+      const weeks = await s.query(`select week, matches from prono_weeks where week in (select distinct week from prono_picks where player = any($1::bigint[]))`, [ids]);
+      const W = Object.fromEntries(weeks.map((w) => [w.week, w.matches]));
+      W[wk.week] = wk.matches;
+      const tot = {};
+      for (const m of mem) tot[m.id] = { id: m.id, name: m.name, av: m.avatar_v || 0, week: 0, season: 0, exact: 0, n: 0, weeks: {} };
+      for (const x of picks) {
+        const M = (W[x.week] || []).find((m) => m.mid === x.mid);
+        const pt = M ? points(M, x) : null;
+        const T = tot[x.player];
+        if (!T) continue;
+        if (x.week === wk.week) T.n++;
+        if (pt == null) continue;
+        T.season += pt; T.weeks[x.week] = (T.weeks[x.week] || 0) + pt;
+        if (x.week === wk.week) { T.week += pt; if (pt >= 5 && x.sh === M.sh && x.sa === M.sa) T.exact++; }
+      }
+      // gagnant de la semaine précédente (et nombre de « pronos d'or » de chacun)
+      const allWeeks = Object.keys(W).filter((w) => w !== wk.week && (W[w] || []).every((m) => m.done || m.cancel)).sort();
+      for (const w of allWeeks) {
+        const best = Math.max(0, ...Object.values(tot).map((t) => t.weeks[w] || 0));
+        if (best > 0) for (const t of Object.values(tot)) if ((t.weeks[w] || 0) === best) t.gold = (t.gold || 0) + 1;
+      }
+      const last = allWeeks[allWeeks.length - 1];
+      let lastWin = null;
+      if (last) { const best = Math.max(0, ...Object.values(tot).map((t) => t.weeks[last] || 0)); if (best > 0) lastWin = { week: last, pts: best, names: Object.values(tot).filter((t) => (t.weeks[last] || 0) === best).map((t) => t.name) }; }
+      // pronos des potes, visibles seulement après le coup d'envoi
+      const others = {};
+      for (const x of picks) {
+        if (x.week !== wk.week) continue;
+        const M = wk.matches.find((m) => m.mid === x.mid);
+        if (!M || M.t > now) continue;
+        (others[x.mid] ??= []).push({ name: tot[x.player] ? tot[x.player].name : "?", sh: x.sh, sa: x.sa, joker: x.joker, pts: points(M, x) });
+      }
+      board = { rows: Object.values(tot).map(({ weeks, ...t }) => t), lastWin, others };
+    }
+    return {
+      week: wk.week, from: wk.from, to: wk.to, me: p.id, board,
+      matches: wk.matches.map((m) => { const my = mine.find((x) => x.mid === m.mid); return { ...m, my: my || null, pts: my ? points(m, my) : null }; }),
+    };
+  },
+
+  async prono_pick(s, b) {
+    const p = await me(s, b.token);
+    const wk = await pronoWeek(s, true);
+    const M = wk.matches.find((m) => m.mid === String(b.mid || ""));
+    if (!M) throw fail(404, "unknown");
+    if (M.t <= Date.now()) throw fail(400, "started");
+    const sh = int(b.sh, 0, 20), sa = int(b.sa, 0, 20);
+    await s.query(
+      `insert into prono_picks (week, player, mid, sh, sa) values ($1, $2, $3, $4, $5)
+       on conflict (week, player, mid) do update set sh = excluded.sh, sa = excluded.sa, at = now()`, [wk.week, p.id, M.mid, sh, sa]);
+    return { ok: true };
+  },
+
+  // Un joker (points ×2) par week-end ; déplaçable tant que son match n'a pas commencé
+  async prono_joker(s, b) {
+    const p = await me(s, b.token);
+    const wk = await pronoWeek(s, true);
+    const now = Date.now(), M = wk.matches.find((m) => m.mid === String(b.mid || ""));
+    if (!M || M.t <= now) throw fail(400, "started");
+    const cur = (await s.query(`select mid from prono_picks where week = $1 and player = $2 and joker`, [wk.week, p.id]))[0];
+    if (cur) { const C = wk.matches.find((m) => m.mid === cur.mid); if (C && C.t <= now) throw fail(400, "joker_locked"); }
+    const has = (await s.query(`select 1 from prono_picks where week = $1 and player = $2 and mid = $3`, [wk.week, p.id, M.mid]))[0];
+    if (!has) throw fail(400, "no_pick");
+    await s.query(`update prono_picks set joker = (mid = $3) where week = $1 and player = $2`, [wk.week, p.id, M.mid]);
     return { ok: true };
   },
 

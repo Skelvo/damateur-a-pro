@@ -352,6 +352,28 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 .act .dkav{width:34px;height:34px;border-radius:50%;background:#3a0c0c!important;color:#ff5a5a!important;display:grid;place-items:center;flex:none;cursor:pointer}.act .dkav .i{width:22px;height:22px}
 .dkact p .dkr{color:#ff6b6b}
 .dkrep{position:absolute;right:10px;bottom:8px;font-size:12px;color:var(--mute2)!important}
+/* prono du week-end */
+.tabs4 button{font-size:14px;padding:9px 4px}
+.prban{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid color-mix(in srgb,var(--acc) 45%,transparent);border-radius:14px;padding:11px 14px;margin:0 0 12px;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--acc) 22%,var(--card)),var(--card) 70%)}
+.prban>.i{width:30px;height:30px;color:var(--acc);flex:none}.prban>span:nth-child(2){flex:1}.prban b{display:block;font:800 18px "Barlow Condensed";text-transform:uppercase;letter-spacing:.5px}.prban small{color:var(--mute);font-size:12.5px}
+.prban .arr{font:800 26px "Barlow Condensed";color:var(--acc)}
+.prhead{display:flex;gap:12px;align-items:center;border-radius:16px;padding:14px;margin-bottom:12px;background:linear-gradient(135deg,color-mix(in srgb,var(--acc) 28%,#0b1310),#0b1310 70%);border:1px solid color-mix(in srgb,var(--acc) 40%,transparent)}
+.prhead>div:first-child{flex:1}.prhead small{color:#ffffffb0;font-size:12px;text-transform:uppercase;letter-spacing:.8px;font-weight:700}.prhead h3{margin:2px 0 4px;font:800 24px "Barlow Condensed";text-transform:uppercase}
+.prhead p{margin:0;color:#ffffffb0;font-size:12.5px;line-height:1.4}.prhead p b{color:#fff}
+.prpts{text-align:center;background:#00000040;border-radius:12px;padding:8px 12px}.prpts b{display:block;font:800 34px/1 "Barlow Condensed";color:var(--sel)}.prpts small{font-size:11px}
+.prm{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:8px}.prm.jk{border-color:var(--sel);box-shadow:0 0 0 1px color-mix(in srgb,var(--sel) 40%,transparent)}
+.prtop{display:flex;justify-content:space-between;color:var(--mute);font-size:12px;margin-bottom:6px}
+.prrow{display:grid;grid-template-columns:1fr auto auto auto 1fr;align-items:center;gap:6px}
+.prt{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;text-align:center}.prt .crest{width:36px;height:36px}
+.prt b{display:block;max-width:100%;font:700 14px/1.1 "Barlow Condensed";text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prstep{display:flex;flex-direction:column;align-items:center;gap:2px}.prstep b{font:800 30px/1 "Barlow Condensed";min-width:28px;text-align:center;font-variant-numeric:tabular-nums}
+.prstep button{width:34px;height:26px;border-radius:8px;border:1px solid var(--line2);background:var(--card2);font:800 18px/1 Barlow;color:var(--ink);padding:0}
+.prstep button{width:40px;height:24px;font-size:17px}.prsep{font:800 24px "Barlow Condensed";color:var(--mute2)}
+.prjk{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:8px;padding:7px;border-radius:9px;border:1px dashed var(--line2);background:none;color:var(--mute);font:600 13px Barlow}
+.prjk .i{width:16px;height:16px}.prjk[aria-pressed="true"],.prjk.on{border:1px solid var(--sel);color:var(--sel);background:color-mix(in srgb,var(--sel) 12%,transparent)}
+.prreal{margin-top:8px;color:var(--mute);font-size:13.5px;display:flex;align-items:center;gap:8px}.prreal b{color:var(--ink);font:800 18px "Barlow Condensed"}
+.proth{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.proth span{font-size:12.5px;color:var(--mute);background:var(--card2);border-radius:8px;padding:3px 8px}.proth b{color:var(--ink)}.proth i{font-style:normal;font-weight:800}
 /* ligues vivantes */
 .champ{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#4a3a05,var(--card) 70%);border:1px solid #8a6d10;border-radius:14px;padding:10px 14px;margin-bottom:12px}
 .champ .i{width:30px;height:30px;color:var(--sel);flex:none}.champ small{display:block;color:#e8d79a;font-size:12px;text-transform:uppercase;letter-spacing:.8px;font-weight:700}.champ b{font:800 19px "Barlow Condensed"}
@@ -990,7 +1012,7 @@ function viewMatches(){const cfg=SP[U.sp];let h=installBanner()+`<div class="spo
   let list=matchesFor(U.sp,U.lv);
   const isDep=U.lv>=0&&U.lv<cfg.dep;
   if(S.bonus!==today())h+=`<button class="btn gold wide wheelbtn" data-act="wheel" style="margin-bottom:12px">${wheelMini()} Roue de la chance du jour</button>`;
-  h+=defisCard();
+  h+=defisCard()+pronoBanner();
   const now=Date.now();
   let up=list.filter(m=>["pre","live","wait"].includes(status(m)));
   const done=list.filter(m=>status(m)==="post").sort((a,b)=>b.t-a.t);
@@ -1299,7 +1321,12 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"dkres":darkResolve(d.id,+d.opt);break;
     case"dkflag":darkFlag(d.id,d.kind);break;
     case"dkdel":darkDelete(d.id);break;
-    case"lgview":U.lg.view=d.v;render();if(d.v==="feed")loadActFeed();if(d.v==="duels")loadDuels();break;
+    case"prno":{const m=(U.pr.data.matches||[]).find(x=>x.mid===d.mid);if(!m||m.t<=Date.now())break;const my=m.my||(m.my={sh:0,sa:0,joker:false,_new:1});
+      my[d.side]=cl((my[d.side]||0)+(+d.d),0,20);delete my._new;render();pronoSave(m);break}
+    case"prjk":pronoJoker(d.mid);break;
+    case"prtab":U.pr.tab=d.v;render();break;
+    case"prgo":{const L0=U.lg.data&&U.lg.data.leagues[0];if(!L0)break;U.tab="l";U.lg.code=U.lg.code||L0.code;U.lg.view="prono";U.dark=false;render();loadBoards();loadProno();window.scrollTo({top:0});break}
+    case"lgview":U.lg.view=d.v;if(d.v==="prono")loadProno();render();if(d.v==="feed")loadActFeed();if(d.v==="duels")loadDuels();break;
     case"react":reactTo(d.id,d.e);break;
     case"prof":openProfile(d.id);break;
     case"photo":openPhoto();break;
@@ -1460,7 +1487,8 @@ function viewLeagues(){const L=U.lg,d=L.data;
   if(cur&&d.last)h+=`<div class="champ">${ic("trophy")}<div><small>Vainqueur${d.last.winners.length>1?"s":""} de la semaine dernière</small><b>${d.last.winners.map(w=>esc(w.name)+` <span class="pos">+${tok(w.gain)}</span>`).join(" · ")}</b></div></div>`;
   if(cur)h+=`<button class="darkbtn" data-act="dkwarn"><span class="dkic">${DK_ICON}</span><span><b>Le côté dark</b><small>Paris inventés et anonymes entre membres</small></span><span class="arr">›</span></button>`;
   if(cur){const nd=(L.duels||[]).filter(x=>x.status==="open"&&String(x.a)!==String(d.me)).length;
-    h+=`<div class="seg tabs3"><button data-act="lgview" data-v="rank" aria-pressed="${L.view==="rank"}">Classement</button><button data-act="lgview" data-v="feed" aria-pressed="${L.view==="feed"}">Activité</button><button data-act="lgview" data-v="duels" aria-pressed="${L.view==="duels"}">Duels${nd?` <span class="pill">${nd}</span>`:""}</button></div>`;
+    h+=`<div class="seg tabs3 tabs4"><button data-act="lgview" data-v="rank" aria-pressed="${L.view==="rank"}">Classement</button><button data-act="lgview" data-v="prono" aria-pressed="${L.view==="prono"}">Prono</button><button data-act="lgview" data-v="feed" aria-pressed="${L.view==="feed"}">Activité</button><button data-act="lgview" data-v="duels" aria-pressed="${L.view==="duels"}">Duels${nd?` <span class="pill">${nd}</span>`:""}</button></div>`;
+    if(L.view==="prono")return h+viewProno(cur)+lgFooter(cur);
     if(L.view==="feed")return h+viewFeed()+lgFooter(cur);
     if(L.view==="duels")return h+viewDuels(cur)+lgFooter(cur)}
   h+=`<div class="seg"><button data-act="lgmode" data-v="week" aria-pressed="${L.mode==="week"}">Cette semaine</button><button data-act="lgmode" data-v="total" aria-pressed="${L.mode==="total"}">Jetons</button></div>`;
@@ -1688,6 +1716,55 @@ function settleDark(code,bets){if(!S.dk)return;let ch=false;
   if(ch){S.peak=Math.max(S.peak,S.bal);save();render();bump()}}
 async function checkDarkAll(){const codes=[...new Set(Object.values(S.dk||{}).filter(x=>!x.settled).map(x=>x.code))];
   for(const c of codes){try{const j=await api("dark_list",{code:c});settleDark(c,j.bets)}catch(e){}}}
+
+/* ---------- prono du week-end ----------
+   Le serveur choisit 7 gros matchs du week-end ; chacun devine les scores exacts jusqu'au coup d'envoi.
+   5 pts score exact, 3 pts bon vainqueur + bon écart, 2 pts bon vainqueur ; joker ×2 ; 1 pt = 10 jetons. */
+U.pr={data:null,tab:"week"};
+async function loadProno(){if(!S.tok)return;const code=U.lg.code||(U.lg.data&&U.lg.data.leagues[0]&&U.lg.data.leagues[0].code)||"";
+  try{const j=await api("prono_get",{code});const old=U.pr.data;
+    // garder les pronos en cours d'envoi
+    if(old&&old.week===j.week)for(const m of j.matches){const o=old.matches.find(x=>x.mid===m.mid);if(o&&o._pending)m.my=o.my}
+    U.pr.data=j;U.pr.at=Date.now();pronoReward(j)}catch(e){}
+  if(!U.open)render()}
+const PRT={};
+function pronoSave(m){m._pending=1;clearTimeout(PRT[m.mid]);PRT[m.mid]=setTimeout(async()=>{try{await api("prono_pick",{mid:m.mid,sh:m.my.sh,sa:m.my.sa});m._pending=0}
+  catch(e){m._pending=0;toast(e.code==="started"?"Trop tard, le match a commencé.":"Pas de connexion : ton prono n’est pas enregistré.","bad");loadProno();return}
+  clearTimeout(PRT._r);PRT._r=setTimeout(()=>{if(!U.pr.data.matches.some(x=>x._pending))loadProno()},1500)},500)}
+async function pronoJoker(mid){const m=U.pr.data.matches.find(x=>x.mid===mid);if(!m)return;
+  if(!m.my){toast("Mets d’abord un score sur ce match.","bad");return}
+  clearTimeout(PRT[mid]);try{if(m._pending)await api("prono_pick",{mid,sh:m.my.sh,sa:m.my.sa});m._pending=0;await api("prono_joker",{mid});
+    U.pr.data.matches.forEach(x=>{if(x.my)x.my.joker=x.mid===mid});render();toast("Joker posé : points ×2 sur ce match !","win")}
+  catch(e){toast(e.code==="joker_locked"?"Ton joker est déjà sur un match commencé.":e.code==="started"?"Ce match a commencé.":"Pas de connexion.","bad")}}
+// 10 jetons par point, versés une fois quand tous les matchs du week-end sont terminés
+function pronoReward(j){S.prono=S.prono||{};if(S.prono[j.week])return;const M=j.matches;if(!M.length||!M.every(m=>m.done||m.cancel))return;
+  const pts=M.reduce((a,m)=>a+(m.pts||0),0);S.prono[j.week]=1;if(pts>0){S.bal+=pts*10;S.peak=Math.max(S.peak,S.bal);toast(`Prono du week-end : ${pts} points = +${tok(pts*10)} jetons !`,"win");confetti();bump()}save()}
+function prDays(j){const f=d=>new Date(d).toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"});return f(j.from+12*H)+" → "+f(j.to-12*H)}
+function pronoBanner(){const j=U.pr.data;if(!j||!j.matches.length||!(U.lg.data&&U.lg.data.leagues.length))return"";
+  const open=j.matches.filter(m=>m.t>Date.now()),done=j.matches.filter(m=>m.my).length;if(!open.length&&!j.matches.some(m=>m.my))return"";
+  const pts=j.matches.reduce((a,m)=>a+(m.pts||0),0);
+  return`<button class="prban" data-act="prgo">${ic("target")}<span><b>Prono du week-end</b><small>${open.length?`${done}/${j.matches.length} scores devinés · ${open.length} match${open.length>1?"s":""} encore ouvert${open.length>1?"s":""}`:`${pts} point${pts>1?"s":""} ce week-end`}</small></span><span class="arr">›</span></button>`}
+function viewProno(cur){const j=U.pr.data;if(!j){loadProno();return`<div class="skel"></div><div class="skel"></div>`}
+  if(Date.now()-(U.pr.at||0)>6e4)setTimeout(loadProno,0);
+  const now=Date.now(),pts=j.matches.reduce((a,m)=>a+(m.pts||0),0),jk=j.matches.find(m=>m.my&&m.my.joker);
+  let h=`<div class="prhead"><div><small>${esc(prDays(j))}</small><h3>Prono du week-end</h3><p>Devine les scores exacts. <b>5 pts</b> score exact · <b>3 pts</b> bon vainqueur et bon écart · <b>2 pts</b> bon vainqueur · <b>joker ×2</b>. 1 point = 10 jetons.</p></div><div class="prpts"><b>${pts}</b><small>pts</small></div></div>`;
+  if(j.board&&j.board.lastWin)h+=`<div class="champ">${ic("target")}<div><small>Prono d’or de la semaine dernière</small><b>${j.board.lastWin.names.map(esc).join(" · ")} <span class="pos">${j.board.lastWin.pts} pts</span></b></div></div>`;
+  if(!j.matches.length)return h+`<div class="empty">${ic("ball")}<b>Pas encore de matchs</b>Les matchs du week-end arrivent bientôt.</div>`;
+  let day="";
+  for(const m of j.matches){const d=fDay(m.t);if(d!==day){h+=`<div class="day">${d}</div>`;day=d}
+    const open=m.t>now,my=m.my,lg={"soccer/fra.1":"Ligue 1","soccer/eng.1":"Premier League","soccer/esp.1":"La Liga","soccer/ita.1":"Serie A","soccer/ger.1":"Bundesliga"}[m.path]||"";
+    const step=(side)=>`<div class="prstep">${open?`<button data-act="prno" data-mid="${esc(m.mid)}" data-side="${side}" data-d="1" aria-label="plus">+</button>`:""}<b>${my?my[side]:"–"}</b>${open?`<button data-act="prno" data-mid="${esc(m.mid)}" data-side="${side}" data-d="-1" aria-label="moins">−</button>`:""}</div>`;
+    const real=m.sh!=null?`<div class="prreal">${m.done?"Score final":m.cancel?"Reporté":"En cours"} : <b>${m.sh}–${m.sa}</b>${m.pts!=null?` <span class="tag ${m.pts?"won":"lost"}">${m.pts?"+"+m.pts+" pts":"0 pt"}</span>`:""}</div>`:"";
+    const oth=j.board&&j.board.others&&j.board.others[m.mid];
+    h+=`<div class="prm${my&&my.joker?" jk":""}"><div class="prtop"><span>${esc(lg)}</span><span>${open?fTime(m.t):m.done?"Terminé":"Commencé"}</span></div>
+      <div class="prrow"><div class="prt">${crest(m.h,"foot",m.hl)}<b>${esc(m.h)}</b></div>${step("sh")}<span class="prsep">–</span>${step("sa")}<div class="prt r">${crest(m.a,"foot",m.al)}<b>${esc(m.a)}</b></div></div>
+      ${open?`<button class="prjk" data-act="prjk" data-mid="${esc(m.mid)}" aria-pressed="${!!(my&&my.joker)}">${ic("bolt")} ${my&&my.joker?"Joker ×2 sur ce match":"Mettre mon joker ici"}</button>`:my&&my.joker?`<div class="prjk on">${ic("bolt")} Joker ×2</div>`:""}
+      ${!open&&!my?`<small class="mut">Tu n’as pas pronostiqué ce match.</small>`:""}${real}
+      ${oth&&oth.length?`<div class="proth">${oth.map(o=>`<span>${esc(o.name)} <b>${o.sh}–${o.sa}</b>${o.joker?" ⚡":""}${o.pts!=null?` <i class="${o.pts?"pos":""}">${o.pts}</i>`:""}</span>`).join("")}</div>`:""}</div>`}
+  if(j.board){const t=U.pr.tab,key=t==="week"?"week":"season",rows=j.board.rows.slice().sort((a,b)=>b[key]-a[key]||b.exact-a.exact);
+    h+=`<div class="h2"><h2>Classement du prono</h2></div><div class="seg"><button data-act="prtab" data-v="week" aria-pressed="${t==="week"}">Ce week-end</button><button data-act="prtab" data-v="season" aria-pressed="${t==="season"}">Saison</button></div>`+
+    rows.map((r,i)=>`<div class="prow${String(r.id)===String(j.me)?" me":""}" data-act="prof" data-id="${esc(r.id)}"><span class="rk">${i+1}</span>${avatar(r.id,r.name,r.av,"av")}<div><b>${esc(r.name)}${String(r.id)===String(j.me)?" (toi)":""}${r.gold?` <span class="trs">${ic("target")}${r.gold>1?r.gold:""}</span>`:""}</b><small>${t==="week"?`${r.n}/${j.matches.length} pronos · ${r.exact} score${r.exact>1?"s":""} exact${r.exact>1?"s":""}`:`${r.season} points au total`}</small></div><span class="v">${r[key]} pts</span></div>`).join("")}
+  return h}
 
 /* ---------- duels ---------- */
 async function loadDuels(){if(!S.tok)return;try{const j=await api("duels",{});U.lg.duels=j.duels;U.lg.duelsAt=Date.now();await checkDuels(j.duels,j.me)}catch(e){}
@@ -1941,7 +2018,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.22";
+const VERSION="1.23";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -1957,7 +2034,7 @@ render();
 if(!S.name){U.open="welcome";layer(viewWelcome(false))}else{syncSoon();joinFromLink()}
 loadFeeds();
 setTimeout(()=>{if(S.dk&&Object.values(S.dk).some(x=>!x.settled))checkDarkAll();},5000);
-setTimeout(()=>{if(S.name)loadBoards();if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},3000);
+setTimeout(()=>{if(S.name)loadBoards().then(()=>{if(U.lg.data&&U.lg.data.leagues.length)loadProno()});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},3000);
 setInterval(()=>{if(!document.hidden&&S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},12e4);
 setInterval(()=>{if(document.hidden)return;
   const anyLive=[...REG.values()].some(m=>m.src==="espn"&&m.state==="in");const stale=Object.values(FEED).some(f=>f.at&&Date.now()-f.at>(anyLive?6e4:5*6e4));
