@@ -352,6 +352,22 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 .act .dkav{width:34px;height:34px;border-radius:50%;background:#3a0c0c!important;color:#ff5a5a!important;display:grid;place-items:center;flex:none;cursor:pointer}.act .dkav .i{width:22px;height:22px}
 .dkact p .dkr{color:#ff6b6b}
 .dkrep{position:absolute;right:10px;bottom:8px;font-size:12px;color:var(--mute2)!important}
+/* notifications + chat */
+.tabs5 button{font-size:13.5px;padding:9px 2px}
+.pushb{display:flex;align-items:center;gap:10px;background:var(--card);border:1px dashed var(--sel);border-radius:14px;padding:10px 12px;margin-bottom:12px}
+.pushb>.i{width:26px;height:26px;color:var(--sel);flex:none}.pushb>div{flex:1;min-width:0}.pushb b{display:block;font-weight:700}.pushb small{color:var(--mute);font-size:12.5px}
+.pushb .btn{padding:9px 12px;font-size:15px}.pushb .x{width:30px;height:30px;flex:none}
+.chbox{max-height:calc(100dvh - 430px);min-height:240px;overflow-y:auto;overscroll-behavior:contain;padding:4px 2px 8px;display:flex;flex-direction:column;gap:6px}
+.chday{align-self:center;color:var(--mute2);font:700 11px Barlow;text-transform:uppercase;letter-spacing:1px;margin:8px 0 2px}
+.chm{display:flex;gap:8px;align-items:flex-end;max-width:86%}.chm.me{align-self:flex-end;flex-direction:row-reverse}
+.chm .av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font:800 14px "Barlow Condensed";color:#0b1310;flex:none}
+.chb{background:var(--card2);border:1px solid var(--line);border-radius:14px 14px 14px 4px;padding:7px 11px;min-width:0}
+.chm.me .chb{background:color-mix(in srgb,var(--acc) 22%,var(--card));border-color:color-mix(in srgb,var(--acc) 40%,transparent);border-radius:14px 14px 4px 14px}
+.chb b{display:block;font-size:12.5px;color:var(--acc)}.chb p{margin:1px 0;font-size:15px;line-height:1.35;overflow-wrap:anywhere}.chb small{color:var(--mute2);font-size:11px}.chb .link{font-size:11px;padding:0;color:var(--mute2)}
+.chq{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:8px -16px 6px;padding:0 16px}.chq::-webkit-scrollbar{display:none}
+.chq button{flex:none;border:1px solid var(--line2);background:var(--card);border-radius:999px;padding:6px 11px;font:600 13px Barlow}
+.chin{display:flex;gap:8px;align-items:flex-end}.chin textarea{flex:1;resize:none;min-height:44px;max-height:120px;padding:11px 12px;border-radius:14px;border:1px solid var(--line2);background:var(--card);color:var(--ink);font:500 16px Barlow}
+.chin .btn{padding:11px 13px}
 /* prono du week-end */
 .tabs4 button{font-size:14px;padding:9px 4px}
 .prban{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid color-mix(in srgb,var(--acc) 45%,transparent);border-radius:14px;padding:11px 14px;margin:0 0 12px;
@@ -1174,6 +1190,8 @@ function viewCareer(){const di=divOf(S.peak),nx=DIVS[di+1],pr=nx?cl((S.peak-DIVS
   <div class="h2"><h2>Badges</h2><span>${BD.filter(b=>b[2]).length}/${BD.length}</span></div>
   <div class="badges">${BD.map(([i,t,on])=>`<div class="bdg${on?" on":""}">${ic(i)}${t}</div>`).join("")}</div>
   <div class="h2"><h2>Réglages</h2></div>
+  <div class="row"><div><b>Notifications</b><small>${pushState()==="on"?"Activées sur ce téléphone · <button class='link' data-act='pushtest' style='padding:0'>tester</button>":pushState()==="denied"?"Refusées : autorise-les dans les réglages du téléphone":pushState()==="na"?(IOS&&!STANDALONE?"Installe d’abord l’app sur l’écran d’accueil":"Pas disponibles sur ce téléphone"):"Duels, paris dark, chat, réactions…"}</small></div>
+    ${pushState()==="on"?`<button class="sw" role="switch" data-act="pushoff" aria-checked="true" aria-label="Notifications"></button>`:pushState()==="off"?`<button class="sw" role="switch" data-act="pushon" aria-checked="false" aria-label="Notifications"></button>`:""}</div>
   <div class="row"><div><b>Pseudo</b><small>${esc(S.name)}</small></div><button class="link" data-act="rename">Modifier</button></div>
   ${STANDALONE?"":`<div class="row"><div><b>Installer l’app</b><small>Sur l’écran d’accueil de ton téléphone</small></div><button class="link" data-act="install">Comment ?</button></div>`}
   <div class="row"><div><b>Transférer mon compte</b><small>Vers l’app installée ou un autre téléphone</small></div><button class="link" data-act="xmake2">Créer un code</button></div>
@@ -1326,10 +1344,17 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"prjk":pronoJoker(d.mid);break;
     case"prtab":U.pr.tab=d.v;render();break;
     case"prgo":{const L0=U.lg.data&&U.lg.data.leagues[0];if(!L0)break;U.tab="l";U.lg.code=U.lg.code||L0.code;U.lg.view="prono";U.dark=false;render();loadBoards();loadProno();window.scrollTo({top:0});break}
-    case"lgview":U.lg.view=d.v;if(d.v==="prono")loadProno();render();if(d.v==="feed")loadActFeed();if(d.v==="duels")loadDuels();break;
+    case"lgview":U.lg.view=d.v;if(d.v==="prono")loadProno();if(d.v==="chat")loadChat();render();if(d.v==="feed")loadActFeed();if(d.v==="duels")loadDuels();break;
     case"react":reactTo(d.id,d.e);break;
     case"prof":openProfile(d.id);break;
     case"photo":openPhoto();break;
+    case"pushon":pushEnable();break;
+    case"pushoff":pushDisable();break;
+    case"pushtest":api("push_test",{}).then(()=>toast("Notification de test envoyée.","win")).catch(()=>toast("Impossible pour l’instant.","bad"));break;
+    case"pushx":try{localStorage.setItem("dap.pushx",String(Date.now()))}catch(e){}render();break;
+    case"chsend":chatSend();break;
+    case"chq":chatSend(d.t);break;
+    case"chdel":chatDelete(d.id);break;
     case"phdel":deletePhoto();break;
     case"phok":savePhoto();break;
     case"daccept":acceptDuel(d.id,+d.k);break;
@@ -1405,7 +1430,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"instx":try{localStorage.setItem("dap.inst",String(Date.now()))}catch(e){}render();break;
     case"instgo":installPrompt();break;
   }});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"&&U.open&&U.open!=="welcome")closeLayer();
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&e.target.id==="chin"){e.preventDefault();chatSend();return}if(e.key==="Escape"&&U.open&&U.open!=="welcome")closeLayer();
   if(e.key==="Enter"&&e.target.classList&&e.target.classList.contains("mc"))e.target.click();
   if(e.key==="Enter"&&e.target.id==="w-name")$("[data-act=wgo]").click()});
 document.addEventListener("change",e=>{if(e.target.id==="dep"){U.dep=e.target.value;render()}if(e.target.id==="dk-t"&&U.open==="dknew"){dkKeep();layer(viewDarkNew())}});
@@ -1487,7 +1512,9 @@ function viewLeagues(){const L=U.lg,d=L.data;
   if(cur&&d.last)h+=`<div class="champ">${ic("trophy")}<div><small>Vainqueur${d.last.winners.length>1?"s":""} de la semaine dernière</small><b>${d.last.winners.map(w=>esc(w.name)+` <span class="pos">+${tok(w.gain)}</span>`).join(" · ")}</b></div></div>`;
   if(cur)h+=`<button class="darkbtn" data-act="dkwarn"><span class="dkic">${DK_ICON}</span><span><b>Le côté dark</b><small>Paris inventés et anonymes entre membres</small></span><span class="arr">›</span></button>`;
   if(cur){const nd=(L.duels||[]).filter(x=>x.status==="open"&&String(x.a)!==String(d.me)).length;
-    h+=`<div class="seg tabs3 tabs4"><button data-act="lgview" data-v="rank" aria-pressed="${L.view==="rank"}">Classement</button><button data-act="lgview" data-v="prono" aria-pressed="${L.view==="prono"}">Prono</button><button data-act="lgview" data-v="feed" aria-pressed="${L.view==="feed"}">Activité</button><button data-act="lgview" data-v="duels" aria-pressed="${L.view==="duels"}">Duels${nd?` <span class="pill">${nd}</span>`:""}</button></div>`;
+    const nc=chatUnread(cur.code);
+    h+=pushBanner()+`<div class="seg tabs3 tabs5"><button data-act="lgview" data-v="rank" aria-pressed="${L.view==="rank"}">Rang</button><button data-act="lgview" data-v="prono" aria-pressed="${L.view==="prono"}">Prono</button><button data-act="lgview" data-v="feed" aria-pressed="${L.view==="feed"}">Fil</button><button data-act="lgview" data-v="duels" aria-pressed="${L.view==="duels"}">Duels${nd?` <span class="pill">${nd}</span>`:""}</button><button data-act="lgview" data-v="chat" aria-pressed="${L.view==="chat"}">Chat${nc?` <span class="pill">${nc}</span>`:""}</button></div>`;
+    if(L.view==="chat")return h+viewChat(cur);
     if(L.view==="prono")return h+viewProno(cur)+lgFooter(cur);
     if(L.view==="feed")return h+viewFeed()+lgFooter(cur);
     if(L.view==="duels")return h+viewDuels(cur)+lgFooter(cur)}
@@ -1766,6 +1793,60 @@ function viewProno(cur){const j=U.pr.data;if(!j){loadProno();return`<div class="
     rows.map((r,i)=>`<div class="prow${String(r.id)===String(j.me)?" me":""}" data-act="prof" data-id="${esc(r.id)}"><span class="rk">${i+1}</span>${avatar(r.id,r.name,r.av,"av")}<div><b>${esc(r.name)}${String(r.id)===String(j.me)?" (toi)":""}${r.gold?` <span class="trs">${ic("target")}${r.gold>1?r.gold:""}</span>`:""}</b><small>${t==="week"?`${r.n}/${j.matches.length} pronos · ${r.exact} score${r.exact>1?"s":""} exact${r.exact>1?"s":""}`:`${r.season} points au total`}</small></div><span class="v">${r[key]} pts</span></div>`).join("")}
   return h}
 
+/* ---------- notifications ----------
+   Envoyées par le serveur quand un collègue fait quelque chose qui te concerne (duel, pari dark, chat, réaction, arrivée).
+   Sur iPhone : iOS 16.4 ou plus et l'app installée sur l'écran d'accueil. */
+const VAPID_PUB="BNb9Bfnw4qxD1NTgsPfjQk5ufvrkK7f5ZE2Mid5KNfArGpm1j0NrPXfXb4u8HQQ8jydYMGUVQScISDAq81Z9KIw";
+const pushOK=()=>"serviceWorker"in navigator&&"PushManager"in window&&"Notification"in window;
+function pushState(){if(!pushOK())return"na";if(Notification.permission==="denied")return"denied";return S.push&&Notification.permission==="granted"?"on":"off"}
+const b64u=s=>{const p="=".repeat((4-s.length%4)%4),r=atob((s+p).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from(r,c=>c.charCodeAt(0))};
+async function pushEnable(){if(!pushOK()){toast(IOS&&!STANDALONE?"Installe d’abord l’app sur l’écran d’accueil.":"Notifications indisponibles sur ce téléphone.","bad");return}
+  try{const perm=await Notification.requestPermission();if(perm!=="granted"){toast("Notifications refusées.","bad");render();return}
+    const reg=await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();
+    if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID_PUB)});
+    if(!(await ensureSession()))throw new Error("offline");await api("push_sub",{sub:sub.toJSON()});S.push=1;save();render();toast("🔔 Notifications activées !","win")}
+  catch(e){toast("Impossible d’activer les notifications pour l’instant.","bad")}}
+async function pushDisable(){try{const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();if(sub){api("push_unsub",{endpoint:sub.endpoint}).catch(()=>{});await sub.unsubscribe()}}catch(e){}
+  S.push=0;save();render();toast("Notifications désactivées.")}
+// le téléphone peut renouveler son abonnement : on le renvoie au serveur à chaque ouverture
+async function pushRefresh(){if(!S.push||!pushOK()||Notification.permission!=="granted")return;try{const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();
+  if(sub&&S.tok)api("push_sub",{sub:sub.toJSON()}).catch(()=>{});else if(!sub)pushEnable()}catch(e){}}
+function pushBanner(){if(pushState()!=="off")return"";let x=0;try{x=+localStorage.getItem("dap.pushx")||0}catch(e){}if(Date.now()-x<5*DAY)return"";
+  return`<div class="pushb">${ic("fire")}<div><b>Active les notifications</b><small>Pour savoir quand un collègue te défie, lance un pari dark ou t’écrit.</small></div><button class="btn" data-act="pushon">Activer</button><button class="x" data-act="pushx" aria-label="Plus tard">${ic("x")}</button></div>`}
+// ouvrir le bon écran depuis une notification (…?go=duels&code=ABCDE)
+function goFrom(url){try{const u=new URL(url,location.href),g=u.searchParams.get("go"),c=u.searchParams.get("code");if(!g)return;
+  if(u.search)history.replaceState(null,"",location.pathname);U.open=null;layer("");U.tab="l";if(c)U.lg.code=c.toUpperCase();
+  U.dark=g==="dark";if(g!=="dark")U.lg.view=g;render();loadBoards();if(g==="dark")loadDark();if(g==="chat")loadChat();if(g==="duels")loadDuels();if(g==="feed")loadActFeed();if(g==="prono")loadProno();window.scrollTo({top:0})}catch(e){}}
+if("serviceWorker"in navigator)navigator.serviceWorker.addEventListener("message",e=>{if(e.data&&e.data.go)goFrom(e.data.go)});
+
+/* ---------- chat de la ligue ---------- */
+const CH={};   // code → {msgs, last, at}
+const QUICK=["😂 La honte","👏 Bien joué","🔥 Chaud !","Revanche ?","On parie ?","Pas de chance…"];
+function chatUnread(code){const c=CH[code];if(!c||!c.msgs.length)return 0;if(U.tab==="l"&&U.lg.view==="chat"&&U.lg.code===code&&!U.dark)return 0;const seen=(S.chatSeen||{})[code]||0;return c.msgs.filter(m=>m.id>seen&&String(m.who)!==String(c.me)).length}
+async function loadChat(){const code=U.lg.code;if(!code||!S.tok)return;const c=CH[code]||(CH[code]={msgs:[],last:0});
+  try{const j=await api("chat_list",{code,after:c.last});if(j.msgs.length){c.msgs=c.msgs.concat(j.msgs).slice(-200);c.last=c.msgs[c.msgs.length-1].id}c.at=Date.now();c.me=j.me}catch(e){c.err=1}
+  if(U.tab==="l"&&U.lg.view==="chat"&&U.lg.code===code&&!U.open){const box=$("#chbox"),stick=!box||box.scrollHeight-box.scrollTop-box.clientHeight<80;
+    const inp=$("#chin"),val=inp?inp.value:"",foc=document.activeElement===inp;render();const b2=$("#chbox");if(b2&&stick)b2.scrollTop=b2.scrollHeight;
+    const i2=$("#chin");if(i2){i2.value=val;if(foc)i2.focus()}
+    if(c.msgs.length){S.chatSeen=S.chatSeen||{};S.chatSeen[code]=c.last;saveLocal()}}}
+let chT=0;
+function viewChat(cur){const c=CH[cur.code];clearTimeout(chT);chT=setTimeout(()=>{if(U.tab==="l"&&U.lg.view==="chat"&&!document.hidden)loadChat()},c?5000:0);
+  if(!c)return`<div class="skel" style="height:240px"></div>`;
+  let h=`<div class="chbox" id="chbox">`,day="";
+  if(!c.msgs.length)h+=`<div class="empty" style="border:0">${ic("group")}<b>Le chat de « ${esc(cur.name)} »</b>Chambre tes collègues, prépare tes duels, commente les matchs…</div>`;
+  for(const m of c.msgs){const d=fDay(m.at);if(d!==day){h+=`<div class="chday">${d}</div>`;day=d}const mine=String(m.who)===String(c.me);
+    h+=`<div class="chm${mine?" me":""}">${mine?"":`<span data-act="prof" data-id="${esc(m.who)}">${avatar(m.who,m.name,m.av,"av")}</span>`}<div class="chb">${mine?"":`<b>${esc(m.name)}</b>`}<p>${esc(m.text).replace(/\n/g,"<br>")}</p><small>${fTime(m.at)}${mine?` · <button class="link" data-act="chdel" data-id="${esc(m.id)}">supprimer</button>`:""}</small></div></div>`}
+  h+=`</div><div class="chq">${QUICK.map(q=>`<button data-act="chq" data-t="${esc(q)}">${esc(q)}</button>`).join("")}</div>
+  <div class="chin"><textarea id="chin" rows="1" maxlength="400" placeholder="Écris à la ligue…"></textarea><button class="btn" data-act="chsend" aria-label="Envoyer">${ic("share")}</button></div>`;
+  setTimeout(()=>{const b=$("#chbox");if(b&&!b._s){b._s=1;b.scrollTop=b.scrollHeight}},0);
+  if(c.msgs.length){S.chatSeen=S.chatSeen||{};S.chatSeen[cur.code]=c.last;saveLocal()}
+  return h}
+async function chatSend(quick){const inp=$("#chin"),text=(quick||(inp&&inp.value)||"").trim();if(!text)return;const code=U.lg.code;
+  if(!quick&&inp)inp.value="";
+  try{await api("chat_send",{code,text});await loadChat();const b=$("#chbox");if(b)b.scrollTop=b.scrollHeight}
+  catch(e){if(!quick&&inp)inp.value=text;toast(e.code==="slow_down"?"Doucement ! Trop de messages.":"Message non envoyé (pas de connexion).","bad")}}
+async function chatDelete(id){if(!confirm("Supprimer ce message ?"))return;try{await api("chat_delete",{id});const c=CH[U.lg.code];if(c)c.msgs=c.msgs.filter(m=>String(m.id)!==String(id));render()}catch(e){}}
+
 /* ---------- duels ---------- */
 async function loadDuels(){if(!S.tok)return;try{const j=await api("duels",{});U.lg.duels=j.duels;U.lg.duelsAt=Date.now();await checkDuels(j.duels,j.me)}catch(e){}
   if(U.tab==="l"&&!U.open)render()}
@@ -2018,7 +2099,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.24";
+const VERSION="1.25";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -2034,7 +2115,8 @@ render();
 if(!S.name){U.open="welcome";layer(viewWelcome(false))}else{syncSoon();joinFromLink()}
 loadFeeds();
 setTimeout(()=>{if(S.dk&&Object.values(S.dk).some(x=>!x.settled))checkDarkAll();},5000);
-setTimeout(()=>{if(S.name)loadBoards().then(()=>{if(U.lg.data&&U.lg.data.leagues.length)loadProno()});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},3000);
+goFrom(location.href);
+setTimeout(()=>{pushRefresh();if(S.name)loadBoards().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){loadProno();const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},3000);
 setInterval(()=>{if(!document.hidden&&S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},12e4);
 setInterval(()=>{if(document.hidden)return;
   const anyLive=[...REG.values()].some(m=>m.src==="espn"&&m.state==="in");const stale=Object.values(FEED).some(f=>f.at&&Date.now()-f.at>(anyLive?6e4:5*6e4));

@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "10";
+const SCHEMA_VERSION = "11";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -145,6 +145,20 @@ const STATEMENTS = [
      joker boolean not null default false,
      at timestamptz not null default now(),
      primary key (week, player, mid))`,
+  // notifications (abonnements de chaque téléphone) et chat de ligue
+  `create table if not exists push_subs (
+     endpoint text primary key,
+     player bigint not null references players(id) on delete cascade,
+     keys jsonb not null,
+     created_at timestamptz not null default now())`,
+  `create index if not exists push_subs_player on push_subs(player)`,
+  `create table if not exists chat (
+     id bigserial primary key,
+     code text not null references leagues(code) on delete cascade,
+     player bigint not null references players(id) on delete cascade,
+     text text not null,
+     at timestamptz not null default now())`,
+  `create index if not exists chat_code on chat(code, id desc)`,
   `create table if not exists rate_hits (key text not null, win bigint not null, n int not null default 0, primary key (key, win))`,
 ];
 

@@ -3,6 +3,7 @@
 import { db, hashToken, newToken, ipKey, overLimit } from "./_db.js";
 import { timingSafeEqual } from "node:crypto";
 import { buildWeek, refreshResults, points } from "./_prono.js";
+import { notify, members } from "./_push.js";
 
 const ORIGINS = [
   "https://skelvo.fr", "https://www.skelvo.fr", "https://skelvo.github.io",
@@ -40,6 +41,8 @@ async function pronoWeek(s, noRefresh) {
   }
   return { week: w.w, from, to, matches: row.matches };
 }
+const lname = async (s, code) => ((await s.query(`select name from leagues where code = $1`, [code]))[0] || {}).name || "ta ligue";
+const go = (view, code) => `./?go=${view}&code=${encodeURIComponent(code)}`;
 const isMember = async (s, code, pid) => !!(code && (await s.query(`select 1 from league_members where code = $1 and player = $2`, [code, pid]))[0]);
 const ACT_KINDS = ["bet", "won", "cash", "wheel", "defis", "duel", "duelwin", "join"];
 const EMOS = ["🔥", "😂", "👏", "😱"];
@@ -265,6 +268,7 @@ const ACTIONS = {
       const n = (await s.query(`select count(*)::int as n from league_members where player = $1`, [p.id]))[0].n;
       if (n >= MAX_LEAGUES) throw fail(400, "too_many");
       await s.query(`insert into league_members (code, player) values ($1, $2) on conflict do nothing`, [code, p.id]);
+      await notify(s, await members(s, code), { title: l.name, body: `${p.name} a rejoint la ligue 👋`, url: go("rank", code), tag: "join-" + code }, p.id);
     }
     return { code, name: l.name, already: !!already };
   },
@@ -371,6 +375,7 @@ const ACTIONS = {
       `insert into dark_bets (code, creator, question, options, closes, kind, unit) values ($1, $2, $3, $4::jsonb, to_timestamp($5::float8 / 1000), $6, $7) returning id`,
       [code, p.id, q, JSON.stringify(opts), closes, kind, cleanName(b.unit, 12) || null]);
     await s.query(`insert into activity (player, kind, data) values ($1, 'darknew', $2::jsonb)`, [p.id, JSON.stringify({ code, q, id: r[0].id })]);
+    await notify(s, await members(s, code), { title: "😈 Nouveau pari dark · " + (await lname(s, code)), body: q, url: go("dark", code), tag: "dark-" + r[0].id }, p.id);
     return { id: r[0].id };
   },
 
@@ -439,6 +444,8 @@ const ACTIONS = {
     if (!r[0]) throw fail(400, "unavailable");
     const d = r[0], txt = d.kind === "num" ? String(val) + (d.unit ? " " + d.unit : "") : d.options[result];
     await s.query(`insert into activity (player, kind, data) values ($1, 'darkres', $2::jsonb)`, [p.id, JSON.stringify({ code: d.code, q: d.question, r: txt, id: d.id })]);
+    const stakers = (await s.query(`select player from dark_stakes where bet = $1`, [d.id])).map((x) => x.player);
+    await notify(s, stakers, { title: "😈 Résultat du pari dark", body: `« ${d.question} » : ${txt}. Tu as 12 h pour contester.`, url: go("dark", d.code), tag: "darkres-" + d.id }, p.id);
     return { ok: true };
   },
 
@@ -541,6 +548,61 @@ const ACTIONS = {
     return { ok: true };
   },
 
+  // ---- Notifications ----
+  async push_sub(s, b) {
+    const p = await me(s, b.token);
+    const sub = b.sub || {};
+    const ep = String(sub.endpoint || "");
+    if (!/^https:\/\/[^\s]{10,600}$/.test(ep) || !sub.keys || !sub.keys.p256dh || !sub.keys.auth) throw fail(400, "sub");
+    const keys = { p256dh: String(sub.keys.p256dh).slice(0, 200), auth: String(sub.keys.auth).slice(0, 100) };
+    await s.query(`insert into push_subs (endpoint, player, keys) values ($1, $2, $3::jsonb) on conflict (endpoint) do update set player = excluded.player, keys = excluded.keys`,
+      [ep, p.id, JSON.stringify(keys)]);
+    return { ok: true };
+  },
+  async push_unsub(s, b) {
+    const p = await me(s, b.token);
+    await s.query(`delete from push_subs where endpoint = $1 and player = $2`, [String(b.endpoint || ""), p.id]);
+    return { ok: true };
+  },
+  async push_test(s, b) {
+    const p = await me(s, b.token);
+    if (await overLimit("pushtest:" + p.id, 5, 3600)) throw fail(429, "slow_down");
+    await notify(s, [p.id], { title: "D’amateur à pro", body: "Les notifications marchent 🎉", url: "./", tag: "test" });
+    return { ok: true };
+  },
+
+  // ---- Chat de la ligue ----
+  async chat_send(s, b, req) {
+    const p = await me(s, b.token);
+    const code = cleanName(b.code, 8).toUpperCase();
+    if (!(await isMember(s, code, p.id))) throw fail(403, "not_member");
+    const text = String(b.text ?? "").replace(/[\u0000-\u0008\u000b-\u001f]/g, "").replace(/\n{3,}/g, "\n\n").trim().slice(0, 400);
+    if (!text) throw fail(400, "empty");
+    if (await overLimit("chat:" + p.id, 30, 60)) throw fail(429, "slow_down");
+    const r = await s.query(`insert into chat (code, player, text) values ($1, $2, $3) returning id, extract(epoch from at) * 1000 as ms`, [code, p.id, text]);
+    // une notification de chat au plus toutes les 10 min par membre et par ligue
+    const mem = (await members(s, code)).filter((x) => String(x) !== String(p.id));
+    const to = [];
+    for (const m of mem) if (!(await overLimit(`pushchat:${m}:${code}`, 1, 600))) to.push(m);
+    if (to.length) await notify(s, to, { title: `💬 ${p.name} · ${await lname(s, code)}`, body: text.slice(0, 140), url: go("chat", code), tag: "chat-" + code });
+    return { id: r[0].id, at: Math.round(Number(r[0].ms)) };
+  },
+  async chat_list(s, b) {
+    const p = await me(s, b.token);
+    const code = cleanName(b.code, 8).toUpperCase();
+    if (!(await isMember(s, code, p.id))) throw fail(403, "not_member");
+    const after = int(b.after, 0, 1e15);
+    const rows = await s.query(
+      `select c.id, c.player, pl.name, pl.avatar_v, c.text, extract(epoch from c.at) * 1000 as ms from chat c join players pl on pl.id = c.player
+       where c.code = $1 and c.id > $2 order by c.id desc limit 120`, [code, after]);
+    return { me: p.id, msgs: rows.reverse().map((r) => ({ id: r.id, who: r.player, name: r.name, av: r.avatar_v || 0, text: r.text, at: Math.round(Number(r.ms)) })) };
+  },
+  async chat_delete(s, b) {
+    const p = await me(s, b.token);
+    await s.query(`delete from chat where id = $1 and player = $2`, [int(b.id, 0, 1e15), p.id]);
+    return { ok: true };
+  },
+
   // ---- Fil d'activité ----
   async act(s, b) {
     const p = await me(s, b.token);
@@ -575,7 +637,15 @@ const ACTIONS = {
     const id = int(b.act, 0, 1e15);
     const cur = (await s.query(`select emo from reactions where act = $1 and player = $2`, [id, p.id]))[0];
     if (cur && cur.emo === emo) await s.query(`delete from reactions where act = $1 and player = $2`, [id, p.id]);
-    else await s.query(`insert into reactions (act, player, emo) values ($1, $2, $3) on conflict (act, player) do update set emo = excluded.emo`, [id, p.id, emo]);
+    else {
+      await s.query(`insert into reactions (act, player, emo) values ($1, $2, $3) on conflict (act, player) do update set emo = excluded.emo`, [id, p.id, emo]);
+      const a = (await s.query(`select a.player, a.kind, a.data from activity a where a.id = $1`, [id]))[0];
+      if (a && !a.kind.startsWith("dark") && !(await overLimit(`pushreact:${a.player}:${p.id}`, 1, 600))) {
+        const what = { bet: "ton pari", won: "ton gain", cash: "ton encaissement", wheel: "ta roue", defis: "tes défis", duel: "ton duel", duelwin: "ta victoire en duel", join: "ton arrivée" }[a.kind] || "ton activité";
+        const code = (await s.query(`select code from league_members where player = $1 intersect select code from league_members where player = $2 limit 1`, [a.player, p.id]))[0];
+        await notify(s, [a.player], { title: `${p.name} a réagi ${emo}`, body: `à ${what}`, url: code ? go("feed", code.code) : "./", tag: "react-" + id });
+      }
+    }
     return { ok: true };
   },
 
@@ -593,6 +663,7 @@ const ACTIONS = {
     const r = await s.query(
       `insert into duels (code, a, mid, mlabel, opts, t, ka, stake) values ($1, $2, $3, $4, $5::jsonb, to_timestamp($6::float8 / 1000), $7, $8) returning id`,
       [code, p.id, cleanName(b.mid, 80), cleanName(b.mlabel, 80), JSON.stringify(opts), t, ka, stake]);
+    await notify(s, await members(s, code), { title: `⚔️ ${p.name} lance un duel`, body: `${opts[ka] || ""} sur ${cleanName(b.mlabel, 80)} · ${stake} jetons. Qui relève ?`, url: go("duels", code), tag: "duel-" + r[0].id }, p.id);
     return { id: r[0].id };
   },
 
@@ -603,9 +674,11 @@ const ACTIONS = {
       `update duels d set b = $2, kb = $3, status = 'live'
        where d.id = $1 and d.status = 'open' and d.a <> $2 and d.ka <> $3 and d.t > now()
          and exists (select 1 from league_members m where m.code = d.code and m.player = $2)
-       returning id, stake`, [int(b.id, 0, 1e15), p.id, kb]);
+       returning id, stake, a, code, mlabel, opts`, [int(b.id, 0, 1e15), p.id, kb]);
     if (!r[0]) throw fail(400, "unavailable");
-    return { ok: true, stake: r[0].stake };
+    const d = r[0];
+    await notify(s, [d.a], { title: `⚔️ ${p.name} a relevé ton duel !`, body: `${d.mlabel} : il mise ${d.stake} jetons sur « ${(d.opts || [])[kb] || ""} ».`, url: go("duels", d.code), tag: "duel-" + d.id });
+    return { ok: true, stake: d.stake };
   },
 
   // Le premier téléphone qui voit le match terminé donne le résultat (0, 1 ou 2) ; un duel jamais relevé expire.
@@ -616,7 +689,12 @@ const ACTIONS = {
     if (!d) throw fail(404, "unknown");
     if (d.status === "live" && new Date(d.t).getTime() < Date.now()) {
       const winner = d.ka === res ? d.a : d.kb === res ? d.b : null;
-      await s.query(`update duels set status = 'done', res = $2, winner = $3 where id = $1 and status = 'live'`, [id, res, winner]);
+      const u = await s.query(`update duels set status = 'done', res = $2, winner = $3 where id = $1 and status = 'live' returning id`, [id, res, winner]);
+      if (u[0]) {
+        const names = Object.fromEntries((await s.query(`select id, name from players where id = any($1::bigint[])`, [[d.a, d.b].filter(Boolean)])).map((x) => [String(x.id), x.name]));
+        await notify(s, [d.a, d.b].filter(Boolean), { title: "⚔️ Duel terminé · " + d.mlabel,
+          body: winner ? `${names[String(winner)] || "?"} remporte ${2 * d.stake} jetons !` : "Personne n'a vu juste : mises remboursées.", url: go("duels", d.code), tag: "duel-" + id });
+      }
     }
     return { ok: true };
   },
