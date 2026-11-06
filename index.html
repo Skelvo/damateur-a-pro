@@ -556,7 +556,17 @@ function avail(m){if(m.src!=="espn")return ALLSTATS[m.sp];
   return m.sp==="foot"?["g","sot","co","of","fo","yc","rc","pk"]:m.sp==="rugby"?["pts"]:["sets","gm","tb","s1"]}
 const odd=p=>p<.012?0:Math.round(cl(.93/p,1.01,60)*100)/100;
 const mt=(d,m)=>typeof d.t==="function"?d.t(m):d.t;
-function markets(m){const key=m.id+"|"+m.src;let L=MKC.get(key);if(L)return L;const S_=sims(m),av=avail(m);L=[];
+// En direct : on part du score actuel et on simule seulement la fin du match
+// (chaque but / essai / pénalité d'un match complet simulé est conservé avec la probabilité « temps restant »).
+const liveOK=m=>m.src==="espn"&&m.sp!=="tennis"&&m.state==="in"&&m.st&&m.min!=null&&m.min<(m.sp==="foot"?85:72);
+const canBet=m=>status(m)==="pre"||liveOK(m);
+function liveSims(m){const key=m.id+"|L|"+m.min+"|"+JSON.stringify(m.st.g||m.st.pts);let S_=MCC.get(key);if(S_)return S_;
+  const r=rng(hash(key)),full=m.sp==="foot"?90:80,f=cl((full-m.min)/full,0,1),now=m.st.g||m.st.pts,k=m.sp==="foot"?"g":"pts";S_={[k]:[new Int16Array(N),new Int16Array(N)]};
+  for(let i=0;i<N;i++){const o=SIM[m.sp](r,m);for(const p of [0,1]){const add=m.sp==="foot"?binom(r,o.g[p],f):5*binom(r,o.tr[p],f)+2*binom(r,o.cv[p],f)+3*binom(r,o.pm[p]+o.dr[p],f);S_[k][p][i]=now[p]+add}}
+  MCC.set(key,S_);return S_}
+const marketSims=m=>liveOK(m)?liveSims(m):sims(m);
+function markets(m){const lv_=liveOK(m),key=m.id+"|"+m.src+(lv_?"|L"+m.min+JSON.stringify(m.st.g||m.st.pts):"");let L=MKC.get(key);if(L)return L;
+  const S_=marketSims(m),av=lv_?[m.sp==="foot"?"g":"pts"]:avail(m);L=[];
   for(const d of MK[m.sp]){if(d.need.some(k=>!av.includes(k)))continue;
     const vals=new Float64Array(N);for(let i=0;i<N;i++){const g=k=>[S_[k][0][i],S_[k][1][i]];vals[i]=+d.val(g,m)}
     let sels=[],line=null;
@@ -619,6 +629,7 @@ function parseTeamEvent(ev,sp,lv,path){const c=ev.competitions&&ev.competitions[
   const m={id:"e-"+path.replace(/\W/g,"")+"-"+ev.id,src:"espn",path,eid:ev.id,sp,lv,bo:3,comp:SP[sp].lv[lv],h:nm(Hc),a:nm(Ac),
     hl:Hc.team&&Hc.team.logo,al:Ac.team&&Ac.team.logo,hid:Hc.team&&Hc.team.id,aid:Ac.team&&Ac.team.id,t:Date.parse(ev.date),
     state,clock:ty.shortDetail||"",done:!!ty.completed,cancel:state==="post"&&!ty.completed};
+  {const st_=ev.status||{},dc=parseInt(st_.displayClock,10);m.min=/^(HT|MT)/i.test(ty.shortDetail||"")||ty.name==="STATUS_HALFTIME"?(sp==="foot"?45:40):!isNaN(dc)?dc:Math.round((st_.clock||0)/60)}
   m.s=[recStrength(Hc,m.h,sp,lv),recStrength(Ac,m.a,sp,lv)];
   if(sp==="foot"){const d=bookDiff(c);if(d!=null)m.s=[d/2,-d/2]}
   if(state!=="pre"){const k=sp==="foot"?"g":"pts";m.st={[k]:[+Hc.score||0,+Ac.score||0]};
@@ -722,7 +733,7 @@ function fieldSvg(sp){
 function selOf(mid,mk,k){return U.sel.find(s=>s.mid===mid&&s.mk===mk&&s.k===k)}
 function oddBtn(m,mk,k,s,short){const on=!!selOf(m.id,mk.id,k),st=status(m);
   let hit="";const rs=realStats(m);if(rs){const w=outcome(mk.d,m,rs,mk.line);if(w===k)hit=" hit"}
-  return`<button class="odd${hit}" data-act="pick" data-mid="${esc(m.id)}" data-mk="${mk.id}" data-k="${k}" aria-pressed="${on}" ${st!=="pre"||!s.o?"disabled":""}>
+  return`<button class="odd${hit}" data-act="pick" data-mid="${esc(m.id)}" data-mk="${mk.id}" data-k="${k}" aria-pressed="${on}" ${!canBet(m)||!s.o?"disabled":""}>
     <span>${esc(short??s.l)}</span><b>${s.o?fr(s.o):"—"}</b></button>`}
 function mid(m){const st=status(m);
   if(st==="pre")return`<div class="mid"><div class="ko">${fTime(m.t)}</div><small>${fShort(m.t)}</small></div>`;
@@ -794,12 +805,12 @@ function viewDetail(m){const st=status(m),mks=markets(m),res=mks.find(x=>x.id===
   if(hasStats)h+=`<div class="seg"><button data-act="dtab" data-t="p" aria-pressed="${U.dtab==="p"}">Paris</button><button data-act="dtab" data-t="s" aria-pressed="${U.dtab==="s"}">Stats du match</button></div>`;
   if(m.src==="org"&&S.orgMode)h+=`<div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn wide" data-act="resform" data-mid="${esc(m.id)}">${m.res?"Modifier le résultat":"Saisir le résultat"}</button><button class="btn ghost" data-act="delm" data-mid="${esc(m.id)}">Retirer</button></div>`;
   if(hasStats&&U.dtab==="s"){h+=statsBlock(m,st==="live"&&m.src==="sim"?null:(rs||m.st))}
-  else{if(st!=="pre")h+=`<div class="info">${ic("info")}<span>${st==="post"?"Match terminé : les sélections gagnantes sont marquées d’un ✓.":"Paris fermés : le match a commencé."}</span></div>`;
+  else{if(st!=="pre")h+=`<div class="info">${ic("info")}<span>${st==="post"?"Match terminé : les sélections gagnantes sont marquées d’un ✓.":liveOK(m)?"Paris en direct : les cotes suivent le score et le temps restant.":"Paris fermés pour ce match."}</span></div>`;
     let g="";for(const mk of mks){if(mk.d.grp!==g){g=mk.d.grp;h+=`<div class="grp">${esc(g)}</div>`}
       const n=mk.sels.length;h+=`<div class="mkt"><h4>${ic(mk.d.ic,mk.d.cls||"")}${esc(mk.title)}${mk.line!=null?`<small>ligne ${fr(mk.line,1)}</small>`:""}</h4>
       <div class="odds c${n===3?3:2}">${mk.sels.map((s,k)=>oddBtn(m,mk,k,s)).join("")}</div></div>`}
     if(m.src==="espn"&&m.sp!=="foot")h+=`<p class="note">Pour ce flux, seuls les paris que l’on peut régler automatiquement sont proposés.</p>`}
-  if(U.sel.length&&st==="pre")h+=slipPanel();
+  if(U.sel.length&&canBet(m))h+=slipPanel();
   return h}
 function statsBlock(m,st){if(!st)return`<div class="empty">${ic("chart")}<b>Stats à venir</b>Elles s’affichent à la fin du match.</div>`;
   const keys=ALLSTATS[m.sp].filter(k=>k!=="s1"&&Array.isArray(st[k])&&st[k].every(v=>v!=null&&!isNaN(v)));
@@ -828,15 +839,26 @@ function ballArt(sp,cls){
     <circle cx="24" cy="24" r="22" fill="none" stroke="#5f7008" stroke-width="1"/></svg>`}
 
 /* ---------- ticket ---------- */
-function slipOdds(){return U.sel.reduce((a,s)=>a*s.o,1)}
-const comboBlocked=()=>new Set(U.sel.map(s=>s.mid)).size<U.sel.length;
+// Combiné : les paris d'un même match sont liés (ex. victoire + plus de 2,5 buts), on ne peut pas
+// multiplier leurs cotes. On compte dans les simulations du match les cas où tous se réalisent ensemble.
+function legIdx(d,m,g,L){const v=d.val(g,m);return d.ty==="ou"?(v>L.line?0:1):d.ty==="yn"?(v?0:1):v}
+function jointP(mid,legs){const m=findMatch(mid);if(!m)return 0;const S_=marketSims(m),defs=legs.map(L=>MK[m.sp].find(d=>d.id===L.mk));let c=0;
+  for(let i=0;i<N;i++){const g=k=>[S_[k][0][i],S_[k][1][i]];let ok=true;for(let j=0;j<legs.length;j++)if(legIdx(defs[j],m,g,legs[j])!==legs[j].k){ok=false;break}if(ok)c++}return c/N}
+let CIK="",CIV=null;
+function comboInfo(sel=U.sel){const key=sel.map(s=>s.mid+s.mk+s.k+s.o).join("|");if(key===CIK&&CIV)return CIV;
+  const by={};sel.forEach(s=>(by[s.mid]=by[s.mid]||[]).push(s));let odds=1,bad=false,linked=0;const groups={};
+  for(const mid in by){const L=by[mid];if(L.length===1){odds*=L[0].o;continue}
+    linked++;const p=jointP(mid,L);if(p<.004){bad=true;continue}const o=Math.round(cl(.9/p,1.01,500)*100)/100;groups[mid]=o;odds*=o}
+  CIK=key;CIV={odds:Math.round(odds*100)/100,groups,bad,linked};return CIV}
+function slipOdds(){return comboInfo().odds}
+const comboBlocked=()=>comboInfo().bad;
 function renderSlipBar(){const el=$("#slipbar");if(!U.sel.length||U.open==="slip"){el.innerHTML="";return}
   const n=U.sel.length,combo=U.combo&&n>1&&!comboBlocked();
   const cost=combo?U.stake:U.stake*n,gain=combo?U.stake*slipOdds():U.sel.reduce((a,s)=>a+U.stake*s.o,0);
   el.innerHTML=`<button class="slipbar" data-act="slip"><span class="n">${n}</span><div><b>Mon ticket${combo?" · cote "+fr(slipOdds()):""}</b><small>Mise ${tok(cost)} → gain possible ${tok(gain)}</small></div><span class="go">Valider ›</span></button>`}
 function slipPanel(){const n=U.sel.length,blocked=comboBlocked(),combo=U.combo&&n>1&&!blocked,cost=combo?U.stake:U.stake*n,
     gain=combo?U.stake*slipOdds():U.sel.reduce((a,s)=>a+U.stake*s.o,0),last=U.sel[n-1];
-  return`<div class="dslip"><div class="dl"><span class="n">${n}</span><div><b>${n===1?esc(last.l):n+" sélections"}</b><small>${n===1?esc(last.mt):combo?"Combiné · cote "+fr(slipOdds()):"Paris simples"+(blocked?" (même match)":"")}</small></div>
+  return`<div class="dslip"><div class="dl"><span class="n">${n}</span><div><b>${n===1?esc(last.l):n+" sélections"}</b><small>${n===1?esc(last.mt):combo?"Combiné · cote "+fr(slipOdds()):"Paris simples"+(blocked?" (combinaison impossible)":"")}</small></div>
     <button class="link" data-act="slip">Détails</button></div>
     ${n>1&&!blocked?`<div class="seg mini"><button data-act="combo" data-v="0" aria-pressed="${!combo}">Simples</button><button data-act="combo" data-v="1" aria-pressed="${combo}">Combiné</button></div>`:""}
     <div class="chips mini">${[10,20,50,100].map(v=>`<button data-act="stake" data-v="${v}" aria-pressed="${U.stake===v}">${v}</button>`).join("")}<input id="stk" type="number" min="1" inputmode="numeric" value="${U.stake}" aria-label="Mise${combo||n===1?"":" par pari"}"></div>
@@ -847,7 +869,7 @@ function viewSlip(){const n=U.sel.length;if(!n)return`<div class="grab"><h3>Mon 
   const blocked=comboBlocked(),combo=U.combo&&n>1&&!blocked,cost=combo?U.stake:U.stake*n,gain=combo?U.stake*slipOdds():U.sel.reduce((a,s)=>a+U.stake*s.o,0);
   return`<div class="grab"><h3>Mon ticket</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   ${n>1?`<div class="seg"><button data-act="combo" data-v="0" aria-pressed="${!combo}">Simples (${n})</button><button data-act="combo" data-v="1" aria-pressed="${combo}" ${blocked?"disabled":""}>Combiné</button></div>`:""}
-  ${blocked&&n>1?`<p class="warn">Combiné impossible : plusieurs paris portent sur le même match.</p>`:""}
+  ${blocked&&n>1?`<p class="warn">Combinaison impossible : ces paris ne peuvent pas se réaliser tous ensemble.</p>`:combo&&comboInfo().linked?`<p class="note">${ic("info")} Plusieurs paris sur le même match : la cote est recalculée car ils sont liés.</p>`:""}
   <div>${U.sel.map((s,i)=>`<div class="leg"><span class="ic">${ic(s.ic,s.cls||"")}</span><div><b>${esc(s.l)}</b><small>${esc(s.mt)}</small><small>${esc(s.ml)}</small></div><span class="o">${fr(s.o)}</span><button class="rm" data-act="unpick" data-i="${i}" aria-label="Retirer">${ic("x")}</button></div>`).join("")}</div>
   <div class="chips">${[10,20,50,100,250].map(v=>`<button data-act="stake" data-v="${v}" aria-pressed="${U.stake===v}">${v}</button>`).join("")}<button data-act="stake" data-v="max">Max</button></div>
   <div class="stake"><label for="stk">Mise${combo||n===1?"":" par pari"}</label><input id="stk" type="number" min="1" inputmode="numeric" value="${U.stake}"></div>
@@ -966,7 +988,9 @@ async function settle(){if(settling)return;settling=true;
       if(b.legs.some(L=>L.r==="l")){b.st="lost";b.done=Date.now();lost++}
       else if(b.legs.every(L=>L.r)){const live=b.legs.filter(L=>L.r==="w");b.done=Date.now();
         if(!live.length){b.st="void";b.pay=b.stake;S.bal+=b.stake;voids++}
-        else{b.odds=Math.round(live.reduce((a,L)=>a*L.o,1)*100)/100;b.pay=Math.round(b.stake*b.odds);b.st="won";S.bal+=b.pay;gain+=b.pay;won++}}}
+        else{const G=b.groups||{};let o=1;const by={};live.forEach(L=>(by[L.mid]=by[L.mid]||[]).push(L));
+          for(const mid in by){const all=b.legs.filter(L=>L.mid===mid);o*=G[mid]&&all.every(L=>L.r==="w")?G[mid]:by[mid].reduce((a,L)=>a*L.o,1)}
+          b.odds=Math.round(o*100)/100;b.pay=Math.round(b.stake*b.odds);b.st="won";S.bal+=b.pay;gain+=b.pay;won++}}}
     if(won||lost||voids){S.peak=Math.max(S.peak,S.bal);save();render();bump();
       if(won){toast(`${ic("trophy")} ${won} pari${won>1?"s":""} gagné${won>1?"s":""} : +${tok(gain)} jetons !`,"win");confetti()}
       if(lost)toast(`${lost} pari${lost>1?"s":""} perdu${lost>1?"s":""}. La revanche ?`);
@@ -984,19 +1008,23 @@ function confetti(){if(matchMedia("(prefers-reduced-motion: reduce)").matches)re
   document.body.appendChild(c);setTimeout(()=>c.remove(),3800)}
 
 /* ---------- actions ---------- */
-function pick(mid,mkId,k){const m=findMatch(mid);if(!m||status(m)!=="pre")return;const mk=markets(m).find(x=>x.id===mkId);if(!mk)return;const s=mk.sels[k];if(!s.o)return;
+function pick(mid,mkId,k){const m=findMatch(mid);if(!m||!canBet(m))return;const mk=markets(m).find(x=>x.id===mkId);if(!mk)return;const s=mk.sels[k];if(!s.o)return;
   const i=U.sel.findIndex(x=>x.mid===mid&&x.mk===mkId);const same=i>=0&&U.sel[i].k===k;if(i>=0)U.sel.splice(i,1);
   if(!same){if(U.sel.length>=12){toast("12 sélections maximum par ticket.");return}
     U.sel.push({mid,mk:mkId,k,line:mk.line,o:s.o,l:s.l,mt:mk.title,ml:m.h+" – "+m.a,ic:mk.d.ic,cls:mk.d.cls,sp:m.sp,t:m.t,
       snap:m.src==="espn"?{path:m.path,sp:m.sp,lv:m.lv}:null})}
   if(navigator.vibrate)try{navigator.vibrate(8)}catch(e){}}
 function place(){const n=U.sel.length;if(!n)return;const stake=Math.floor(U.stake);if(!(stake>0)){toast("Mise minimum : 1 jeton.","bad");return}
-  const gone=U.sel.filter(s=>{const m=findMatch(s.mid);return!m||status(m)!=="pre"});
+  const gone=U.sel.filter(s=>{const m=findMatch(s.mid);return!m||!canBet(m)});
+  // en direct, la cote a pu bouger depuis la sélection : on met à jour et on fait revalider
+  let moved=0;U.sel.forEach(s=>{const m=findMatch(s.mid);if(!m||!liveOK(m))return;const mk=markets(m).find(x=>x.id===s.mk);
+    if(!mk||mk.line!==s.line){gone.push(s);return}const o=mk.sels[s.k].o;if(o&&o!==s.o){s.o=o;moved++}});
+  if(moved&&!gone.length){toast("Le score a bougé : cotes mises à jour, vérifie et valide à nouveau.");refreshLayer();renderSlipBar();return}
   if(gone.length){U.sel=U.sel.filter(s=>!gone.includes(s));toast("Un match a commencé : sélection retirée.","bad");refreshLayer();renderSlipBar();return}
   const combo=U.combo&&n>1&&!comboBlocked(),cost=combo?stake:stake*n;if(cost>S.bal){toast("Solde insuffisant.","bad");return}
   const leg=s=>({mid:s.mid,mk:s.mk,k:s.k,line:s.line,o:s.o,l:s.l,mt:s.mt,ml:s.ml,ic:s.ic,sp:s.sp,t:s.t,snap:s.snap});
   S.bal-=cost;const at=Date.now();
-  if(combo)S.bets.push({id:"b"+at,at,stake,odds:Math.round(slipOdds()*100)/100,legs:U.sel.map(leg),st:"open"});
+  if(combo)S.bets.push({id:"b"+at,at,stake,odds:slipOdds(),groups:comboInfo().groups,legs:U.sel.map(leg),st:"open"});
   else U.sel.forEach((s,i)=>S.bets.push({id:"b"+at+"-"+i,at,stake,odds:s.o,legs:[leg(s)],st:"open"}));
   U.sel=[];save();U.open=null;layer("");U.tab="b";U.btab="o";render();bump();window.scrollTo({top:0,behavior:"smooth"});
   toast(`${ic("ticket")} Pari validé ! Bonne chance.`,"win")}
