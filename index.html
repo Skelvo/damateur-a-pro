@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>D’amateur à pro — Paris sportifs gratuits</title>
 <meta name="description" content="Paris sportifs 100 % gratuits avec des jetons fictifs : football, rugby et tennis, du district aux pros. Cartons, corners, hors-jeux, pénalités, doubles fautes, raquettes cassées…">
 <meta name="robots" content="noindex">
@@ -29,7 +29,15 @@
 body[data-sp="rugby"]{--acc:#ff7a45;--acc-ink:#1d0903}
 body[data-sp="tennis"]{--acc:#d7f25a;--acc-ink:#161b02}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html{background:var(--bg)}
+html{background:var(--bg);touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+/* écran tourné (téléphone à l'horizontale) : le jeu se met en pause derrière « Tourne ton téléphone » */
+#rot{display:none}
+@media (orientation:landscape) and (max-height:540px){
+  #rot{display:flex;position:fixed;inset:0;z-index:999;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--bg);color:var(--ink);text-align:center;padding:20px}
+  #rot b{font:800 26px "Barlow Condensed";text-transform:uppercase}#rot small{color:var(--mute)}
+  #rot svg{width:64px;height:64px;color:var(--acc);animation:turn 1.6s ease-in-out infinite}
+  body>*:not(#rot){visibility:hidden}}
+@keyframes turn{0%,20%{transform:rotate(-90deg)}60%,100%{transform:rotate(0)}}
 body{margin:0;min-height:100vh;color:var(--ink);font:16px/1.4 Barlow,system-ui,sans-serif;
   background:
     radial-gradient(900px 420px at 50% -180px,color-mix(in srgb,var(--acc) 26%,transparent),transparent 72%),
@@ -527,6 +535,7 @@ body.gated{padding-bottom:calc(24px + var(--safe-b))}
 </nav>
 <div id="layer"></div>
 <div class="toasts" id="toasts" aria-live="polite"></div>
+<div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>D’amateur à pro se joue à la verticale.</small></div>
 
 <script>
 "use strict";
@@ -1764,10 +1773,16 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
     toast(`${ic("coin")} Compte récupéré : bon retour ${esc(j.name)} !`,"win");setTimeout(()=>location.reload(),900)}
   catch(e){b.disabled=false;err.hidden=false;err.textContent=e.code==="unknown"?"Code inconnu ou expiré (48 h). Crée un nouveau code dans l’ancien navigateur.":e.code==="slow_down"?"Trop d’essais : réessaie dans une heure.":"Pas de connexion au serveur."}}
 
+/* ---------- pas de zoom (sauf pour recadrer la photo), écran en vertical ---------- */
+(function(){const inCrop=e=>e.target&&e.target.closest&&e.target.closest("#crop");
+  ["gesturestart","gesturechange","gestureend"].forEach(t=>document.addEventListener(t,e=>{if(!inCrop(e))e.preventDefault()},{passive:false}));
+  document.addEventListener("touchmove",e=>{if(e.touches.length>1&&!inCrop(e))e.preventDefault()},{passive:false});
+  try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock("portrait").catch(()=>{})}catch(e){}})();
+
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.18";
+const VERSION="1.19";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
