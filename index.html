@@ -42,7 +42,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .cond{font-family:"Barlow Condensed",Impact,sans-serif}
 
 /* ---------- top bar ---------- */
-.top{position:relative;z-index:20;padding:calc(12px + var(--safe-t)) 0 10px}
+.top{position:relative;z-index:20;padding:calc(38px + var(--safe-t)) 0 12px}
 .top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .brand{display:flex;align-items:center;gap:10px;min-width:0}
 .brand svg{flex:none}
@@ -275,7 +275,7 @@ img.crest{object-fit:contain}
 .crowd .cb i{display:block;background:var(--mute2)}.crowd .cb i.top{background:var(--sel)}
 /* écran bloquant (navigateur sur téléphone) */
 body.gated .nav,body.gated #slipbar,body.gated .top{display:none}
-body.gated #main{padding-top:calc(18px + var(--safe-t))}
+body.gated #main{padding-top:calc(44px + var(--safe-t))}
 body.gated{padding-bottom:calc(24px + var(--safe-b))}
 .gate{text-align:center;padding:8px 0 10px}.gate .gicon{width:84px;height:84px;border-radius:20px;margin:6px auto 10px;display:block;box-shadow:0 10px 30px #0008}
 .gate h1{margin:0;font:800 italic 40px/1 "Barlow Condensed";text-transform:uppercase}.gate h1 em{color:var(--acc)}
@@ -1466,7 +1466,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.14";
+const VERSION="1.15";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
