@@ -267,6 +267,14 @@ img.crest{object-fit:contain}
 .crowd{margin-top:9px;font-size:12.5px;color:var(--mute)}
 .crowd .cb{display:flex;height:4px;border-radius:3px;overflow:hidden;gap:2px;margin-bottom:5px}
 .crowd .cb i{display:block;background:var(--mute2)}.crowd .cb i.top{background:var(--sel)}
+/* écran bloquant (navigateur sur téléphone) */
+body.gated .nav,body.gated #slipbar,body.gated .top{display:none}
+body.gated #main{padding-top:calc(18px + var(--safe-t))}
+body.gated{padding-bottom:calc(24px + var(--safe-b))}
+.gate{text-align:center;padding:8px 0 10px}.gate .gicon{width:84px;height:84px;border-radius:20px;margin:6px auto 10px;display:block;box-shadow:0 10px 30px #0008}
+.gate h1{margin:0;font:800 italic 40px/1 "Barlow Condensed";text-transform:uppercase}.gate h1 em{color:var(--acc)}
+.gate .gsub{color:var(--mute);font-size:15.5px;margin:10px 4px 16px}.gate .gsub b{color:var(--ink)}
+.gate .steps,.gate .note,.gate .info{text-align:left}
 /* installer l'app */
 .instb{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,color-mix(in srgb,var(--sel) 22%,var(--card)),var(--card) 70%);border:1px solid color-mix(in srgb,var(--sel) 45%,transparent);border-radius:14px;padding:10px;margin:2px 0 12px}
 .instb .ii img{width:40px;height:40px;border-radius:10px;display:block}
@@ -1397,21 +1405,21 @@ const UA=navigator.userAgent,STANDALONE=matchMedia("(display-mode: standalone)")
 const IOS=/iphone|ipad|ipod/i.test(UA)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1),ANDROID=/android/i.test(UA);
 const IOS_SAFARI=IOS&&!/CriOS|FxiOS|EdgiOS|OPiOS|GSA\/|Instagram|FBAN|FBAV|Snapchat/i.test(UA);
 let installEvt=null;
-addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvt=e;if(U.tab==="m"&&!U.open)render();if(U.open==="install")layer(viewInstall())});
+addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvt=e;if(GATE){renderGate();return}if(U.tab==="m"&&!U.open)render();if(U.open==="install")layer(viewInstall())});
 addEventListener("appinstalled",()=>{installEvt=null;try{localStorage.setItem("dap.inst",String(Date.now()))}catch(e){}});
 function installBanner(){if(STANDALONE||!(IOS||ANDROID))return"";let x=0;try{x=+localStorage.getItem("dap.inst")||0}catch(e){}if(Date.now()-x<3*DAY)return"";
   return`<div class="instb"><span class="ii"><img src="icon-180.png" alt=""></span><div><b>Installe l’app sur ton téléphone</b><small>En 2 étapes, sans passer par un store.</small></div>
     <button class="btn" data-act="install">Comment&nbsp;?</button><button class="x" data-act="instx" aria-label="Plus tard">${ic("x")}</button></div>`}
 const SHARE_IOS=`<svg class="i" viewBox="0 0 24 24" style="color:#5fa8ff"><path d="M12 15V3M7.5 7.5L12 3l4.5 4.5"/><path d="M6 10.5H5a1 1 0 0 0-1 1V20a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8.5a1 1 0 0 0-1-1h-1"/></svg>`;
 const ADD_IOS=`<svg class="i" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/></svg>`;
-function viewInstall(){const head=`<div class="grab"><h3>Installer l’app</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
+function viewInstall(gate){const head=gate?"":`<div class="grab"><h3>Installer l’app</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
   if(IOS){const url=location.origin+location.pathname;
     return head+(IOS_SAFARI?"":`<div class="info">${ic("info")}<span><b style="color:var(--ink)">Ouvre d’abord ce lien dans Safari</b> : les autres navigateurs ne permettent pas toujours l’installation.<br><button class="btn ghost" style="margin-top:8px" data-act="copylink">Copier le lien</button></span></div>`)+
     `<p class="note">Tu as ouvert le lien depuis une autre appli (Messages, WhatsApp, Instagram…) ? Touche d’abord <b>Ouvrir dans Safari</b> (ou la boussole), puis :</p>
     <ol class="steps"><li><span class="n">1</span><div>Dans Safari, touche le bouton <b>Partager</b> ${SHARE_IOS}<small>Selon ta version d’iOS : dans la barre du bas, à côté de l’adresse, ou dans le menu <b>•••</b>.</small></div></li>
-      <li><span class="n">2</span><div>Fais défiler et choisis <b>Sur l’écran d’accueil</b> ${ADD_IOS}, puis <b>Ajouter</b>.</div></li>
+      <li><span class="n">2</span><div>Fais défiler et choisis <b>Sur l’écran d’accueil</b> ${ADD_IOS}, puis <b>Ajouter</b>.<small>Si l’option « Ouvrir comme app web » apparaît, laisse-la activée.</small></div></li>
       <li><span class="n">3</span><div>Ouvre <b>D’amateur à pro</b> depuis ton écran d’accueil et entre ton <b>code de transfert</b> : tu retrouves tes jetons, tes paris et tes ligues.<small>Sur iPhone, l’app installée ne voit pas ce que tu as fait dans Safari : le code fait le lien.</small></div></li></ol>
-    <div class="xbox" id="xbox">${S.name?`<button class="btn gold wide" data-act="xmake">${ic("ticket")} Créer mon code de transfert</button>`:`<p class="note">Choisis d’abord un pseudo pour avoir un code.</p>`}</div>
+    <div class="xbox" id="xbox">${S.name?`<button class="btn gold wide" data-act="xmake">${ic("ticket")} Créer mon code de transfert</button>`:gate?`<p class="note">Nouveau joueur ? Pas besoin de code : tu choisiras ton pseudo dans l’app.</p>`:`<p class="note">Choisis d’abord un pseudo pour avoir un code.</p>`}</div>
 `}
   if(ANDROID)return head+(installEvt?`<p class="note" style="font-size:15px">Un appui suffit : l’app s’ajoute à ton écran d’accueil, avec ton compte.</p><button class="btn gold wide" data-act="instgo">${ic("plus")} Installer l’app</button>`
     :`<ol class="steps"><li><span class="n">1</span><div>Dans Chrome, touche le menu <b>⋮</b> en haut à droite.</div></li>
@@ -1420,7 +1428,17 @@ function viewInstall(){const head=`<div class="grab"><h3>Installer l’app</h3><
       <p class="note">Sur un autre navigateur (Samsung Internet, Firefox…), l’option se trouve aussi dans le menu, sous « Ajouter à l’écran d’accueil ».</p>`);
   return head+`<p class="note">Ouvre ce site sur ton téléphone pour l’installer sur l’écran d’accueil.</p>`}
 async function installPrompt(){if(!installEvt)return;installEvt.prompt();const r=await installEvt.userChoice.catch(()=>null);installEvt=null;
+  if(GATE){renderGate();if(r&&r.outcome==="accepted")toast("App installée ! Ouvre-la depuis ton écran d’accueil.","win");return}
   if(r&&r.outcome==="accepted"){closeLayer();toast("App installée ! Retrouve-la sur ton écran d’accueil.","win")}else layer(viewInstall())}
+// Sur téléphone, le jeu ne s'utilise que depuis l'app installée (écran d'accueil) : dans un navigateur,
+// on n'affiche que la marche à suivre (et le code de transfert pour ceux qui jouaient déjà ici).
+const GATE=!STANDALONE&&!matchMedia("(display-mode: fullscreen), (display-mode: minimal-ui)").matches&&(IOS||ANDROID);
+function renderGate(){const lg=new URLSearchParams(location.search).get("ligue");
+  document.body.classList.add("gated");
+  $("#main").innerHTML=`<div class="gate"><img src="icon-180.png" alt="" class="gicon">
+    <h1>D’amateur <em>à pro</em></h1><p class="gsub">Le jeu se joue <b>uniquement depuis l’app</b> sur ton écran d’accueil. C’est gratuit, sans store, et ça prend 10 secondes.</p>
+    ${lg?`<div class="xcode" style="margin-bottom:12px"><small>Invitation à une ligue : une fois dans l’app, va dans Ligues › Rejoindre et entre ce code</small><b>${esc(lg.toUpperCase().slice(0,8))}</b></div>`:""}
+    ${viewInstall(true)}</div>`}
 // Code de transfert : on envoie tout l'état du jeu (sauf le jeton) au serveur, valable 48 h
 async function transferOut(){const box=$("#xbox");if(box)box.innerHTML=`<div class="skel" style="height:70px"></div>`;
   try{if(!(await ensureSession()))throw{code:"offline"};await syncNow();const st={...S};delete st.tok;delete st.pid;
@@ -1442,6 +1460,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
   catch(e){b.disabled=false;err.hidden=false;err.textContent=e.code==="unknown"?"Code inconnu ou expiré (48 h). Crée un nouveau code dans l’ancien navigateur.":e.code==="slow_down"?"Trop d’essais : réessaie dans une heure.":"Pas de connexion au serveur."}}
 
 /* ---------- démarrage ---------- */
+if(GATE)renderGate();else{
 render();
 if(!S.name){U.open="welcome";layer(viewWelcome(false))}else{syncSoon();joinFromLink()}
 loadAm().then(()=>{if(!U.open)render();settle()});setInterval(()=>{if(!document.hidden)loadAm().then(()=>{if(!U.open)render()})},12e4);
@@ -1452,6 +1471,7 @@ setInterval(()=>{if(document.hidden)return;
   else if(!U.open)render();
   settle()},30000);
 settle();
+}
 if("serviceWorker"in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
 </body>
