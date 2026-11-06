@@ -1455,7 +1455,9 @@ function viewTransferIn(){return`<div class="grab"><h3>Code de transfert</h3><bu
 async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x-err"),b=$("[data-act=xferok]");if(code.replace(/[^a-z0-9]/gi,"").length<8){$("#x-code").focus();return}
   b.disabled=true;err.hidden=true;
   try{const j=await api("use_transfer",{code});const st=j.state&&typeof j.state==="object"?j.state:{};
-    S=Object.assign({v:2,name:"",bal:1000,peak:1000,bonus:"",bets:[],org:[],orgMode:false,sim:false},st,{tok:j.token,pid:j.id,name:j.name});saveLocal();
+    if(j.state&&typeof j.state==="object")S=Object.assign({v:2,name:"",bal:1000,peak:1000,bonus:"",bets:[],org:[],orgMode:false,sim:false},st,{tok:j.token,pid:j.id,name:j.name});
+    else Object.assign(S,{tok:j.token,pid:j.id,name:j.name});   // code sans sauvegarde : on garde ce qu'il y a sur ce téléphone
+    saveLocal();
     toast(`${ic("coin")} Compte récupéré : bon retour ${esc(j.name)} !`,"win");setTimeout(()=>location.reload(),900)}
   catch(e){b.disabled=false;err.hidden=false;err.textContent=e.code==="unknown"?"Code inconnu ou expiré (48 h). Crée un nouveau code dans l’ancien navigateur.":e.code==="slow_down"?"Trop d’essais : réessaie dans une heure.":"Pas de connexion au serveur."}}
 

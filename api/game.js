@@ -1,6 +1,7 @@
 // Seule fonction serveur de D'amateur à pro : comptes anonymes, ligues entre amis, classements,
 // et « ce que parient les autres ». Tout passe par POST /api/game {action, ...}.
 import { db, hashToken, newToken, ipKey, overLimit } from "./_db.js";
+import { timingSafeEqual } from "node:crypto";
 
 const ORIGINS = [
   "https://skelvo.fr", "https://www.skelvo.fr", "https://skelvo.github.io",
@@ -13,6 +14,10 @@ const cleanName = (v, max) => String(v ?? "").replace(/[\u0000-\u001f<>]/g, "").
 const num = (v, lo, hi) => { const n = Number(v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : lo; };
 const int = (v, lo, hi) => Math.round(num(v, lo, hi));
 const fail = (status, error) => Object.assign(new Error(error), { status, error });
+function admin(b) {
+  const want = process.env.ADMIN_KEY || "", got = String(b.key || "");
+  if (want.length < 24 || got.length !== want.length || !timingSafeEqual(Buffer.from(got), Buffer.from(want))) throw fail(403, "forbidden");
+}
 // violation de l'index unique sur le pseudo
 const isTaken = (e) => e && (e.code === "23505" || /players_name_u|duplicate key/i.test(String(e.message)));
 
@@ -163,9 +168,39 @@ const ACTIONS = {
     const t = (await s.query(`select player, state from transfers where code = $1 and expires > now()`, [code]))[0];
     if (!t) throw fail(404, "unknown");
     const token = newToken();
-    const p = (await s.query(`update players set token_hash = $2, seen_at = now() where id = $1 returning id, name`, [t.player, hashToken(token)]))[0];
+    const p = (await s.query(`update players set token_hash = $2, seen_at = now() where id = $1 returning id, name, bal::float8 as bal, peak::float8 as peak`, [t.player, hashToken(token)]))[0];
     await s.query(`delete from transfers where code = $1`, [code]);
-    return { token, id: p.id, name: p.name, state: t.state };
+    return { token, id: p.id, name: p.name, bal: p.bal, peak: p.peak, state: t.state };
+  },
+
+  // ---- Administration (clé ADMIN_KEY dans les réglages Vercel ; désactivé sans elle) ----
+  async admin_players(s, b) {
+    admin(b);
+    const rows = await s.query(
+      `select p.id, p.name, p.bal::float8 as bal, p.won, p.lost, p.created_at, p.seen_at,
+         (select count(*)::int from league_members m where m.player = p.id) as leagues,
+         (select count(*)::int from am_matches a where a.created_by = p.id) as matches
+       from players p where lower(p.name) like lower($1) order by p.id`, ["%" + String(b.q || "") + "%"]);
+    return { rows };
+  },
+  async admin_delete(s, b) {
+    admin(b);
+    const ids = (Array.isArray(b.ids) ? b.ids : []).map(Number).filter(Number.isInteger).slice(0, 200);
+    if (!ids.length) return { deleted: 0 };
+    const r = await s.query(`delete from players where id = any($1::bigint[]) returning id`, [ids]);
+    await s.query(`delete from leagues l where not exists (select 1 from league_members m where m.code = l.code)`);
+    return { deleted: r.length };
+  },
+  async admin_transfer(s, b) {
+    admin(b);
+    const id = Number(b.id);
+    const p = (await s.query(`select id from players where id = $1`, [id]))[0];
+    if (!p) throw fail(404, "unknown");
+    await s.query(`delete from transfers where player = $1`, [id]);
+    let code = "";
+    for (let j = 0; j < 8; j++) code += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+    await s.query(`insert into transfers (code, player, state, expires) values ($1, $2, null, now() + interval '7 days')`, [code, id]);
+    return { code: code.slice(0, 4) + "-" + code.slice(4) };
   },
 
   async create_league(s, b) {
