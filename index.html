@@ -437,17 +437,19 @@ const ic=(id,cls="")=>`<svg class="i ${cls}"><use href="#i-${id}"/></svg>`;
 
 /* ---------- référentiel sports / niveaux ---------- */
 const SP={
-  foot:{n:"Football",ic:"ball",c:"#35d07f",dur:115,
-    lv:["Départementale 4","Départementale 3","Départementale 2","Départementale 1","Régional 3","Régional 2","Régional 1","National 3","National 2","National 1","Ligue 2","Ligue 1","Premier League","La Liga","Ligue des champions"],
-    tiers:[["District",0,3],["Ligue régionale",4,6],["National",7,9],["Pro",10,14]],dep:4,simMax:11,
-    feeds:{10:["soccer/fra.2"],11:["soccer/fra.1"],12:["soccer/eng.1"],13:["soccer/esp.1"],14:["soccer/uefa.champions"]}},
-  rugby:{n:"Rugby",ic:"rugby",c:"#ff7a45",dur:100,
-    lv:["Régionale 3","Régionale 2","Régionale 1","Fédérale 3","Fédérale 2","Fédérale 1","Nationale 2","Nationale","Pro D2","Top 14","Champions Cup"],
-    tiers:[["Régional",0,2],["Fédéral",3,5],["National",6,7],["Pro",8,10]],dep:3,simMax:9,
-    feeds:{9:["rugby/270559"],10:["rugby/271937"]}},
-  tennis:{n:"Tennis",ic:"tennis",c:"#d7f25a",dur:120,
+  foot:{n:"Football",sub:"District → Europe",ic:"ball",c:"#35d07f",dur:115,
+    lv:["Départementale 4","Départementale 3","Départementale 2","Départementale 1","Régional 3","Régional 2","Régional 1","National 3","National 2","National 1","Ligue 2","Ligue 1","Premier League","La Liga","Ligue des champions",
+      "Coupe de France","Serie A","Bundesliga","Europa League","Conference League","Championship","Liga Portugal","Eredivisie","Pro League","Ligue des nations"],base:15,
+    tiers:[["District",[0,1,2,3]],["Ligue régionale",[4,5,6]],["National",[7,8,9]],["Pro France",[10,11,15]],["Europe",[12,13,16,17,20,21,22,23]],["Coupes d’Europe",[14,18,19]],["Sélections",[24]]],dep:4,simMax:11,
+    feeds:{10:["soccer/fra.2"],11:["soccer/fra.1"],12:["soccer/eng.1"],13:["soccer/esp.1"],14:["soccer/uefa.champions"],15:["soccer/fra.coupe_de_france"],16:["soccer/ita.1"],17:["soccer/ger.1"],
+      18:["soccer/uefa.europa"],19:["soccer/uefa.europa.conf"],20:["soccer/eng.2"],21:["soccer/por.1"],22:["soccer/ned.1"],23:["soccer/bel.1"],24:["soccer/uefa.nations"]}},
+  rugby:{n:"Rugby",sub:"Régional → Tests",ic:"rugby",c:"#ff7a45",dur:100,
+    lv:["Régionale 3","Régionale 2","Régionale 1","Fédérale 3","Fédérale 2","Fédérale 1","Nationale 2","Nationale","Pro D2","Top 14","Champions Cup","Premiership","URC","Six Nations","Tests internationaux"],base:11,
+    tiers:[["Régional",[0,1,2]],["Fédéral",[3,4,5]],["National",[6,7]],["Pro",[8,9,10,11,12]],["International",[13,14]]],dep:3,simMax:9,
+    feeds:{9:["rugby/270559"],10:["rugby/271937"],11:["rugby/267979"],12:["rugby/270557"],13:["rugby/180659"],14:["rugby/289234"]}},
+  tennis:{n:"Tennis",sub:"Club → ATP/WTA",ic:"tennis",c:"#d7f25a",dur:120,
     lv:["Tournoi de club","Open départemental","Open régional","Open national","ITF World Tour","Challenger","ATP / WTA Tour"],
-    tiers:[["Amateur",0,3],["Pro",4,6]],dep:2,simMax:5,
+    base:7,tiers:[["Amateur",[0,1,2,3]],["Pro",[4,5,6]]],dep:2,simMax:5,
     feeds:{6:["tennis/atp","tennis/wta"]}}
 };
 const DEPS={"Charente":["Cognac","Angoulême","Jarnac","Ruffec","La Couronne"],"Charente-Maritime":["Saintes","Rochefort","Royan","Jonzac","Aytré"],
@@ -471,7 +473,7 @@ const U={tab:"m",sp:"foot",lv:-1,dep:"",sel:[],combo:true,stake:20,open:null,dta
 const REG=new Map(),FEED={},MCC=new Map(),MKC=new Map(),ONE=new Map();
 
 /* ---------- simulateurs (un match = un tirage) ---------- */
-const lvA=m=>1-cl(m.lv/(SP[m.sp].lv.length-1),0,1);  // 1 = plus bas niveau amateur
+const lvA=m=>1-cl(m.lv/(SP[m.sp].base-1),0,1);  // 1 = plus bas niveau amateur
 const SIM={
   foot(r,m){const a=lvA(m),[x,y]=m.s,o={g:[0,0],sot:[0,0],co:[0,0],of:[0,0],fo:[0,0],yc:[0,0],rc:[0,0],pk:[0,0]};
     for(const p of [0,1]){const d=p?y-x:x-y,hm=p?-.12:.12,l=(1.3+.6*a)*Math.exp(.33*d+hm),g=pois(r,l);
@@ -545,7 +547,7 @@ const STATL={g:["Buts","goal"],sot:["Tirs cadrés","target"],co:["Corners","corn
   sets:["Sets","tennis"],gm:["Jeux","chart"],ac:["Aces","bolt"],df:["Doubles fautes","df"],brk:["Breaks","break"],tb:["Tie-breaks","tb"],rk:["Raquettes cassées","broken"]};
 // stats que chaque source sait fournir (on ne propose que les paris réglables)
 function avail(m){if(m.src!=="espn")return ALLSTATS[m.sp];
-  return m.sp==="foot"?["g","sot","co","of","fo","yc","rc"]:m.sp==="rugby"?["pts"]:["sets","gm","tb","s1"]}
+  return m.sp==="foot"?["g","sot","co","of","fo","yc","rc","pk"]:m.sp==="rugby"?["pts"]:["sets","gm","tb","s1"]}
 const odd=p=>p<.012?0:Math.round(cl(.93/p,1.01,60)*100)/100;
 const mt=(d,m)=>typeof d.t==="function"?d.t(m):d.t;
 function markets(m){const key=m.id+"|"+m.src;let L=MKC.get(key);if(L)return L;const S_=sims(m),av=avail(m);L=[];
@@ -592,10 +594,18 @@ function simById(id){const p=id.split("-");if(p.length<4)return null;const [sp,l
 /* ---------- flux live (pros) ---------- */
 const ESPN="https://site.api.espn.com/apis/site/v2/sports/";
 async function getJSON(u,ms=9000){const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);try{const r=await fetch(u,{signal:c.signal});if(!r.ok)throw new Error(r.status);return await r.json()}finally{clearTimeout(t)}}
-const SOCSTAT={yellowCards:"yc",redCards:"rc",offsides:"of",wonCorners:"co",foulsCommitted:"fo",shotsOnTarget:"sot"};
+const SOCSTAT={yellowCards:"yc",redCards:"rc",offsides:"of",wonCorners:"co",foulsCommitted:"fo",shotsOnTarget:"sot",penaltyKickShots:"pk"};
 function recStrength(c,name,sp,lv){const s=c.records&&c.records[0]&&c.records[0].summary;
   if(s&&/^\d+-\d+-\d+$/.test(s)){const[w,d,l]=s.split("-").map(Number),n=w+d+l;if(n>=3)return cl(((3*w+d)/n-1.4)/.8,-1.4,1.4)}
   return strength(name,sp,lv)*.6}
+// cotes américaines du bookmaker (ex. +120 / -150) → écart de niveau entre les deux équipes
+const amer=o=>{const v=parseFloat(o);return isNaN(v)?null:v>0?1+v/100:1+100/-v};
+function bookDiff(c){try{const ml=c.odds&&c.odds[0]&&c.odds[0].moneyline;if(!ml)return null;
+    const g=x=>x&&amer((x.close&&x.close.odds)||(x.open&&x.open.odds)),oh=g(ml.home),oa=g(ml.away),od=g(ml.draw);if(!oh||!oa||!od)return null;
+    const t=1/oh+1/oa+1/od,ph=1/oh/t,pa=1/oa/t;let best=0,be=9;
+    for(let d=-3;d<=3.001;d+=.05){const[h,,a]=footProbs(d,0);const e=(h-ph)**2+(a-pa)**2;if(e<be){be=e;best=d}}return best}catch(e){return null}}
+function footProbs(d,a){const l1=(1.3+.6*a)*Math.exp(.33*d+.12),l2=(1.3+.6*a)*Math.exp(-.33*d-.12),P=(l,k)=>{let p=Math.exp(-l);for(let i=1;i<=k;i++)p*=l/i;return p};
+  let h=0,x=0,w=0;for(let i=0;i<12;i++)for(let j=0;j<12;j++){const p=P(l1,i)*P(l2,j);if(i>j)h+=p;else if(i===j)x+=p;else w+=p}return[h,x,w]}
 function parseTeamEvent(ev,sp,lv,path){const c=ev.competitions&&ev.competitions[0];if(!c||!c.competitors||c.competitors.length<2)return null;
   const Hc=c.competitors.find(x=>x.homeAway==="home")||c.competitors[0],Ac=c.competitors.find(x=>x.homeAway==="away")||c.competitors[1];
   const ty=(ev.status&&ev.status.type)||{},state=ty.state||"pre";
@@ -604,6 +614,7 @@ function parseTeamEvent(ev,sp,lv,path){const c=ev.competitions&&ev.competitions[
     hl:Hc.team&&Hc.team.logo,al:Ac.team&&Ac.team.logo,hid:Hc.team&&Hc.team.id,aid:Ac.team&&Ac.team.id,t:Date.parse(ev.date),
     state,clock:ty.shortDetail||"",done:!!ty.completed,cancel:state==="post"&&!ty.completed};
   m.s=[recStrength(Hc,m.h,sp,lv),recStrength(Ac,m.a,sp,lv)];
+  if(sp==="foot"){const d=bookDiff(c);if(d!=null)m.s=[d/2,-d/2]}
   if(state!=="pre"){const k=sp==="foot"?"g":"pts";m.st={[k]:[+Hc.score||0,+Ac.score||0]};
     if(sp==="foot")[Hc,Ac].forEach((x,p)=>(x.statistics||[]).forEach(s=>{const k2=SOCSTAT[s.name];if(k2){(m.st[k2]||(m.st[k2]=[null,null]))[p]=parseFloat(s.displayValue)}}))}
   return m}
@@ -626,11 +637,13 @@ function parseTennis(ev,lv,path){const out=[];const groups=ev.groupings||[{group
       if(m.t)out.push(m)}}
   return out}
 async function loadFeed(sp,lv){const paths=SP[sp].feeds[lv],key=sp+lv,now=Date.now();FEED[key]=FEED[key]||{ok:null,list:[]};
-  try{const res=await Promise.all(paths.map(p=>getJSON(`${ESPN}${p}/scoreboard?dates=${ymd(now-4*DAY)}-${ymd(now+8*DAY)}&limit=300`).then(j=>[p,j])));
-    const list=[];for(const[p,j]of res)for(const ev of j.events||[]){if(sp==="tennis")list.push(...parseTennis(ev,lv,p));else{const m=parseTeamEvent(ev,sp,lv,p);if(m)list.push(m)}}
+  const qs=sp==="tennis"?[`${ymd(now-4*DAY)}-${ymd(now+8*DAY)}`]:[...new Set([ymd(now-4*DAY).slice(0,6),ymd(now+8*DAY).slice(0,6)])];
+  try{const res=await Promise.all(paths.flatMap(p=>qs.map(q=>getJSON(`${ESPN}${p}/scoreboard?dates=${q}&limit=500`).then(j=>[p,j]))));
+    const list=[],seen=new Set();for(const[p,j]of res)for(const ev of j.events||[]){if(seen.has(p+ev.id))continue;seen.add(p+ev.id);if(sp==="tennis")list.push(...parseTennis(ev,lv,p));else{const m=parseTeamEvent(ev,sp,lv,p);if(m&&m.t>now-5*DAY&&m.t<now+9*DAY)list.push(m)}}
     FEED[key]={ok:true,list,at:now};list.forEach(m=>{const old=REG.get(m.id);if(old&&old.st&&m.st)for(const k in old.st)if(!(k in m.st))m.st[k]=old.st[k];REG.set(m.id,m)})}
   catch(e){FEED[key]={ok:false,list:[],at:now}}}
-async function loadFeeds(){const jobs=[];for(const sp in SP)for(const lv in SP[sp].feeds)jobs.push(loadFeed(sp,+lv));await Promise.all(jobs);render();settle()}
+async function loadSport(sp){const jobs=Object.keys(SP[sp].feeds).filter(l=>!FEED[sp+l]).map(l=>loadFeed(sp,+l));if(!jobs.length)return;await Promise.all(jobs);if(!U.open||U.open==="slip")render();settle()}
+async function loadFeeds(){await loadSport(U.sp);for(const sp in SP)if(sp!==U.sp)await loadSport(sp)}
 async function espnStats(m){ // complète les stats foot (cartons, corners…) via le résumé du match
   if(m.sp!=="foot"||m.src!=="espn"||m._sum)return;m._sum=1;
   try{const j=await getJSON(`${ESPN}${m.path}/summary?event=${m.eid}`);const teams=(j.boxscore&&j.boxscore.teams)||[];
@@ -680,7 +693,7 @@ function initials(name,sp){const w=name.replace(/[’']/g," ").split(/[\s-]+/).f
   const pf=PFX.foot.concat(PFX.rugby);const core=w.filter(x=>!pf.includes(x)&&!/^(de|du|la|le|les|lès|sur|l|d)$/i.test(x));
   const p=w.find(x=>pf.includes(x));return((p&&p.length<=3?p[0]:"")+(core.map(x=>x[0]).join("")||w[0].slice(0,2))).slice(0,3).toUpperCase()}
 function crest(name,sp,logo,flag){
-  if(logo)return`<img class="crest" src="${esc(logo)}" alt="" loading="lazy" referrerpolicy="no-referrer">`;
+  if(logo)return`<img class="crest" src="${esc(logo)}" alt="" loading="lazy" referrerpolicy="no-referrer" data-fb="${esc(crest(name,sp,null,flag))}" onerror="this.outerHTML=this.dataset.fb">`;
   const h=hash(name),c1=PAL[h%16];let c2=PAL[(h>>5)%16];if(c2===c1)c2=PAL[(h%16+5)%16];
   const ini=esc(initials(name,sp)),tx=lum(c1)>.6?"#111":"#fff",id="c"+h.toString(36);
   if(sp==="tennis")return`<svg class="crest" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22" fill="${c1}"/><circle cx="24" cy="24" r="22" fill="none" stroke="${c2}" stroke-width="3"/>
@@ -711,7 +724,7 @@ function mid(m){const st=status(m);
   if(st==="cancel")return`<div class="mid"><div class="ko">—</div><small>Reporté</small></div>`;
   if(st==="wait")return`<div class="mid"><div class="ko">—</div><small>Score attendu</small></div>`;
   const sc=finalScore(m);return`<div class="mid"><div class="score">${sc?sc[0]+"–"+sc[1]:"—"}</div><small>Terminé</small></div>`}
-function srcChip(m){return m.src==="espn"?`<span class="chip feed">Live</span>`:m.src==="org"?`<span class="chip org">Organisateur</span>`:`<span class="chip">Simulation</span>`}
+function srcChip(m){return m.src==="espn"?`<span class="chip feed">Réel</span>`:m.src==="org"?`<span class="chip org">Organisateur</span>`:`<span class="chip">Simulation</span>`}
 function card(m,showLv){const st=status(m),mks=markets(m),res=mks.find(x=>x.id==="res");
   const nm=mks.length-1,icons=[...new Set(mks.slice(1).map(x=>x.d.ic+"|"+(x.d.cls||"")))].slice(0,4);
   const short=m.sp==="tennis"?["1","2"]:["1","N","2"];
@@ -727,12 +740,12 @@ function resRow(m){const sc=finalScore(m)||["–","–"],w=typeof sc[0]==="numbe
   <div class="sc">${sc[0]} – ${sc[1]}</div><div class="n r">${crestOf(m,1)}<span class="${w===1?"w":""}">${esc(m.a)}</span></div></div>`}
 function ladder(){const cfg=SP[U.sp],now=Date.now();
   const cnt=l=>matchesFor(U.sp,l).filter(m=>status(m)==="pre"||status(m)==="live").length;
-  const n=cfg.lv.length;
-  const chip=l=>{const c=cnt(l),bars=Array.from({length:5},(_,i)=>`<i class="${(i+1)/5<=(l+1)/n+.001||i===0?"on":""}" style="height:${6+i*3.5}px"></i>`).join("");
+  const n=cfg.base;
+  const chip=l=>{const c=cnt(l),bars=Array.from({length:5},(_,i)=>`<i class="${(i+1)/5<=Math.min(l+1,n)/n+.001||i===0?"on":""}" style="height:${6+i*3.5}px"></i>`).join("");
     return`<button class="lvl${c?"":" zero"}" data-act="lv" data-lv="${l}" aria-pressed="${U.lv===l}"><span class="bars">${bars}</span><span>${esc(cfg.lv[l])}<em>${c?c+" match"+(c>1?"s":""):(cfg.feeds[l]&&FEED[U.sp+l]&&FEED[U.sp+l].ok===false?"Hors ligne":"—")}</em></span></button>`};
   return`<div class="ladder" id="ladder"><div class="tier"><small>Tous</small><div><button class="lvl star" data-act="lv" data-lv="-1" aria-pressed="${U.lv<0}">${ic("fire")}<span>À la une<em>Prochains</em></span></button></div></div>
-    ${cfg.tiers.map(([t,a,b])=>`<div class="tier"><small>${t}</small><div>${Array.from({length:b-a+1},(_,i)=>chip(a+i)).join("")}</div></div>`).join("")}</div>`}
-function viewMatches(){const cfg=SP[U.sp];let h=`<div class="sports">${Object.entries(SP).map(([k,s])=>`<button class="sport" style="--c:${s.c}" data-act="sp" data-sp="${k}" aria-pressed="${U.sp===k}">${ballArt(k,"ghost")}${ballArt(k,"ball")}<span>${s.n}</span><small>${s.lv.length} niveaux</small></button>`).join("")}</div>`;
+    ${cfg.tiers.map(([t,ix])=>`<div class="tier"><small>${t}</small><div>${ix.map(chip).join("")}</div></div>`).join("")}</div>`}
+function viewMatches(){const cfg=SP[U.sp];let h=`<div class="sports">${Object.entries(SP).map(([k,s])=>`<button class="sport" style="--c:${s.c}" data-act="sp" data-sp="${k}" aria-pressed="${U.sp===k}">${ballArt(k,"ghost")}${ballArt(k,"ball")}<span>${s.n}</span><small>${s.sub}</small></button>`).join("")}</div>`;
   h+=ladder();
   let list=matchesFor(U.sp,U.lv);
   const isDep=U.lv>=0&&U.lv<cfg.dep;
@@ -743,7 +756,8 @@ function viewMatches(){const cfg=SP[U.sp];let h=`<div class="sports">${Object.en
   const now=Date.now();
   let up=list.filter(m=>["pre","live","wait"].includes(status(m)));
   const done=list.filter(m=>status(m)==="post").sort((a,b)=>b.t-a.t);
-  if(U.lv<0){up=up.filter(m=>m.t<now+4*DAY||status(m)==="live").slice(0,24)}
+  if(U.lv<0){const soon=up.filter(m=>m.t<now+3*DAY||status(m)==="live"),real=soon.filter(m=>m.src!=="sim"),sim=soon.filter(m=>m.src==="sim");
+    up=real.slice(0,30).concat(sim.slice(0,real.length>=12?4:24-real.length)).sort((a,b)=>a.t-b.t)}
   const showLv=U.lv<0;
   if(!up.length&&loadingPro(U.sp,U.lv)&&U.lv>=0&&cfg.feeds[U.lv])h+=`<div class="skel"></div><div class="skel"></div>`;
   else if(!up.length)h+=emptyLevel();
@@ -986,7 +1000,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
   e.stopPropagation();
   switch(a){
     case"tab":U.tab=d.tab;U.open=null;layer("");render();window.scrollTo({top:0});break;
-    case"sp":U.sp=d.sp;U.lv=-1;U.dep="";render();break;
+    case"sp":U.sp=d.sp;U.lv=-1;U.dep="";render();loadSport(d.sp);break;
     case"lv":U.lv=+d.lv;render();break;
     case"open":U.dtab="p";openDetail(d.mid);break;
     case"close":closeLayer();break;
