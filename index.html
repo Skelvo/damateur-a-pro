@@ -1612,10 +1612,10 @@ async function deletePhoto(){if(!confirm("Supprimer ta photo de profil ?"))retur
 const DK_ICON=`<svg viewBox="0 0 24 24" class="i" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l3.5 4.5M20 4l-3.5 4.5"/><path d="M12 21c-4.4 0-7-3-7-7.2C5 9.6 8 7 12 7s7 2.6 7 6.8C19 18 16.4 21 12 21z"/><path d="M8.5 13.5l2 .8M15.5 13.5l-2 .8M10 17.5c1.3.7 2.7.7 4 0"/></svg>`;
 function viewDarkWarn(){const cur=U.lg.data.leagues.find(l=>l.code===U.lg.code);
   return`<div class="dkwarn"><div class="dkbig">${DK_ICON}</div><h2>Tu entres dans le côté dark</h2>
-  <p>Ici, ce sont les membres de <b>« ${esc(cur?cur.name:"ta ligue")} »</b> qui inventent les paris, <b>anonymement</b> : « Léo sera en retard demain ? », « Combien de temps avant que le prof s’énerve ? »…</p>
+  <p>Ici, ce sont les membres de <b>« ${esc(cur?cur.name:"ta ligue")} »</b> qui inventent les paris, <b>anonymement</b> : « Julien arrivera en retard lundi ? », « Combien de temps va durer la réunion de 14 h ? »…</p>
   <ul><li>Les mises vont dans un <b>pot commun</b> : les gagnants se le partagent.</li>
   <li>Le créateur ne peut pas parier sur son propre pari. C’est lui qui donne le résultat, et les autres ont <b>12 h pour contester</b>.</li>
-  <li><b>Rien de méchant</b> : pas de moqueries, rien sur la santé, le physique, la famille ou la vie privée de quelqu’un. Si ça blesse, ce n’est plus drôle.</li>
+  <li><b>Rien de méchant</b> : pas de moqueries, rien sur la santé, le physique, la famille ou la vie privée de quelqu’un. Ce sont des collègues : si ça peut blesser ou mettre mal à l’aise, ce n’est plus drôle.</li>
   <li>Tout le monde peut <b>signaler</b> un pari : à 2 signalements, il disparaît.</li></ul>
   <button class="btn wide dkgo" data-act="dkenter">${DK_ICON} J’entre, j’ai compris</button><button class="link" data-act="close" style="display:block;margin:12px auto 0">Non merci, je reste dans la lumière</button></div>`}
 function loadDark(){const c=U.lg.code;if(!c||!S.tok)return Promise.resolve();
@@ -1627,7 +1627,7 @@ function viewDark(cur){const D=U.dk&&U.dk.code===cur.code?U.dk.bets:null;if(!D)l
   let h=`<div class="dkhead"><div><small>${esc(cur.name)}</small><h2>${DK_ICON} Le côté dark</h2><p>Paris inventés par les membres. Personne ne sait qui les a créés.</p></div></div>
   <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:12px"><button class="btn" data-act="dknew">${ic("plus")} Inventer un pari</button><button class="btn ghost" data-act="dkexit">Quitter</button></div>`;
   if(!D)return h+`<div class="skel"></div><div class="skel"></div>`;
-  if(!D.length)return h+`<div class="empty">${DK_ICON}<b>Rien de louche pour l’instant</b>Lance le premier pari : retards, profs, sorties, défis entre potes…</div>`;
+  if(!D.length)return h+`<div class="empty">${DK_ICON}<b>Rien de louche pour l’instant</b>Lance le premier pari : retards, réunions, pauses café, paris entre collègues…</div>`;
   return h+D.map(b=>{const T=potOf(b),open=b.state==="open",my=b.my;
     const tag=open?`<span class="tag open">${leftTxt(b.closes)}</span>`:b.state==="closed"?`<span class="tag void">En attente du résultat</span>`:b.state==="contest"?`<span class="tag open">Résultat · 12 h pour contester</span>`:b.state==="final"?`<span class="tag won">Terminé</span>`:`<span class="tag lost">Annulé · remboursé</span>`;
     const u=b.unit?" "+esc(b.unit):"",near=b.kind==="num"&&b.resultNum!=null&&(b.guesses||[]).length?Math.min(...b.guesses.map(x=>Math.abs(x.g-b.resultNum))):null;
@@ -1655,7 +1655,7 @@ function viewDarkNew(){const f=U.dkf;
   const loc=t=>{const d=new Date(t);return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,16)};
   if(f.when==="custom"&&!f.t)f.t=loc(dkWhen("dem8"));
   return`<div class="grab"><h3>Inventer un pari</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
-  <div class="form"><label>Ta question<input id="dk-q" maxlength="140" placeholder="ex. Léo arrivera en retard demain ?" value="${esc(f.q||"")}"></label>
+  <div class="form"><label>Ta question<input id="dk-q" maxlength="140" placeholder="ex. Julien arrivera en retard lundi ?" value="${esc(f.q||"")}"></label>
   <div class="seg"><button data-act="dkset" data-f="type" data-v="yn" aria-pressed="${f.type==="yn"}">Oui / Non</button><button data-act="dkset" data-f="type" data-v="multi" aria-pressed="${f.type==="multi"}">Choix</button><button data-act="dkset" data-f="type" data-v="num" aria-pressed="${f.type==="num"}">Un chiffre</button></div>
   ${f.type==="num"?`<label>Unité (facultatif)<input id="dk-u" maxlength="12" placeholder="ex. min, buts, fois" value="${esc(f.unit||"")}"></label><p class="note" style="margin:0">Chacun donne son chiffre en misant : <b style="color:var(--ink)">le plus proche gagne le pot</b> (partagé en cas d’égalité).</p>`:""}
   ${f.type==="multi"?f.opts.map((o,i)=>`<input class="dk-o" data-i="${i}" maxlength="40" placeholder="Choix ${i+1}${i===0?" (ex. moins de 5 min)":i===1?" (ex. 5 à 15 min)":""}" value="${esc(o)}">`).join("")+(f.opts.length<4?`<button class="link" data-act="dkset" data-f="add">${ic("plus")} Ajouter un choix</button>`:""):""}
@@ -2018,7 +2018,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.23";
+const VERSION="1.24";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
