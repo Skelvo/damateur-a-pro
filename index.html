@@ -48,6 +48,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .brand svg{flex:none}
 .brand b{display:block;font:800 23px/1 "Barlow Condensed",sans-serif;letter-spacing:.2px;text-transform:uppercase;white-space:nowrap}
 .brand b em{font-style:italic;color:var(--acc);transition:color .4s}
+.ver{display:inline-block;vertical-align:4px;margin-left:4px;padding:2px 6px;border-radius:6px;background:var(--card2);border:1px solid var(--line2);color:var(--mute);font:700 11px/1.2 Barlow,sans-serif;letter-spacing:.3px;font-style:normal;text-transform:none}
+.ver.new{background:var(--sel);color:var(--sel-ink);border-color:var(--sel)}
+.brand>div{min-width:0}
+@media (max-width:389px){.brand b{white-space:normal;font-size:20px;line-height:.95}.brand small{white-space:normal;line-height:1.15}.bank{padding:5px 10px 5px 6px}.bank strong{font-size:18px}}
+.upd{position:fixed;left:12px;right:12px;top:calc(10px + var(--safe-t));z-index:65;max-width:520px;margin:0 auto;display:flex;align-items:center;gap:10px;padding:10px 10px 10px 14px;border:0;border-radius:14px;background:var(--sel);color:var(--sel-ink);font:700 15px Barlow;box-shadow:0 10px 30px #000a;text-align:left}
+.upd span{flex:1}.upd b{background:#00000018;border-radius:9px;padding:7px 10px;font:800 16px "Barlow Condensed";text-transform:uppercase}
 .brand small{display:block;color:var(--mute);font-size:12px;margin-top:2px;white-space:nowrap}
 .bank{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 14px 6px 8px}
 .bank .coin{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;
@@ -455,7 +461,7 @@ body.gated{padding-bottom:calc(24px + var(--safe-b))}
   <div class="wrap">
     <div class="brand">
       <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="11" fill="#13241c"/><path d="M6 31h8v-6h8v-6h8v-7" fill="none" stroke="var(--acc)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" style="transition:stroke .4s"/><path d="M27 9l5 3-5 3" fill="none" stroke="var(--acc)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="transition:stroke .4s"/><circle cx="12" cy="13" r="5" fill="#f2f6f3"/><path d="M12 9.8l2.5 1.8-1 3h-3l-1-3z" fill="#13241c"/></svg>
-      <div><b>D’amateur <em>à pro</em></b><small id="hello">Paris gratuits · du district aux pros</small></div>
+      <div><b>D’amateur <em>à&nbsp;pro</em> <span class="ver" id="ver"></span></b><small id="hello">Paris gratuits · du district aux pros</small></div>
     </div>
     <button class="bank" id="bank" data-act="tab" data-tab="c" aria-label="Mes jetons">
       <span class="coin"><svg class="i"><use href="#i-coin"/></svg></span><strong id="bal">1 000</strong>
@@ -1432,7 +1438,7 @@ const GATE=!STANDALONE&&!matchMedia("(display-mode: fullscreen), (display-mode: 
 function renderGate(){const lg=new URLSearchParams(location.search).get("ligue");
   document.body.classList.add("gated");
   $("#main").innerHTML=`<div class="gate"><img src="icon-180.png" alt="" class="gicon">
-    <h1>D’amateur <em>à pro</em></h1><p class="gsub">Le jeu se joue <b>uniquement depuis l’app</b> sur ton écran d’accueil. C’est gratuit, sans store, et ça prend 10 secondes.</p>
+    <h1>D’amateur <em>à pro</em></h1><small style="color:var(--mute2)">v${VERSION}</small><p class="gsub">Le jeu se joue <b>uniquement depuis l’app</b> sur ton écran d’accueil. C’est gratuit, sans store, et ça prend 10 secondes.</p>
     ${lg?`<div class="xcode" style="margin-bottom:12px"><small>Invitation à une ligue : une fois dans l’app, va dans Ligues › Rejoindre et entre ce code</small><b>${esc(lg.toUpperCase().slice(0,8))}</b></div>`:""}
     ${viewInstall(true)}</div>`}
 // Code de transfert : on envoie tout l'état du jeu (sauf le jeton) au serveur, valable 48 h
@@ -1456,6 +1462,19 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
     saveLocal();
     toast(`${ic("coin")} Compte récupéré : bon retour ${esc(j.name)} !`,"win");setTimeout(()=>location.reload(),900)}
   catch(e){b.disabled=false;err.hidden=false;err.textContent=e.code==="unknown"?"Code inconnu ou expiré (48 h). Crée un nouveau code dans l’ancien navigateur.":e.code==="slow_down"?"Trop d’essais : réessaie dans une heure.":"Pas de connexion au serveur."}}
+
+/* ---------- version ----------
+   Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
+   de voir qu'une mise à jour est sortie et de proposer de recharger. */
+const VERSION="1.14";
+function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
+  if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
+  try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
+async function checkUpdate(){try{const r=await fetch("version.txt?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const v=(await r.text()).trim();
+  if(v&&v!==VERSION&&!$(".upd")){const b=document.createElement("button");b.className="upd";b.innerHTML=`<span>Nouvelle version ${esc(v)} disponible</span><b>Recharger</b>`;
+    b.onclick=()=>location.reload();document.body.appendChild(b)}}catch(e){}}
+showVersion();checkUpdate();
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkUpdate()});setInterval(checkUpdate,5*6e4);
 
 /* ---------- démarrage ---------- */
 if(GATE)renderGate();else{
