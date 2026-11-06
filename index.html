@@ -12,8 +12,8 @@
 <meta name="apple-mobile-web-app-title" content="D’amateur à pro">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/svg+xml" href="icon.svg">
-<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-180.png?v=2">
+<link rel="apple-touch-icon" href="icon-180.png?v=2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -53,7 +53,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .top{position:relative;z-index:20;padding:calc(38px + var(--safe-t)) 0 12px}
 .top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .brand{display:flex;align-items:center;gap:10px;min-width:0}
-.brand svg{flex:none}
+.brand svg,.brand .blogo{flex:none}.blogo{border-radius:11px;display:block}
 .brand b{display:block;font:800 23px/1 "Barlow Condensed",sans-serif;letter-spacing:.2px;text-transform:uppercase;white-space:nowrap}
 .brand b em{font-style:italic;color:var(--acc);transition:color .4s}
 .ver{display:inline-block;vertical-align:4px;margin-left:4px;padding:2px 6px;border-radius:6px;background:var(--card2);border:1px solid var(--line2);color:var(--mute);font:700 11px/1.2 Barlow,sans-serif;letter-spacing:.3px;font-style:normal;text-transform:none}
@@ -583,7 +583,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <header class="top">
   <div class="wrap">
     <div class="brand">
-      <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="11" fill="#13241c"/><path d="M6 31h8v-6h8v-6h8v-7" fill="none" stroke="var(--acc)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" style="transition:stroke .4s"/><path d="M27 9l5 3-5 3" fill="none" stroke="var(--acc)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="transition:stroke .4s"/><circle cx="12" cy="13" r="5" fill="#f2f6f3"/><path d="M12 9.8l2.5 1.8-1 3h-3l-1-3z" fill="#13241c"/></svg>
+      <img src="icon-180.png?v=2" width="40" height="40" alt="" class="blogo">
       <div><b>D’amateur <em>à&nbsp;pro</em> <span class="ver" id="ver"></span></b><small id="hello">Paris gratuits · du district aux pros</small></div>
     </div>
     <button class="bank" id="bank" data-act="tab" data-tab="c" aria-label="Mes jetons">
@@ -2011,7 +2011,7 @@ function spin(){if(spinning||S.bonus===today())return;spinning=true;
 
 /* ---------- accueil ---------- */
 function viewWelcome(rename,msg){return`<div class="welcome">${rename?`<div class="grab"><h3>Ton pseudo</h3><button class="x" data-act="close">${ic("x")}</button></div>${msg?`<p class="warn" style="text-align:left">${msg}</p>`:""}`:`
-  <svg width="64" height="64" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="11" fill="#13241c"/><path d="M6 31h8v-6h8v-6h8v-7" fill="none" stroke="#35d07f" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M27 9l5 3-5 3" fill="none" stroke="#35d07f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="13" r="5" fill="#f2f6f3"/><path d="M12 9.8l2.5 1.8-1 3h-3l-1-3z" fill="#13241c"/></svg>
+  <img src="icon-180.png?v=2" width="76" height="76" alt="" style="border-radius:18px;display:block;margin:0 auto">
   <div class="big">D’amateur<br><em>à pro</em></div><p class="note" style="font-size:15px">Parie gratuitement sur les vrais matchs de foot, de rugby et de tennis, en direct. Fais monter ta carrière de la Départementale 4 à la Ligue des champions.</p>
   <div class="feat"><div>${ic("card","yc")}Cartons, corners, hors-jeux</div><div>${ic("posts")}Essais, pénalités ratées</div><div>${ic("broken")}Doubles fautes, raquettes cassées</div></div>`}
   <div class="form" style="text-align:left"><label>Ton pseudo<input id="w-name" maxlength="18" value="${esc(S.name)}" placeholder="ex. Le Pronostiqueur" autocomplete="nickname"></label>
@@ -2099,7 +2099,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.25";
+const VERSION="1.26";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
