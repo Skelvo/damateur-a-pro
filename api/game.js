@@ -39,6 +39,50 @@ async function myLeagues(s, pid) {
   return leagues;
 }
 
+// Stats qu'on peut déclarer par sport (mêmes clés que dans l'app) ; la 1re est le score, obligatoire.
+const SPORTS = {
+  foot: { maxLv: 9, keys: ["g", "sot", "co", "of", "fo", "yc", "rc", "pk"] },
+  rugby: { maxLv: 8, keys: ["pts", "tr", "cv", "pm", "px", "dr", "yc", "rc"] },
+  tennis: { maxLv: 5, keys: ["sets", "gm", "ac", "df", "brk", "tb", "rk", "s1"] },
+};
+function cleanStats(sp, st) {
+  if (!st || typeof st !== "object") return null;
+  const out = {};
+  for (const k of SPORTS[sp].keys) {
+    const v = st[k];
+    if (!Array.isArray(v) || v.length !== 2) continue;
+    const a = Number(v[0]), b = Number(v[1]);
+    if (!Number.isInteger(a) || !Number.isInteger(b) || a < 0 || b < 0 || a > 300 || b > 300) continue;
+    out[k] = [a, b];
+  }
+  const main = SPORTS[sp].keys[0];
+  if (!out[main]) return null;
+  if (sp === "tennis" && out.sets[0] === out.sets[1]) return null;
+  return out;
+}
+// Résultat validé : le même score déclaré par 2 joueurs (et plus que tout autre score), ou une seule
+// déclaration sans contradiction depuis 24 h. Pour chaque stat : la valeur la plus déclarée parmi
+// ceux qui ont donné ce score.
+function verdict(m, R) {
+  if (!R.length) return { res: null, conf: 0 };
+  const main = SPORTS[m.sp].keys[0], key = (st) => JSON.stringify(st[main]);
+  const groups = {};
+  for (const r of R) (groups[key(r.st)] ??= []).push(r);
+  const G = Object.values(groups).sort((x, y) => y.length - x.length);
+  const best = G[0];
+  const ok = (best.length >= 2 && (G.length === 1 || best.length > G[1].length)) ||
+    (G.length === 1 && best.length === 1 && Date.now() - Math.min(...best.map((r) => Number(r.ams))) > 24 * 3600e3);
+  if (!ok) return { res: null, conf: best.length, conflict: G.length > 1 };
+  const res = {};
+  for (const k of SPORTS[m.sp].keys) {
+    const c = {};
+    for (const r of best) if (r.st[k]) c[JSON.stringify(r.st[k])] = (c[JSON.stringify(r.st[k])] || 0) + 1;
+    const top = Object.entries(c).sort((x, y) => y[1] - x[1]);
+    if (top[0] && (!top[1] || top[0][1] > top[1][1])) res[k] = JSON.parse(top[0][0]);
+  }
+  return { res, conf: best.length };
+}
+
 const ACTIONS = {
   // Crée un joueur anonyme. Le jeton n'est gardé qu'en empreinte sha256.
   async session(s, b, req) {
@@ -146,6 +190,74 @@ const ACTIONS = {
         `insert into picks (mid, mk, k, player) values ($1, $2, $3, $4) on conflict (mid, mk, player) do update set k = excluded.k, at = now()`,
         [mid, mk, k, p.id]);
     }
+    return { ok: true };
+  },
+
+  // ---- Matchs amateurs ajoutés par les joueurs (visibles par tous) ----
+  async am_add(s, b) {
+    const p = await me(s, b.token);
+    const sp = SPORTS[b.sp] ? b.sp : null;
+    if (!sp) throw fail(400, "sport");
+    const h = cleanName(b.h, 32), a = cleanName(b.a, 32);
+    if (!h || !a || h.toLowerCase() === a.toLowerCase()) throw fail(400, "teams");
+    const t = Number(b.t);
+    if (!Number.isFinite(t) || t < Date.now() - 6 * 3600e3 || t > Date.now() + 60 * 86400e3) throw fail(400, "date");
+    const n = (await s.query(`select count(*)::int as n from am_matches where created_by = $1 and created_at > now() - interval '1 day'`, [p.id]))[0].n;
+    if (n >= 25) throw fail(429, "slow_down");
+    const fav = int(b.fav, 0, 4), sv = [[0, 0], [0.6, -0.2], [-0.2, 0.6], [1.2, -0.5], [-0.5, 1.2]][fav];
+    const id = "a-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    await s.query(
+      `insert into am_matches (id, sp, lv, dep, h, a, t, s, created_by) values ($1, $2, $3, $4, $5, $6, to_timestamp($7::float8 / 1000), $8::jsonb, $9)`,
+      [id, sp, int(b.lv, 0, SPORTS[sp].maxLv), cleanName(b.dep, 40), h, a, t, JSON.stringify(sv), p.id]);
+    return { id };
+  },
+
+  // Matchs amateurs d'une période (ou par identifiants), avec le résultat validé par les déclarations
+  async am_list(s, b) {
+    const p = b.token ? (await s.query(`select id from players where token_hash = $1`, [hashToken(b.token)]))[0] : null;
+    const ids = (Array.isArray(b.ids) ? b.ids : []).slice(0, 80).map((x) => cleanName(x, 40)).filter(Boolean);
+    const rows = ids.length
+      ? await s.query(`select *, extract(epoch from t) * 1000 as tms from am_matches where id = any($1) and not hidden`, [ids])
+      : await s.query(`select *, extract(epoch from t) * 1000 as tms from am_matches
+          where not hidden and t > now() - interval '6 days' and t < now() + interval '30 days' order by t limit 500`);
+    if (!rows.length) return { matches: [] };
+    const reps = await s.query(`select mid, player, st, extract(epoch from at) * 1000 as ams from am_reports where mid = any($1)`, [rows.map((r) => r.id)]);
+    const by = {};
+    for (const r of reps) (by[r.mid] ??= []).push(r);
+    return {
+      matches: rows.map((r) => {
+        const R = by[r.id] || [];
+        const mine = p && R.find((x) => String(x.player) === String(p.id));
+        return {
+          id: r.id, sp: r.sp, lv: r.lv, dep: r.dep, h: r.h, a: r.a, t: Math.round(Number(r.tms)), s: r.s,
+          mine: !!(p && String(r.created_by) === String(p.id)), nrep: R.length, my: mine ? mine.st : null,
+          ...verdict(r, R),
+        };
+      }),
+    };
+  },
+
+  // Déclarer le score (et les stats connues) d'un match amateur terminé
+  async am_report(s, b) {
+    const p = await me(s, b.token);
+    const m = (await s.query(`select *, extract(epoch from t) * 1000 as tms from am_matches where id = $1 and not hidden`, [cleanName(b.mid, 40)]))[0];
+    if (!m) throw fail(404, "unknown");
+    if (Date.now() < Number(m.tms) + 45 * 60e3) throw fail(400, "too_early");
+    const st = cleanStats(m.sp, b.st);
+    if (!st) throw fail(400, "score");
+    await s.query(
+      `insert into am_reports (mid, player, st) values ($1, $2, $3::jsonb) on conflict (mid, player) do update set st = excluded.st, at = now()`,
+      [m.id, p.id, JSON.stringify(st)]);
+    return { ok: true };
+  },
+
+  // Retirer un match qu'on a ajouté (tant que personne n'a déclaré de score)
+  async am_remove(s, b) {
+    const p = await me(s, b.token);
+    const r = await s.query(
+      `update am_matches set hidden = true where id = $1 and created_by = $2 and not exists (select 1 from am_reports where mid = $1) returning id`,
+      [cleanName(b.mid, 40), p.id]);
+    if (!r[0]) throw fail(400, "locked");
     return { ok: true };
   },
 

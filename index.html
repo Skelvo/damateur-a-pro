@@ -722,7 +722,7 @@ async function espnRefetch(snap){ // match hors fenêtre : on va le rechercher �
 /* ---------- statut d'un match ---------- */
 function status(m){const now=Date.now();
   if(m.src==="espn")return m.cancel?"cancel":m.state==="in"?"live":m.state==="post"?"post":"pre";
-  if(m.src==="org")return m.res?"post":now<m.t?"pre":"wait";
+  if(m.src==="org"||m.src==="am")return m.res?"post":now<m.t?"pre":"wait";
   return now<m.t?"pre":now<m.t+SP[m.sp].dur*6e4?"live":"post"}
 function liveInfo(m){const el=(Date.now()-m.t)/6e4;
   if(m.src==="espn")return{sc:m.st&&(m.st.g||m.st.pts||m.st.sets),clock:m.clock};
@@ -732,7 +732,7 @@ function liveInfo(m){const el=(Date.now()-m.t)/6e4;
   const f=cl(el/SP[m.sp].dur,0,1);
   if(m.sp==="rugby")return{sc:o.pts.map(v=>Math.round(v*f)),clock:el<42?Math.floor(el)+"’":el<57?"Mi-temps":Math.min(80,Math.floor(el-17))+"’"};
   return{sc:null,clock:"Set "+Math.min((o.sets[0]+o.sets[1]),1+Math.floor(f*(o.sets[0]+o.sets[1])))}}
-function realStats(m){const s=status(m);if(s!=="post")return null;if(m.src==="sim")return simOne(m);if(m.src==="org")return m.res;return m.st||null}
+function realStats(m){const s=status(m);if(s!=="post")return null;if(m.src==="sim")return simOne(m);if(m.src==="org"||m.src==="am")return m.res;return m.st||null}
 function finalScore(m){const st=realStats(m);if(!st)return null;return st.g||st.pts||st.sets||null}
 
 /* ---------- liste des matchs affichés ---------- */
@@ -740,12 +740,13 @@ function matchesFor(sp,lv){const cfg=SP[sp],out=[],levels=lv<0?cfg.lv.map((_,i)=
   for(const l of levels){const f=cfg.feeds[l]&&FEED[sp+l];
     if(cfg.feeds[l]){if(f&&f.ok)out.push(...f.list);else if(S.sim&&l<=cfg.simMax&&f&&f.ok===false)out.push(...simWindow(sp,l))}
     else if(S.sim&&l<=cfg.simMax)out.push(...simWindow(sp,l));
-    out.push(...S.org.filter(m=>m.sp===sp&&m.lv===l))}
+    out.push(...S.org.filter(m=>m.sp===sp&&m.lv===l));out.push(...AM.list.filter(m=>m.sp===sp&&m.lv===l))}
   out.forEach(m=>{if(!REG.has(m.id))REG.set(m.id,m)});
   return out.map(m=>REG.get(m.id)||m).sort((a,b)=>a.t-b.t)}
 const loadingPro=(sp,lv)=>{const cfg=SP[sp];return(lv<0?Object.keys(cfg.feeds):[lv]).some(l=>cfg.feeds[l]&&(!FEED[sp+l]||FEED[sp+l].ok===null))};
 function findMatch(id,snap){let m=REG.get(id);if(m)return m;
   if(id.startsWith("o-"))return S.org.find(x=>x.id===id)||null;
+  if(id.startsWith("a-"))return null;
   if(!id.startsWith("e-")){m=simById(id);if(m){REG.set(id,m);return m}}
   return null}
 
@@ -788,7 +789,7 @@ function mid(m){const st=status(m);
   if(st==="cancel")return`<div class="mid"><div class="ko">—</div><small>Reporté</small></div>`;
   if(st==="wait")return`<div class="mid"><div class="ko">—</div><small>Score attendu</small></div>`;
   const sc=finalScore(m);return`<div class="mid"><div class="score">${sc?sc[0]+"–"+sc[1]:"—"}</div><small>Terminé</small></div>`}
-function srcChip(m){return m.src==="espn"?`<span class="chip feed">Réel</span>`:m.src==="org"?`<span class="chip org">Organisateur</span>`:`<span class="chip">Simulation</span>`}
+function srcChip(m){return m.src==="espn"?`<span class="chip feed">Réel</span>`:m.src==="am"?`<span class="chip org">Réel · joueurs</span>`:m.src==="org"?`<span class="chip org">Organisateur</span>`:`<span class="chip">Simulation</span>`}
 function card(m,showLv){const st=status(m),mks=markets(m),res=mks.find(x=>x.id==="res");
   const nm=mks.length-1,icons=[...new Set(mks.slice(1).map(x=>x.d.ic+"|"+(x.d.cls||"")))].slice(0,4);
   const short=m.sp==="tennis"?["1","2"]:["1","N","2"];
@@ -815,7 +816,7 @@ function viewMatches(){const cfg=SP[U.sp];let h=`<div class="sports">${Object.en
   const isDep=U.lv>=0&&U.lv<cfg.dep;
   if(isDep||U.lv<0&&U.dep){if(U.dep)list=list.filter(m=>!m.dep||m.dep===U.dep)}
   if(isDep||U.lv<0)h+=`<div class="filters"><select class="sel" id="dep" aria-label="Département"><option value="">Tous les départements</option>${DEP.map(d=>`<option${d===U.dep?" selected":""}>${d}</option>`).join("")}</select></div>`;
-  if(S.orgMode)h+=`<button class="btn ghost wide" data-act="addm" style="margin-bottom:12px">${ic("plus")} Ajouter un match amateur</button>`;
+  if(S.orgMode||U.lv<0||(U.lv<=cfg.simMax&&!cfg.feeds[U.lv]))h+=`<button class="btn ghost wide" data-act="addm" style="margin-bottom:12px">${ic("plus")} Ajouter un vrai match ${U.sp==="tennis"?"de tournoi":"amateur"}</button>`;
   if(S.bonus!==today())h+=`<button class="btn gold wide wheelbtn" data-act="wheel" style="margin-bottom:12px">${wheelMini()} Roue de la chance du jour</button>`;
   h+=defisCard();
   const now=Date.now();
@@ -851,6 +852,7 @@ function viewDetail(m){const st=status(m),mks=markets(m),res=mks.find(x=>x.id===
     <div class="note" style="text-align:center;color:#ffffffa0;margin-top:6px">${esc(fDay(m.t))} · ${fTime(m.t)}</div></div>`;
   const hasStats=st!=="pre";
   if(hasStats)h+=`<div class="seg"><button data-act="dtab" data-t="p" aria-pressed="${U.dtab==="p"}">Paris</button><button data-act="dtab" data-t="s" aria-pressed="${U.dtab==="s"}">Stats du match</button></div>`;
+  if(m.src==="am")h+=amBlock(m,st);
   if(m.src==="org"&&S.orgMode)h+=`<div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn wide" data-act="resform" data-mid="${esc(m.id)}">${m.res?"Modifier le résultat":"Saisir le résultat"}</button><button class="btn ghost" data-act="delm" data-mid="${esc(m.id)}">Retirer</button></div>`;
   if(hasStats&&U.dtab==="s"){h+=statsBlock(m,st==="live"&&m.src==="sim"?null:(rs||m.st))}
   else{if(st!=="pre")h+=`<div class="info">${ic("info")}<span>${st==="post"?"Match terminé : les sélections gagnantes sont marquées d’un ✓.":liveOK(m)?"Paris en direct : les cotes suivent le score et le temps restant.":"Paris fermés pour ce match."}</span></div>`;
@@ -986,24 +988,26 @@ function viewCareer(){const di=divOf(S.peak),nx=DIVS[di+1],pr=nx?cl((S.peak-DIVS
   return h+foot()}
 
 /* ---------- formulaires organisateur ---------- */
-function viewAdd(){const cfg=SP[U.sp],lv=U.lv>=0?U.lv:0,d=new Date();d.setDate(d.getDate()+((7-d.getDay())%7||7));d.setHours(15,0,0,0);
+const AMX={foot:9,rugby:8,tennis:5};   // niveaux amateurs (au-dessus : matchs pros du flux)
+function viewAdd(){const cfg=SP[U.sp],lv=U.lv>=0&&U.lv<=AMX[U.sp]?U.lv:0,d=new Date();d.setDate(d.getDate()+((7-d.getDay())%7||7));d.setHours(15,0,0,0);
   const v=new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,16),T=U.sp==="tennis";
   return`<div class="grab"><h3>Nouveau match · ${cfg.n}</h3><button class="x" data-act="close">${ic("x")}</button></div>
-  <div class="form"><label>Niveau<select id="f-lv">${cfg.lv.map((n,i)=>`<option value="${i}"${i===lv?" selected":""}>${esc(n)}</option>`).join("")}</select></label>
+  <div class="form"><label>Niveau<select id="f-lv">${cfg.lv.map((n,i)=>i>AMX[U.sp]?"":`<option value="${i}"${i===lv?" selected":""}>${esc(n)}</option>`).join("")}</select></label>
   <label>Département<select id="f-dep"><option value="">—</option>${DEP.map(x=>`<option${x===U.dep?" selected":""}>${x}</option>`).join("")}</select></label>
   <div class="two"><label>${T?"Joueur 1":"Domicile"}<input id="f-h" maxlength="32" placeholder="${T?"ex. Léa Martin":"ex. US Langon"}"></label><label>${T?"Joueur 2":"Extérieur"}<input id="f-a" maxlength="32" placeholder="${T?"ex. Inès Duprat":"ex. FC Pessac"}"></label></div>
   <label>Date et heure<input id="f-t" type="datetime-local" value="${v}"></label>
   <label>Favori<select id="f-f"><option value="0">Match équilibré</option><option value="1">${T?"Joueur 1":"Domicile"} favori</option><option value="2">${T?"Joueur 2":"Extérieur"} favori</option><option value="3">${T?"Joueur 1":"Domicile"} grand favori</option><option value="4">${T?"Joueur 2":"Extérieur"} grand favori</option></select></label>
   <button class="btn wide" data-act="savem">${ic("plus")} Enregistrer le match</button>
-  <p class="note">Les cotes sont calculées automatiquement à partir du niveau et du favori. Après le match, saisis le score et les stats : les paris se règlent tout seuls.</p></div>`}
-function viewRes(m){const st=m.res||{},keys=ALLSTATS[m.sp].filter(k=>k!=="s1"),T=m.sp==="tennis";
+  <p class="note">Le match sera visible par tous les joueurs, avec des cotes calculées à partir du niveau et du favori. Après le match, les joueurs déclarent le score : dès que 2 donnent le même, les paris se règlent tout seuls.</p></div>`}
+function viewRes(m){const st=(m.src==="am"?m.my:m.res)||{},keys=ALLSTATS[m.sp].filter(k=>k!=="s1"),T=m.sp==="tennis";
   const inp=(k,p)=>`<input type="number" min="0" inputmode="numeric" id="r-${k}-${p}" value="${st[k]&&st[k][p]!=null?st[k][p]:""}">`;
   return`<div class="grab"><h3>Résultat</h3><button class="x" data-act="close">${ic("x")}</button></div>
   <div class="form"><div class="statin"><b style="text-align:center">${esc(initials(m.h,m.sp))}</b><span>${esc(m.h)} – ${esc(m.a)}</span><b style="text-align:center">${esc(initials(m.a,m.sp))}</b></div>
   ${keys.map(k=>k==="tb"?`<div class="statin"><span></span><span>${ic(STATL[k][1])}${STATL[k][0]} (total)</span><input type="number" min="0" inputmode="numeric" id="r-tb-0" value="${st.tb?st.tb[0]:""}"></div>`
     :`<div class="statin">${inp(k,0)}<span>${ic(STATL[k][1],STATL[k][2]||"")}${STATL[k][0]}${k==="g"||k==="pts"||k==="sets"?" *":""}</span>${inp(k,1)}</div>`).join("")}
   ${T?`<label>Vainqueur du 1er set<select id="r-s1"><option value="">—</option><option value="0"${st.s1&&st.s1[0]?" selected":""}>${esc(m.h)}</option><option value="1"${st.s1&&st.s1[1]?" selected":""}>${esc(m.a)}</option></select></label>`:""}
-  <button class="btn wide" data-act="saveres" data-mid="${esc(m.id)}">Valider le résultat</button>
+  <button class="btn wide" data-act="saveres" data-mid="${esc(m.id)}">${m.src==="am"?"Déclarer ce score":"Valider le résultat"}</button>
+  ${m.src==="am"?`<p class="note">Le score est validé quand 2 joueurs déclarent le même. Remplis les stats que tu connais : les paris sur une stat jamais déclarée sont remboursés.</p>`:""}
   <p class="note">* obligatoire. Les stats laissées vides peuvent être complétées plus tard ; sans elles, les paris concernés seront remboursés 48 h après le match.</p></div>`}
 
 /* ---------- couches (sheets) ---------- */
@@ -1031,7 +1035,7 @@ function render(){document.body.dataset.sp=U.sp;$("#bal").textContent=tok(S.bal)
 /* ---------- règlement des paris ---------- */
 function legResult(L){const m=findMatch(L.mid);const age=Date.now()-L.t;
   if(!m)return age>7*DAY?"v":null;
-  const st=status(m);if(st==="cancel")return"v";if(st!=="post")return(m.src==="org"&&age>14*DAY)?"v":null;
+  const st=status(m);if(st==="cancel")return"v";if(st!=="post")return((m.src==="org"||m.src==="am")&&age>14*DAY)?"v":null;
   const d=MK[m.sp].find(x=>x.id===L.mk);if(!d)return"v";
   const w=outcome(d,m,realStats(m),L.line);
   if(w==null)return age>SP[m.sp].dur*6e4+48*H?"v":null;
@@ -1041,6 +1045,9 @@ async function settle(){if(settling)return;settling=true;
   try{const pend=S.bets.filter(b=>b.st==="open").flatMap(b=>b.legs.filter(L=>!L.r));
     // matchs pros hors fenêtre ou stats manquantes : on va chercher les données
     const fetches=[];const seen=new Set();
+    // matchs amateurs des joueurs : on rafraîchit ceux qui attendent leur score
+    const amIds=[...new Set(pend.filter(L=>L.mid.startsWith("a-")&&Date.now()>L.t+45*6e4).map(L=>L.mid))];
+    if(amIds.length)fetches.push(loadAm(amIds));
     for(const L of pend){if(!L.mid.startsWith("e-")||Date.now()<L.t+SP[L.sp].dur*6e4)continue;let m=REG.get(L.mid);
       if(!m&&L.snap&&!seen.has(L.snap.path+ymd(L.t))){seen.add(L.snap.path+ymd(L.t));fetches.push(espnRefetch({...L.snap,t:L.t}))}
       else if(m&&status(m)==="post"&&m.sp==="foot"&&!m._sum)fetches.push(espnStats(m))}
@@ -1132,17 +1139,26 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"addm":U.open="add";layer(viewAdd());break;
     case"savem":{const h=$("#f-h").value.trim(),aa=$("#f-a").value.trim(),t=Date.parse($("#f-t").value);if(!h||!aa){toast("Indique les deux "+(U.sp==="tennis"?"joueurs.":"équipes."),"bad");return}
       if(isNaN(t)){toast("Date invalide.","bad");return}const lv=+$("#f-lv").value,f=+$("#f-f").value,sv=[[0,0],[.6,-.2],[-.2,.6],[1.2,-.5],[-.5,1.2]][f];
-      const m={id:"o-"+Date.now().toString(36),src:"org",sp:U.sp,lv,dep:$("#f-dep").value,h,a:aa,t,s:sv,bo:3,res:null};m.comp=SP[U.sp].lv[lv]+(m.dep?" · "+m.dep:"");
-      S.org.push(m);save();U.lv=lv;closeLayer();toast("Match ajouté. Les paris sont ouverts !","win");break}
+      if(t<Date.now()-6*H){toast("Ce match est trop ancien.","bad");return}
+      const btn=$("[data-act=savem]");btn.disabled=true;
+      (async()=>{try{if(!(await ensureSession()))throw{code:"offline"};await api("am_add",{sp:U.sp,lv,dep:$("#f-dep").value,h,a:aa,t,fav:f});await loadAm();
+        U.lv=lv;closeLayer();toast("Match ajouté pour tout le monde. Les paris sont ouverts !","win")}
+      catch(e){btn.disabled=false;toast(e.code==="slow_down"?"Tu as ajouté beaucoup de matchs aujourd’hui.":e.code==="teams"?"Deux équipes différentes, s’il te plaît.":e.code==="date"?"Date invalide.":"Pas de connexion au serveur.","bad")}})();break}
     case"delm":if(confirm("Retirer ce match ? Les paris dessus seront remboursés.")){S.org=S.org.filter(m=>m.id!==d.mid);REG.delete(d.mid);U.sel=U.sel.filter(s=>s.mid!==d.mid);
       S.bets.forEach(b=>b.legs.forEach(L=>{if(L.mid===d.mid&&!L.r)L.r="v"}));save();closeLayer();settle()}break;
     case"resform":U.open="res:"+d.mid;layer(viewRes(findMatch(d.mid)));break;
-    case"saveres":{const m=S.org.find(x=>x.id===d.mid);if(!m)return;const res={};
+    case"amdel":if(confirm("Retirer ce match pour tout le monde ? Les paris dessus seront remboursés.")){api("am_remove",{mid:d.mid}).then(async()=>{await loadAm();REG.delete(d.mid);
+      S.bets.forEach(b=>b.legs.forEach(L=>{if(L.mid===d.mid&&!L.r)L.r="v"}));save();closeLayer();settle();toast("Match retiré.")}).catch(e=>toast(e.code==="locked"?"Impossible : un score a déjà été déclaré.":"Pas de connexion au serveur.","bad"))}break;
+    case"saveres":{const m=S.org.find(x=>x.id===d.mid)||(d.mid.startsWith("a-")&&findMatch(d.mid));if(!m)return;const res={};
       for(const k of ALLSTATS[m.sp]){if(k==="s1"){const v=$("#r-s1")&&$("#r-s1").value;if(v!=="")res.s1=v==="0"?[1,0]:[0,1];continue}
         if(k==="tb"){const v=$("#r-tb-0").value;if(v!=="")res.tb=[+v,0];continue}
         const a0=$(`#r-${k}-0`).value,a1=$(`#r-${k}-1`).value;if(a0!==""&&a1!=="")res[k]=[+a0,+a1]}
       const main=m.sp==="foot"?"g":m.sp==="rugby"?"pts":"sets";if(!res[main]){toast("Le score est obligatoire.","bad");return}
       if(m.sp==="tennis"&&res.sets[0]===res.sets[1]){toast("Il faut un vainqueur.","bad");return}
+      if(m.src==="am"){const b=$("[data-act=saveres]");b.disabled=true;
+        api("am_report",{mid:m.id,st:res}).then(async()=>{await loadAm([m.id]);const m2=findMatch(m.id)||m;U.open=m.id;U.dtab="p";layer(viewDetail(m2));settle();
+          toast(m2.res?"Score validé : les paris sont réglés !":"Merci ! Le score sera validé dès qu’un 2e joueur donne le même.","win")})
+        .catch(e=>{b.disabled=false;toast(e.code==="too_early"?"Le match n’est pas encore fini.":"Pas de connexion au serveur.","bad")});break}
       m.res=res;REG.set(m.id,m);MKC.clear();save();U.open=m.id;U.dtab="s";layer(viewDetail(m));settle();toast("Résultat enregistré, paris réglés.","win");break}
     case"wgo":{const n=($("#w-name").value||"").trim().slice(0,18);if(!n){$("#w-name").focus();return}const first=!S.name;S.name=n;save();U.open=null;layer("");render();
       if(first)setTimeout(joinFromLink,400);
@@ -1187,6 +1203,20 @@ function crowd(m,mk){const c=CROWD[m.id],d=c&&c.data&&c.data[mk.id+(mk.line!=nul
   const short=s=>s.l.replace(/^(Plus|Moins) de .*/,x=>x.split(" ")[0]);
   return`<div class="crowd"><div class="cb">${n.map(v=>`<i class="${v===mx?"top":""}" style="flex:${v||.0001}"></i>`).join("")}</div>
     ${ic("group")} ${tot} joueur${tot>1?"s":""} : ${mk.sels.map((s,k)=>`${esc(short(s))} ${Math.round(n[k]/tot*100)} %`).join(" · ")}</div>`}
+
+/* ---------- matchs amateurs ajoutés par les joueurs ---------- */
+const AM={list:[],ok:null,at:0};
+function amMatch(x){const old=REG.get(x.id);const m=old&&old.src==="am"?old:{};
+  Object.assign(m,{id:x.id,src:"am",sp:x.sp,lv:x.lv,dep:x.dep||"",h:x.h,a:x.a,t:x.t,s:x.s||[0,0],bo:3,comp:SP[x.sp].lv[x.lv]+(x.dep?" · "+x.dep:""),
+    res:x.res,conf:x.conf,conflict:!!x.conflict,nrep:x.nrep,my:x.my,mine:x.mine});REG.set(m.id,m);return m}
+async function loadAm(ids){try{const j=await api("am_list",ids?{ids}:{});const L=j.matches.map(amMatch);
+    if(!ids){AM.list=L;AM.ok=true;AM.at=Date.now()}else for(const m of L)if(!AM.list.includes(m))AM.list.push(m);
+    MKC.clear();return true}catch(e){if(!ids)AM.ok=false;return false}}
+function amBlock(m,st){const T=m.sp==="tennis";
+  if(st==="pre")return m.mine?`<div class="info">${ic("info")}<span>Tu as ajouté ce match : il est visible par tous les joueurs. <button class="link" data-act="amdel" data-mid="${esc(m.id)}" style="color:var(--loss)">Le retirer</button></span></div>`:"";
+  const txt=m.res?`Score validé par ${m.conf} joueur${m.conf>1?"s":""}.`:m.conflict?"Les joueurs ne sont pas d’accord sur le score : il faut une autre déclaration.":m.nrep?`${m.nrep} déclaration${m.nrep>1?"s":""} : il en faut 2 identiques pour valider.`:"Personne n’a encore déclaré le score.";
+  return`<div class="info">${ic("group")}<span>${txt}</span></div>
+  <button class="btn ${m.res?"ghost":"gold"} wide" data-act="resform" data-mid="${esc(m.id)}" style="margin-bottom:12px">${m.my?"Modifier ma déclaration":"Déclarer le score"+(T?" du match":"")}</button>`}
 
 /* ---------- ligues entre amis ---------- */
 const AVC=["#35d07f","#ffd23f","#ff7a45","#5fa8ff","#d7f25a","#c084fc","#ff5a5f","#7ef0d8"];
@@ -1332,6 +1362,7 @@ function viewWelcome(rename){return`<div class="welcome">${rename?`<div class="g
 /* ---------- démarrage ---------- */
 render();
 if(!S.name){U.open="welcome";layer(viewWelcome(false))}else{syncSoon();joinFromLink()}
+loadAm().then(()=>{if(!U.open)render();settle()});setInterval(()=>{if(!document.hidden)loadAm().then(()=>{if(!U.open)render()})},12e4);
 loadFeeds();
 setInterval(()=>{if(document.hidden)return;
   const anyLive=[...REG.values()].some(m=>m.src==="espn"&&m.state==="in");const stale=Object.values(FEED).some(f=>f.at&&Date.now()-f.at>(anyLive?6e4:5*6e4));

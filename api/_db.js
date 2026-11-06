@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "3";
+const SCHEMA_VERSION = "4";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -35,6 +35,25 @@ const STATEMENTS = [
      player bigint not null references players(id) on delete cascade,
      at timestamptz not null default now(),
      primary key (mid, mk, player))`,
+  `create table if not exists am_matches (
+     id text primary key,
+     sp text not null,
+     lv int not null,
+     dep text not null default '',
+     h text not null,
+     a text not null,
+     t timestamptz not null,
+     s jsonb not null default '[0,0]',
+     created_by bigint references players(id) on delete set null,
+     created_at timestamptz not null default now(),
+     hidden boolean not null default false)`,
+  `create index if not exists am_matches_t on am_matches(t)`,
+  `create table if not exists am_reports (
+     mid text not null references am_matches(id) on delete cascade,
+     player bigint not null references players(id) on delete cascade,
+     st jsonb not null,
+     at timestamptz not null default now(),
+     primary key (mid, player))`,
   `create table if not exists rate_hits (key text not null, win bigint not null, n int not null default 0, primary key (key, win))`,
 ];
 
