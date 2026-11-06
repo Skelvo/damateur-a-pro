@@ -1374,7 +1374,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&U.open&&U.open!=="welcome")closeLayer();
   if(e.key==="Enter"&&e.target.classList&&e.target.classList.contains("mc"))e.target.click();
   if(e.key==="Enter"&&e.target.id==="w-name")$("[data-act=wgo]").click()});
-document.addEventListener("change",e=>{if(e.target.id==="dep"){U.dep=e.target.value;render()}});
+document.addEventListener("change",e=>{if(e.target.id==="dep"){U.dep=e.target.value;render()}if(e.target.id==="dk-t"&&U.open==="dknew"){dkKeep();layer(viewDarkNew())}});
 document.addEventListener("input",e=>{if(e.target.id!=="stk")return;U.stake=Math.max(1,Math.floor(+e.target.value)||1);
   const n=U.sel.length,combo=U.combo&&n>1&&!comboBlocked(),cost=combo?U.stake:U.stake*n,gain=combo?U.stake*slipOdds():U.sel.reduce((a,s)=>a+U.stake*s.o,0);
   if($("#s1")&&!(combo&&U.open==="slip"))$("#s1").textContent=tok(cost);if($("#s2"))$("#s2").textContent=tok(gain);
@@ -1608,23 +1608,30 @@ function viewDark(cur){const D=U.dk&&U.dk.code===cur.code?U.dk.bets:null;if(!D)l
       ${b.mine||b.myReport?"":`<button class="link dkrep" data-act="dkflag" data-kind="report" data-id="${esc(b.id)}">Signaler</button>`}</div>`}).join("")+
     `<p class="note">Pari mutuel : les gagnants se partagent tout le pot, au prorata de leur mise. Si personne n’a misé sur le bon choix, ou si le pari est annulé, tout le monde est remboursé.</p>`}
 function viewDarkNew(){const f=U.dkf;
-  const W=[["1h","Dans 1 h"],["soir","Ce soir 20 h"],["dem8","Demain 8 h"],["dem18","Demain 18 h"],["3j","Dans 3 jours"]];
+  const W=[["1h","Dans 1 h"],["soir","Ce soir 20 h"],["dem8","Demain 8 h"],["dem18","Demain 18 h"],["3j","Dans 3 jours"],["custom","Date précise…"]];
+  const loc=t=>{const d=new Date(t);return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,16)};
+  if(f.when==="custom"&&!f.t)f.t=loc(dkWhen("dem8"));
   return`<div class="grab"><h3>Inventer un pari</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   <div class="form"><label>Ta question<input id="dk-q" maxlength="140" placeholder="ex. Léo arrivera en retard demain ?" value="${esc(f.q||"")}"></label>
   <div class="seg"><button data-act="dkset" data-f="type" data-v="yn" aria-pressed="${f.type==="yn"}">Oui / Non</button><button data-act="dkset" data-f="type" data-v="multi" aria-pressed="${f.type==="multi"}">Plusieurs choix</button></div>
   ${f.type==="multi"?f.opts.map((o,i)=>`<input class="dk-o" data-i="${i}" maxlength="40" placeholder="Choix ${i+1}${i===0?" (ex. moins de 5 min)":i===1?" (ex. 5 à 15 min)":""}" value="${esc(o)}">`).join("")+(f.opts.length<4?`<button class="link" data-act="dkset" data-f="add">${ic("plus")} Ajouter un choix</button>`:""):""}
   <label>Fin des paris</label><div class="chips">${W.map(([k,l])=>`<button data-act="dkset" data-f="when" data-v="${k}" aria-pressed="${f.when===k}">${l}</button>`).join("")}</div>
+  ${f.when==="custom"?`<label>Date et heure exactes<input type="datetime-local" id="dk-t" value="${f.t}" min="${loc(Date.now()+6*6e4)}" max="${loc(Date.now()+30*DAY)}"></label>`:""}
+  <p class="note" style="margin:0">Les paris se ferment : <b style="color:var(--ink)">${(()=>{const t=f.when==="custom"?Date.parse(f.t):dkWhen(f.when);return isNaN(t)?"—":fDay(t)+" à "+fTime(t)})()}</b></p>
   <p class="note">Ton nom ne sera jamais affiché. Tu ne pourras pas miser sur ce pari, et c’est toi qui donneras le résultat après la fin. Rappel : rien de méchant ni de personnel.</p>
   <button class="btn wide dkgo" data-act="dkcreate">${DK_ICON} Lancer le pari</button></div>`}
-function dkKeep(){const f=U.dkf,q=$("#dk-q");if(q)f.q=q.value;document.querySelectorAll(".dk-o").forEach(x=>f.opts[+x.dataset.i]=x.value)}
+function dkKeep(){const f=U.dkf,q=$("#dk-q"),t=$("#dk-t");if(q)f.q=q.value;if(t)f.t=t.value;document.querySelectorAll(".dk-o").forEach(x=>f.opts[+x.dataset.i]=x.value)}
 function dkSet(d){dkKeep();const f=U.dkf;if(d.f==="type")f.type=d.v;else if(d.f==="add"&&f.opts.length<4)f.opts.push("");else if(d.f==="when")f.when=d.v;layer(viewDarkNew())}
 function dkWhen(k){const d=new Date();if(k==="1h")return Date.now()+H;if(k==="3j")return Date.now()+3*DAY;
   if(k==="soir"){d.setHours(20,0,0,0);if(d<Date.now()+10*6e4)d.setDate(d.getDate()+1);return+d}
   d.setDate(d.getDate()+1);d.setHours(k==="dem8"?8:18,0,0,0);return+d}
 async function darkCreate(){dkKeep();const f=U.dkf,q=(f.q||"").trim(),opts=f.type==="yn"?["Oui","Non"]:f.opts.map(o=>o.trim()).filter(Boolean);
   if(q.length<6){toast("Écris une vraie question.","bad");return}if(opts.length<2){toast("Il faut au moins 2 choix.","bad");return}
+  const closes=f.when==="custom"?Date.parse(f.t):dkWhen(f.when);
+  if(isNaN(closes)||closes<Date.now()+5*6e4){toast("Choisis une fin dans au moins 5 minutes.","bad");return}
+  if(closes>Date.now()+30*DAY){toast("30 jours maximum.","bad");return}
   const b=$("[data-act=dkcreate]");b.disabled=true;
-  try{await api("dark_create",{code:U.lg.code,question:q,options:opts,closes:dkWhen(f.when)});closeLayer();await loadDark();toast(`${DK_ICON} Pari lancé, anonymement.`,"win")}
+  try{await api("dark_create",{code:U.lg.code,question:q,options:opts,closes});closeLayer();await loadDark();toast(`${DK_ICON} Pari lancé, anonymement.`,"win")}
   catch(e){b.disabled=false;toast(e.code==="options"?"Les choix doivent être différents.":e.code==="slow_down"?"Beaucoup de paris aujourd’hui !":"Pas de connexion au serveur.","bad")}}
 function viewDarkStake(){const q=U.dks,b=U.dk.bets.find(x=>String(x.id)===String(q.id));if(!b)return"";
   return`<div class="grab"><h3>Miser</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
@@ -1907,7 +1914,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.20";
+const VERSION="1.21";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
