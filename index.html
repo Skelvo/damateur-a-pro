@@ -267,6 +267,19 @@ img.crest{object-fit:contain}
 .crowd{margin-top:9px;font-size:12.5px;color:var(--mute)}
 .crowd .cb{display:flex;height:4px;border-radius:3px;overflow:hidden;gap:2px;margin-bottom:5px}
 .crowd .cb i{display:block;background:var(--mute2)}.crowd .cb i.top{background:var(--sel)}
+/* défis du jour */
+.dcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:12px}
+.dcard.done{display:flex;align-items:center;gap:10px;color:var(--mute);font-size:14px}.dcard.done .i{color:var(--sel)}
+.dcard .dh{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.dcard .dh b{display:flex;align-items:center;gap:7px;font:800 18px "Barlow Condensed";text-transform:uppercase;letter-spacing:.4px}.dcard .dh b .i{color:var(--acc)}
+.dcard .dh span{color:var(--mute);font-size:12.5px}
+.drow{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line)}
+.drow .dic{width:32px;height:32px;border-radius:9px;background:var(--card2);display:grid;place-items:center;flex:none}.drow .dic .i{color:var(--acc);width:18px;height:18px}
+.drow>div{flex:1;min-width:0}.drow>div b{display:block;font-weight:600;font-size:14px}
+.dbar{height:5px;border-radius:3px;background:var(--line);margin-top:5px;overflow:hidden}.dbar i{display:block;height:100%;background:var(--acc);border-radius:3px}
+.drow .drw{color:var(--mute);font-size:12.5px;white-space:nowrap}.drow .btn{padding:8px 12px;font-size:16px}
+.drow .dgot{width:26px;height:26px;border-radius:50%;background:var(--win);color:#04130b;display:grid;place-items:center;font-weight:800}
+.drow.ok b{color:var(--mute);text-decoration:line-through}
 /* roue de la chance */
 .wheelbtn{gap:10px}
 .wheelbox{position:relative;width:min(300px,82vw);margin:6px auto 14px}
@@ -319,7 +332,9 @@ img.crest{object-fit:contain}
 .ticket .tf small{display:block;color:var(--mute);font-size:12px}
 .ticket .tf b{font:800 22px "Barlow Condensed";font-variant-numeric:tabular-nums}
 .tag{font:800 13px "Barlow Condensed";text-transform:uppercase;letter-spacing:.6px;padding:5px 9px;border-radius:7px}
-.tag.won{background:var(--win);color:#04130b}.tag.lost{background:var(--loss);color:#fff}.tag.open{background:var(--sel);color:var(--sel-ink)}.tag.void{background:var(--void);color:#111}
+.tag.won{background:var(--win);color:#04130b}.tag.lost{background:var(--loss);color:#fff}.tag.open{background:var(--sel);color:var(--sel-ink)}.tag.void{background:var(--void);color:#111}.tag.cashed{background:#5fa8ff;color:#06121f}
+.cashbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 24px);margin:0 12px 12px;padding:10px;border-radius:10px;border:1px dashed var(--sel);background:color-mix(in srgb,var(--sel) 10%,transparent);color:var(--sel);font:700 15px Barlow}
+.cashbtn b{font:800 20px "Barlow Condensed"}
 
 /* ---------- career ---------- */
 .pcard{position:relative;overflow:hidden;border-radius:20px;padding:18px;margin:4px 0 14px;
@@ -360,6 +375,7 @@ img.crest{object-fit:contain}
 
 /* ---------- toast & misc ---------- */
 .toasts{position:fixed;left:0;right:0;top:calc(12px + var(--safe-t));z-index:60;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;padding:0 12px}
+.toast{pointer-events:auto;cursor:pointer}
 .toast{display:flex;align-items:center;gap:10px;max-width:440px;background:var(--card3);border:1px solid var(--line2);border-radius:14px;padding:11px 14px;box-shadow:0 10px 30px #000a;font-weight:600;animation:tin .35s cubic-bezier(.2,.9,.3,1.3)}
 .toast.win{background:var(--win);color:#04130b;border-color:var(--win)}
 .toast.bad{background:var(--loss);color:#fff;border-color:var(--loss)}
@@ -801,6 +817,7 @@ function viewMatches(){const cfg=SP[U.sp];let h=`<div class="sports">${Object.en
   if(isDep||U.lv<0)h+=`<div class="filters"><select class="sel" id="dep" aria-label="Département"><option value="">Tous les départements</option>${DEP.map(d=>`<option${d===U.dep?" selected":""}>${d}</option>`).join("")}</select></div>`;
   if(S.orgMode)h+=`<button class="btn ghost wide" data-act="addm" style="margin-bottom:12px">${ic("plus")} Ajouter un match amateur</button>`;
   if(S.bonus!==today())h+=`<button class="btn gold wide wheelbtn" data-act="wheel" style="margin-bottom:12px">${wheelMini()} Roue de la chance du jour</button>`;
+  h+=defisCard();
   const now=Date.now();
   let up=list.filter(m=>["pre","live","wait"].includes(status(m)));
   const done=list.filter(m=>status(m)==="post").sort((a,b)=>b.t-a.t);
@@ -910,10 +927,22 @@ function viewSlip(){const n=U.sel.length;if(!n)return`<div class="grab"><h3>Mon 
   <button class="link" data-act="clear" style="display:block;margin:10px auto 0">Vider le ticket</button>`}
 
 /* ---------- mes paris ---------- */
+// Encaisser avant la fin : valeur = gain possible × probabilité actuelle que le pari passe × 0,9.
+// Probabilité recalculée avec les simulations du match (score et minute pris en compte en direct).
+function cashValue(b){if(b.st!=="open"||b.legs.some(L=>L.r==="l"||L.r==="v"))return 0;const by={};
+  for(const L of b.legs.filter(L=>!L.r)){const m=findMatch(L.mid);if(!m)return 0;const st=status(m);if(st!=="pre"&&!liveOK(m))return 0;
+    const d=MK[m.sp].find(x=>x.id===L.mk);if(!d)return 0;if(liveOK(m)&&d.need.some(k=>k!==(m.sp==="foot"?"g":"pts")))return 0;
+    (by[L.mid]=by[L.mid]||[]).push(L)}
+  if(!Object.keys(by).length)return 0;let p=1;for(const mid in by)p*=jointP(mid,by[mid]);
+  const full=Math.floor(b.stake*b.odds);return cl(Math.floor(full*p*.9),1,full-1)}
+function cashOut(id){const b=S.bets.find(x=>x.id===id);const v=b&&cashValue(b);if(!v){toast("Encaissement plus possible pour ce pari.","bad");render();return}
+  if(!confirm(`Encaisser ce pari maintenant pour ${tok(v)} jetons ?\n(Gain possible si tu attends : ${tok(b.stake*b.odds)})`))return;
+  const v2=cashValue(b);if(!v2){toast("Le match a bougé : encaissement plus possible.","bad");render();return}
+  b.st="cashed";b.pay=v2;b.done=Date.now();S.bal+=v2;S.peak=Math.max(S.peak,S.bal);save();render();bump();toast(`${ic("coin")} Encaissé : +${tok(v2)} jetons`,"win")}
 function legStatus(L){return L.r==="w"?`<span class="st w">✓</span>`:L.r==="l"?`<span class="st l">✗</span>`:L.r==="v"?`<span class="st v">↺</span>`:`<span class="st p"></span>`}
 function viewBets(){const B=S.bets.slice().reverse(),op=B.filter(b=>b.st==="open"),cl_=B.filter(b=>b.st!=="open");
   const W=cl_.filter(b=>b.st==="won").length,Lo=cl_.filter(b=>b.st==="lost").length,rate=W+Lo?W/(W+Lo):0;
-  const net=cl_.reduce((a,b)=>a+(b.st==="won"?b.pay-b.stake:b.st==="lost"?-b.stake:0),0);
+  const net=cl_.reduce((a,b)=>a+(b.st==="won"||b.st==="cashed"?b.pay-b.stake:b.st==="lost"?-b.stake:0),0);
   const C=2*Math.PI*34;
   let h=`<div class="h2"><h2>Mes paris</h2><span>${tok(S.bets.length)} au total</span></div>
   <div class="kpis"><svg class="ring" viewBox="0 0 84 84"><circle cx="42" cy="42" r="34" fill="none" stroke="var(--line)" stroke-width="8"/>
@@ -923,10 +952,12 @@ function viewBets(){const B=S.bets.slice().reverse(),op=B.filter(b=>b.st==="open
   <div class="seg"><button data-act="btab" data-t="o" aria-pressed="${U.btab==="o"}">En cours (${op.length})</button><button data-act="btab" data-t="c" aria-pressed="${U.btab==="c"}">Terminés (${cl_.length})</button></div>`;
   const list=U.btab==="o"?op:cl_;
   if(!list.length)h+=`<div class="empty">${ic("ticket")}<b>${U.btab==="o"?"Aucun pari en cours":"Pas encore de résultat"}</b>${U.btab==="o"?"Choisis un match et touche une cote.":"Tes tickets réglés apparaîtront ici."}<br><button class="btn" style="margin-top:12px" data-act="tab" data-tab="m">Voir les matchs</button></div>`;
-  h+=list.map(b=>{const tag=b.st==="won"?`<span class="tag won">+${tok(b.pay)}</span>`:b.st==="lost"?`<span class="tag lost">Perdu</span>`:b.st==="void"?`<span class="tag void">Remboursé</span>`:`<span class="tag open">En cours</span>`;
+  h+=list.map(b=>{const tag=b.st==="won"?`<span class="tag won">+${tok(b.pay)}</span>`:b.st==="lost"?`<span class="tag lost">Perdu</span>`:b.st==="void"?`<span class="tag void">Remboursé</span>`:b.st==="cashed"?`<span class="tag cashed">Encaissé +${tok(b.pay)}</span>`:`<span class="tag open">En cours</span>`;
+    const cv=b.st==="open"?cashValue(b):0;
     return`<div class="ticket ${b.st}"><div class="th"><b>${b.legs.length>1?"Combiné · "+b.legs.length:"Simple"}</b><span>${new Date(b.at).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})} · ${fTime(b.at)}</span></div>
     <div class="tl">${b.legs.map(L=>`<div class="leg">${legStatus(L)}<div><b>${esc(L.l)} <span style="color:var(--mute);font-weight:500">@ ${fr(L.o)}</span></b><small>${esc(L.mt)}</small><small>${esc(L.ml)}</small></div></div>`).join("")}</div>
-    <div class="tf"><div><small>Mise</small><b>${tok(b.stake)}</b></div><div style="text-align:center"><small>Cote</small><b>${fr(b.odds)}</b></div><div style="text-align:right"><small>${b.st==="won"?"Gain":"Gain possible"}</small>${b.st==="open"?`<b>${tok(b.stake*b.odds)}</b>`:tag}</div></div></div>`}).join("");
+    <div class="tf"><div><small>Mise</small><b>${tok(b.stake)}</b></div><div style="text-align:center"><small>Cote</small><b>${fr(b.odds)}</b></div><div style="text-align:right"><small>${b.st==="won"?"Gain":b.st==="cashed"?"Encaissé":"Gain possible"}</small>${b.st==="open"?`<b>${tok(b.stake*b.odds)}</b>`:tag}</div></div>
+    ${cv?`<button class="cashbtn" data-act="cash" data-id="${esc(b.id)}">${ic("coin")} Encaisser maintenant <b>${tok(cv)}</b></button>`:""}</div>`}).join("");
   return h+foot()}
 
 /* ---------- carrière ---------- */
@@ -1025,11 +1056,13 @@ async function settle(){if(settling)return;settling=true;
     if(won||lost||voids){S.peak=Math.max(S.peak,S.bal);save();render();bump();
       if(won){toast(`${ic("trophy")} ${won} pari${won>1?"s":""} gagné${won>1?"s":""} : +${tok(gain)} jetons !`,"win");confetti()}
       if(lost)toast(`${lost} pari${lost>1?"s":""} perdu${lost>1?"s":""}. La revanche ?`);
+      setTimeout(checkDefis,1200);
       if(voids)toast(`${voids} pari${voids>1?"s":""} remboursé${voids>1?"s":""}.`)}}
   finally{settling=false}}
 
 /* ---------- effets ---------- */
-function toast(html,cls=""){const t=document.createElement("div");t.className="toast "+cls;t.innerHTML=html;$("#toasts").appendChild(t);setTimeout(()=>t.remove(),3800)}
+function toast(html,cls=""){const box=$("#toasts");while(box.children.length>=3)box.firstChild.remove();
+  const t=document.createElement("div");t.className="toast "+cls;t.innerHTML=html;t.onclick=()=>t.remove();box.appendChild(t);setTimeout(()=>t.remove(),3800)}
 function bump(){const b=$("#bank");b.classList.remove("bump");void b.offsetWidth;b.classList.add("bump")}
 function confetti(){if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;const c=document.createElement("div");c.className="confetti";
   const cols=["#ffd23f","#35d07f","#ff7a45","#d7f25a","#fff","#5fa8ff"];
@@ -1042,7 +1075,7 @@ function confetti(){if(matchMedia("(prefers-reduced-motion: reduce)").matches)re
 function pick(mid,mkId,k){const m=findMatch(mid);if(!m||!canBet(m))return;const mk=markets(m).find(x=>x.id===mkId);if(!mk)return;const s=mk.sels[k];if(!s.o)return;
   const i=U.sel.findIndex(x=>x.mid===mid&&x.mk===mkId);const same=i>=0&&U.sel[i].k===k;if(i>=0)U.sel.splice(i,1);
   if(!same){if(U.sel.length>=12){toast("12 sélections maximum par ticket.");return}
-    U.sel.push({mid,mk:mkId,k,line:mk.line,o:s.o,l:s.l,mt:mk.title,ml:m.h+" – "+m.a,ic:mk.d.ic,cls:mk.d.cls,sp:m.sp,t:m.t,
+    U.sel.push({mid,mk:mkId,k,line:mk.line,o:s.o,live:liveOK(m),l:s.l,mt:mk.title,ml:m.h+" – "+m.a,ic:mk.d.ic,cls:mk.d.cls,sp:m.sp,t:m.t,
       snap:m.src==="espn"?{path:m.path,sp:m.sp,lv:m.lv}:null})}
   if(navigator.vibrate)try{navigator.vibrate(8)}catch(e){}}
 function place(){const n=U.sel.length;if(!n)return;const stake=Math.floor(U.stake);if(!(stake>0)){toast("Mise minimum : 1 jeton.","bad");return}
@@ -1053,11 +1086,11 @@ function place(){const n=U.sel.length;if(!n)return;const stake=Math.floor(U.stak
   if(moved&&!gone.length){toast("Le score a bougé : cotes mises à jour, vérifie et valide à nouveau.");refreshLayer();renderSlipBar();return}
   if(gone.length){U.sel=U.sel.filter(s=>!gone.includes(s));toast("Un match a commencé : sélection retirée.","bad");refreshLayer();renderSlipBar();return}
   const combo=U.combo&&n>1&&!comboBlocked(),cost=combo?stake:stake*n;if(cost>S.bal){toast("Solde insuffisant.","bad");return}
-  const leg=s=>({mid:s.mid,mk:s.mk,k:s.k,line:s.line,o:s.o,l:s.l,mt:s.mt,ml:s.ml,ic:s.ic,sp:s.sp,t:s.t,snap:s.snap});
+  const leg=s=>({mid:s.mid,mk:s.mk,k:s.k,line:s.line,o:s.o,live:!!s.live,l:s.l,mt:s.mt,ml:s.ml,ic:s.ic,sp:s.sp,t:s.t,snap:s.snap});
   S.bal-=cost;const at=Date.now();
   if(combo)S.bets.push({id:"b"+at,at,stake,odds:slipOdds(),groups:comboInfo().groups,legs:U.sel.map(leg),st:"open"});
   else U.sel.forEach((s,i)=>S.bets.push({id:"b"+at+"-"+i,at,stake,odds:s.o,legs:[leg(s)],st:"open"}));
-  sendPicks(U.sel);U.sel=[];save();U.open=null;layer("");U.tab="b";U.btab="o";render();bump();window.scrollTo({top:0,behavior:"smooth"});
+  sendPicks(U.sel);U.sel=[];save();setTimeout(checkDefis,900);U.open=null;layer("");U.tab="b";U.btab="o";render();bump();window.scrollTo({top:0,behavior:"smooth"});
   toast(`${ic("ticket")} Pari validé ! Bonne chance.`,"win")}
 
 document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(!t)return;const a=t.dataset.act,d=t.dataset;
@@ -1088,6 +1121,9 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"clear":U.sel=[];closeLayer();break;
     case"wheel":U.open="wheel";layer(viewWheel());break;
     case"spin":spin();break;
+    case"defi":claimDefi(d.id);break;
+    case"defiall":claimAll();break;
+    case"cash":cashOut(d.id);break;
     case"retry":for(const l in SP[U.sp].feeds)FEED[U.sp+l]={ok:null,list:[]};render();Promise.all(Object.keys(SP[U.sp].feeds).map(l=>loadFeed(U.sp,+l))).then(()=>{render();settle()});break;
     case"tsim":S.sim=!S.sim;save();render();break;
     case"torg":S.orgMode=!S.orgMode;save();render();if(S.orgMode)toast("Mode organisateur activé : ajoute tes matchs depuis l’onglet Matchs.");break;
@@ -1209,6 +1245,45 @@ async function joinFromLink(){const c=new URLSearchParams(location.search).get("
   try{if(!(await ensureSession()))throw{code:"offline"};const j=await api("join_league",{code:c});U.lg.code=j.code;U.tab="l";U.open=null;layer("");render();loadBoards();
     toast(j.already?"Tu es déjà dans cette ligue.":`${ic("group")} Bienvenue dans « ${esc(j.name)} » !`,"win")}
   catch(e){toast(LGERR[e.code]||"Impossible de rejoindre la ligue pour l’instant.","bad")}}
+
+/* ---------- défis du jour ----------
+   3 défis par jour (les mêmes pour tout le monde, tirés de la date) : un facile, un moyen, un difficile.
+   Progression calculée à partir des paris du jour : rien à tricher, rien à perdre si on ne joue pas. */
+const legsOf=B=>B.flatMap(b=>b.legs);
+const DEFIS=[
+  [{id:"p3",ic:"ticket",t:"Place 3 paris",g:3,r:50,f:P=>P.length},
+   {id:"card",ic:"card",cls:"yc",t:"Parie sur les cartons",g:1,r:40,f:P=>legsOf(P).filter(l=>l.mk==="yc"||l.mk==="rc").length},
+   {id:"corn",ic:"corner",t:"Parie sur les corners",g:1,r:40,f:P=>legsOf(P).filter(l=>l.mk==="co").length},
+   {id:"rug",ic:"rugby",t:"Parie sur un match de rugby",g:1,r:50,f:P=>legsOf(P).filter(l=>l.sp==="rugby").length},
+   {id:"ten",ic:"tennis",t:"Parie sur un match de tennis",g:1,r:50,f:P=>legsOf(P).filter(l=>l.sp==="tennis").length},
+   {id:"ama",ic:"pitch",t:"Parie sur un match amateur",g:1,r:40,f:P=>legsOf(P).filter(l=>!l.mid.startsWith("e-")).length}],
+  [{id:"p5",ic:"ticket",t:"Place 5 paris",g:5,r:80,f:P=>P.length},
+   {id:"cb3",ic:"chart",t:"Fais un combiné d’au moins 3 sélections",g:1,r:70,f:P=>P.filter(b=>b.legs.length>=3).length},
+   {id:"bb",ic:"target",t:"Fais un combiné sur un même match",g:1,r:70,f:P=>P.filter(b=>new Set(b.legs.map(l=>l.mid)).size<b.legs.length).length},
+   {id:"live",ic:"fire",t:"Fais un pari en direct",g:1,r:80,f:P=>legsOf(P).filter(l=>l.live).length},
+   {id:"3sp",ic:"trophy",t:"Parie sur les 3 sports",g:3,r:100,f:P=>new Set(legsOf(P).map(l=>l.sp)).size},
+   {id:"w1",ic:"trophy",t:"Gagne un pari",g:1,r:60,f:(P,W)=>W.length}],
+  [{id:"w2",ic:"trophy",t:"Gagne 2 paris",g:2,r:100,f:(P,W)=>W.length},
+   {id:"o25",ic:"bolt",t:"Gagne un pari à une cote de 2,50 ou plus",g:1,r:120,f:(P,W)=>W.filter(b=>b.odds>=2.5).length},
+   {id:"wcard",ic:"card",cls:"rc",t:"Gagne un pari sur les cartons",g:1,r:100,f:(P,W)=>legsOf(W).filter(l=>(l.mk==="yc"||l.mk==="rc")&&l.r==="w").length},
+   {id:"wcb",ic:"chart",t:"Gagne un combiné",g:1,r:120,f:(P,W)=>W.filter(b=>b.legs.length>1).length}]];
+const DEFI_BONUS=150;
+function defisToday(){const r=rng(hash("defis|"+today()));return DEFIS.map(L=>L[Math.floor(r()*L.length)])}
+function defisState(){if(!S.dch||S.dch.d!==today())S.dch={d:today(),got:[],seen:[],all:false};
+  const t=today(),P=S.bets.filter(b=>ymd(b.at)===t),W=S.bets.filter(b=>b.st==="won"&&b.done&&ymd(b.done)===t);
+  return defisToday().map(d=>({...d,n:Math.min(d.g,d.f(P,W)),got:S.dch.got.includes(d.id)}))}
+function defisCard(){const D=defisState(),done=D.filter(d=>d.got).length;
+  if(S.dch.all)return`<div class="dcard done">${ic("trophy")}<span>Défis du jour terminés · reviens demain pour 3 nouveaux défis</span></div>`;
+  return`<div class="dcard"><div class="dh"><b>${ic("target")} Défis du jour</b><span>${done}/3 · tous : +${DEFI_BONUS}</span></div>
+  ${D.map(d=>`<div class="drow${d.got?" ok":""}"><span class="dic">${ic(d.ic,d.cls||"")}</span><div><b>${esc(d.t)}</b><div class="dbar"><i style="width:${d.n/d.g*100}%"></i></div></div>
+    ${d.got?`<span class="dgot">✓</span>`:d.n>=d.g?`<button class="btn gold" data-act="defi" data-id="${d.id}">+${d.r}</button>`:`<span class="drw">${d.n}/${d.g} · +${d.r}</span>`}</div>`).join("")}
+  ${done===3?`<button class="btn gold wide" data-act="defiall" style="margin-top:8px">${ic("gift")} Bonus des 3 défis : +${DEFI_BONUS}</button>`:""}</div>`}
+function claimDefi(id){const D=defisState(),d=D.find(x=>x.id===id);if(!d||d.got||d.n<d.g)return;S.dch.got.push(id);S.bal+=d.r;S.peak=Math.max(S.peak,S.bal);save();render();bump();
+  toast(`${ic("target")} Défi réussi : +${d.r} jetons`,"win")}
+function claimAll(){const D=defisState();if(S.dch.all||D.some(d=>!d.got))return;S.dch.all=true;S.bal+=DEFI_BONUS;S.peak=Math.max(S.peak,S.bal);save();render();bump();confetti();
+  toast(`${ic("gift")} Les 3 défis du jour : +${DEFI_BONUS} jetons !`,"win")}
+function checkDefis(){const D=defisState();for(const d of D)if(d.n>=d.g&&!d.got&&!S.dch.seen.includes(d.id)){S.dch.seen.push(d.id);saveLocal();
+  toast(`${ic("target")} Défi réussi : « ${esc(d.t)} ». Récupère +${d.r} dans l’onglet Matchs.`,"win")}}
 
 /* ---------- roue de la chance ----------
    8 cases, chacune exactement 1 chance sur 8 : tirage uniforme avec le générateur
