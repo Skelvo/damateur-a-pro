@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "11";
+const SCHEMA_VERSION = "12";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -159,6 +159,14 @@ const STATEMENTS = [
      text text not null,
      at timestamptz not null default now())`,
   `create index if not exists chat_code on chat(code, id desc)`,
+  // saisons (un mois, heure de Paris) : gains du mois, comme le classement de la semaine
+  `alter table players add column if not exists month text`,
+  `alter table players add column if not exists month_bal numeric`,
+  `create table if not exists monthly (
+     player bigint not null references players(id) on delete cascade,
+     month text not null,
+     gain numeric not null,
+     primary key (player, month))`,
   `create table if not exists rate_hits (key text not null, win bigint not null, n int not null default 0, primary key (key, win))`,
 ];
 

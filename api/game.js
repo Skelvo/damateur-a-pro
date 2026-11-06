@@ -51,8 +51,24 @@ const isTaken = (e) => e && (e.code === "23505" || /players_name_u|duplicate key
 
 // Semaine en cours (lundi, heure de Paris) : sert au classement « cette semaine »
 const WEEK = `to_char(date_trunc('week', now() at time zone 'Europe/Paris'), 'YYYY-MM-DD')`;
+// Saison en cours = mois (heure de Paris), le classement de la saison repart à zéro le 1er
+const MONTH = `to_char(now() at time zone 'Europe/Paris', 'YYYY-MM')`;
+const PREV_WEEK = `to_char(date_trunc('week', now() at time zone 'Europe/Paris') - interval '7 days', 'YYYY-MM-DD')`;
+const PREV_MONTH = `to_char(date_trunc('month', now() at time zone 'Europe/Paris') - interval '1 month', 'YYYY-MM')`;
 const BOARD_COLS = `p.id, p.name, p.bal::float8 as bal, p.peak::float8 as peak, p.won, p.lost, p.avatar_v,
-  (case when p.week = ${WEEK} then p.bal - coalesce(p.week_bal, p.bal) else 0 end)::float8 as week_gain`;
+  (case when p.week = ${WEEK} then p.bal - coalesce(p.week_bal, p.bal) else 0 end)::float8 as week_gain,
+  (case when p.month = ${MONTH} then p.bal - coalesce(p.month_bal, p.bal) else 0 end)::float8 as month_gain`;
+// Gains par semaine (ou par mois) des membres d'une ligue, y compris la dernière période de ceux
+// qui n'ont pas rouvert l'app depuis ; rk = place dans la ligue pour cette période.
+const periodGains = (tbl, col, cur, bal) => `with mem as (select player from league_members where code = $1),
+  g as (select w.player, w.${col} as per, w.gain from ${tbl} w join mem on mem.player = w.player
+        union all
+        select p.id, p.${col}, p.bal - coalesce(p.${bal}, p.bal) from players p join mem on mem.player = p.id
+          where p.${col} is not null and p.${col} <> ${cur}
+            and not exists (select 1 from ${tbl} w2 where w2.player = p.id and w2.${col} = p.${col})),
+  r as (select player, per, gain::float8 as gain, rank() over (partition by per order by gain desc) as rk from g)`;
+const MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+const monthName = (m) => MONTHS[Number(String(m).slice(5, 7)) - 1] || m;
 
 async function me(s, token) {
   if (!token) throw fail(401, "no_session");
@@ -118,6 +134,95 @@ function verdict(m, R) {
   return { res, conf: best.length };
 }
 
+// ---- Bilan de la semaine passée d'une ligue (calculé à la demande, rien n'est stocké) ----
+async function recapFor(s, code) {
+  const per = (await s.query(`select ${PREV_WEEK} as w,
+      extract(epoch from ((date_trunc('week', now() at time zone 'Europe/Paris') - interval '7 days') at time zone 'Europe/Paris')) * 1000 as a,
+      extract(epoch from (date_trunc('week', now() at time zone 'Europe/Paris') at time zone 'Europe/Paris')) * 1000 as b`))[0];
+  const from = Math.round(Number(per.a)), to = Math.round(Number(per.b));
+  const mem = await s.query(`select pl.id, pl.name, pl.avatar_v, pl.bets from league_members m join players pl on pl.id = m.player where m.code = $1`, [code]);
+  const who = Object.fromEntries(mem.map((x) => [String(x.id), x]));
+  const P = (id, extra) => { const x = who[String(id)]; return x ? { id: x.id, name: x.name, av: x.avatar_v || 0, ...extra } : null; };
+  const g = (await s.query(`${periodGains("weekly", "week", WEEK, "week_bal")}
+     select player, gain from r where per = $2 order by gain desc`, [code, per.w])).filter((x) => who[String(x.player)] && Math.round(x.gain) !== 0);
+  const podium = g.filter((x) => x.gain > 0).slice(0, 3).map((x) => P(x.player, { gain: Math.round(x.gain) }));
+  const worst = g[g.length - 1];
+  const red = worst && worst.gain < 0 && g.length >= 2 ? P(worst.player, { gain: Math.round(worst.gain) }) : null;
+  // paris de la semaine (les 40 derniers de chacun, gardés sur le serveur pour les fiches)
+  let odds = null, flop = null, busy = null, nb = 0, staked = 0;
+  for (const x of mem) {
+    const list = (x.bets && x.bets.list) || [];
+    let n = 0;
+    for (const b of list) {
+      const t = Number(b.done || b.at) || 0, placed = Number(b.at) || 0;
+      if (placed >= from && placed < to) { n++; staked += Number(b.stake) || 0; }
+      if (t < from || t >= to) continue;
+      const legs = (b.legs || []).slice(0, 4).map((L) => L.l);
+      if (b.st === "won" && (!odds || b.odds > odds.odds)) odds = P(x.id, { odds: Number(b.odds) || 0, pay: Number(b.pay) || 0, legs });
+      if (b.st === "lost" && (!flop || b.stake > flop.stake || (b.stake === flop.stake && b.odds < flop.odds))) flop = P(x.id, { stake: Number(b.stake) || 0, odds: Number(b.odds) || 0, legs });
+    }
+    nb += n;
+    if (n && (!busy || n > busy.n)) busy = P(x.id, { n });
+  }
+  if (odds && odds.odds < 1.5) odds = null;
+  // prono du week-end
+  let prono = null;
+  const wk = (await s.query(`select matches from prono_weeks where week = $1`, [per.w]))[0];
+  if (wk) {
+    const picks = await s.query(`select player, mid, sh, sa, joker from prono_picks where week = $1 and player = any($2::bigint[])`, [per.w, mem.map((x) => x.id)]);
+    const pts = {};
+    for (const x of picks) { const M = wk.matches.find((m) => m.mid === x.mid); const pt = M ? points(M, x) : null; if (pt != null) pts[x.player] = (pts[x.player] || 0) + pt; }
+    const best = Math.max(0, ...Object.values(pts));
+    if (best > 0) prono = { pts: best, who: Object.keys(pts).filter((k) => pts[k] === best).map((k) => P(k, {})).filter(Boolean),
+      done: wk.matches.every((m) => m.done || m.cancel) };
+  }
+  // duels gagnés
+  let duel = null;
+  const dw = await s.query(`select winner, count(*)::int as n from duels where code = $1 and status = 'done' and winner is not null
+      and t >= to_timestamp($2 / 1000.0) and t < to_timestamp($3 / 1000.0) group by winner order by n desc limit 1`, [code, from, to]);
+  if (dw[0]) duel = P(dw[0].winner, { n: dw[0].n });
+  return { week: per.w, from, to, podium, red, odds, flop, busy, prono, duel, bets: nb, staked: Math.round(staked),
+    empty: !podium.length && !odds && !flop && !prono && !duel };
+}
+
+// ---- Tâche du matin (Vercel Cron, chaque jour vers 8 h) : notifications du bilan (lundi) et de la saison (le 1er) ----
+async function morning(s) {
+  const t = (await s.query(`select extract(isodow from now() at time zone 'Europe/Paris')::int as dow,
+      extract(day from now() at time zone 'Europe/Paris')::int as day, ${PREV_WEEK} as w, ${PREV_MONTH} as m`))[0];
+  const once = async (key) => !!(await s.query(`insert into meta (key, value) values ($1, '1') on conflict do nothing returning key`, [key]))[0];
+  const leagues = await s.query(`select l.code, l.name from leagues l where (select count(*) from league_members m where m.code = l.code) >= 2`);
+  const out = { recap: 0, season: 0 };
+  if (t.day === 1 && await once("season:" + t.m)) {
+    const done = new Set();
+    for (const L of leagues) {
+      const w = await s.query(`${periodGains("monthly", "month", MONTH, "month_bal")}
+         select r.player, r.gain, pl.name from r join players pl on pl.id = r.player where r.per = $2 and r.rk = 1 and r.gain > 0`, [L.code, t.m]);
+      if (!w.length) continue;
+      const to = (await members(s, L.code)).filter((id) => !done.has(String(id)));
+      to.forEach((id) => done.add(String(id)));
+      await notify(s, to, { title: `👑 Saison de ${monthName(t.m)} terminée · ${L.name}`,
+        body: `${w.map((x) => x.name).join(" et ")} ${w.length > 1 ? "sont champions" : "est champion"} avec +${Math.round(w[0].gain)} jetons. Nouvelle saison : tout le monde repart à zéro !`,
+        url: go("rank", L.code), tag: "season-" + L.code });
+      out.season++;
+    }
+  }
+  if (t.dow === 1 && await once("recap:" + t.w)) {
+    const done = new Set();
+    for (const L of leagues) {
+      const r = await recapFor(s, L.code);
+      if (r.empty) continue;
+      const to = (await members(s, L.code)).filter((id) => !done.has(String(id)));
+      to.forEach((id) => done.add(String(id)));
+      const top = r.podium[0];
+      await notify(s, to, { title: `🏆 Le bilan de la semaine · ${L.name}`,
+        body: top ? `${top.name} gagne la semaine avec +${top.gain} jetons. Qui a fait le plus gros flop ? Viens voir !` : "Plus grosse cote, plus gros flop, roi du prono… Viens voir !",
+        url: go("recap", L.code), tag: "recap-" + L.code });
+      out.recap++;
+    }
+  }
+  return out;
+}
+
 const ACTIONS = {
   // Crée un joueur anonyme. Le jeton n'est gardé qu'en empreinte sha256.
   async session(s, b, req) {
@@ -157,9 +262,15 @@ const ACTIONS = {
          select id, week, bal - coalesce(week_bal, bal) from players where id = $1 and week is not null and week <> ${WEEK}
        on conflict do nothing`, [p.id]);
     await s.query(
+      `insert into monthly (player, month, gain)
+         select id, month, bal - coalesce(month_bal, bal) from players where id = $1 and month is not null and month <> ${MONTH}
+       on conflict do nothing`, [p.id]);
+    await s.query(
       `update players set
          week_bal = case when week is distinct from ${WEEK} then bal else week_bal end,
          week = ${WEEK},
+         month_bal = case when month is distinct from ${MONTH} then bal else month_bal end,
+         month = ${MONTH},
          bal = $2::numeric, peak = greatest(peak, $3::numeric, $2::numeric), won = $4::int, lost = $5::int, seen_at = now()
        where id = $1`,
       [p.id, num(b.bal, 0, MAX_BAL), num(b.peak, 0, MAX_BAL), int(b.won, 0, 1e7), int(b.lost, 0, 1e7)]);
@@ -288,23 +399,21 @@ const ACTIONS = {
     const leagues = await myLeagues(s, p.id);
     const code = cleanName(b.code, 8).toUpperCase();
     let rows, total = null, rank = null;
-    let trophies = {}, last = null;
+    let trophies = {}, crowns = {}, last = null, lastSeason = null;
     if (code && leagues.some((l) => l.code === code)) {
       rows = await s.query(`select ${BOARD_COLS} from players p join league_members m on m.player = p.id where m.code = $1`, [code]);
       // gains par semaine des membres (y compris la semaine passée de ceux qui n'ont pas encore rouvert l'app)
-      const wk = await s.query(
-        `with mem as (select player from league_members where code = $1),
-         g as (select w.player, w.week, w.gain from weekly w join mem on mem.player = w.player
-               union all
-               select p.id, p.week, p.bal - coalesce(p.week_bal, p.bal) from players p join mem on mem.player = p.id
-                 where p.week is not null and p.week <> ${WEEK}
-                   and not exists (select 1 from weekly w2 where w2.player = p.id and w2.week = p.week)),
-         r as (select player, week, gain::float8 as gain, rank() over (partition by week order by gain desc) as rk from g)
-         select r.player, r.week, r.gain, r.rk, pl.name from r join players pl on pl.id = r.player where r.rk = 1 and r.gain > 0 order by r.week desc`, [code]);
+      const wk = await s.query(`${periodGains("weekly", "week", WEEK, "week_bal")}
+         select r.player, r.per as week, r.gain, pl.name from r join players pl on pl.id = r.player where r.rk = 1 and r.gain > 0 order by r.per desc`, [code]);
       for (const w of wk) trophies[w.player] = (trophies[w.player] || 0) + 1;
-      const prev = (await s.query(`select to_char(date_trunc('week', now() at time zone 'Europe/Paris') - interval '7 days', 'YYYY-MM-DD') as w`))[0].w;
-      const lw = wk.filter((w) => w.week === prev);
-      if (lw.length) last = { week: prev, winners: lw.map((w) => ({ id: w.player, name: w.name, gain: Math.round(w.gain) })) };
+      const prev = (await s.query(`select ${PREV_WEEK} as w, ${PREV_MONTH} as m`))[0];
+      const lw = wk.filter((w) => w.week === prev.w);
+      if (lw.length) last = { week: prev.w, winners: lw.map((w) => ({ id: w.player, name: w.name, gain: Math.round(w.gain) })) };
+      const ms = await s.query(`${periodGains("monthly", "month", MONTH, "month_bal")}
+         select r.player, r.per as month, r.gain, pl.name from r join players pl on pl.id = r.player where r.rk = 1 and r.gain > 0 order by r.per desc`, [code]);
+      for (const m of ms) crowns[m.player] = (crowns[m.player] || 0) + 1;
+      const lm = ms.filter((m) => m.month === prev.m);
+      if (lm.length) lastSeason = { month: prev.m, label: monthName(prev.m), winners: lm.map((m) => ({ id: m.player, name: m.name, gain: Math.round(m.gain) })) };
     } else {
       // général : les 100 meilleurs de la semaine et au total, plus ma place
       rows = await s.query(
@@ -312,18 +421,30 @@ const ACTIONS = {
          union
          (select ${BOARD_COLS} from players p where p.week = ${WEEK} order by p.bal - coalesce(p.week_bal, p.bal) desc limit 100)
          union
+         (select ${BOARD_COLS} from players p where p.month = ${MONTH} order by p.bal - coalesce(p.month_bal, p.bal) desc limit 100)
+         union
          (select ${BOARD_COLS} from players p where p.id = $1)`, [p.id]);
       total = (await s.query(`select count(*)::int as n from players where seen_at > now() - interval '60 days'`))[0].n;
       rank = (await s.query(
         `select count(*)::int + 1 as r from players where seen_at > now() - interval '60 days' and bal > (select bal from players where id = $1)`, [p.id]))[0].r;
     }
+    const cur = (await s.query(`select ${MONTH} as m, ${WEEK} as w,
+      extract(epoch from ((date_trunc('month', now() at time zone 'Europe/Paris') + interval '1 month') at time zone 'Europe/Paris')) * 1000 as mend`))[0];
     return {
-      me: p.id, leagues, code: code && leagues.some((l) => l.code === code) ? code : "", total, rank, last,
-      rows: rows.map((r) => ({ id: r.id, name: r.name, bal: Math.round(r.bal), peak: Math.round(r.peak), won: r.won, lost: r.lost, week: Math.round(r.week_gain), tr: trophies[r.id] || 0, av: r.avatar_v || 0 })),
+      me: p.id, leagues, code: code && leagues.some((l) => l.code === code) ? code : "", total, rank, last, lastSeason,
+      season: { month: cur.m, label: monthName(cur.m), end: Math.round(Number(cur.mend)) }, week: cur.w,
+      rows: rows.map((r) => ({ id: r.id, name: r.name, bal: Math.round(r.bal), peak: Math.round(r.peak), won: r.won, lost: r.lost, week: Math.round(r.week_gain), season: Math.round(r.month_gain), tr: trophies[r.id] || 0, sc: crowns[r.id] || 0, av: r.avatar_v || 0 })),
     };
   },
 
   // ---- Photo de profil ----
+  async recap(s, b) {
+    const p = await me(s, b.token);
+    const code = cleanName(b.code, 8).toUpperCase();
+    if (!(await isMember(s, code, p.id))) throw fail(403, "not_member");
+    return { me: p.id, name: await lname(s, code), ...(await recapFor(s, code)) };
+  },
+
   async set_avatar(s, b) {
     const p = await me(s, b.token);
     if (b.img == null) {
@@ -829,6 +950,11 @@ export default async function handler(req, res) {
         res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
         return res.status(200).end(buf);
       } catch (e) { return res.status(500).json({ error: "server" }); }
+    }
+    if (q.cron) {
+      const want = process.env.CRON_SECRET || "", got = String(req.headers.authorization || "");
+      if (want.length < 16 || got !== "Bearer " + want) return res.status(401).json({ error: "forbidden" });
+      try { return res.status(200).json(await morning(await db())); } catch (e) { console.error(e); return res.status(500).json({ error: "server" }); }
     }
     return res.status(200).json({ ok: true, service: "damateur-a-pro" });
   }
