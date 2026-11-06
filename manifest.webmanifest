@@ -1,0 +1,16 @@
+{
+  "name": "D’amateur à pro",
+  "short_name": "Amateur à pro",
+  "description": "Paris sportifs gratuits avec des jetons fictifs : football, rugby et tennis, du district aux pros.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0a110f",
+  "theme_color": "#0a110f",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}
