@@ -240,6 +240,12 @@ img.crest{object-fit:contain}
 .chips.mini input{flex:1.3;min-width:0;border:1.5px dashed var(--sel);background:var(--card);border-radius:10px;color:var(--ink);font:800 18px "Barlow Condensed";text-align:center}
 .dslip .dl2{display:flex;justify-content:space-between;font-size:14px;color:var(--mute);margin-bottom:10px}
 .dslip .dl2 b{font:800 20px "Barlow Condensed";color:var(--ink);margin-left:4px}.dslip .dl2 b.g{color:var(--sel)}
+/* roue de la chance */
+.wheelbtn{gap:10px}
+.wheelbox{position:relative;width:min(300px,82vw);margin:6px auto 14px}
+.wheel{display:block;width:100%;height:auto;transform-origin:50% 50%;filter:drop-shadow(0 10px 24px #000a)}
+.pointer{position:absolute;left:50%;top:-6px;z-index:2;width:0;height:0;transform:translateX(-50%);border-left:16px solid transparent;border-right:16px solid transparent;border-top:30px solid #fff;filter:drop-shadow(0 3px 4px #000a)}
+.wres{text-align:center;color:var(--mute);margin-bottom:12px;font-size:15px}.wres b{color:var(--sel);font:800 26px "Barlow Condensed";display:block}
 /* slip sheet */
 .leg{display:flex;gap:10px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--line)}
 .leg .ic{width:34px;height:34px;border-radius:10px;background:var(--card2);display:grid;place-items:center;flex:none}
@@ -752,7 +758,7 @@ function viewMatches(){const cfg=SP[U.sp];let h=`<div class="sports">${Object.en
   if(isDep||U.lv<0&&U.dep){if(U.dep)list=list.filter(m=>!m.dep||m.dep===U.dep)}
   if(isDep||U.lv<0)h+=`<div class="filters"><select class="sel" id="dep" aria-label="Département"><option value="">Tous les départements</option>${DEP.map(d=>`<option${d===U.dep?" selected":""}>${d}</option>`).join("")}</select></div>`;
   if(S.orgMode)h+=`<button class="btn ghost wide" data-act="addm" style="margin-bottom:12px">${ic("plus")} Ajouter un match amateur</button>`;
-  if(S.bonus!==today())h+=`<button class="btn gold wide" data-act="bonus" style="margin-bottom:12px">${ic("gift")} Bonus du jour : +100 jetons</button>`;
+  if(S.bonus!==today())h+=`<button class="btn gold wide wheelbtn" data-act="wheel" style="margin-bottom:12px">${wheelMini()} Roue de la chance du jour</button>`;
   const now=Date.now();
   let up=list.filter(m=>["pre","live","wait"].includes(status(m)));
   const done=list.filter(m=>status(m)==="post").sort((a,b)=>b.t-a.t);
@@ -1013,7 +1019,8 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"stake":{const n=U.sel.length,combo=U.combo&&n>1&&!comboBlocked();U.stake=d.v==="max"?Math.max(1,Math.floor(S.bal/(combo?1:n))):+d.v;refreshLayer();break}
     case"place":place();break;
     case"clear":U.sel=[];closeLayer();break;
-    case"bonus":if(S.bonus!==today()){S.bonus=today();S.bal+=100;S.peak=Math.max(S.peak,S.bal);save();render();bump();toast(`${ic("gift")} +100 jetons. À demain !`,"win")}break;
+    case"wheel":U.open="wheel";layer(viewWheel());break;
+    case"spin":spin();break;
     case"retry":for(const l in SP[U.sp].feeds)FEED[U.sp+l]={ok:null,list:[]};render();Promise.all(Object.keys(SP[U.sp].feeds).map(l=>loadFeed(U.sp,+l))).then(()=>{render();settle()});break;
     case"tsim":S.sim=!S.sim;save();render();break;
     case"torg":S.orgMode=!S.orgMode;save();render();if(S.orgMode)toast("Mode organisateur activé : ajoute tes matchs depuis l’onglet Matchs.");break;
@@ -1046,6 +1053,41 @@ document.addEventListener("input",e=>{if(e.target.id!=="stk")return;U.stake=Math
   if($("#s1")&&!(combo&&U.open==="slip"))$("#s1").textContent=tok(cost);if($("#s2"))$("#s2").textContent=tok(gain);
   const b=$("[data-act=place]");if(b){b.disabled=cost>S.bal;b.innerHTML=`${ic("ticket")} Valider · ${tok(cost)} jetons`}
   document.querySelectorAll("[data-act=stake]").forEach(x=>x.setAttribute("aria-pressed",+x.dataset.v===U.stake));renderSlipBar()});
+
+/* ---------- roue de la chance ----------
+   8 cases, chacune exactement 1 chance sur 8 : tirage uniforme avec le générateur
+   aléatoire cryptographique du navigateur (rejet des valeurs biaisées). */
+const WHEEL=[25,50,75,100,150,200,300,500],WCOL=["#35d07f","#ffd23f","#ff7a45","#5fa8ff","#d7f25a","#c084fc","#ff5a5f","#f8fafc"];
+function fairIndex(n){const a=new Uint32Array(1),lim=Math.floor(4294967296/n)*n;do{crypto.getRandomValues(a)}while(a[0]>=lim);return a[0]%n}
+function wheelSvg(){const n=WHEEL.length,st=360/n,R=140,c=150,pt=d=>{const r=(d-90)*Math.PI/180;return(c+R*Math.cos(r)).toFixed(2)+" "+(c+R*Math.sin(r)).toFixed(2)};
+  return`<svg viewBox="0 0 300 300" class="wheel" id="wheel" aria-hidden="true">${WHEEL.map((v,i)=>{const a0=i*st-st/2,a1=a0+st,dark=lum(WCOL[i])>.55;
+    return`<path d="M150 150L${pt(a0)}A${R} ${R} 0 0 1 ${pt(a1)}Z" fill="${WCOL[i]}" stroke="#0a110f" stroke-width="3"/>
+    <g transform="rotate(${i*st} 150 150)"><text x="150" y="52" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-weight="800" font-size="30" fill="${dark?"#0a110f":"#fff"}">${v}</text>
+    <text x="150" y="72" text-anchor="middle" font-family="Barlow,sans-serif" font-weight="700" font-size="11" fill="${dark?"#0a110f":"#fff"}" opacity=".75">JETONS</text></g>`}).join("")}
+    <circle cx="150" cy="150" r="141" fill="none" stroke="#ffd23f" stroke-width="6"/>
+    ${Array.from({length:n},(_,i)=>{const r=(i*st+st/2-90)*Math.PI/180;return`<circle cx="${(150+141*Math.cos(r)).toFixed(1)}" cy="${(150+141*Math.sin(r)).toFixed(1)}" r="4.5" fill="#fff"/>`}).join("")}
+    <circle cx="150" cy="150" r="26" fill="#0a110f" stroke="#ffd23f" stroke-width="5"/></svg>`}
+function wheelMini(){return`<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">${WCOL.map((col,i)=>{const a0=(i*45-112.5)*Math.PI/180,a1=a0+Math.PI/4;
+  return`<path d="M12 12L${(12+11*Math.cos(a0)).toFixed(2)} ${(12+11*Math.sin(a0)).toFixed(2)}A11 11 0 0 1 ${(12+11*Math.cos(a1)).toFixed(2)} ${(12+11*Math.sin(a1)).toFixed(2)}Z" fill="${col}"/>`}).join("")}<circle cx="12" cy="12" r="11" fill="none" stroke="#2a1d00" stroke-width="1.5"/><circle cx="12" cy="12" r="3" fill="#2a1d00"/></svg>`}
+function nextReset(){const d=new Date();d.setHours(24,0,0,0);const m=Math.round((d-Date.now())/6e4);return(m>=60?Math.floor(m/60)+" h "+String(m%60).padStart(2,"0"):m+" min")}
+function viewWheel(){const done=S.bonus===today();
+  return`<div class="grab"><h3>Roue de la chance</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
+  <div class="wheelbox"><div class="pointer"></div>${wheelSvg()}</div>
+  <div id="wres" class="wres">${done&&S.wheel&&S.wheel.d===today()?`Aujourd’hui : <b>+${tok(S.wheel.v)} jetons</b>`:"Un tour gratuit par jour"}</div>
+  <button class="btn gold wide" data-act="spin" id="spin" ${done?"disabled":""}>${done?"Prochain tour dans "+nextReset():"Lancer la roue"}</button>
+  <div class="info">${ic("info")}<span><b style="color:var(--ink)">100 % hasard.</b> Les 8 cases ont exactement la même chance : 1 sur 8, soit 12,5 % chacune. Le tirage utilise le générateur aléatoire sécurisé du téléphone, sans aucun réglage caché.</span></div>`}
+let spinning=false;
+function spin(){if(spinning||S.bonus===today())return;spinning=true;
+  const i=fairIndex(WHEEL.length),v=WHEEL[i];
+  // le gain est enregistré tout de suite (recharger la page ne permet pas de relancer)
+  S.bonus=today();S.wheel={d:today(),v};S.bal+=v;S.peak=Math.max(S.peak,S.bal);save();
+  const w=$("#wheel"),b=$("#spin"),jit=(Math.random()-.5)*(360/WHEEL.length)*.7,deg=360*7-i*(360/WHEEL.length)+jit;
+  if(b){b.disabled=true;b.textContent="Ça tourne…"}
+  const end=()=>{spinning=false;$("#bal").textContent=tok(S.bal);bump();
+    if($("#wres"))$("#wres").innerHTML=`Gagné : <b>+${tok(v)} jetons</b>`;if($("#spin"))$("#spin").textContent="Prochain tour dans "+nextReset();
+    toast(`${wheelMini()} +${tok(v)} jetons ! À demain pour un nouveau tour.`,"win");if(v>=200)confetti();if(!U.open)render()};
+  if(!w||matchMedia("(prefers-reduced-motion: reduce)").matches){end();return}
+  w.style.transition="transform 5.2s cubic-bezier(.12,.75,.12,1)";requestAnimationFrame(()=>{w.style.transform=`rotate(${deg}deg)`});setTimeout(end,5400)}
 
 /* ---------- accueil ---------- */
 function viewWelcome(rename){return`<div class="welcome">${rename?`<div class="grab"><h3>Ton pseudo</h3><button class="x" data-act="close">${ic("x")}</button></div>`:`
