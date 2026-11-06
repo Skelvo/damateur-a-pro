@@ -1,0 +1,8 @@
+{
+  "name": "damateur-a-pro",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@neondatabase/serverless": "1.2.0"
+  }
+}
