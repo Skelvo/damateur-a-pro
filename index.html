@@ -345,6 +345,12 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 .dkopt.mine{border-color:#ff5a5a}.dkopt.win{border-color:var(--win)}.dkopt.win .bar{background:#35d07f33}.dkopt i{font-style:normal;color:var(--win);font-weight:800}
 .dkopt:disabled{opacity:1;cursor:default}
 .dkres{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.dkres small{width:100%;color:var(--mute)}.dkres .btn{flex:1;padding:9px;font-size:15px}
+.dkguess{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}.dkguess span{border:1px solid var(--line2);background:var(--card2);border-radius:999px;padding:5px 10px;font:800 16px "Barlow Condensed"}
+.dkguess small{font:600 12px Barlow;color:var(--mute)}.dkguess .mine{border-color:#ff5a5a}.dkguess .win{border-color:var(--win);background:#35d07f22}
+.dkresn{margin-top:6px;color:var(--mute)}.dkresn b{color:var(--ink);font:800 20px "Barlow Condensed"}
+.dkres input{flex:1;min-width:0;padding:10px;border-radius:10px;border:1px solid var(--line2);background:var(--card2);color:var(--ink);font:700 16px Barlow}
+.act .dkav{width:34px;height:34px;border-radius:50%;background:#3a0c0c!important;color:#ff5a5a!important;display:grid;place-items:center;flex:none;cursor:pointer}.act .dkav .i{width:22px;height:22px}
+.dkact p .dkr{color:#ff6b6b}
 .dkrep{position:absolute;right:10px;bottom:8px;font-size:12px;color:var(--mute2)!important}
 /* ligues vivantes */
 .champ{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#4a3a05,var(--card) 70%);border:1px solid #8a6d10;border-radius:14px;padding:10px 14px;margin-bottom:12px}
@@ -1287,7 +1293,8 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"dkset":dkSet(d);break;
     case"dkcreate":darkCreate();break;
     case"dkpick":U.open="dkstake";U.dks={id:d.id,opt:+d.opt,amount:20};layer(viewDarkStake());break;
-    case"dkamt":U.dks.amount=+d.v;layer(viewDarkStake());break;
+    case"dkamt":{const g=$("#dks-g");if(g)U.dks.guess=g.value;U.dks.amount=+d.v;layer(viewDarkStake());break}
+    case"dkresn":{const v=$("#dkn-"+d.id);const n=v&&v.value!==""?+v.value:NaN;if(isNaN(n)){toast("Entre le vrai chiffre.","bad");break}darkResolve(d.id,0,n);break}
     case"dkbet":darkStake();break;
     case"dkres":darkResolve(d.id,+d.opt);break;
     case"dkflag":darkFlag(d.id,d.kind);break;
@@ -1488,12 +1495,14 @@ function actText(a){const d=a.data||{};const legs=(d.legs||[]).map(esc).join(" +
       return`lance un duel : <b>${esc(d.pick||"")}</b> sur ${esc(d.mlabel||"")} <span class="mut">(${tok(d.stake||0)} jetons)</span>`;
     case"duelwin":return`remporte son duel${d.opp?` contre ${esc(d.opp)}`:""} : <b class="pos">+${tok(d.pay||0)}</b>`;
     case"join":return`a rejoint la ligue`;
+    case"darknew":return`<b class="dkr">Nouveau pari dark</b> : « ${esc(d.q||"")} » <span class="mut">(créé anonymement)</span>`;
+    case"darkres":return`<b class="dkr">Résultat du pari dark</b> « ${esc(d.q||"")} » : <b>${esc(d.r||"")}</b> <span class="mut">(12 h pour contester)</span>`;
   }return""}
 function viewFeed(){const F=U.lg.feed;if(!F){loadActFeed();return`<div class="skel" style="height:80px"></div><div class="skel" style="height:80px"></div>`}
   if(Date.now()-(U.lg.feedAt||0)>3e4)setTimeout(loadActFeed,0);
   if(!F.length)return`<div class="empty">${ic("group")}<b>Rien pour l’instant</b>Les paris, gains et duels des membres s’afficheront ici.</div>`;
-  return F.map(a=>`<div class="act"><span data-act="prof" data-id="${esc(a.who)}">${avatar(a.who,a.name,a.av,"av")}</span><div>
-    <p><b>${esc(a.name)}${String(a.who)===String(U.lg.data.me)?" (toi)":""}</b> ${actText(a)}</p><small>${ago(a.at)}</small>
+  return F.map(a=>`<div class="act${a.kind.startsWith("dark")?" dkact":""}">${a.kind.startsWith("dark")?`<span class="av dkav" data-act="dkwarn">${DK_ICON}</span>`:`<span data-act="prof" data-id="${esc(a.who)}">${avatar(a.who,a.name,a.av,"av")}</span>`}<div>
+    <p>${a.kind.startsWith("dark")?"":`<b>${esc(a.name)}${String(a.who)===String(U.lg.data.me)?" (toi)":""}</b> `}${actText(a)}</p><small>${ago(a.at)}</small>
     <div class="reacts">${EMOS.map(e=>{const n=(a.reacts||{})[e]||0;return`<button data-act="react" data-id="${esc(a.id)}" data-e="${e}" aria-pressed="${a.mine===e}">${e}${n?` <span>${n}</span>`:""}</button>`}).join("")}</div></div></div>`).join("")}
 async function reactTo(id,e){const a=(U.lg.feed||[]).find(x=>String(x.id)===String(id));if(!a)return;const r=a.reacts=a.reacts||{};
   if(a.mine){r[a.mine]=Math.max(0,(r[a.mine]||1)-1)}if(a.mine===e)a.mine=null;else{a.mine=e;r[e]=(r[e]||0)+1}render();
@@ -1593,17 +1602,23 @@ function viewDark(cur){const D=U.dk&&U.dk.code===cur.code?U.dk.bets:null;if(!D)l
   if(!D.length)return h+`<div class="empty">${DK_ICON}<b>Rien de louche pour l’instant</b>Lance le premier pari : retards, profs, sorties, défis entre potes…</div>`;
   return h+D.map(b=>{const T=potOf(b),open=b.state==="open",my=b.my;
     const tag=open?`<span class="tag open">${leftTxt(b.closes)}</span>`:b.state==="closed"?`<span class="tag void">En attente du résultat</span>`:b.state==="contest"?`<span class="tag open">Résultat · 12 h pour contester</span>`:b.state==="final"?`<span class="tag won">Terminé</span>`:`<span class="tag lost">Annulé · remboursé</span>`;
-    const opts=b.options.map((o,k)=>{const P=(b.pools||{})[k]||0,pct=T?Math.round(P/T*100):0,win=b.result===k&&b.state!=="void",mine=my&&my.opt===k;
+    const u=b.unit?" "+esc(b.unit):"",near=b.kind==="num"&&b.resultNum!=null&&(b.guesses||[]).length?Math.min(...b.guesses.map(x=>Math.abs(x.g-b.resultNum))):null;
+    const opts=b.kind==="num"?`${(b.guesses||[]).length?`<div class="dkguess">${b.guesses.map(x=>`<span class="${near!=null&&Math.abs(x.g-b.resultNum)===near?"win":""}${my&&my.guess===x.g?" mine":""}">${fr(x.g,x.g%1?1:0).replace(",0","")}${u} <small>${tok(x.a)}</small></span>`).join("")}</div>`:`<small class="mut">Aucun pronostic pour l’instant.</small>`}
+      ${b.resultNum!=null?`<div class="dkresn">Résultat : <b>${fr(b.resultNum,b.resultNum%1?1:0)}${u}</b></div>`:""}
+      ${open&&!b.mine&&!my?`<button class="btn dkgo wide" style="margin-top:8px" data-act="dkpick" data-id="${esc(b.id)}" data-opt="0">Donner mon chiffre et miser</button>`:open&&my?`<button class="btn ghost wide" style="margin-top:8px" data-act="dkpick" data-id="${esc(b.id)}" data-opt="0">Ajouter des jetons sur ${fr(my.guess,my.guess%1?1:0)}${u}</button>`:""}`
+      :b.options.map((o,k)=>{const P=(b.pools||{})[k]||0,pct=T?Math.round(P/T*100):0,win=b.result===k&&b.state!=="void",mine=my&&my.opt===k;
       const can=open&&!b.mine&&(!my||my.opt===k);
       return`<button class="dkopt${win?" win":""}${mine?" mine":""}" ${can?`data-act="dkpick" data-id="${esc(b.id)}" data-opt="${k}"`:"disabled"}>
         <span class="bar" style="width:${pct}%"></span><b>${esc(o)}</b><small>${pct} % · ${tok(P)}</small>${win?`<i>✓</i>`:""}</button>`}).join("");
+    const myTxt=my?(b.kind==="num"?` · toi : ${tok(my.amount)} sur ${fr(my.guess,my.guess%1?1:0)}${u}`:` · toi : ${tok(my.amount)} sur « ${esc(b.options[my.opt])} »`):"";
     let foot="";
-    if(b.mine)foot=b.state==="closed"?`<div class="dkres"><small>C’est ton pari (personne ne le sait). Qu’est-ce qui s’est passé ?</small>${b.options.map((o,k)=>`<button class="btn ghost" data-act="dkres" data-id="${esc(b.id)}" data-opt="${k}">${esc(o)}</button>`).join("")}</div>`
+    if(b.mine)foot=b.state==="closed"?(b.kind==="num"?`<div class="dkres"><small>C’est ton pari (personne ne le sait). Quel est le vrai chiffre ?</small><input type="number" inputmode="decimal" id="dkn-${esc(b.id)}" placeholder="ex. 14"><button class="btn ghost" data-act="dkresn" data-id="${esc(b.id)}">Valider</button></div>`
+      :`<div class="dkres"><small>C’est ton pari (personne ne le sait). Qu’est-ce qui s’est passé ?</small>${b.options.map((o,k)=>`<button class="btn ghost" data-act="dkres" data-id="${esc(b.id)}" data-opt="${k}">${esc(o)}</button>`).join("")}</div>`)
       :`<small class="mut">${ic("info")} C’est ton pari : tu ne peux pas miser dessus${open&&!b.players?` · <button class="link" data-act="dkdel" data-id="${esc(b.id)}">Supprimer</button>`:""}</small>`;
     else if(b.state==="contest"&&!b.myContest)foot=`<small class="mut">Pas d’accord avec le résultat ? <button class="link" data-act="dkflag" data-kind="contest" data-id="${esc(b.id)}">Contester</button> (${b.contests}/2)</small>`;
     else if(b.myContest)foot=`<small class="mut">Tu as contesté ce résultat (${b.contests}/2).</small>`;
     return`<div class="dkbet"><div class="dkq"><b>${esc(b.question)}</b>${tag}</div>
-      <small class="mut">Pot : <b>${tok(T)}</b> jetons · ${b.players} joueur${b.players>1?"s":""}${my?` · toi : ${tok(my.amount)} sur « ${esc(b.options[my.opt])} »`:""}</small>
+      <small class="mut">Pot : <b>${tok(T)}</b> jetons · ${b.players} joueur${b.players>1?"s":""}${myTxt}</small>
       <div class="dkopts">${opts}</div>${foot}
       ${b.mine||b.myReport?"":`<button class="link dkrep" data-act="dkflag" data-kind="report" data-id="${esc(b.id)}">Signaler</button>`}</div>`}).join("")+
     `<p class="note">Pari mutuel : les gagnants se partagent tout le pot, au prorata de leur mise. Si personne n’a misé sur le bon choix, ou si le pari est annulé, tout le monde est remboursé.</p>`}
@@ -1613,39 +1628,47 @@ function viewDarkNew(){const f=U.dkf;
   if(f.when==="custom"&&!f.t)f.t=loc(dkWhen("dem8"));
   return`<div class="grab"><h3>Inventer un pari</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   <div class="form"><label>Ta question<input id="dk-q" maxlength="140" placeholder="ex. Léo arrivera en retard demain ?" value="${esc(f.q||"")}"></label>
-  <div class="seg"><button data-act="dkset" data-f="type" data-v="yn" aria-pressed="${f.type==="yn"}">Oui / Non</button><button data-act="dkset" data-f="type" data-v="multi" aria-pressed="${f.type==="multi"}">Plusieurs choix</button></div>
+  <div class="seg"><button data-act="dkset" data-f="type" data-v="yn" aria-pressed="${f.type==="yn"}">Oui / Non</button><button data-act="dkset" data-f="type" data-v="multi" aria-pressed="${f.type==="multi"}">Choix</button><button data-act="dkset" data-f="type" data-v="num" aria-pressed="${f.type==="num"}">Un chiffre</button></div>
+  ${f.type==="num"?`<label>Unité (facultatif)<input id="dk-u" maxlength="12" placeholder="ex. min, buts, fois" value="${esc(f.unit||"")}"></label><p class="note" style="margin:0">Chacun donne son chiffre en misant : <b style="color:var(--ink)">le plus proche gagne le pot</b> (partagé en cas d’égalité).</p>`:""}
   ${f.type==="multi"?f.opts.map((o,i)=>`<input class="dk-o" data-i="${i}" maxlength="40" placeholder="Choix ${i+1}${i===0?" (ex. moins de 5 min)":i===1?" (ex. 5 à 15 min)":""}" value="${esc(o)}">`).join("")+(f.opts.length<4?`<button class="link" data-act="dkset" data-f="add">${ic("plus")} Ajouter un choix</button>`:""):""}
   <label>Fin des paris</label><div class="chips">${W.map(([k,l])=>`<button data-act="dkset" data-f="when" data-v="${k}" aria-pressed="${f.when===k}">${l}</button>`).join("")}</div>
   ${f.when==="custom"?`<label>Date et heure exactes<input type="datetime-local" id="dk-t" value="${f.t}" min="${loc(Date.now()+6*6e4)}" max="${loc(Date.now()+30*DAY)}"></label>`:""}
   <p class="note" style="margin:0">Les paris se ferment : <b style="color:var(--ink)">${(()=>{const t=f.when==="custom"?Date.parse(f.t):dkWhen(f.when);return isNaN(t)?"—":fDay(t)+" à "+fTime(t)})()}</b></p>
   <p class="note">Ton nom ne sera jamais affiché. Tu ne pourras pas miser sur ce pari, et c’est toi qui donneras le résultat après la fin. Rappel : rien de méchant ni de personnel.</p>
   <button class="btn wide dkgo" data-act="dkcreate">${DK_ICON} Lancer le pari</button></div>`}
-function dkKeep(){const f=U.dkf,q=$("#dk-q"),t=$("#dk-t");if(q)f.q=q.value;if(t)f.t=t.value;document.querySelectorAll(".dk-o").forEach(x=>f.opts[+x.dataset.i]=x.value)}
+function dkKeep(){const f=U.dkf,q=$("#dk-q"),t=$("#dk-t"),u=$("#dk-u");if(q)f.q=q.value;if(t)f.t=t.value;if(u)f.unit=u.value;document.querySelectorAll(".dk-o").forEach(x=>f.opts[+x.dataset.i]=x.value)}
 function dkSet(d){dkKeep();const f=U.dkf;if(d.f==="type")f.type=d.v;else if(d.f==="add"&&f.opts.length<4)f.opts.push("");else if(d.f==="when")f.when=d.v;layer(viewDarkNew())}
 function dkWhen(k){const d=new Date();if(k==="1h")return Date.now()+H;if(k==="3j")return Date.now()+3*DAY;
   if(k==="soir"){d.setHours(20,0,0,0);if(d<Date.now()+10*6e4)d.setDate(d.getDate()+1);return+d}
   d.setDate(d.getDate()+1);d.setHours(k==="dem8"?8:18,0,0,0);return+d}
-async function darkCreate(){dkKeep();const f=U.dkf,q=(f.q||"").trim(),opts=f.type==="yn"?["Oui","Non"]:f.opts.map(o=>o.trim()).filter(Boolean);
-  if(q.length<6){toast("Écris une vraie question.","bad");return}if(opts.length<2){toast("Il faut au moins 2 choix.","bad");return}
+async function darkCreate(){dkKeep();const f=U.dkf,q=(f.q||"").trim(),num=f.type==="num",opts=num?[]:f.type==="yn"?["Oui","Non"]:f.opts.map(o=>o.trim()).filter(Boolean);
+  if(q.length<6){toast("Écris une vraie question.","bad");return}if(!num&&opts.length<2){toast("Il faut au moins 2 choix.","bad");return}
   const closes=f.when==="custom"?Date.parse(f.t):dkWhen(f.when);
   if(isNaN(closes)||closes<Date.now()+5*6e4){toast("Choisis une fin dans au moins 5 minutes.","bad");return}
   if(closes>Date.now()+30*DAY){toast("30 jours maximum.","bad");return}
   const b=$("[data-act=dkcreate]");b.disabled=true;
-  try{await api("dark_create",{code:U.lg.code,question:q,options:opts,closes});closeLayer();await loadDark();toast(`${DK_ICON} Pari lancé, anonymement.`,"win")}
+  try{await api("dark_create",{code:U.lg.code,question:q,options:opts,closes,kind:num?"num":"choice",unit:num?(f.unit||"").trim():""});closeLayer();await loadDark();toast(`${DK_ICON} Pari lancé, anonymement.`,"win")}
   catch(e){b.disabled=false;toast(e.code==="options"?"Les choix doivent être différents.":e.code==="slow_down"?"Beaucoup de paris aujourd’hui !":"Pas de connexion au serveur.","bad")}}
 function viewDarkStake(){const q=U.dks,b=U.dk.bets.find(x=>String(x.id)===String(q.id));if(!b)return"";
   return`<div class="grab"><h3>Miser</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
-  <p style="margin:0 0 6px;font-weight:700">${esc(b.question)}</p><p class="note" style="margin-top:0">Ton choix : <b style="color:var(--acc)">${esc(b.options[q.opt])}</b></p>
+  <p style="margin:0 0 6px;font-weight:700">${esc(b.question)}</p>${b.kind==="num"?(b.my?`<p class="note" style="margin-top:0">Ton chiffre : <b style="color:var(--acc)">${fr(b.my.guess,b.my.guess%1?1:0)}${b.unit?" "+esc(b.unit):""}</b></p>`
+    :`<div class="form" style="margin-bottom:6px"><label>Ton chiffre${b.unit?" ("+esc(b.unit)+")":""}<input type="number" inputmode="decimal" id="dks-g" value="${q.guess??""}" placeholder="ex. 12"></label></div>`)
+    :`<p class="note" style="margin-top:0">Ton choix : <b style="color:var(--acc)">${esc(b.options[q.opt])}</b></p>`}
   <div class="chips">${[10,20,50,100,250].map(v=>`<button data-act="dkamt" data-v="${v}" aria-pressed="${q.amount===v}">${v}</button>`).join("")}</div>
-  <div class="sum"><div><small>Mise</small><b>${tok(q.amount)}</b></div><div class="g"><small>Gain si ça passe (aujourd’hui)</small><b>${tok(dkGain(b,q.opt,q.amount))}</b></div></div>
+  ${b.kind==="num"?`<div class="sum"><div><small>Mise</small><b>${tok(q.amount)}</b></div><div class="g"><small>Pot actuel</small><b>${tok(potOf(b)+q.amount)}</b></div></div>`
+    :`<div class="sum"><div><small>Mise</small><b>${tok(q.amount)}</b></div><div class="g"><small>Gain si ça passe (aujourd’hui)</small><b>${tok(dkGain(b,q.opt,q.amount))}</b></div></div>`}
   <p class="note">Le gain change jusqu’à la fin des paris : plus il y a de mises sur les autres choix, plus tu gagnes.</p>
   <button class="btn wide dkgo" data-act="dkbet" ${q.amount>S.bal?"disabled":""}>Miser ${tok(q.amount)} jetons</button>`}
-async function darkStake(){const q=U.dks;if(q.amount>S.bal){toast("Pas assez de jetons.","bad");return}const b=$("[data-act=dkbet]");b.disabled=true;
-  try{await api("dark_stake",{id:q.id,opt:q.opt,amount:q.amount});S.bal-=q.amount;S.dk=S.dk||{};const e=S.dk[q.id]||(S.dk[q.id]={code:U.lg.code,opt:q.opt,amount:0});e.amount+=q.amount;
+async function darkStake(){const q=U.dks;if(q.amount>S.bal){toast("Pas assez de jetons.","bad");return}
+  const bt=U.dk.bets.find(x=>String(x.id)===String(q.id)),num=bt&&bt.kind==="num",gi=$("#dks-g");let guess=num?(bt.my?bt.my.guess:gi&&gi.value!==""?+gi.value:NaN):null;
+  if(num&&isNaN(guess)){toast("Donne ton chiffre.","bad");return}
+  const b=$("[data-act=dkbet]");b.disabled=true;
+  try{await api("dark_stake",{id:q.id,opt:q.opt,amount:q.amount,guess});S.bal-=q.amount;S.dk=S.dk||{};const e=S.dk[q.id]||(S.dk[q.id]={code:U.lg.code,opt:q.opt,amount:0,guess});e.amount+=q.amount;
     save();bump();closeLayer();await loadDark();toast("Mise enregistrée. Croise les doigts…","win")}
   catch(e){b.disabled=false;toast(e.code==="closed"?"Trop tard, les paris sont fermés.":e.code==="other_option"?"Tu as déjà misé sur un autre choix.":"Pas de connexion au serveur.","bad");loadDark()}}
-async function darkResolve(id,opt){const b=U.dk.bets.find(x=>String(x.id)===String(id));if(!b||!confirm(`Résultat : « ${b.options[opt]} » ?\nLes autres auront 12 h pour contester.`))return;
-  try{await api("dark_resolve",{id,result:opt});await loadDark();toast("Résultat enregistré.","win")}catch(e){toast("Impossible pour l’instant.","bad")}}
+async function darkResolve(id,opt,value){const b=U.dk.bets.find(x=>String(x.id)===String(id));
+  if(!b||!confirm(`Résultat : « ${b.kind==="num"?value+(b.unit?" "+b.unit:""):b.options[opt]} » ?\nLes autres auront 12 h pour contester.`))return;
+  try{await api("dark_resolve",{id,result:opt,value});await loadDark();toast("Résultat enregistré.","win")}catch(e){toast("Impossible pour l’instant.","bad")}}
 async function darkFlag(id,kind){if(!confirm(kind==="report"?"Signaler ce pari comme méchant ou déplacé ? À 2 signalements, il disparaît.":"Contester ce résultat ? À 2 contestations, le pari est annulé et tout le monde est remboursé."))return;
   try{await api("dark_flag",{id,kind});await loadDark();toast(kind==="report"?"Signalement envoyé.":"Contestation enregistrée.")}catch(e){toast("Pas de connexion au serveur.","bad")}}
 async function darkDelete(id){if(!confirm("Supprimer ton pari ?"))return;try{await api("dark_delete",{id});await loadDark()}catch(e){toast("Impossible : quelqu’un a déjà misé.","bad")}}
@@ -1653,6 +1676,10 @@ async function darkDelete(id){if(!confirm("Supprimer ton pari ?"))return;try{awa
 function settleDark(code,bets){if(!S.dk)return;let ch=false;
   for(const b of bets){const e=S.dk[b.id];if(!e||e.settled)continue;
     if(b.state==="void"){e.settled=1;ch=true;S.bal+=e.amount;toast(`Pari dark annulé : ${tok(e.amount)} jetons remboursés.`)}
+    else if(b.state==="final"&&b.kind==="num"){e.settled=1;ch=true;const T=potOf(b),G=b.guesses||[];
+      const near=G.length?Math.min(...G.map(x=>Math.abs(x.g-b.resultNum))):0,W=G.filter(x=>Math.abs(x.g-b.resultNum)===near).reduce((a,x)=>a+x.a,0),mg=e.guess??(b.my&&b.my.guess);
+      if(mg!=null&&Math.abs(mg-b.resultNum)===near&&W){const g=Math.floor(e.amount*T/W);S.bal+=g;toast(`${DK_ICON} Le plus proche, c’était toi : +${tok(g)} jetons !`,"win");confetti()}
+      else toast(`Pari dark perdu : « ${esc(b.question)} »`)}
     else if(b.state==="final"){e.settled=1;ch=true;const T=potOf(b),W=(b.pools||{})[b.result]||0;
       if(!W){S.bal+=e.amount;toast("Personne n’avait vu juste : mise remboursée.")}
       else if(e.opt===b.result){const g=Math.floor(e.amount*T/W);S.bal+=g;toast(`${DK_ICON} Pari dark gagné : +${tok(g)} jetons !`,"win");confetti()}
@@ -1914,7 +1941,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.21";
+const VERSION="1.22";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
