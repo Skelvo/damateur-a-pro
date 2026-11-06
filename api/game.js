@@ -13,6 +13,8 @@ const cleanName = (v, max) => String(v ?? "").replace(/[\u0000-\u001f<>]/g, "").
 const num = (v, lo, hi) => { const n = Number(v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : lo; };
 const int = (v, lo, hi) => Math.round(num(v, lo, hi));
 const fail = (status, error) => Object.assign(new Error(error), { status, error });
+// violation de l'index unique sur le pseudo
+const isTaken = (e) => e && (e.code === "23505" || /players_name_u|duplicate key/i.test(String(e.message)));
 
 // Semaine en cours (lundi, heure de Paris) : sert au classement « cette semaine »
 const WEEK = `to_char(date_trunc('week', now() at time zone 'Europe/Paris'), 'YYYY-MM-DD')`;
@@ -89,26 +91,81 @@ const ACTIONS = {
     if (await overLimit(ipKey(req) + ":new", 30, 3600)) throw fail(429, "slow_down");
     const token = newToken();
     const bal = b.bal == null ? 1000 : num(b.bal, 0, MAX_BAL);
-    const r = await s.query(
-      `insert into players (token_hash, name, bal, peak, won, lost, week, week_bal)
-       values ($1, $2, $3::numeric, greatest($3::numeric, $4::numeric), $5::int, $6::int, ${WEEK}, $3::numeric) returning id`,
-      [hashToken(token), cleanName(b.name, 18) || "Joueur", bal, b.peak == null ? bal : num(b.peak, 0, MAX_BAL), int(b.won, 0, 1e7), int(b.lost, 0, 1e7)]);
-    return { token, id: r[0].id };
+    const name = cleanName(b.name, 18) || "Joueur " + Math.floor(1000 + Math.random() * 9000);
+    let r;
+    try {
+      r = await s.query(
+        `insert into players (token_hash, name, bal, peak, won, lost, week, week_bal)
+         values ($1, $2, $3::numeric, greatest($3::numeric, $4::numeric), $5::int, $6::int, ${WEEK}, $3::numeric) returning id`,
+        [hashToken(token), name, bal, b.peak == null ? bal : num(b.peak, 0, MAX_BAL), int(b.won, 0, 1e7), int(b.lost, 0, 1e7)]);
+    } catch (e) {
+      if (isTaken(e)) throw fail(409, "name_taken");
+      throw e;
+    }
+    return { token, id: r[0].id, name };
+  },
+
+  // Le pseudo est-il libre ? (pas déjà pris par un autre joueur, sans tenir compte des majuscules)
+  async check_name(s, b) {
+    const name = cleanName(b.name, 18);
+    if (!name) return { free: false };
+    const self = b.token ? (await s.query(`select id from players where token_hash = $1`, [hashToken(b.token)]))[0] : null;
+    const r = await s.query(`select id from players where lower(name) = lower($1)`, [name]);
+    return { free: !r[0] || !!(self && String(r[0].id) === String(self.id)) };
   },
 
   // Envoie le profil du joueur (pseudo, solde, record, bilan). Le solde de début de semaine est
   // retenu au premier envoi de chaque semaine : « cette semaine » = solde actuel − solde du lundi.
+  // Si le pseudo demandé est déjà pris, le reste est enregistré et on répond name_taken.
   async sync(s, b) {
     const p = await me(s, b.token);
-    const name = cleanName(b.name, 18) || p.name;
     await s.query(
       `update players set
          week_bal = case when week is distinct from ${WEEK} then bal else week_bal end,
          week = ${WEEK},
-         name = $2, bal = $3::numeric, peak = greatest(peak, $4::numeric, $3::numeric), won = $5::int, lost = $6::int, seen_at = now()
+         bal = $2::numeric, peak = greatest(peak, $3::numeric, $2::numeric), won = $4::int, lost = $5::int, seen_at = now()
        where id = $1`,
-      [p.id, name, num(b.bal, 0, MAX_BAL), num(b.peak, 0, MAX_BAL), int(b.won, 0, 1e7), int(b.lost, 0, 1e7)]);
-    return { ok: true };
+      [p.id, num(b.bal, 0, MAX_BAL), num(b.peak, 0, MAX_BAL), int(b.won, 0, 1e7), int(b.lost, 0, 1e7)]);
+    const name = cleanName(b.name, 18);
+    if (name && name !== p.name) {
+      try {
+        await s.query(`update players set name = $2 where id = $1`, [p.id, name]);
+      } catch (e) {
+        if (isTaken(e)) return { ok: true, name_taken: true, name: p.name };
+        throw e;
+      }
+    }
+    return { ok: true, name: name || p.name };
+  },
+
+  // Code de transfert : emporter son compte (jetons, paris, défis…) dans l'app installée ou sur un
+  // autre téléphone. Valable 48 h, utilisable une fois. L'ancien appareil est déconnecté.
+  async make_transfer(s, b) {
+    const p = await me(s, b.token);
+    const state = b.state && typeof b.state === "object" ? b.state : null;
+    const json = state ? JSON.stringify(state) : null;
+    if (json && json.length > 400000) throw fail(400, "too_big");
+    await s.query(`delete from transfers where player = $1 or expires < now()`, [p.id]);
+    for (let i = 0; i < 8; i++) {
+      let code = "";
+      for (let j = 0; j < 8; j++) code += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+      const r = await s.query(
+        `insert into transfers (code, player, state, expires) values ($1, $2, $3::jsonb, now() + interval '48 hours') on conflict do nothing returning code`,
+        [code, p.id, json]);
+      if (r[0]) return { code: code.slice(0, 4) + "-" + code.slice(4) };
+    }
+    throw fail(500, "code");
+  },
+
+  async use_transfer(s, b, req) {
+    if (await overLimit(ipKey(req) + ":transfer", 20, 3600)) throw fail(429, "slow_down");
+    const code = String(b.code || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const t = (await s.query(`select player, state from transfers where code = $1 and expires > now()`, [code]))[0];
+    if (!t) throw fail(404, "unknown");
+    const token = newToken();
+    const p = (await s.query(`update players set token_hash = $2, seen_at = now() where id = $1 returning id, name`, [t.player, hashToken(token)]))[0];
+    await s.query(`delete from transfers where code = $1`, [code]);
+    return { token, id: p.id, name: p.name, state: t.state };
   },
 
   async create_league(s, b) {

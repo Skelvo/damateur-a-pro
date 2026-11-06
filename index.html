@@ -267,6 +267,17 @@ img.crest{object-fit:contain}
 .crowd{margin-top:9px;font-size:12.5px;color:var(--mute)}
 .crowd .cb{display:flex;height:4px;border-radius:3px;overflow:hidden;gap:2px;margin-bottom:5px}
 .crowd .cb i{display:block;background:var(--mute2)}.crowd .cb i.top{background:var(--sel)}
+/* installer l'app */
+.instb{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,color-mix(in srgb,var(--sel) 22%,var(--card)),var(--card) 70%);border:1px solid color-mix(in srgb,var(--sel) 45%,transparent);border-radius:14px;padding:10px;margin:2px 0 12px}
+.instb .ii img{width:40px;height:40px;border-radius:10px;display:block}
+.instb>div{flex:1;min-width:0;line-height:1.2}.instb b{display:block;font-weight:700}.instb small{color:var(--mute);font-size:12.5px}
+.instb .btn{padding:9px 12px;font-size:15px}.instb .x{width:32px;height:32px;flex:none}
+.steps{list-style:none;padding:0;margin:6px 0 14px;display:grid;gap:10px}
+.steps li{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;font-size:15px}
+.steps .n{width:28px;height:28px;border-radius:50%;background:var(--sel);color:var(--sel-ink);display:grid;place-items:center;font:800 17px "Barlow Condensed";flex:none}
+.steps b{color:var(--ink)}.steps .i{width:20px;height:20px;vertical-align:-4px}.steps small{display:block;color:var(--mute);font-size:12.5px;margin-top:3px}
+.xcode{text-align:center;background:var(--card);border:1px dashed var(--sel);border-radius:14px;padding:12px}
+.xcode small{display:block;color:var(--mute);font-size:12.5px}.xcode b{display:block;font:800 34px/1.2 "Barlow Condensed";letter-spacing:4px;color:var(--sel);margin:4px 0 8px}
 /* défis du jour */
 .dcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:12px}
 .dcard.done{display:flex;align-items:center;gap:10px;color:var(--mute);font-size:14px}.dcard.done .i{color:var(--sel)}
@@ -809,7 +820,7 @@ function ladder(){const cfg=SP[U.sp],now=Date.now();
     return`<button class="lvl${c?"":" zero"}" data-act="lv" data-lv="${l}" aria-pressed="${U.lv===l}"><span class="bars">${bars}</span><span>${esc(cfg.lv[l])}<em>${c?c+" match"+(c>1?"s":""):(cfg.feeds[l]&&FEED[U.sp+l]&&FEED[U.sp+l].ok===false?"Hors ligne":"—")}</em></span></button>`};
   return`<div class="ladder" id="ladder"><div class="tier"><small>Tous</small><div><button class="lvl star" data-act="lv" data-lv="-1" aria-pressed="${U.lv<0}">${ic("fire")}<span>À la une<em>Prochains</em></span></button></div></div>
     ${cfg.tiers.map(([t,ix])=>`<div class="tier"><small>${t}</small><div>${ix.map(chip).join("")}</div></div>`).join("")}</div>`}
-function viewMatches(){const cfg=SP[U.sp];let h=`<div class="sports">${Object.entries(SP).map(([k,s])=>`<button class="sport" style="--c:${s.c}" data-act="sp" data-sp="${k}" aria-pressed="${U.sp===k}">${ballArt(k,"ghost")}${ballArt(k,"ball")}<span>${s.n}</span><small>${s.sub}</small></button>`).join("")}</div>`;
+function viewMatches(){const cfg=SP[U.sp];let h=installBanner()+`<div class="sports">${Object.entries(SP).map(([k,s])=>`<button class="sport" style="--c:${s.c}" data-act="sp" data-sp="${k}" aria-pressed="${U.sp===k}">${ballArt(k,"ghost")}${ballArt(k,"ball")}<span>${s.n}</span><small>${s.sub}</small></button>`).join("")}</div>`;
   h+=ladder();
   let list=matchesFor(U.sp,U.lv);
   const isDep=U.lv>=0&&U.lv<cfg.dep;
@@ -979,6 +990,9 @@ function viewCareer(){const di=divOf(S.peak),nx=DIVS[di+1],pr=nx?cl((S.peak-DIVS
   <div class="badges">${BD.map(([i,t,on])=>`<div class="bdg${on?" on":""}">${ic(i)}${t}</div>`).join("")}</div>
   <div class="h2"><h2>Réglages</h2></div>
   <div class="row"><div><b>Pseudo</b><small>${esc(S.name)}</small></div><button class="link" data-act="rename">Modifier</button></div>
+  ${STANDALONE?"":`<div class="row"><div><b>Installer l’app</b><small>Sur l’écran d’accueil de ton téléphone</small></div><button class="link" data-act="install">Comment ?</button></div>`}
+  <div class="row"><div><b>Transférer mon compte</b><small>Vers l’app installée ou un autre téléphone</small></div><button class="link" data-act="xmake2">Créer un code</button></div>
+  <div class="row"><div><b>J’ai un code de transfert</b><small>Récupérer un compte sur cet appareil</small></div><button class="link" data-act="xfer">Entrer</button></div>
   <div class="row"><div><b>Recommencer</b><small>Repartir de zéro avec 1 000 jetons</small></div><button class="link" data-act="reset" style="color:var(--loss)">Réinitialiser</button></div>
   <div class="info">${ic("info")}<span><b style="color:var(--ink)">Règles.</b> Les paris se ferment au coup d’envoi. Un pari est réglé automatiquement dès que le score et la stat concernée sont connus. Si une stat n’est jamais publiée (48 h après le match) ou si le match est reporté, la sélection est remboursée (cote 1,00 dans un combiné).</span></div>`;
   return h+foot()}
@@ -1156,9 +1170,17 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
           toast(m2.res?"Score validé : les paris sont réglés !":"Merci ! Le score sera validé dès qu’un 2e joueur donne le même.","win")})
         .catch(e=>{b.disabled=false;toast(e.code==="too_early"?"Le match n’est pas encore fini.":"Pas de connexion au serveur.","bad")});break}
       m.res=res;REG.set(m.id,m);MKC.clear();save();U.open=m.id;U.dtab="s";layer(viewDetail(m));settle();toast("Résultat enregistré, paris réglés.","win");break}
-    case"wgo":{const n=($("#w-name").value||"").trim().slice(0,18);if(!n){$("#w-name").focus();return}const first=!S.name;S.name=n;save();U.open=null;layer("");render();
-      if(first)setTimeout(joinFromLink,400);
-      if(first){toast(`${ic("coin")} 1 000 jetons offerts. À toi de jouer !`,"win");confetti()}break}
+    case"wgo":welcomeGo();break;
+    case"xfer":U.open="welcome";layer(viewTransferIn());setTimeout(()=>$("#x-code")&&$("#x-code").focus(),60);break;
+    case"xferok":transferIn();break;
+    case"xmake":transferOut();break;
+    case"xmake2":U.open="install";layer(`<div class="grab"><h3>Transférer mon compte</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div><div class="xbox" id="xbox"></div>`);transferOut();break;
+    case"xback":U.open="welcome";layer(viewWelcome(false));break;
+    case"copycode":navigator.clipboard&&navigator.clipboard.writeText(d.code).then(()=>toast("Code copié.","win")).catch(()=>{});break;
+    case"copylink":{const u=location.origin+location.pathname;(navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast("Lien copié : colle-le dans Safari.","win")).catch(()=>prompt("Copie ce lien :",u));break}
+    case"install":U.open="install";layer(viewInstall());break;
+    case"instx":try{localStorage.setItem("dap.inst",String(Date.now()))}catch(e){}render();break;
+    case"instgo":installPrompt();break;
   }});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&U.open&&U.open!=="welcome")closeLayer();
   if(e.key==="Enter"&&e.target.classList&&e.target.classList.contains("mc"))e.target.click();
@@ -1182,10 +1204,14 @@ async function api(action,data={}){const c=new AbortController(),t=setTimeout(()
 const myStats=()=>{const d=S.bets.filter(b=>b.st==="won"||b.st==="lost");return{won:d.filter(b=>b.st==="won").length,lost:d.filter(b=>b.st==="lost").length}};
 let sessP=null;
 function ensureSession(){if(S.tok)return Promise.resolve(true);if(!S.name)return Promise.resolve(false);
-  return sessP||(sessP=api("session",{name:S.name,bal:S.bal,peak:S.peak,...myStats()}).then(j=>{S.tok=j.token;S.pid=j.id;saveLocal();return true}).catch(()=>false).finally(()=>sessP=null))}
+  return sessP||(sessP=api("session",{name:S.name,bal:S.bal,peak:S.peak,...myStats()}).then(j=>{S.tok=j.token;S.pid=j.id;saveLocal();return true})
+    .catch(e=>{if(e.code==="name_taken")askNewName();return false}).finally(()=>sessP=null))}
+// Pseudo déjà pris par un autre joueur : on demande d'en choisir un autre (une fois par ouverture)
+let askedName=false;
+function askNewName(){if(askedName||U.open==="welcome")return;askedName=true;U.open="welcome";layer(viewWelcome(true,`Le pseudo « ${esc(S.name)} » est déjà pris par un autre joueur. Choisis-en un autre pour apparaître dans les classements.`))}
 let syncT=0;
 function syncSoon(){if(!S.name)return;clearTimeout(syncT);syncT=setTimeout(async()=>{if(!(await ensureSession()))return;
-  try{await api("sync",{name:S.name,bal:S.bal,peak:S.peak,...myStats()})}catch(e){if(e.code==="no_session"&&await ensureSession())syncSoon()}},2000)}
+  try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,...myStats()});if(j.name_taken)askNewName()}catch(e){if(e.code==="no_session"&&await ensureSession())syncSoon()}},2000)}
 async function syncNow(){clearTimeout(syncT);if(!(await ensureSession()))return false;try{await api("sync",{name:S.name,bal:S.bal,peak:S.peak,...myStats()});return true}catch(e){return false}}
 const pickKey=s=>s.mk+(s.line!=null?s.line:"");
 function sendPicks(sel){const picks=sel.map(s=>({mid:s.mid,mk:pickKey(s),k:s.k}));ensureSession().then(ok=>ok&&api("picks",{picks}).catch(()=>{}));
@@ -1347,13 +1373,73 @@ function spin(){if(spinning||S.bonus===today())return;spinning=true;
   w.style.transition="transform 5.2s cubic-bezier(.12,.75,.12,1)";requestAnimationFrame(()=>{w.style.transform=`rotate(${deg}deg)`});setTimeout(end,5400)}
 
 /* ---------- accueil ---------- */
-function viewWelcome(rename){return`<div class="welcome">${rename?`<div class="grab"><h3>Ton pseudo</h3><button class="x" data-act="close">${ic("x")}</button></div>`:`
+function viewWelcome(rename,msg){return`<div class="welcome">${rename?`<div class="grab"><h3>Ton pseudo</h3><button class="x" data-act="close">${ic("x")}</button></div>${msg?`<p class="warn" style="text-align:left">${msg}</p>`:""}`:`
   <svg width="64" height="64" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="11" fill="#13241c"/><path d="M6 31h8v-6h8v-6h8v-7" fill="none" stroke="#35d07f" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M27 9l5 3-5 3" fill="none" stroke="#35d07f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="13" r="5" fill="#f2f6f3"/><path d="M12 9.8l2.5 1.8-1 3h-3l-1-3z" fill="#13241c"/></svg>
   <div class="big">D’amateur<br><em>à pro</em></div><p class="note" style="font-size:15px">Parie gratuitement sur le foot, le rugby et le tennis, du district au plus haut niveau. Fais monter ta carrière de la Départementale 4 à la Ligue des champions.</p>
   <div class="feat"><div>${ic("card","yc")}Cartons, corners, hors-jeux</div><div>${ic("posts")}Essais, pénalités ratées</div><div>${ic("broken")}Doubles fautes, raquettes cassées</div></div>`}
   <div class="form" style="text-align:left"><label>Ton pseudo<input id="w-name" maxlength="18" value="${esc(S.name)}" placeholder="ex. Le Pronostiqueur" autocomplete="nickname"></label>
+  <p class="warn" id="w-err" hidden></p>
   <button class="btn gold wide" data-act="wgo">${rename?"Enregistrer":ic("coin")+" Recevoir mes 1 000 jetons"}</button></div>
+  ${rename?"":STANDALONE?`<div class="info" style="text-align:left;margin-top:14px">${ic("info")}<span><b style="color:var(--ink)">Tu jouais déjà dans Safari ?</b> Récupère tes jetons et tes paris avec ton code.<br><button class="btn ghost" data-act="xfer" style="margin-top:8px">Entrer mon code</button></span></div>`
+    :`<button class="link" data-act="xfer" style="margin-top:10px">J’ai déjà un compte (code de transfert)</button>`}
   ${rename?"":`<p class="note" style="margin-top:12px">Jetons fictifs, aucun argent réel. Jeu réservé au divertissement.</p>`}</div>`}
+async function welcomeGo(){const inp=$("#w-name"),n=(inp.value||"").replace(/\s+/g," ").trim().slice(0,18),err=$("#w-err"),b=$("[data-act=wgo]");
+  if(!n){inp.focus();return}const first=!S.name;b.disabled=true;err.hidden=true;
+  const taken=()=>{err.hidden=false;err.textContent=`« ${n} » est déjà pris. Choisis un autre pseudo.`;b.disabled=false;inp.focus();inp.select()};
+  try{if(first||!S.tok){const j=await api("session",{name:n,bal:S.bal,peak:S.peak,...myStats()});S.tok=j.token;S.pid=j.id}
+    else{const j=await api("sync",{name:n,bal:S.bal,peak:S.peak,...myStats()});if(j.name_taken){taken();return}}}
+  catch(e){if(e.code==="name_taken"){taken();return}}   // hors connexion : on accepte, la vérification se fera plus tard
+  S.name=n;save();U.open=null;layer("");render();
+  if(first){setTimeout(joinFromLink,400);toast(`${ic("coin")} 1 000 jetons offerts. À toi de jouer !`,"win");confetti()}else toast("Pseudo enregistré.","win")}
+
+/* ---------- installer l'app / changer d'appareil ---------- */
+const UA=navigator.userAgent,STANDALONE=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+const IOS=/iphone|ipad|ipod/i.test(UA)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1),ANDROID=/android/i.test(UA);
+const IOS_SAFARI=IOS&&!/CriOS|FxiOS|EdgiOS|OPiOS|GSA\/|Instagram|FBAN|FBAV|Snapchat/i.test(UA);
+let installEvt=null;
+addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvt=e;if(U.tab==="m"&&!U.open)render();if(U.open==="install")layer(viewInstall())});
+addEventListener("appinstalled",()=>{installEvt=null;try{localStorage.setItem("dap.inst",String(Date.now()))}catch(e){}});
+function installBanner(){if(STANDALONE||!(IOS||ANDROID))return"";let x=0;try{x=+localStorage.getItem("dap.inst")||0}catch(e){}if(Date.now()-x<3*DAY)return"";
+  return`<div class="instb"><span class="ii"><img src="icon-180.png" alt=""></span><div><b>Installe l’app sur ton téléphone</b><small>En 2 étapes, sans passer par un store.</small></div>
+    <button class="btn" data-act="install">Comment&nbsp;?</button><button class="x" data-act="instx" aria-label="Plus tard">${ic("x")}</button></div>`}
+const SHARE_IOS=`<svg class="i" viewBox="0 0 24 24" style="color:#5fa8ff"><path d="M12 15V3M7.5 7.5L12 3l4.5 4.5"/><path d="M6 10.5H5a1 1 0 0 0-1 1V20a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8.5a1 1 0 0 0-1-1h-1"/></svg>`;
+const ADD_IOS=`<svg class="i" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/></svg>`;
+function viewInstall(){const head=`<div class="grab"><h3>Installer l’app</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
+  if(IOS){const url=location.origin+location.pathname;
+    return head+(IOS_SAFARI?"":`<div class="info">${ic("info")}<span><b style="color:var(--ink)">Ouvre d’abord ce lien dans Safari</b> : les autres navigateurs ne permettent pas toujours l’installation.<br><button class="btn ghost" style="margin-top:8px" data-act="copylink">Copier le lien</button></span></div>`)+
+    `<p class="note">Tu as ouvert le lien depuis une autre appli (Messages, WhatsApp, Instagram…) ? Touche d’abord <b>Ouvrir dans Safari</b> (ou la boussole), puis :</p>
+    <ol class="steps"><li><span class="n">1</span><div>Dans Safari, touche le bouton <b>Partager</b> ${SHARE_IOS}<small>Selon ta version d’iOS : dans la barre du bas, à côté de l’adresse, ou dans le menu <b>•••</b>.</small></div></li>
+      <li><span class="n">2</span><div>Fais défiler et choisis <b>Sur l’écran d’accueil</b> ${ADD_IOS}, puis <b>Ajouter</b>.</div></li>
+      <li><span class="n">3</span><div>Ouvre <b>D’amateur à pro</b> depuis ton écran d’accueil et entre ton <b>code de transfert</b> : tu retrouves tes jetons, tes paris et tes ligues.<small>Sur iPhone, l’app installée ne voit pas ce que tu as fait dans Safari : le code fait le lien.</small></div></li></ol>
+    <div class="xbox" id="xbox">${S.name?`<button class="btn gold wide" data-act="xmake">${ic("ticket")} Créer mon code de transfert</button>`:`<p class="note">Choisis d’abord un pseudo pour avoir un code.</p>`}</div>
+`}
+  if(ANDROID)return head+(installEvt?`<p class="note" style="font-size:15px">Un appui suffit : l’app s’ajoute à ton écran d’accueil, avec ton compte.</p><button class="btn gold wide" data-act="instgo">${ic("plus")} Installer l’app</button>`
+    :`<ol class="steps"><li><span class="n">1</span><div>Dans Chrome, touche le menu <b>⋮</b> en haut à droite.</div></li>
+      <li><span class="n">2</span><div>Choisis <b>Installer l’application</b> (ou <b>Ajouter à l’écran d’accueil</b>), puis confirme.</div></li>
+      <li><span class="n">3</span><div>Ouvre <b>D’amateur à pro</b> depuis ton écran d’accueil : ton compte est déjà là.</div></li></ol>
+      <p class="note">Sur un autre navigateur (Samsung Internet, Firefox…), l’option se trouve aussi dans le menu, sous « Ajouter à l’écran d’accueil ».</p>`);
+  return head+`<p class="note">Ouvre ce site sur ton téléphone pour l’installer sur l’écran d’accueil.</p>`}
+async function installPrompt(){if(!installEvt)return;installEvt.prompt();const r=await installEvt.userChoice.catch(()=>null);installEvt=null;
+  if(r&&r.outcome==="accepted"){closeLayer();toast("App installée ! Retrouve-la sur ton écran d’accueil.","win")}else layer(viewInstall())}
+// Code de transfert : on envoie tout l'état du jeu (sauf le jeton) au serveur, valable 48 h
+async function transferOut(){const box=$("#xbox");if(box)box.innerHTML=`<div class="skel" style="height:70px"></div>`;
+  try{if(!(await ensureSession()))throw{code:"offline"};await syncNow();const st={...S};delete st.tok;delete st.pid;
+    const j=await api("make_transfer",{state:st});
+    const html=`<div class="xcode"><small>Ton code de transfert (valable 48 h, une seule fois)</small><b>${esc(j.code)}</b>
+      <button class="btn ghost" data-act="copycode" data-code="${esc(j.code)}">Copier</button></div>
+      <p class="note">Entre-le dans l’app installée ou sur ton autre téléphone. Une fois utilisé, ce navigateur-ci est déconnecté du compte.</p>`;
+    if($("#xbox"))$("#xbox").innerHTML=html}
+  catch(e){if($("#xbox"))$("#xbox").innerHTML=`<p class="warn">Pas de connexion au serveur, réessaie dans un instant.</p><button class="btn gold wide" data-act="xmake">Réessayer</button>`}}
+function viewTransferIn(){return`<div class="grab"><h3>Code de transfert</h3><button class="x" data-act="${S.name?"close":"xback"}" aria-label="Retour">${ic("x")}</button></div>
+  <div class="form"><label>Ton code (8 caractères)<input id="x-code" maxlength="9" placeholder="ex. K7RZ-P3QA" autocapitalize="characters" autocomplete="off" style="text-transform:uppercase;letter-spacing:4px;font-weight:800;text-align:center;font-size:22px"></label>
+  <p class="warn" id="x-err" hidden></p><button class="btn gold wide" data-act="xferok">Récupérer mon compte</button>
+  <p class="note">Le code se crée dans l’ancien navigateur : Carrière › « Transférer mon compte », ou depuis « Installer l’app ».${S.name?" Attention : ce que tu as sur cet appareil sera remplacé.":""}</p></div>`}
+async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x-err"),b=$("[data-act=xferok]");if(code.replace(/[^a-z0-9]/gi,"").length<8){$("#x-code").focus();return}
+  b.disabled=true;err.hidden=true;
+  try{const j=await api("use_transfer",{code});const st=j.state&&typeof j.state==="object"?j.state:{};
+    S=Object.assign({v:2,name:"",bal:1000,peak:1000,bonus:"",bets:[],org:[],orgMode:false,sim:false},st,{tok:j.token,pid:j.id,name:j.name});saveLocal();
+    toast(`${ic("coin")} Compte récupéré : bon retour ${esc(j.name)} !`,"win");setTimeout(()=>location.reload(),900)}
+  catch(e){b.disabled=false;err.hidden=false;err.textContent=e.code==="unknown"?"Code inconnu ou expiré (48 h). Crée un nouveau code dans l’ancien navigateur.":e.code==="slow_down"?"Trop d’essais : réessaie dans une heure.":"Pas de connexion au serveur."}}
 
 /* ---------- démarrage ---------- */
 render();

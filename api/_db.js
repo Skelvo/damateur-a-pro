@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "4";
+const SCHEMA_VERSION = "5";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -54,6 +54,16 @@ const STATEMENTS = [
      st jsonb not null,
      at timestamptz not null default now(),
      primary key (mid, player))`,
+  // pseudos uniques (sans tenir compte des majuscules) : les doublons existants reçoivent leur numéro
+  `update players p set name = left(p.name, 12) || ' ' || p.id
+     where exists (select 1 from players q where lower(q.name) = lower(p.name) and q.id < p.id)`,
+  `create unique index if not exists players_name_u on players (lower(name))`,
+  // codes de transfert (passer de Safari à l'app installée, ou changer de téléphone)
+  `create table if not exists transfers (
+     code text primary key,
+     player bigint not null references players(id) on delete cascade,
+     state jsonb,
+     expires timestamptz not null)`,
   `create table if not exists rate_hits (key text not null, win bigint not null, n int not null default 0, primary key (key, win))`,
 ];
 
