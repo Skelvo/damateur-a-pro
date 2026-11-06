@@ -188,9 +188,9 @@ img.crest{object-fit:contain}
 .slipbar .go{font:800 22px "Barlow Condensed";background:#00000018;border-radius:10px;padding:8px 12px}
 
 /* ---------- sheets ---------- */
-.scrim{position:fixed;inset:0;z-index:40;background:#000b;animation:fade .2s;display:flex;align-items:flex-end;justify-content:center}
+.scrim{position:fixed;inset:0;height:100vh;height:100dvh;z-index:40;background:#000b;animation:fade .2s;display:flex;align-items:flex-end;justify-content:center}
 @keyframes fade{from{opacity:0}}
-.sheet{position:relative;width:100%;max-width:720px;max-height:94vh;overflow:auto;overscroll-behavior:contain;background:var(--bg2);border-radius:22px 22px 0 0;
+.sheet{position:relative;width:100%;max-width:720px;max-height:92vh;max-height:calc(100dvh - 18px - var(--safe-t));overflow:auto;overscroll-behavior:contain;background:var(--bg2);border-radius:22px 22px 0 0;
   border:1px solid var(--line);border-bottom:0;padding:0 16px calc(24px + var(--safe-b));animation:sheet .32s cubic-bezier(.2,.9,.3,1)}
 @keyframes sheet{from{transform:translateY(60px);opacity:.3}}
 .grab{position:sticky;top:0;z-index:3;display:flex;justify-content:space-between;align-items:center;padding:12px 0 8px;background:var(--bg2)}
@@ -738,8 +738,7 @@ function finalScore(m){const st=realStats(m);if(!st)return null;return st.g||st.
 /* ---------- liste des matchs affichés ---------- */
 function matchesFor(sp,lv){const cfg=SP[sp],out=[],levels=lv<0?cfg.lv.map((_,i)=>i):[lv];
   for(const l of levels){const f=cfg.feeds[l]&&FEED[sp+l];
-    if(cfg.feeds[l]){if(f&&f.ok)out.push(...f.list);else if(S.sim&&l<=cfg.simMax&&f&&f.ok===false)out.push(...simWindow(sp,l))}
-    else if(S.sim&&l<=cfg.simMax)out.push(...simWindow(sp,l));
+    if(cfg.feeds[l]&&f&&f.ok)out.push(...f.list);
     out.push(...S.org.filter(m=>m.sp===sp&&m.lv===l));out.push(...AM.list.filter(m=>m.sp===sp&&m.lv===l))}
   out.forEach(m=>{if(!REG.has(m.id))REG.set(m.id,m)});
   return out.map(m=>REG.get(m.id)||m).sort((a,b)=>a.t-b.t)}
@@ -758,7 +757,7 @@ function initials(name,sp){const w=name.replace(/[’']/g," ").split(/[\s-]+/).f
   const pf=PFX.foot.concat(PFX.rugby);const core=w.filter(x=>!pf.includes(x)&&!/^(de|du|la|le|les|lès|sur|l|d)$/i.test(x));
   const p=w.find(x=>pf.includes(x));return((p&&p.length<=3?p[0]:"")+(core.map(x=>x[0]).join("")||w[0].slice(0,2))).slice(0,3).toUpperCase()}
 function crest(name,sp,logo,flag){
-  if(logo)return`<img class="crest" src="${esc(logo)}" alt="" loading="lazy" referrerpolicy="no-referrer" data-fb="${esc(crest(name,sp,null,flag))}" onerror="this.outerHTML=this.dataset.fb">`;
+  if(logo)return`<img class="crest" src="${esc(logo)}" alt="" decoding="async" referrerpolicy="no-referrer" data-fb="${esc(crest(name,sp,null,flag))}" onerror="this.outerHTML=this.dataset.fb">`;
   const h=hash(name),c1=PAL[h%16];let c2=PAL[(h>>5)%16];if(c2===c1)c2=PAL[(h%16+5)%16];
   const ini=esc(initials(name,sp)),tx=lum(c1)>.6?"#111":"#fff",id="c"+h.toString(36);
   if(sp==="tennis")return`<svg class="crest" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22" fill="${c1}"/><circle cx="24" cy="24" r="22" fill="none" stroke="${c2}" stroke-width="3"/>
@@ -837,10 +836,9 @@ function viewMatches(){const cfg=SP[U.sp];let h=`<div class="sports">${Object.en
 function emptyLevel(){const cfg=SP[U.sp],l=U.lv;
   if(l>=0&&cfg.feeds[l]&&FEED[U.sp+l]&&FEED[U.sp+l].ok===false)
     return`<div class="empty">${ic("info")}<b>Flux live indisponible</b>Impossible de joindre le flux des matchs pros pour l’instant.<br><button class="btn ghost" style="margin-top:12px" data-act="retry">Réessayer</button></div>`;
-  if(l>=0&&l>cfg.simMax&&!cfg.feeds[l])return`<div class="empty">${ic(cfg.ic)}<b>Pas de match</b>Aucun match prévu à ce niveau dans les prochains jours.</div>`;
-  if(!S.sim&&l>=0&&!cfg.feeds[l])return`<div class="empty">${ic(cfg.ic)}<b>Aucun match ajouté</b>À ce niveau, les matchs sont ajoutés par un organisateur.${S.orgMode?"":"<br>Active le mode organisateur dans Carrière, ou affiche les matchs simulés."}</div>`;
+  if(l>=0&&!cfg.feeds[l]&&l<=AMX[U.sp])return`<div class="empty">${ic(cfg.ic)}<b>Aucun match pour l’instant</b>Les matchs amateurs sont ajoutés par les joueurs. Tu connais un match à ce niveau ? Ajoute-le, tes amis pourront parier dessus.<br><button class="btn" style="margin-top:12px" data-act="addm">${ic("plus")} Ajouter un vrai match</button></div>`;
   return`<div class="empty">${ic(cfg.ic)}<b>Pas de match</b>Rien de prévu dans les prochains jours ici.</div>`}
-function foot(){return`<p class="foot">Jeu 100 % gratuit : jetons fictifs sans aucune valeur, rien à acheter, rien à gagner. Matchs pros, scores et stats en direct depuis un flux public ; matchs amateurs saisis par un organisateur ou simulés. Cotes calculées par simulation, à titre indicatif.<br>Les jeux d’argent comportent des risques : <a href="https://www.joueurs-info-service.fr" target="_blank" rel="noopener">Joueurs Info Service</a>, 09 74 75 13 13 (appel non surtaxé).</p>`}
+function foot(){return`<p class="foot">Jeu 100 % gratuit : jetons fictifs sans aucune valeur, rien à acheter, rien à gagner. Matchs pros, scores et stats en direct depuis un flux public ; matchs amateurs ajoutés et validés par les joueurs. Cotes calculées par un modèle statistique, à titre indicatif.<br>Les jeux d’argent comportent des risques : <a href="https://www.joueurs-info-service.fr" target="_blank" rel="noopener">Joueurs Info Service</a>, 09 74 75 13 13 (appel non surtaxé).</p>`}
 
 /* ---------- rendu : fiche match ---------- */
 function viewDetail(m){const st=status(m),mks=markets(m),res=mks.find(x=>x.id==="res"),rs=realStats(m)||(st==="live"&&m.src!=="espn"?null:m.st);
@@ -981,8 +979,6 @@ function viewCareer(){const di=divOf(S.peak),nx=DIVS[di+1],pr=nx?cl((S.peak-DIVS
   <div class="badges">${BD.map(([i,t,on])=>`<div class="bdg${on?" on":""}">${ic(i)}${t}</div>`).join("")}</div>
   <div class="h2"><h2>Réglages</h2></div>
   <div class="row"><div><b>Pseudo</b><small>${esc(S.name)}</small></div><button class="link" data-act="rename">Modifier</button></div>
-  <div class="row"><div><b>Matchs simulés</b><small>Pour jouer aux niveaux sans données officielles</small></div><button class="sw" role="switch" data-act="tsim" aria-checked="${S.sim}" aria-label="Matchs simulés"></button></div>
-  <div class="row"><div><b>Mode organisateur</b><small>Ajouter des matchs amateurs et saisir scores et stats</small></div><button class="sw" role="switch" data-act="torg" aria-checked="${S.orgMode}" aria-label="Mode organisateur"></button></div>
   <div class="row"><div><b>Recommencer</b><small>Repartir de zéro avec 1 000 jetons</small></div><button class="link" data-act="reset" style="color:var(--loss)">Réinitialiser</button></div>
   <div class="info">${ic("info")}<span><b style="color:var(--ink)">Règles.</b> Les paris se ferment au coup d’envoi. Un pari est réglé automatiquement dès que le score et la stat concernée sont connus. Si une stat n’est jamais publiée (48 h après le match) ou si le match est reporté, la sélection est remboursée (cote 1,00 dans un combiné).</span></div>`;
   return h+foot()}
@@ -1286,7 +1282,7 @@ const DEFIS=[
    {id:"corn",ic:"corner",t:"Parie sur les corners",g:1,r:40,f:P=>legsOf(P).filter(l=>l.mk==="co").length},
    {id:"rug",ic:"rugby",t:"Parie sur un match de rugby",g:1,r:50,f:P=>legsOf(P).filter(l=>l.sp==="rugby").length},
    {id:"ten",ic:"tennis",t:"Parie sur un match de tennis",g:1,r:50,f:P=>legsOf(P).filter(l=>l.sp==="tennis").length},
-   {id:"ama",ic:"pitch",t:"Parie sur un match amateur",g:1,r:40,f:P=>legsOf(P).filter(l=>!l.mid.startsWith("e-")).length}],
+   {id:"w1e",ic:"trophy",t:"Gagne un pari simple",g:1,r:50,f:(P,W)=>W.filter(b=>b.legs.length===1).length}],
   [{id:"p5",ic:"ticket",t:"Place 5 paris",g:5,r:80,f:P=>P.length},
    {id:"cb3",ic:"chart",t:"Fais un combiné d’au moins 3 sélections",g:1,r:70,f:P=>P.filter(b=>b.legs.length>=3).length},
    {id:"bb",ic:"target",t:"Fais un combiné sur un même match",g:1,r:70,f:P=>P.filter(b=>new Set(b.legs.map(l=>l.mid)).size<b.legs.length).length},
