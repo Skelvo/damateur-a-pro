@@ -1422,8 +1422,6 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"lgsel":U.lg.code=d.code;U.lg.feed=null;U.lg.view=U.lg.view||"rank";render();loadBoards();break;
     case"lgmode":U.lg.mode=d.v;render();break;
     case"recap":openRecap(U.lg.code);break;
-    case"przedit":{const cur=U.lg.data.leagues.find(l=>l.code===U.lg.code);if(cur){U.open="przedit";layer(viewPrizeEdit(cur))}break}
-    case"przsave":savePrizes();break;
     case"fav":openFav();break;
     case"favl":U.favL=+d.i;layer(viewFav());loadFavTeams();break;
     case"favset":favSet(+d.i);break;
@@ -1632,9 +1630,9 @@ function viewLeagues(){const L=U.lg,d=L.data;
   if(cur)h+=`<button class="recapbtn" data-act="recap">${ic("chart")}<span><b>Le bilan de la semaine</b><small>Podium, plus grosse cote, plus gros flop, roi du prono…</small></span>${(S.recapSeen||{})[cur.code]!==d.week?`<span class="pill">Nouveau</span>`:""}<span class="arr">›</span></button>`;
   h+=`<div class="seg tabs3"><button data-act="lgmode" data-v="season" aria-pressed="${M==="season"}">Mois</button><button data-act="lgmode" data-v="week" aria-pressed="${M==="week"}">Semaine</button><button data-act="lgmode" data-v="total" aria-pressed="${M==="total"}">Jetons</button></div>`;
   if(M==="season"&&SN){const left=Math.max(0,Math.ceil((SN.end-Date.now())/864e5));
-    if(cur){const P=prizesOf(cur);h+=`<div class="przcard"><div class="pzh">🎁 <b>Récompenses de fin de mois</b>${cur.mine?`<button class="link" data-act="przedit">Modifier</button>`:""}</div>
+    if(cur){const P=prizesOf(cur);h+=`<div class="przcard"><div class="pzh">🎁 <b>Récompenses de fin de mois</b></div>
       <div class="pzl">${["1er","2e","3e","Les autres"].map((r,i)=>`<span class="${i===0?"g":""}"><small>${r}</small><b>+${tok(P[i])}</b></span>`).join("")}</div>
-      <small class="pzn">Créditées toutes seules le 1er du mois · il faut avoir au moins un pari terminé dans le mois${cur.mine?"":" · montants choisis par le créateur de la ligue"}</small></div>`}
+      <small class="pzn">Créditées toutes seules le 1er du mois · mêmes montants dans toutes les ligues · il faut avoir au moins un pari terminé dans le mois</small></div>`}
     h+=`<div class="sncard">${ic("crown")}<div><b>Classement de ${esc(SN.label)}</b><small>${left<=1?"Dernier jour !":`Fin dans ${left} jours`} · le premier du mois est sacré champion</small></div></div>`}
   const key=M==="week"?"week":M==="season"?"season":"bal",gainMode=M!=="total",rows=d.rows.slice().sort((a,b)=>b[key]-a[key]||b.bal-a.bal).slice(0,cur?60:50);
   const val=r=>gainMode?(r[key]>0?"+":"")+tok(r[key]):tok(r.bal),cls=r=>gainMode?(r[key]>=0?"pos":"neg"):"";
@@ -1744,17 +1742,9 @@ function favMatch(){if(!S.fav)return null;const id=String(S.fav.id);
 const favCrest=(f,sz=16)=>f&&f.l?`<img class="fcr" src="${esc(f.l)}" alt="" width="${sz}" height="${sz}" referrerpolicy="no-referrer" onerror="this.remove()">`:"";
 
 /* ---------- récompenses du mois ---------- */
-const PRZ_DEF=[1000,500,250,25];
-const prizesOf=l=>Array.isArray(l&&l.prizes)&&l.prizes.length===4?l.prizes:PRZ_DEF;
-function viewPrizeEdit(cur){const P=prizesOf(cur);
-  return`<div class="grab"><h3>Récompenses du mois</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
-  <p class="note" style="margin-top:0">À la fin de chaque mois, les jetons sont crédités tout seuls selon le classement du mois de « ${esc(cur.name)} ». Seuls ceux qui ont fait au moins un pari dans le mois reçoivent quelque chose. Les égalités gagnent pareil. Ces jetons ne comptent pas dans le classement suivant.</p>
-  <div class="form">${["1er","2e","3e","Tous les autres (4e et +)"].map((r,i)=>`<label>${r}<input type="number" inputmode="numeric" min="0" max="5000" step="5" id="prz${i}" value="${P[i]}"></label>`).join("")}</div>
-  <small class="note">Maximum 5 000 jetons par place.</small>
-  <button class="btn gold wide" data-act="przsave" style="margin-top:10px">Enregistrer</button>`}
-async function savePrizes(){const P=[0,1,2,3].map(i=>Math.max(0,Math.min(5000,Math.round(+($("#prz"+i)||{}).value||0))));
-  try{await api("set_prizes",{code:U.lg.code,prizes:P});const cur=U.lg.data.leagues.find(l=>l.code===U.lg.code);if(cur)cur.prizes=P;closeLayer();toast("Récompenses enregistrées.","win")}
-  catch(e){toast(e.code==="not_owner"?"Seul le créateur de la ligue peut les changer.":"Pas de connexion, réessaie.","bad")}}
+// mêmes montants pour toutes les ligues (même liste dans api/game.js : PRIZES)
+const PRZ=[1000,500,250,25];
+const prizesOf=()=>PRZ;
 // au démarrage : récompenses de fin de mois pas encore reçues → créditées
 async function claimPrizes(){if(!S.tok)return;try{const j=await api("prizes_claim",{});if(!j.prizes.length)return;let t=0;
   for(const x of j.prizes){t+=x.amount;S.prizes=S.prizes||[];S.prizes.push(x)}
@@ -2401,7 +2391,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.49";
+const VERSION="1.50";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

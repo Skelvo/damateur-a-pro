@@ -333,8 +333,9 @@ async function dayMatch(s) {
 
 // ---- Récompenses du mois : à la fin du mois, chaque ligue (2 membres ou plus) donne des jetons selon le classement final ----
 // (1er, 2e, 3e, puis « tous les autres » ; il faut avoir au moins un pari terminé dans le mois). Les égalités gagnent pareil.
+// Montants IDENTIQUES pour toutes les ligues, fixés ici (même liste dans index.html : PRZ).
 const PRIZES = [1000, 500, 250, 25];
-const prizeOf = (P, rk) => { const T = Array.isArray(P) && P.length === 4 ? P : PRIZES; return Number(T[Math.min(rk, 4) - 1]) || 0; };
+const prizeOf = (P, rk) => PRIZES[Math.min(rk, 4) - 1] || 0;
 async function ensurePrizes(s, month) {
   if (!(await s.query(`insert into meta (key, value) values ($1, '1') on conflict do nothing returning key`, ["prizes:" + month]))[0]) return false;
   const leagues = await s.query(`select l.code, l.prizes from leagues l where not l.dark and (select count(*) from league_members m where m.code = l.code) >= 2`);
@@ -845,16 +846,6 @@ const ACTIONS = {
     const fav = { sp, id, path, name: cleanName(f.name, 40) || "?", logo: logo || null };
     await s.query(`update players set fav = $2::jsonb where id = $1`, [p.id, JSON.stringify(fav)]);
     return { ok: true, fav };
-  },
-  async set_prizes(s, b) {
-    const p = await me(s, b.token);
-    const code = cleanName(b.code, 8).toUpperCase();
-    const l = (await s.query(`select owner from leagues where code = $1`, [code]))[0];
-    if (!l || String(l.owner) !== String(p.id)) throw fail(403, "not_owner");
-    const P = (Array.isArray(b.prizes) ? b.prizes : []).slice(0, 4).map((x) => int(x, 0, 5000));
-    if (P.length !== 4) throw fail(400, "prizes");
-    await s.query(`update leagues set prizes = $2::jsonb where code = $1`, [code, JSON.stringify(P)]);
-    return { ok: true, prizes: P };
   },
   // récompenses du mois pas encore reçues : marquées « reçues » ici, le téléphone ajoute les jetons
   async prizes_claim(s, b) {
