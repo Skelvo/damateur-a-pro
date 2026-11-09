@@ -407,6 +407,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 .champ .i{width:30px;height:30px;color:var(--sel);flex:none}.champ small{display:block;color:#e8d79a;font-size:12px;text-transform:uppercase;letter-spacing:.8px;font-weight:700}.champ b{font:800 19px "Barlow Condensed"}
 .tabs3 button{position:relative}.pill{display:inline-grid;place-items:center;min-width:18px;height:18px;border-radius:9px;background:var(--sel);color:var(--sel-ink);font:800 11px Barlow;padding:0 5px;margin-left:3px}
 .crw{color:#ffb020}
+.tflag{display:inline-block;border-radius:50%;overflow:hidden;box-shadow:0 0 0 2px #ffffff30;background:var(--card2)}.tflag img{width:100%;height:100%;object-fit:cover;display:block}
 .curve{position:relative;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 8px 6px;margin-bottom:6px}.curve svg{display:block;width:100%;height:110px}
 .curve .cl{position:absolute;top:6px;bottom:6px;right:10px;display:flex;flex-direction:column;justify-content:space-between;font-size:10.5px;color:var(--mute);pointer-events:none}
 .pfav{display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--mute);margin:3px 0}.pfav img{width:18px;height:18px;object-fit:contain}
@@ -1019,8 +1020,18 @@ function initials(name,sp){const w=name.replace(/[’']/g," ").split(/[\s-]+/).f
   if(sp==="tennis")return(w[0][0]+(w[w.length-1]||"")[0]).toUpperCase();
   const pf=PFX.foot.concat(PFX.rugby);const core=w.filter(x=>!pf.includes(x)&&!/^(de|du|la|le|les|lès|sur|l|d)$/i.test(x));
   const p=w.find(x=>pf.includes(x));return((p&&p.length<=3?p[0]:"")+(core.map(x=>x[0]).join("")||w[0].slice(0,2))).slice(0,3).toUpperCase()}
-function crest(name,sp,logo,flag){
-  if(logo)return`<img class="crest" src="${esc(logo)}" alt="" decoding="async" referrerpolicy="no-referrer" data-fb="${esc(crest(name,sp,null,flag))}" onerror="this.outerHTML=this.dataset.fb">`;
+// logos : corrections des trous ou erreurs du flux ESPN (même club sous un autre identifiant, faux drapeau…)
+const LOGO_FIX={"Section Paloise":"https://a.espncdn.com/i/teamlogos/rugby/teams/500/270567.png","Pau":"https://a.espncdn.com/i/teamlogos/rugby/teams/500/270567.png"};
+function fixLogo(name,logo){const n=String(name||"").trim();if(LOGO_FIX[n])return LOGO_FIX[n];
+  if(logo&&/\/countries\/500\/usa\.png/.test(logo)&&n!=="États-Unis")return null;   // ESPN met le drapeau américain à Perpignan
+  return logo||null}
+// image qui ne charge pas : un 2e essai par le serveur d'images réduites d'ESPN, puis l'écusson dessiné
+function crestErr(img){const src=img.getAttribute("src")||"";
+  if(!img.dataset.retry&&/^https:\/\/a\.espncdn\.com\/i\//.test(src)){img.dataset.retry=1;img.src="https://a.espncdn.com/combiner/i?img="+encodeURIComponent(src.replace("https://a.espncdn.com",""))+"&w=96&h=96";return}
+  img.outerHTML=img.dataset.fb}
+function crest(name,sp,logo,flag,raw){if(!raw)logo=fixLogo(name,logo);
+  if(logo)return`<img class="crest" src="${esc(logo)}" alt="" decoding="async" referrerpolicy="no-referrer" data-fb="${esc(crest(name,sp,null,flag,1))}" onerror="crestErr(this)">`;
+  if(sp==="tennis"&&flag)return`<span class="crest tflag"><img src="${esc(flag)}" alt="" decoding="async" referrerpolicy="no-referrer" data-fb="${esc(crest(name,sp,null,null,1))}" onerror="this.parentNode.outerHTML=this.dataset.fb"></span>`;
   const h=hash(name),c1=PAL[h%16];let c2=PAL[(h>>5)%16];if(c2===c1)c2=PAL[(h%16+5)%16];
   const ini=esc(initials(name,sp)),tx=lum(c1)>.6?"#111":"#fff",id="c"+h.toString(36);
   if(sp==="tennis")return`<svg class="crest" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22" fill="${c1}"/><circle cx="24" cy="24" r="22" fill="none" stroke="${c2}" stroke-width="3"/>
@@ -1695,7 +1706,7 @@ const FAVL=[["Ligue 1","soccer/fra.1","foot"],["Ligue 2","soccer/fra.2","foot"],
 const FAVT={};
 function openFav(){U.open="fav";U.favL=U.favL||0;layer(viewFav());loadFavTeams()}
 async function loadFavTeams(){const path=FAVL[U.favL][1];if(FAVT[path])return;
-  try{const j=await getJSON(`${ESPN}${path}/teams`);FAVT[path]=j.sports[0].leagues[0].teams.map(x=>x.team).map(t=>({id:String(t.id),name:frTeam(t.shortDisplayName||t.displayName),logo:(t.logos&&t.logos[0]&&t.logos[0].href)||null})).sort((a,b)=>a.name.localeCompare(b.name,"fr"))}
+  try{const j=await getJSON(`${ESPN}${path}/teams`);FAVT[path]=j.sports[0].leagues[0].teams.map(x=>x.team).map(t=>({id:String(t.id),name:frTeam(t.shortDisplayName||t.displayName),logo:fixLogo(frTeam(t.shortDisplayName||t.displayName),(t.logos&&t.logos[0]&&t.logos[0].href)||null)})).sort((a,b)=>a.name.localeCompare(b.name,"fr"))}
   catch(e){FAVT[path]="err"}if(U.open==="fav")layer(viewFav())}
 function viewFav(){const [ln,path,sp]=FAVL[U.favL],T=FAVT[path];
   return`<div class="grab"><h3>Équipe de cœur</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
@@ -2345,7 +2356,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.40";
+const VERSION="1.41";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
