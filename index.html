@@ -59,10 +59,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .ver{display:inline-block;vertical-align:4px;margin-left:4px;padding:2px 6px;border-radius:6px;background:var(--card2);border:1px solid var(--line2);color:var(--mute);font:700 11px/1.2 Barlow,sans-serif;letter-spacing:.3px;font-style:normal;text-transform:none}
 .ver.new{background:var(--sel);color:var(--sel-ink);border-color:var(--sel)}
 .brand>div{min-width:0}
-@media (max-width:389px){.brand b{white-space:normal;font-size:20px;line-height:.95}.brand small{white-space:normal;line-height:1.15}.bank{padding:5px 10px 5px 6px}.bank strong{font-size:18px}}
+@media (max-width:389px){.brand small .hi,.brand small .dv{display:none}.brand b{white-space:normal;font-size:20px;line-height:.95}.bank{padding:5px 10px 5px 6px}.bank strong{font-size:18px}}
 .upd{position:fixed;left:12px;right:12px;top:calc(10px + var(--safe-t));z-index:65;max-width:520px;margin:0 auto;display:flex;align-items:center;gap:10px;padding:10px 10px 10px 14px;border:0;border-radius:14px;background:var(--sel);color:var(--sel-ink);font:700 15px Barlow;box-shadow:0 10px 30px #000a;text-align:left}
 .upd span{flex:1}.upd b{background:#00000018;border-radius:9px;padding:7px 10px;font:800 16px "Barlow Condensed";text-transform:uppercase}
-.brand small{display:block;color:var(--mute);font-size:12px;margin-top:2px;white-space:nowrap}
+.brand small{display:block;color:var(--mute);font-size:12px;line-height:1.3;margin-top:3px}
+.brand small .ver{vertical-align:1px;margin-left:5px;padding:0 5px;font-size:10.5px;white-space:nowrap}
 .hright{display:flex;align-items:center;gap:8px;flex:none}
 .bell{position:relative;width:40px;height:40px;border-radius:50%;background:var(--card);border:1px solid var(--line);display:grid;place-items:center;color:var(--ink);padding:0}
 .bell .i{width:21px;height:21px}.bell .dot{position:absolute;top:6px;right:7px;width:10px;height:10px;border-radius:50%;background:var(--loss);box-shadow:0 0 0 2px var(--bg)}
@@ -574,7 +575,7 @@ body.gated{padding-bottom:calc(24px + var(--safe-b))}
   <div class="wrap">
     <div class="brand">
       <img src="icon-180.png?v=2" width="40" height="40" alt="" class="blogo">
-      <div><b>D’amateur <em>à&nbsp;pro</em> <span class="ver" id="ver"></span></b><small id="hello">Paris gratuits · du district aux pros</small></div>
+      <div><b>D’amateur <em>à&nbsp;pro</em></b><small><span id="hello">Paris gratuits · du district aux pros</span><span class="ver" id="ver"></span></small></div>
     </div>
     <div class="hright"><button class="bell" id="bell" data-act="notif" aria-label="Notifications"><svg class="i"><use href="#i-bell"/></svg><span class="dot" id="belldot" hidden></span></button>
     <button class="bank" id="bank" data-act="tab" data-tab="c" aria-label="Mes jetons">
@@ -1237,7 +1238,7 @@ function refreshLayer(){if(!U.open)return;const sc=$(".sheet")?$(".sheet").scrol
 
 /* ---------- rendu global ---------- */
 function render(){document.body.dataset.sp=U.sp;$("#bal").textContent=tok(S.bal);{const st=pushState(),bd=$("#belldot"),bl=$("#bell");if(bd)bd.hidden=st==="on"||st==="na"&&!(IOS&&!STANDALONE);if(bl)bl.classList.toggle("on",st==="on")}
-  $("#hello").textContent=S.name?"Salut "+S.name+" · "+DIVS[divOf(S.peak)][0]:"Paris gratuits · du district aux pros";
+  $("#hello").innerHTML=S.name?`<span class="hi">Salut </span>${esc(S.name)}<span class="dv"> · ${esc(DIVS[divOf(S.peak)][0])}</span>`:"Paris gratuits · du district aux pros";
   document.querySelectorAll(".nav button").forEach(b=>b.dataset.tab===U.tab?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
   const op=S.bets.filter(b=>b.st==="open").length,nb=$("#nb");nb.hidden=!op;nb.textContent=op;
   const lx=$("#ladder")?$("#ladder").scrollLeft:null;
@@ -2031,7 +2032,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.32";
+const VERSION="1.33";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
