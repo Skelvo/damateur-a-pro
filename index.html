@@ -474,12 +474,15 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 .sncard{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin:0 0 12px}.sncard .i{width:26px;height:26px;color:#ffb020;flex:none}.sncard b{display:block;font:800 18px "Barlow Condensed"}.sncard small{color:var(--mute);font-size:12.5px}
 .drow[data-act=defigo]{cursor:pointer}.drow[data-act=defigo]:active{opacity:.7}
 .mc,.res-row,.prow,.ticket{content-visibility:auto;contain-intrinsic-size:auto 180px}.res-row,.prow{contain-intrinsic-size:auto 58px}
+.palm{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.palm>div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 4px;text-align:center;opacity:.55}.palm>div.on{opacity:1;border-color:#7a610f;background:linear-gradient(160deg,#3d3006,var(--card) 75%)}
+.palm span{font-size:22px;display:block}.palm b{display:block;font:800 24px "Barlow Condensed"}.palm small{display:block;font-size:11px;color:var(--mute);line-height:1.15}
+.palm2{display:grid;gap:6px;margin-top:6px}.palm2>div{display:flex;justify-content:space-between;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px}.palm2 b{font:800 18px "Barlow Condensed"}
 .gcomp{padding:12px 14px}.gcomp .gtop{gap:10px}.gti{flex:1;min-width:0}.gti h3{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gti small .link{padding:0;font-size:inherit;color:inherit;text-decoration:underline}
 .gsm{width:42px;height:42px;padding:0;flex:none;display:grid;place-items:center}.gsm .i{width:18px;height:18px}
 .gdots{position:relative;width:42px;height:42px;flex:none;border-radius:12px;border:1px solid var(--line2);background:#0003;color:var(--ink);font:800 14px Barlow;letter-spacing:1px}.gdots .tdd{top:-4px;right:-4px}
 .gtabs{display:grid;grid-template-columns:repeat(4,1fr)}.gtabs button{font-size:14px;padding-left:2px;padding-right:2px}
 .gsub{margin-top:-4px}
-.gquick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}.gquick button{position:relative;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 12px;color:var(--ink);font:600 14px Barlow;text-align:left;min-width:0}.gquick span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gquick .tdd{top:-4px;right:-4px}
+.gquick{display:grid;grid-template-columns:1.25fr .8fr 1.25fr;gap:8px;margin-bottom:12px}.gquick button{position:relative;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 12px;color:var(--ink);font:600 14px Barlow;text-align:left;min-width:0}.gquick span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gquick .tdd{top:-4px;right:-4px}
 .sbar{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:6px 0 12px}.sbar button{display:flex;align-items:center;justify-content:center;gap:6px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--mute);font:800 15px "Barlow Condensed";text-transform:uppercase;padding:0 4px;min-width:0}
 .sbar button .ball{width:20px;height:20px;flex:none}.sbar button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sbar button[aria-pressed=true]{color:var(--ink);border-color:var(--c);background:color-mix(in srgb,var(--c) 18%,var(--card))}
 .today{display:flex;gap:12px;overflow-x:auto;scrollbar-width:none;padding:2px 16px 6px;margin:0 -16px 10px}.today::-webkit-scrollbar{display:none}
@@ -770,7 +773,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.79"></script>
+<script src="engine.js?v=1.80"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -1203,6 +1206,7 @@ function viewCareer(){const di=divOf(S.peak),nx=DIVS[di+1],pr=nx?cl((S.peak-DIVS
   <div class="h2"><h2>Succès</h2><span>${SC.length}/${SUCC.length}</span></div>
   ${succGrid(SC,true)}
   ${rcodeCard()}
+  <button class="statbtn" data-act="mshare">${ic("share")}<span><b>Partager mon mois</b><small>Ton bilan du mois en image : gains, réussite, meilleure cote, ta place</small></span><span class="arr">›</span></button>
   <button class="statbtn" data-act="help">${ic("info")}<span><b>Comment ça marche ?</b><small>Cotes, combinés, guildes, combats, compte… et le guide du premier pari</small></span><span class="arr">›</span></button>
   <div class="h2"><h2>Réglages</h2></div>
   <div class="row" data-act="fav" style="cursor:pointer"><div style="display:flex;align-items:center;gap:10px">${S.fav?(S.fav.logo?`<img class="crest" src="${esc(S.fav.logo)}" alt="" style="width:30px;height:30px;object-fit:contain" referrerpolicy="no-referrer">`:crest(S.fav.name,S.fav.sp)):`<span style="font-size:22px">❤️</span>`}<div><b>Équipe de cœur</b><small>${S.fav?esc(S.fav.name)+" · ses matchs en premier et un rappel les jours de match":"Choisis ton club : ses matchs en premier, un rappel les jours de match"}</small></div></div><button class="link">${S.fav?"Changer":"Choisir"}</button></div>
@@ -1437,6 +1441,8 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"legal":openLegal();break;
     case"help":openHelp();break;
     case"tshare":shareTicket(d.id);break;
+    case"mshare":shareMonth();break;
+    case"gstats":if(U.open==="gmenu"){U.open=null;layer("")}openGStats();break;
     case"defigo":if(U.open&&U.open.startsWith("td:")){U.open=null;layer("")}defiGo(d.id);break;
     case"td":openToday(d.v);break;
     case"intro":openIntro();break;
@@ -1627,8 +1633,9 @@ function viewLeagues(){const L=U.lg,d=L.data;
   const M=L.mode,SN=d.season;
   if(cur&&d.lastSeason&&(M==="season"||new Date().getDate()<=7))h+=`<div class="champ season">${ic("crown")}<div><small>Champion${d.lastSeason.winners.length>1?"s":""} du mois de ${esc(d.lastSeason.label)}</small><b>${d.lastSeason.winners.map(w=>esc(w.name)+` <span class="pos">+${tok(w.gain)}</span>`).join(" · ")}</b></div></div>`;
   if(cur){const b=(U.bt||{})[cur.code],lv=b&&b.battles.find(x=>x.status==="live");
-    h+=`<div class="gquick"><button data-act="recap">📊 <span>Bilan de la semaine</span>${(S.recapSeen||{})[cur.code]!==d.week?`<i class="tdd"></i>`:""}</button>
-    <button data-act="lgview" data-v="fights">⚔️ <span>${lv?`${lv.my>lv.their?"On mène":lv.my<lv.their?"On est mené":"Égalité"} ${lv.my>0?"+":""}${tok(lv.my)} / ${lv.their>0?"+":""}${tok(lv.their)}`:b?`${b.guild.div.i} ${b.guild.div.n}`:"Combats"}</span></button></div>`}
+    h+=`<div class="gquick"><button data-act="recap">📊 <span>Bilan semaine</span>${(S.recapSeen||{})[cur.code]!==d.week?`<i class="tdd"></i>`:""}</button>
+    <button data-act="gstats">📈 <span>Stats</span></button>
+    <button data-act="lgview" data-v="fights">⚔️ <span>${lv?`<b class="${lv.my>lv.their?"pos":lv.my<lv.their?"neg":""}">${lv.my>0?"+":""}${tok(lv.my)}</b> / ${lv.their>0?"+":""}${tok(lv.their)}`:b?`${b.guild.div.i} ${b.guild.div.n}`:"Combats"}</span></button></div>`}
   h+=`<div class="seg tabs3"><button data-act="lgmode" data-v="season" aria-pressed="${M==="season"}">Mois</button><button data-act="lgmode" data-v="week" aria-pressed="${M==="week"}">Semaine</button><button data-act="lgmode" data-v="total" aria-pressed="${M==="total"}">Jetons</button></div>`;
   if(M==="season"&&SN){const left=Math.max(0,Math.ceil((SN.end-Date.now())/864e5));
     if(cur){const P=prizesOf(cur);h+=`<div class="przcard"><div class="pzh">🎁 <b>Récompenses de fin de mois</b></div>
@@ -1674,6 +1681,63 @@ function viewToday(v){const x=`<button class="x" data-act="close" aria-label="Fe
   if(v==="guide")return`<div class="grab"><h3>Premiers pas</h3>${x}</div>${guideCard()||`<div class="empty">Toutes les missions sont faites 🎉</div>`}`;
   if(v==="we"){const w=WE();return`<div class="grab"><h3>Week-end spécial</h3>${x}</div>${weBanner()}<p class="note" style="text-align:left">Chaque week-end a son thème, à tour de rôle : 🧾 combinés (+25 % de bonus), 🎡 roue (gains ×2), 🎯 défis (×2). Tout est automatique.</p>`}
   return""}
+
+/* ---------- palmarès (profil) ---------- */
+function palmares(p){const a=p.pal||{},row=(U.lg.data&&U.lg.data.rows||[]).find(r=>String(r.id)===String(p.id))||{};
+  const it=[[a.months||row.sc||0,"👑","mois gagné","mois gagnés"],[row.tr||0,"🏆","semaine gagnée","semaines gagnées"],[a.podiums||0,"🥉","podium du mois","podiums du mois"],[a.battles||0,"⚔️","combat gagné","combats gagnés"]];
+  const best=a.best_odds||(p.best&&p.best.odds)||0,big=a.big_win||(p.best&&p.best.pay)||0;
+  return`<div class="grp">Palmarès</div><div class="palm">${it.map(([n,e,s1,s2])=>`<div class="${n?"on":""}"><span>${e}</span><b>${n}</b><small>${n>1?s2:s1}</small></div>`).join("")}</div>
+  ${best||big?`<div class="palm2">${best?`<div>🎯 Meilleure cote gagnée <b>${fr(best)}</b></div>`:""}${big?`<div>💰 Plus gros gain <b class="pos">+${tok(big)}</b></div>`:""}</div>`:""}`}
+
+/* ---------- statistiques de la guilde ---------- */
+async function openGStats(){U.open="gstats";const head=`<div class="grab"><h3>Statistiques de la guilde</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
+  layerLater(head+`<div class="skel" style="height:160px"></div><div class="skel"></div>`);
+  try{const j=await api("guild_stats",{code:U.lg.code});if(U.open!=="gstats")return;layer(head+viewGStats(j))}catch(e){if(U.open==="gstats")layer(head+`<div class="empty">${ic("info")}<b>Pas de connexion</b>Réessaie dans un instant.</div>`)}}
+function viewGStats(j){if(!j.bets)return`<div class="empty">${ic("chart")}<b>Pas encore de paris</b>Les statistiques arrivent dès les premiers paris de la guilde.</div>`;
+  const SPN={foot:"⚽ Foot",rugby:"🏉 Rugby",tennis:"🎾 Tennis",basket:"🏀 NBA"},pp=(x,txt)=>x?`<div class="gmrow">${avatar(x.id,x.name,x.av,"av")}<div><b>${esc(x.name)}</b><small>${txt}</small></div></div>`:"";
+  return`<p class="note" style="text-align:left;margin-top:0">Sur les 60 derniers jours, membres actuels.</p>
+  <div class="stk">${[["Paris",tok(j.bets)],["Réussite",j.rate+" %"],["Combinés",tok(j.combos)],["Jetons misés",tok(j.staked)],["Sport préféré",j.sport?SPN[j.sport[0]]||j.sport[0]:"—"],["Pari préféré",j.market?esc(j.market[0]):"—"]].map(([k,v])=>`<div><small>${k}</small><b>${v}</b></div>`).join("")}</div>
+  <div class="grp">Les records</div>
+  ${pp(j.best,`📈 Meilleur parieur : ${j.best?(j.best.net>=0?"+":"")+tok(Math.round(j.best.net))+" jetons":""}`)}
+  ${pp(j.sniper,`🎯 Le plus précis : ${j.sniper?Math.round(j.sniper.w/j.sniper.n*100)+" % de réussite":""}`)}
+  ${pp(j.busy,`🔥 Le plus actif : ${j.busy?j.busy.n+" paris réglés":""}`)}
+  ${pp(j.bestOdds,`🚀 Plus grosse cote gagnée : ${j.bestOdds?fr(j.bestOdds.odds)+(j.bestOdds.n>1?` (combiné de ${j.bestOdds.n})`:` (${esc(j.bestOdds.label||"")})`):""}`)}
+  ${pp(j.bigWin,`💰 Plus gros gain : ${j.bigWin?"+"+tok(j.bigWin.gain)+" jetons":""}`)}`}
+
+/* ---------- mon mois en image ---------- */
+function monthData(){const now=new Date(),useLast=now.getDate()<=3,ref=new Date(now.getFullYear(),now.getMonth()-(useLast?1:0),1),y=ref.getFullYear(),mo=ref.getMonth();
+  const B=S.bets.filter(b=>["won","lost","cashed"].includes(b.st)&&b.done&&new Date(b.done).getFullYear()===y&&new Date(b.done).getMonth()===mo);
+  const W=B.filter(b=>b.st==="won"),net=B.reduce((a,b)=>a+(b.st==="lost"?-b.stake:(b.pay||0)-b.stake),0),sp={};
+  for(const b of B)for(const L of b.legs)sp[L.sp]=(sp[L.sp]||0)+1;
+  const d=U.lg.data,cur=d&&d.leagues.find(l=>l.code===U.lg.code)||d&&d.leagues[0];let rank=null;
+  if(cur&&d.code===cur.code&&!useLast){const rows=d.rows.slice().sort((a,b)=>b.season-a.season);const i=rows.findIndex(r=>String(r.id)===String(d.me));if(i>=0)rank={pos:i+1,n:rows.length,guild:cur.name}}
+  return{label:ref.toLocaleDateString("fr-FR",{month:"long",year:"numeric"}),n:B.length,w:W.length,net:Math.round(net),rate:B.length?Math.round(W.length/B.length*100):0,
+    bestO:W.reduce((a,b)=>Math.max(a,b.odds),0),big:W.reduce((a,b)=>Math.max(a,(b.pay||0)-b.stake),0),sport:Object.entries(sp).sort((a,b)=>b[1]-a[1])[0],rank}}
+async function monthImage(){const D=monthData(),W=1080,H=1350,cv=document.createElement("canvas");cv.width=W;cv.height=H;const c=cv.getContext("2d");
+  try{await Promise.all([document.fonts.load('800 80px "Barlow Condensed"'),document.fonts.load('700 30px Barlow')])}catch(e){}
+  const good=D.net>=0,SC=good?"#35d07f":"#ff5a5f";let g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,"#04100a");g.addColorStop(1,"#0a2216");c.fillStyle=g;c.fillRect(0,0,W,H);
+  const glow=(x,y,r,col)=>{const r2=c.createRadialGradient(x,y,0,x,y,r);r2.addColorStop(0,col);r2.addColorStop(1,"rgba(0,0,0,0)");c.fillStyle=r2;c.fillRect(0,0,W,H)};
+  glow(140,-40,700,"rgba(53,208,127,.32)");glow(W-60,-60,650,"rgba(255,210,63,.22)");glow(W/2,560,520,SC+"30");
+  c.save();c.globalAlpha=.07;c.fillStyle="#fff";for(const[x0,dir]of[[60,1],[W-60,-1]]){c.beginPath();c.moveTo(x0,-10);c.lineTo(x0+dir*620,H);c.lineTo(x0+dir*320,H);c.closePath();c.fill()}c.restore();
+  const logo=await loadImg("logo-tribune.png?v=2");if(logo){const lw=260,lh=lw*logo.height/logo.width;c.drawImage(logo,(W-lw)/2,60,lw,lh)}
+  c.textAlign="center";c.fillStyle="#9fb2a8";c.font='700 34px Barlow';c.fillText(`${(S.name||"Joueur").toUpperCase()} · MON MOIS DE ${D.label.toUpperCase()}`,W/2,250);
+  c.fillStyle="#9fb2a8";c.font='700 32px Barlow';c.fillText(good?"GAGNÉ EN PARIANT 🔥":"BILAN DU MOIS 😅",W/2,340);
+  c.save();c.shadowColor=SC;c.shadowBlur=45;c.fillStyle=SC;c.font='800 190px "Barlow Condensed"';c.fillText((D.net>0?"+":D.net<0?"−":"")+tok(Math.abs(D.net)),W/2,510);c.restore();
+  c.fillStyle="#9fb2a8";c.font='800 46px "Barlow Condensed"';c.fillText("JETONS",W/2,568);
+  if(D.rank){const t=`${D.rank.pos}${D.rank.pos===1?"ER":"E"} SUR ${D.rank.n} DANS « ${D.rank.guild.toUpperCase()} »`;c.font='800 44px "Barlow Condensed"';const w=c.measureText(t).width+70;
+    c.fillStyle=D.rank.pos===1?"#ffd23f":"rgba(255,255,255,.1)";c.beginPath();c.roundRect((W-w)/2,610,w,76,38);c.fill();c.fillStyle=D.rank.pos===1?"#1b1400":"#e8efe9";c.fillText((D.rank.pos===1?"👑 ":"")+t,W/2,662)}
+  const tiles=[["PARIS",tok(D.n)],["RÉUSSITE",D.rate+" %"],["GAGNÉS",tok(D.w)],["MEILLEURE COTE",D.bestO?fr(D.bestO):"—"],["PLUS GROS GAIN",D.big?"+"+tok(Math.round(D.big)):"—"],["SPORT FAVORI",D.sport?({foot:"FOOT",rugby:"RUGBY",tennis:"TENNIS",basket:"NBA"}[D.sport[0]]||"—"):"—"]];
+  tiles.forEach(([k,v],i)=>{const col=i%3,row=Math.floor(i/3),x=70+col*320,y=740+row*215;c.fillStyle="#fbf8ef";c.beginPath();c.roundRect(x,y,300,190,28);c.fill();
+    c.fillStyle="#7d8a83";c.font='700 26px Barlow';c.fillText(k,x+150,y+60);c.fillStyle=i===3?"#c99a0b":i===4?"#1f9d5c":"#13201a";c.font='800 72px "Barlow Condensed"';c.fillText(v,x+150,y+145)});
+  c.fillStyle="#e8efe9";c.font='800 46px "Barlow Condensed"';c.fillText(good?"QUI FAIT MIEUX CE MOIS-CI ? 😏":"LE MOIS PROCHAIN SERA LE BON 💪",W/2,1225);
+  c.fillStyle="#35d07f";c.font='700 30px Barlow';c.fillText((location.host+location.pathname.replace(/index\.html$/,"")).replace(/\/$/,""),W/2,1275);
+  return{blob:await new Promise(ok=>cv.toBlob(ok,"image/png")),D}}
+async function shareMonth(){toast("Préparation de l’image…");try{const{blob,D}=await monthImage(),file=new File([blob],"mon-mois-tribune.png",{type:"image/png"});
+  if(!D.n){toast("Pas encore de pari terminé ce mois-ci.");return}
+  const txt=`Mon mois de ${D.label} sur Tribune : ${D.net>=0?"+":""}${tok(D.net)} jetons en pariant 🔥`;
+  if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],text:txt})}catch(e){}return}
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="mon-mois-tribune.png";document.body.appendChild(a);a.click();a.remove();toast("Image enregistrée.","win")}
+  catch(e){toast("Impossible de créer l’image.","bad")}}
 
 /* ---------- week-ends spéciaux (thème automatique, à tour de rôle) ---------- */
 const WE=()=>weekendOf(today());
@@ -2081,7 +2145,7 @@ function betsPayload(){const B=S.bets.slice(-40).reverse().map(b=>({id:b.id,at:b
 async function openProfile(id){const me=U.lg.data&&String(id)===String(U.lg.data.me)||String(id)===String(S.pid);
   U.open="prof";layerLater(`<div class="grab"><h3>Profil</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div><div class="skel" style="height:140px"></div><div class="skel"></div>`);
   if(me){const p={id:S.pid,name:S.name,bal:S.bal,peak:S.peak,...myStats(),...betsPayload(),av:S.avv,me:true,fav:S.fav};layer(viewProfile(p));
-    if(S.pid)api("profile",{id:S.pid}).then(r=>{if(U.open==="prof"){p.hist=r.hist;layer(viewProfile(p))}}).catch(()=>{});return}
+    if(S.pid)api("profile",{id:S.pid}).then(r=>{if(U.open==="prof"){p.hist=r.hist;p.pal=r.pal;layer(viewProfile(p))}}).catch(()=>{});return}
   try{const p=await api("profile",{id});if(U.open==="prof")layer(viewProfile(p))}
   catch(e){if(U.open==="prof")layer(`<div class="grab"><h3>Profil</h3><button class="x" data-act="close">${ic("x")}</button></div><div class="empty">${ic("info")}<b>${e.code==="not_friend"?"Profil privé":"Pas de connexion"}</b>${e.code==="not_friend"?"Tu ne vois que les joueurs de tes guildes.":"Réessaie dans un instant."}</div>`)}}
 function viewProfile(p){const done=p.won+p.lost,rate=done?Math.round(p.won/done*100):0,B=p.bets||[],open=B.filter(b=>b.st==="open"),past=B.filter(b=>b.st!=="open").slice(0,12);
@@ -2097,6 +2161,7 @@ function viewProfile(p){const done=p.won+p.lost,rate=done?Math.round(p.won/done*
   <div class="pstats"><div><small>Jetons</small><b>${tok(p.bal)}</b></div><div><small>Record</small><b>${tok(p.peak)}</b></div><div><small>Réussite</small><b>${rate} %</b></div>
     <div><small>Gagnés</small><b class="pos">${p.won}</b></div><div><small>Meilleure cote</small><b>${p.best&&p.best.odds?fr(p.best.odds):"—"}</b></div><div><small>Plus gros gain</small><b class="pos">${p.best&&p.best.pay?"+"+tok(p.best.pay):"—"}</b></div></div>
   ${curve(p.hist,p.bal)}
+  ${palmares(p)}
   ${p.me?"":`<div class="pmod"><button class="link" data-act="rep" data-k="player" data-id="${esc(p.id)}" data-w="le pseudo « ${esc(p.name)} »">🚩 Signaler le pseudo</button><button class="link" data-act="block" data-id="${esc(p.id)}" data-n="${esc(p.name)}">${blocked(p.id)?"Débloquer":"🚫 Bloquer"}</button></div>`}
   ${(p.badges||[]).length?`<div class="grp">Succès (${p.badges.length}/${SUCC.length})</div>${succGrid(p.badges)}`:""}
   <div class="grp">Paris en cours (${open.length})</div>${open.length?open.map(bet).join(""):`<p class="note">Aucun pari en cours.</p>`}
@@ -2158,7 +2223,7 @@ function openGMenu(){const d=U.lg.data,cur=d&&d.leagues.find(l=>l.code===U.lg.co
   layer(`<div class="grab"><h3>${esc(cur.name)}</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   <div class="lgcode" style="margin-bottom:10px"><div><small>Code de la guilde</small><br><b>${esc(cur.code)}</b></div><button class="btn gold" data-act="lginv">${ic("share")} Inviter</button></div>
   <div class="mlist"><button data-act="gmem">👥 Membres${boss&&cur.nreq?` · <b style="color:var(--sel)">${cur.nreq} demande${cur.nreq>1?"s":""}</b>`:""}</button>${boss?`<button data-act="gset">⚙️ Gérer la guilde (emblème, devise, accès, championnat)</button>`:""}
-  <button data-act="gdir">🔎 Trouver une autre guilde</button><button data-act="lgnew">➕ Créer une guilde</button><button data-act="lgjoin">🔑 Rejoindre avec un code</button>
+  <button data-act="gstats">📈 Statistiques de la guilde</button><button data-act="gdir">🔎 Trouver une autre guilde</button><button data-act="lgnew">➕ Créer une guilde</button><button data-act="lgjoin">🔑 Rejoindre avec un code</button>
   <button data-act="lgleave" style="color:var(--loss)">🚪 Quitter la guilde</button></div>`)}
 async function guildAct(action,args,ask){if(ask&&!confirm(ask))return;try{const j=await api(action,{code:U.lg.code,...args});if(j&&j.error)throw j;toast("C’est fait.","win");await loadBoards();openMembers()}
   catch(e){toast(e&&e.error==="full"?"La guilde est pleine.":e&&e.error==="too_many"?"Ce joueur est déjà dans trop de guildes.":"Action impossible.","bad")}}
@@ -2922,7 +2987,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.79";
+const VERSION="1.80";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

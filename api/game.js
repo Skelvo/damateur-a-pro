@@ -251,6 +251,18 @@ const hhmm = (t) => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", m
 async function reminders(s, slot) {
   const t = (await s.query(`select to_char(now() at time zone 'Europe/Paris', 'YYYYMMDD') as ymd, extract(isodow from now() at time zone 'Europe/Paris')::int as dow,
       extract(epoch from ((date_trunc('day', now() at time zone 'Europe/Paris') + interval '1 day') at time zone 'Europe/Paris')) * 1000 as eod`))[0];
+  // samedi soir : où en est le combat de la guilde, pour motiver tout le monde avant le dernier jour
+  if (slot === "soir" && t.dow === 6) try {
+    const live = await s.query(`select bt.id, bt.a, bt.b, la.name as na, lb.name as nb from battles bt join leagues la on la.code = bt.a join leagues lb on lb.code = bt.b where bt.status = 'live' and bt.week = ${WEEK}`);
+    const sc = await battleScores(s, live.map((x) => x.id));
+    for (const x of live) for (const [c, o, n, on] of [[x.a, x.b, x.na, x.nb], [x.b, x.a, x.nb, x.na]]) {
+      if (!(await sentOnce(s, `bsat:${x.id}:${c}`))) continue;
+      const my = (sc[x.id + "|" + c] || { avg: 0 }).avg, th = (sc[x.id + "|" + o] || { avg: 0 }).avg, sg = (v) => (v > 0 ? "+" : "") + v;
+      const to = (await s.query(`select player from battle_members where battle = $1 and code = $2`, [x.id, c])).map((y) => y.player);
+      await notify(s, to, { title: my > th ? `⚔️ ${n} mène contre ${on} !` : my < th ? `⚔️ ${n} est menée par ${on}` : `⚔️ Égalité parfaite contre ${on}`,
+        body: `${sg(my)} à ${sg(th)} de moyenne. ${my >= th ? "Tenez bon : il reste dimanche !" : "Il reste dimanche pour renverser, chaque pari compte !"}`, url: go("fights", c), tag: "battle-" + x.id });
+    }
+  } catch (e) { console.error("bsat", e); }
   const key = `remind:${slot}:${t.ymd}`;
   if (!(await s.query(`insert into meta (key, value) values ($1, '1') on conflict do nothing returning key`, [key]))[0]) return { skipped: "déjà fait" };
   const min = slot === "midi" ? 1 : 2;
@@ -369,6 +381,15 @@ async function tick(s) {
   let settled = 0;
   try { settled = (await settleOpen(s, { budget: 25e3 })).length; } catch (e) { console.error("settle", e); }
   await s.query(`delete from sent_notes where at < now() - interval '30 days'`);
+  // combiné de 3 sélections ou plus : plus qu'un match à passer
+  try {
+    for (const x of await s.query(`select id, player, stake, odds::float8 as odds, legs from bets where status = 'open' and combo and jsonb_array_length(legs) >= 3`)) {
+      const L = x.legs, left = L.filter((y) => !y.r), w = L.filter((y) => y.r === "w").length;
+      if (left.length !== 1 || L.some((y) => y.r === "l") || w < 2) continue;
+      if (!(await sentOnce(s, `last:${x.id}`))) continue;
+      await notify(s, [x.player], { title: `🔥 Plus qu'un match pour ton combiné de ${L.length} !`, body: `${w} sélection${w > 1 ? "s" : ""} déjà bonne${w > 1 ? "s" : ""}. Reste : ${left[0].l}${left[0].ml ? " (" + left[0].ml + ")" : ""} · gain possible ${Math.round(x.stake * x.odds)} jetons`, url: "./?go=bets", tag: "last-" + x.id });
+    }
+  } catch (e) { console.error("last", e); }
   let battles = null;
   try { battles = await battlesTick(s); } catch (e) { console.error("battles", e); }
   const ppl = await s.query(`select p.id, p.bets from players p where p.bets is not null and exists (select 1 from push_subs x where x.player = p.id)`);
@@ -1070,6 +1091,29 @@ const ACTIONS = {
     return { gifts: r.map((x) => ({ amount: x.amount, label: x.label })) };
   },
   // les 1 000 jetons de départ (gagnés sur le match d'entraînement) : notés une fois, seulement pour un compte tout neuf
+  // statistiques de la guilde (paris enregistrés par le serveur, membres actuels)
+  async guild_stats(s, b) {
+    const p = await me(s, b.token);
+    const code = cleanName(b.code, 8).toUpperCase();
+    if (!(await isMember(s, code, p.id))) throw fail(403, "not_member");
+    const B = await s.query(`select x.player, pl.name, pl.avatar_v, x.stake, x.odds::float8 as odds, x.pay::float8 as pay, x.status, x.legs, x.combo
+       from bets x join league_members m on m.player = x.player and m.code = $1 join players pl on pl.id = x.player
+       where x.at > now() - interval '60 days'`, [code]);
+    const done = B.filter((x) => ["won", "lost", "cashed"].includes(x.status)), won = done.filter((x) => x.status === "won");
+    const sp = {}, mk = {};
+    for (const x of B) for (const L of x.legs || []) { sp[L.sp || "foot"] = (sp[L.sp || "foot"] || 0) + 1; mk[L.mt || L.mk] = (mk[L.mt || L.mk] || 0) + 1; }
+    const top = (o) => Object.entries(o).sort((a, b) => b[1] - a[1])[0] || null;
+    const by = {};
+    for (const x of done) { const g = x.status === "lost" ? -x.stake : (x.pay || 0) - x.stake, o = by[x.player] || (by[x.player] = { id: x.player, name: x.name, av: x.avatar_v || 0, n: 0, w: 0, net: 0 }); o.n++; if (x.status === "won") o.w++; o.net += g; }
+    const people = Object.values(by), pick = (f) => people.filter((x) => x.n >= 3).sort(f)[0] || null;
+    const bo = won.sort((a, b) => b.odds - a.odds)[0], bg = won.slice().sort((a, b) => (b.pay - b.stake) - (a.pay - a.stake))[0];
+    const who = (x) => x && { id: x.player, name: x.name, av: x.avatar_v || 0 };
+    return { bets: B.length, settled: done.length, rate: done.length ? Math.round((won.length / done.length) * 100) : 0, combos: B.filter((x) => x.combo).length,
+      staked: B.reduce((a, x) => a + x.stake, 0), sport: top(sp), market: top(mk),
+      best: pick((a, b) => b.net - a.net), sniper: pick((a, b) => b.w / b.n - a.w / a.n), busy: people.sort((a, b) => b.n - a.n)[0] || null,
+      bestOdds: bo ? { ...who(bo), odds: bo.odds, label: (bo.legs[0] || {}).l, n: bo.legs.length } : null,
+      bigWin: bg ? { ...who(bg), gain: Math.round(bg.pay - bg.stake), odds: bg.odds } : null };
+  },
   async starter_log(s, b) {
     const p = await me(s, b.token);
     const ok = (await s.query(`select 1 from players where id = $1 and created_at > now() - interval '3 days'`, [p.id]))[0];
@@ -1318,6 +1362,13 @@ const ACTIONS = {
     return { id: r.id, name: r.name, bal: Math.round(r.bal), peak: Math.round(r.peak), won: r.won, lost: r.lost, av: r.avatar_v || 0,
       bets: (r.bets && r.bets.list) || [], best: (r.bets && r.bets.best) || null, since: Math.round(Number(r.since)),
       fav: r.fav || null, badges: Array.isArray(r.badges) ? r.badges : [],
+      pal: (await s.query(`select
+          (select count(*)::int from month_prizes where player = $1 and rank = 1) as months,
+          (select count(*)::int from month_prizes where player = $1 and rank <= 3) as podiums,
+          (select count(*)::int from battle_rewards where player = $1 and result = 'w') as battles,
+          (select count(*)::int from bets where player = $1 and status in ('won', 'lost', 'cashed')) as settled,
+          (select max(odds)::float8 from bets where player = $1 and status = 'won') as best_odds,
+          (select max(pay - stake)::float8 from bets where player = $1 and status in ('won', 'cashed')) as big_win`, [id]))[0],
       hist: (await s.query(`select day, bal::float8 as bal from bal_hist where player = $1 and day >= to_char((now() at time zone 'Europe/Paris') - interval '30 days', 'YYYYMMDD') order by day`, [id])).map((x) => [x.day, Math.round(x.bal)]) };
   },
 
