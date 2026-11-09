@@ -33,6 +33,16 @@ async function fetchLeague(path, from, to) {
   return out;
 }
 
+// Les matchs qui restent aujourd'hui (pour les rappels), du plus attendu au moins attendu
+const TODAY = ["soccer/fra.1", "soccer/uefa.champions", "rugby/270559", "soccer/uefa.nations", "soccer/eng.1", "soccer/esp.1", "soccer/fra.coupe_de_france",
+  "soccer/ita.1", "soccer/ger.1", "soccer/uefa.europa", "rugby/289234", "rugby/271937", "soccer/fra.2", "soccer/uefa.europa.conf"];
+export async function todayMatches(ymd, from, to) {
+  const res = await Promise.all(TODAY.map((path, k) => getJSON(`${ESPN}${path}/scoreboard?dates=${ymd}&limit=200`)
+    .then((j) => (j.events || []).map((ev) => parse(ev, path)).filter((x) => x && x.state === "pre" && x.t >= from && x.t < to).map((x) => ({ ...x, k })))
+    .catch(() => [])));
+  return res.flat().sort((a, b) => a.k - b.k || b.strength - a.strength || a.t - b.t);
+}
+
 // Les matchs du week-end (vendredi 0 h → lundi 0 h, heure de Paris)
 export async function buildWeek(from, to) {
   const all = [];

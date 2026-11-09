@@ -12,6 +12,7 @@ function setup() {
 
 // Envoie à tous les téléphones des joueurs donnés (sauf `except`). Ne bloque jamais plus de ~4 s.
 export async function notify(s, players, payload, except) {
+  if (globalThis.__dapPushLog) { globalThis.__dapPushLog.push({ to: players.map(String), ...payload }); return; }   // tests en local
   if (!setup() || !players || !players.length) return;
   const ids = [...new Set(players.map(String))].filter((id) => String(id) !== String(except));
   if (!ids.length) return;

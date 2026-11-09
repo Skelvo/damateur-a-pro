@@ -21,6 +21,14 @@
     {
       "path": "/api/game?cron=1",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/game?cron=1&slot=midi",
+      "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/game?cron=1&slot=soir",
+      "schedule": "0 17 * * *"
     }
   ]
 }

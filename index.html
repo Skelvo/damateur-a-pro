@@ -1177,6 +1177,8 @@ function viewCareer(){const di=divOf(S.peak),nx=DIVS[di+1],pr=nx?cl((S.peak-DIVS
   <div class="h2"><h2>Réglages</h2></div>
   <div class="row"><div><b>Notifications</b><small>${pushState()==="on"?"Activées sur ce téléphone · <button class='link' data-act='pushtest' style='padding:0'>tester</button>":pushState()==="denied"?"Refusées : autorise-les dans les réglages du téléphone":pushState()==="na"?(IOS&&!STANDALONE?"Installe d’abord l’app sur l’écran d’accueil":"Pas disponibles sur ce téléphone"):"Duels, paris dark, chat, réactions…"}</small></div>
     ${pushState()==="on"?`<button class="sw" role="switch" data-act="pushoff" aria-checked="true" aria-label="Notifications"></button>`:pushState()==="off"?`<button class="sw" role="switch" data-act="pushon" aria-checked="false" aria-label="Notifications"></button>`:""}</div>
+  ${pushState()==="on"?`<div class="row" style="flex-wrap:wrap;gap:8px"><div><b>Rappels pour parier</b><small>${["Aucun rappel","Un rappel à midi","À midi et vers 18 h : matchs du soir, prono, rivalité dans ta ligue"][S.remind??2]}</small></div>
+    <div class="seg" style="width:100%;margin:0">${[["2","2 / jour"],["1","1 / jour"],["0","Aucun"]].map(([v,l])=>`<button data-act="remind" data-v="${v}" aria-pressed="${String(S.remind??2)===v}">${l}</button>`).join("")}</div></div>`:""}
   <div class="row"><div><b>Pseudo</b><small>${esc(S.name)}</small></div><button class="link" data-act="rename">Modifier</button></div>
   ${STANDALONE?"":`<div class="row"><div><b>Installer l’app</b><small>Sur l’écran d’accueil de ton téléphone</small></div><button class="link" data-act="install">Comment ?</button></div>`}
   <div class="row"><div><b>Transférer mon compte</b><small>Vers l’app installée ou un autre téléphone</small></div><button class="link" data-act="xmake2">Créer un code</button></div>
@@ -1322,6 +1324,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"prof":openProfile(d.id);break;
     case"photo":openPhoto();break;
     case"pushon":pushEnable();break;
+    case"remind":S.remind=+d.v;save();render();api("set_remind",{v:S.remind}).catch(()=>{});break;
     case"pushoff":pushDisable();break;
     case"pushtest":api("push_test",{}).then(()=>toast("Notification de test envoyée.","win")).catch(()=>toast("Impossible pour l’instant.","bad"));break;
     case"pushx":try{localStorage.setItem("dap.pushx",String(Date.now()))}catch(e){}render();break;
@@ -1997,7 +2000,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.30";
+const VERSION="1.31";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

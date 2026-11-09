@@ -2,7 +2,7 @@
 // et « ce que parient les autres ». Tout passe par POST /api/game {action, ...}.
 import { db, hashToken, newToken, ipKey, overLimit } from "./_db.js";
 import { timingSafeEqual } from "node:crypto";
-import { buildWeek, refreshResults, points } from "./_prono.js";
+import { buildWeek, refreshResults, points, todayMatches } from "./_prono.js";
 import { notify, members } from "./_push.js";
 
 const ORIGINS = [
@@ -221,6 +221,60 @@ async function morning(s) {
     }
   }
   return out;
+}
+
+// ---- Rappels pour parier (Vercel Cron : midi et 18 h, heure de Paris) ----
+// Seulement pour ceux qui ont les notifications, pas ouvert l'app depuis 1 h 30, et avec un vrai contenu.
+const hhmm = (t) => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" }).replace(":", "h");
+async function reminders(s, slot) {
+  const t = (await s.query(`select to_char(now() at time zone 'Europe/Paris', 'YYYYMMDD') as ymd, extract(isodow from now() at time zone 'Europe/Paris')::int as dow,
+      extract(epoch from ((date_trunc('day', now() at time zone 'Europe/Paris') + interval '1 day') at time zone 'Europe/Paris')) * 1000 as eod`))[0];
+  const key = `remind:${slot}:${t.ymd}`;
+  if (!(await s.query(`insert into meta (key, value) values ($1, '1') on conflict do nothing returning key`, [key]))[0]) return { skipped: "déjà fait" };
+  const min = slot === "midi" ? 1 : 2;
+  const ppl = await s.query(`select p.id, p.name from players p where p.remind >= $1 and p.seen_at < now() - interval '90 minutes'
+      and exists (select 1 from push_subs x where x.player = p.id)`, [min]);
+  if (!ppl.length) return { sent: 0 };
+  const now = Date.now(), M = await todayMatches(t.ymd, now + 20 * 60e3, Math.round(Number(t.eod)));
+  const top = M[0], more = M.length - 1;
+  const tonight = top ? `${top.h} – ${top.a} à ${hhmm(top.t)}${more > 0 ? ` et ${more} autre${more > 1 ? "s" : ""} match${more > 1 ? "s" : ""}` : ""}` : "";
+  // prono du week-end (vendredi, samedi) : matchs pas encore commencés et pas encore pronostiqués
+  let pr = null;
+  if (t.dow === 5 || t.dow === 6) {
+    const wk = await pronoWeek(s, true);
+    const open = wk.matches.filter((m) => !m.done && !m.cancel && m.t > now + 20 * 60e3);
+    if (open.length) pr = { week: wk.week, open, first: Math.min(...open.map((m) => m.t)) };
+  }
+  const jobs = ppl.map(async (p) => {
+    let msg = null;
+    if (pr) {
+      const mine = new Set((await s.query(`select mid from prono_picks where week = $1 and player = $2`, [pr.week, p.id])).map((x) => x.mid));
+      const left = pr.open.filter((m) => !mine.has(m.mid)).length;
+      const lg = (await s.query(`select code from league_members where player = $1 order by joined_at limit 1`, [p.id]))[0];
+      if (left && lg) msg = { title: "🎯 Prono du week-end", body: `Il te reste ${left} match${left > 1 ? "s" : ""} à pronostiquer, premier coup d'envoi à ${hhmm(pr.first)}. Le score exact rapporte 50 jetons !`, url: go("prono", lg.code), tag: "remind-prono" };
+    }
+    if (!msg && slot === "soir") {
+      // rivalité : le joueur juste devant moi cette semaine dans ma ligue la plus active
+      const r = (await s.query(`with my as (select m.code from league_members m where m.player = $1),
+          b as (select m.code, p.id, p.name, case when p.week = ${WEEK} then p.bal - coalesce(p.week_bal, p.bal) else 0 end as g
+                from league_members m join my on my.code = m.code join players p on p.id = m.player)
+        select me.code, l.name as lname, me.g as mine, up.name as up, up.g as upg, (select count(*) from b b2 where b2.code = me.code) as n
+          from b me join leagues l on l.code = me.code
+          left join lateral (select name, g from b o where o.code = me.code and o.id <> me.id and o.g > me.g order by o.g asc limit 1) up on true
+         where me.id = $1 order by n desc limit 1`, [p.id]))[0];
+      if (r && r.n >= 2) {
+        const d = Math.round(Number(r.upg) - Number(r.mine));
+        const body = r.up ? `${r.up} te devance de ${d} jeton${d > 1 ? "s" : ""} cette semaine dans « ${r.lname} ».` : `Tu mènes « ${r.lname} » cette semaine. Ne te fais pas rattraper !`;
+        msg = { title: r.up ? "😤 Reprends ta place" : "👑 Tu es en tête", body: body + (tonight ? ` Ce soir : ${tonight}.` : ""), url: go("rank", r.code), tag: "remind" };
+      }
+    }
+    if (!msg && tonight) msg = { title: slot === "midi" ? "⚽ Au programme aujourd'hui" : "⚽ Ce soir", body: `${tonight}. Tu paries quoi ?`, url: "./", tag: "remind" };
+    if (!msg && slot === "midi") msg = { title: "🎡 Ta roue du jour t'attend", body: "Un tour gratuit et 3 défis à relever pour gagner des jetons.", url: "./", tag: "remind" };
+    if (msg) { await notify(s, [p.id], msg); return 1; }
+    return 0;
+  });
+  const n = (await Promise.all(jobs)).reduce((a, x) => a + x, 0);
+  return { sent: n, matches: M.length };
 }
 
 const ACTIONS = {
@@ -571,6 +625,11 @@ const ACTIONS = {
     await s.query(`delete from push_subs where endpoint = $1 and player = $2`, [String(b.endpoint || ""), p.id]);
     return { ok: true };
   },
+  async set_remind(s, b) {
+    const p = await me(s, b.token);
+    await s.query(`update players set remind = $2 where id = $1`, [p.id, int(b.v, 0, 2)]);
+    return { ok: true };
+  },
   async push_test(s, b) {
     const p = await me(s, b.token);
     if (await overLimit("pushtest:" + p.id, 5, 3600)) throw fail(429, "slow_down");
@@ -840,7 +899,7 @@ export default async function handler(req, res) {
     if (q.cron) {
       const want = process.env.CRON_SECRET || "", got = String(req.headers.authorization || "");
       if (want.length < 16 || got !== "Bearer " + want) return res.status(401).json({ error: "forbidden" });
-      try { return res.status(200).json(await morning(await db())); } catch (e) { console.error(e); return res.status(500).json({ error: "server" }); }
+      try { const s = await db(); return res.status(200).json(q.slot === "midi" || q.slot === "soir" ? await reminders(s, q.slot) : await morning(s)); } catch (e) { console.error(e); return res.status(500).json({ error: "server" }); }
     }
     return res.status(200).json({ ok: true, service: "damateur-a-pro" });
   }
