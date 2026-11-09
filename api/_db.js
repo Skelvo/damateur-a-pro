@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "16";
+const SCHEMA_VERSION = "17";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -193,6 +193,16 @@ const STATEMENTS = [
      per text not null,
      gain numeric not null,
      primary key (player, per))`,
+  // récompenses du mois (montants choisis par le créateur de la ligue, crédités tout seuls)
+  `alter table leagues add column if not exists prizes jsonb`,
+  `create table if not exists month_prizes (
+     code text not null references leagues(code) on delete cascade,
+     month text not null,
+     player bigint not null references players(id) on delete cascade,
+     rank int not null,
+     amount int not null,
+     claimed boolean not null default false,
+     primary key (code, month, player))`,
   `create table if not exists rate_hits (key text not null, win bigint not null, n int not null default 0, primary key (key, win))`,
 ];
 

@@ -91,7 +91,7 @@ function newCode() {
 
 async function myLeagues(s, pid) {
   const leagues = await s.query(
-    `select l.code, l.name, l.owner = $1 as mine, (select count(*)::int from league_members m2 where m2.code = l.code) as n
+    `select l.code, l.name, l.owner = $1 as mine, l.prizes, (select count(*)::int from league_members m2 where m2.code = l.code) as n
        from leagues l join league_members m on m.code = l.code where m.player = $1 and not l.dark order by m.joined_at`, [pid]);
   return leagues;
 }
@@ -199,6 +199,10 @@ async function morning(s) {
   const leagues = await s.query(`select l.code, l.name from leagues l where not l.dark and (select count(*) from league_members m where m.code = l.code) >= 2`);
   const out = { recap: 0, season: 0 };
   if (t.day === 1 && await once("season:" + t.m)) {
+    await ensurePrizes(s, t.m);
+    const mine = await s.query(`select p.player, p.rank, p.amount, l.name from month_prizes p join leagues l on l.code = p.code where p.month = $1 and not p.claimed`, [t.m]);
+    const byP = {};
+    for (const x of mine) (byP[x.player] ??= []).push(x);
     const done = new Set();
     for (const L of leagues) {
       const w = await s.query(`${periodGains("monthly", "month", MONTH, "month_bal")}
@@ -206,9 +210,13 @@ async function morning(s) {
       if (!w.length) continue;
       const to = (await members(s, L.code)).filter((id) => !done.has(String(id)));
       to.forEach((id) => done.add(String(id)));
-      await notify(s, to, { title: `👑 Classement de ${monthName(t.m)} terminé · ${L.name}`,
-        body: `${w.map((x) => x.name).join(" et ")} ${w.length > 1 ? "sont champions du mois" : "est champion du mois"} avec +${Math.round(w[0].gain)} jetons. Nouveau mois : tout le monde repart à zéro !`,
-        url: go("rank", L.code), tag: "season-" + L.code });
+      const champ = `${w.map((x) => x.name).join(" et ")} ${w.length > 1 ? "sont champions du mois" : "est champion du mois"} avec +${Math.round(w[0].gain)} jetons.`;
+      for (const id of to) {
+        const pr = (byP[id] || []).find((x) => x.name === L.name);
+        await notify(s, [id], { title: `👑 Classement de ${monthName(t.m)} terminé · ${L.name}`,
+          body: champ + (pr ? ` Toi : ${pr.rank}${pr.rank === 1 ? "er" : "e"}, tu gagnes +${pr.amount} jetons 🎁` : " Nouveau mois : tout le monde repart à zéro !"),
+          url: go("rank", L.code), tag: "season-" + L.code });
+      }
       out.season++;
     }
   }
@@ -321,6 +329,24 @@ async function dayMatch(s) {
     if (changed && cur) { const c = started.find((r) => r.day === cur.day); if (c) cur.match = c.match; }
   }
   return { today: t.d, cur: cur ? { day: cur.day, match: cur.match } : null };
+}
+
+// ---- Récompenses du mois : à la fin du mois, chaque ligue (2 membres ou plus) donne des jetons selon le classement final ----
+// (1er, 2e, 3e, puis « tous les autres » ; il faut avoir au moins un pari terminé dans le mois). Les égalités gagnent pareil.
+const PRIZES = [1000, 500, 250, 25];
+const prizeOf = (P, rk) => { const T = Array.isArray(P) && P.length === 4 ? P : PRIZES; return Number(T[Math.min(rk, 4) - 1]) || 0; };
+async function ensurePrizes(s, month) {
+  if (!(await s.query(`insert into meta (key, value) values ($1, '1') on conflict do nothing returning key`, ["prizes:" + month]))[0]) return false;
+  const leagues = await s.query(`select l.code, l.prizes from leagues l where not l.dark and (select count(*) from league_members m where m.code = l.code) >= 2`);
+  for (const L of leagues) {
+    const R = await s.query(`${periodGains("monthly", "month", MONTH, "month_bal")}
+       select r.player, r.rk::int as rk from r join league_members m on m.player = r.player and m.code = $1 where r.per = $2`, [L.code, month]);
+    for (const x of R) {
+      const amount = prizeOf(L.prizes, x.rk);
+      if (amount > 0) await s.query(`insert into month_prizes (code, month, player, rank, amount) values ($1, $2, $3, $4, $5) on conflict do nothing`, [L.code, month, x.player, x.rk, amount]);
+    }
+  }
+  return true;
 }
 
 const ACTIONS = {
@@ -820,6 +846,25 @@ const ACTIONS = {
     await s.query(`update players set fav = $2::jsonb where id = $1`, [p.id, JSON.stringify(fav)]);
     return { ok: true, fav };
   },
+  async set_prizes(s, b) {
+    const p = await me(s, b.token);
+    const code = cleanName(b.code, 8).toUpperCase();
+    const l = (await s.query(`select owner from leagues where code = $1`, [code]))[0];
+    if (!l || String(l.owner) !== String(p.id)) throw fail(403, "not_owner");
+    const P = (Array.isArray(b.prizes) ? b.prizes : []).slice(0, 4).map((x) => int(x, 0, 5000));
+    if (P.length !== 4) throw fail(400, "prizes");
+    await s.query(`update leagues set prizes = $2::jsonb where code = $1`, [code, JSON.stringify(P)]);
+    return { ok: true, prizes: P };
+  },
+  // récompenses du mois pas encore reçues : marquées « reçues » ici, le téléphone ajoute les jetons
+  async prizes_claim(s, b) {
+    const p = await me(s, b.token);
+    const prev = (await s.query(`select ${PREV_MONTH} as m`))[0].m;
+    if (prev >= CUT.month) await ensurePrizes(s, prev);
+    const r = await s.query(`update month_prizes mp set claimed = true from leagues l where l.code = mp.code and mp.player = $1 and not mp.claimed
+       returning mp.month, mp.rank, mp.amount, l.name`, [p.id]);
+    return { prizes: r.map((x) => ({ month: x.month, label: monthName(x.month), rank: x.rank, amount: x.amount, league: x.name })) };
+  },
   async lm_get(s, b) {
     const p = await me(s, b.token);
     const code = cleanName(b.code, 8).toUpperCase();
@@ -1149,3 +1194,4 @@ export default async function handler(req, res) {
     res.status(500).json({ error: "server" });
   }
 }
+export { ensurePrizes };   // pour les tests en local
