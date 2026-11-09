@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "29";
+const SCHEMA_VERSION = "30";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -313,6 +313,23 @@ const STATEMENTS = [
      at timestamptz not null default now(),
      primary key (player, kind, ref))`,
   `alter table bets add column if not exists cancelled boolean not null default false`,
+  // anti-triche : gains EN PARIS calculés par le serveur à partir des paris qu'il a lui-même réglés
+  // (semaine = lundi heure de Paris, mois = YYYY-MM) ; la table profits (envoyée par les téléphones) ne sert plus qu'à comparer
+  `create or replace view sprofits as
+     select player, per, sum(gain)::numeric as gain from (
+       select player, to_char(date_trunc('week', settled_at at time zone 'Europe/Paris'), 'YYYY-MM-DD') as per,
+              case when status = 'lost' then -stake else coalesce(pay, 0) - stake end as gain
+         from bets where status in ('won', 'lost', 'cashed', 'void') and settled_at is not null
+       union all
+       select player, to_char(settled_at at time zone 'Europe/Paris', 'YYYY-MM') as per,
+              case when status = 'lost' then -stake else coalesce(pay, 0) - stake end as gain
+         from bets where status in ('won', 'lost', 'cashed', 'void') and settled_at is not null) x
+     group by player, per`,
+  // anti-triche : solde de référence de chaque joueur (pris à sa première synchro, ou après « Recommencer »)
+  `create table if not exists audit_base (
+     player bigint primary key references players(id) on delete cascade,
+     bal numeric not null,
+     at timestamptz not null default now())`,
   `create table if not exists rate_hits (key text not null, win bigint not null, n int not null default 0, primary key (key, win))`,
 ];
 

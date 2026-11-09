@@ -58,15 +58,15 @@ const MONTH = `to_char(now() at time zone 'Europe/Paris', 'YYYY-MM')`;
 const PREV_WEEK = `to_char(date_trunc('week', now() at time zone 'Europe/Paris') - interval '7 days', 'YYYY-MM-DD')`;
 const PREV_MONTH = `to_char(date_trunc('month', now() at time zone 'Europe/Paris') - interval '1 month', 'YYYY-MM')`;
 const BOARD_COLS = `p.id, p.name, p.bal::float8 as bal, p.peak::float8 as peak, p.won, p.lost, p.avatar_v, p.fav, p.badges,
-  coalesce((select x.gain from profits x where x.player = p.id and x.per = ${WEEK}), 0)::float8 as week_gain,
-  coalesce((select x.gain from profits x where x.player = p.id and x.per = ${MONTH}), 0)::float8 as month_gain`;
+  coalesce((select x.gain from sprofits x where x.player = p.id and x.per = ${WEEK}), 0)::float8 as week_gain,
+  coalesce((select x.gain from sprofits x where x.player = p.id and x.per = ${MONTH}), 0)::float8 as month_gain`;
 // Gains par semaine (ou par mois) des membres d'une guilde, y compris la dernière période de ceux
 // qui n'ont pas rouvert l'app depuis ; rk = place dans la guilde pour cette période.
-// Depuis le 9 novembre 2026, seuls les PARIS comptent (table profits, envoyée par chaque téléphone) :
+// Depuis le 9 novembre 2026, seuls les PARIS comptent (vue sprofits : paris réglés par le serveur, impossible à trafiquer) :
 // la roue, les défis, le prono et le match de la guilde ne comptent plus. Avant, c'était l'écart de solde.
 const CUT = { week: "2026-11-09", month: "2026-11" };
 const periodGains = (tbl, col, cur, bal) => `with mem as (select player from league_members where code = $1),
-  g as (select pr.player, pr.per, pr.gain from profits pr join mem on mem.player = pr.player where length(pr.per) = ${col === "week" ? 10 : 7} and pr.per >= '${CUT[col]}'
+  g as (select pr.player, pr.per, pr.gain from sprofits pr join mem on mem.player = pr.player where length(pr.per) = ${col === "week" ? 10 : 7} and pr.per >= '${CUT[col]}'
         union all
         select w.player, w.${col} as per, w.gain from ${tbl} w join mem on mem.player = w.player where w.${col} < '${CUT[col]}'
         union all
@@ -507,7 +507,7 @@ async function badName(s, name) { return isBad(name) || (await isBanned(s, name)
 const banName = (s, name) => s.query(`insert into banned_names (name) values ($1) on conflict do nothing`, [norm(name).replace(/[^a-z]/g, "")]);
 
 // ---- Combats de guildes ----
-// Score d'une guilde = moyenne des gains EN PARIS de la semaine (table profits) de TOUS les membres engagés,
+// Score d'une guilde = moyenne des gains EN PARIS de la semaine (vue sprofits, calculée par le serveur) de TOUS les membres engagés,
 // inactifs compris (0). Les membres sont figés au début du combat. Défis : toujours pour la semaine suivante,
 // pour que personne ne lance un défi en sachant déjà le résultat. Championnat : appariement auto le lundi.
 // Résultat le mardi à 6 h (le lundi laisse le temps aux téléphones d'envoyer les paris du dimanche soir).
@@ -523,7 +523,7 @@ async function snapshot(s, id, code) {
 async function battleScores(s, ids) {
   if (!ids.length) return {};
   const r = await s.query(`select bm.battle, bm.code, count(*)::int as n, coalesce(sum(pr.gain), 0)::float8 as total
-     from battle_members bm join battles bt on bt.id = bm.battle left join profits pr on pr.player = bm.player and pr.per = bt.week
+     from battle_members bm join battles bt on bt.id = bm.battle left join sprofits pr on pr.player = bm.player and pr.per = bt.week
      where bm.battle = any($1::bigint[]) group by bm.battle, bm.code`, [ids.map(String)]);
   const out = {};
   for (const x of r) out[x.battle + "|" + x.code] = { n: x.n, avg: x.n ? Math.round(x.total / x.n) : 0 };
@@ -544,7 +544,7 @@ async function settleBattle(s, id) {
   const sides = [[bt.a, bt.na, bt.nb, sa, sb, da, res === 1 ? "w" : res === 0 ? "l" : "d"], [bt.b, bt.nb, bt.na, sb, sa, -da, res === 0 ? "w" : res === 1 ? "l" : "d"]];
   for (const [code, name, opp, my, their, d, r] of sides) {
     await s.query(`update leagues set elo = greatest(0, elo + $2), bw = bw + $3, bl = bl + $4, bd = bd + $5 where code = $1`, [code, d, +(r === "w"), +(r === "l"), +(r === "d")]);
-    const all = await s.query(`select bm.player, exists (select 1 from profits pr where pr.player = bm.player and pr.per = $3) as bet
+    const all = await s.query(`select bm.player, exists (select 1 from sprofits pr where pr.player = bm.player and pr.per = $3) as bet
        from battle_members bm where bm.battle = $1 and bm.code = $2`, [id, code, bt.week]);
     const elo = (await s.query(`select elo from leagues where code = $1`, [code]))[0].elo, dv = division(elo);
     const head = r === "w" ? `🏆 Victoire de ${name} !` : r === "l" ? `😤 Défaite de ${name}` : `🤝 Match nul pour ${name}`;
@@ -613,6 +613,7 @@ const ACTIONS = {
       if (isTaken(e)) throw fail(409, "name_taken");
       throw e;
     }
+    await s.query(`insert into audit_base (player, bal) values ($1, $2::numeric) on conflict do nothing`, [r[0].id, bal]);
     return { token, id: r[0].id, name };
   },
 
@@ -648,6 +649,7 @@ const ACTIONS = {
          bal = $2::numeric, peak = greatest(peak, $3::numeric, $2::numeric), won = $4::int, lost = $5::int, seen_at = now()
        where id = $1`,
       [p.id, num(b.bal, 0, MAX_BAL), num(b.peak, 0, MAX_BAL), int(b.won, 0, 1e7), int(b.lost, 0, 1e7)]);
+    await s.query(`insert into audit_base (player, bal) values ($1, $2::numeric) on conflict do nothing`, [p.id, num(b.bal, 0, MAX_BAL)]);
     await s.query(`insert into bal_hist (player, day, bal) values ($1, to_char(now() at time zone 'Europe/Paris', 'YYYYMMDD'), $2::numeric)
        on conflict (player, day) do update set bal = excluded.bal`, [p.id, num(b.bal, 0, MAX_BAL)]);
     const day = (v) => (/^\d{8}$/.test(String(v || "")) ? String(v) : "");
@@ -914,7 +916,7 @@ const ACTIONS = {
         const m = sc[x.id + "|" + code] || { n: 0, avg: 0 }, t = sc[x.id + "|" + (side === "a" ? x.b : x.a)] || { n: 0, avg: 0 };
         Object.assign(B, { my: m.avg, their: t.avg, myN: m.n, theirN: t.n });
         B.team = (await s.query(`select pl.id, pl.name, pl.avatar_v, pr.gain::float8 as gain from battle_members bm join players pl on pl.id = bm.player
-           left join profits pr on pr.player = bm.player and pr.per = $3 where bm.battle = $1 and bm.code = $2 order by pr.gain desc nulls last, pl.name`, [x.id, code, x.week]))
+           left join sprofits pr on pr.player = bm.player and pr.per = $3 where bm.battle = $1 and bm.code = $2 order by pr.gain desc nulls last, pl.name`, [x.id, code, x.week]))
           .map((r) => ({ id: r.id, name: r.name, av: r.avatar_v || 0, gain: r.gain == null ? null : Math.round(r.gain) }));
       }
       if (x.status === "done") {
@@ -1066,6 +1068,39 @@ const ACTIONS = {
     const r = await s.query(`update gifts set claimed = true where player = $1 and not claimed returning kind, ref, amount, label`, [p.id]);
     for (const x of r) await credit(s, p.id, x.amount, x.kind, x.ref);
     return { gifts: r.map((x) => ({ amount: x.amount, label: x.label })) };
+  },
+  // les 1 000 jetons de départ (gagnés sur le match d'entraînement) : notés une fois, seulement pour un compte tout neuf
+  async starter_log(s, b) {
+    const p = await me(s, b.token);
+    const ok = (await s.query(`select 1 from players where id = $1 and created_at > now() - interval '3 days'`, [p.id]))[0];
+    return { ok: !!ok && (await credit(s, p.id, 1000, "starter", "1")) };
+  },
+  // « Recommencer » : le joueur repart de 1 000 jetons, nouveau solde de référence
+  async reset_log(s, b) {
+    const p = await me(s, b.token);
+    await s.query(`insert into audit_base (player, bal, at) values ($1, 1000, now()) on conflict (player) do update set bal = 1000, at = now()`, [p.id]);
+    return { ok: true };
+  },
+  // anti-triche : pour chaque joueur, solde attendu d'après le serveur (référence + registre + paris) comparé au solde annoncé par son téléphone,
+  // et gains de la semaine / du mois annoncés comparés à ceux calculés par le serveur
+  async admin_audit(s, b) {
+    admin(b);
+    const rows = await s.query(`with a as (select p.id, p.name, p.bal::float8 as bal, p.seen_at, ab.bal::float8 as base, ab.at from players p join audit_base ab on ab.player = p.id)
+      select a.id, a.name, a.bal, a.base, a.at, a.seen_at,
+        coalesce((select sum(l.delta) from ledger l where l.player = a.id and l.at > a.at and l.at <= a.seen_at), 0)::float8 as led,
+        coalesce((select sum(-x.stake) from bets x where x.player = a.id and x.at > a.at and x.at <= a.seen_at), 0)::float8 as placed,
+        coalesce((select sum(coalesce(x.pay, 0)) from bets x where x.player = a.id and x.settled_at > a.at and x.settled_at <= a.seen_at and x.status in ('won', 'cashed', 'void')), 0)::float8 as paid,
+        (select count(*)::int from bets x where x.player = a.id and x.status = 'open') as open,
+        coalesce((select gain from profits where player = a.id and per = ${WEEK}), 0)::float8 as cw, coalesce((select gain from sprofits where player = a.id and per = ${WEEK}), 0)::float8 as sw,
+        coalesce((select gain from profits where player = a.id and per = ${MONTH}), 0)::float8 as cm, coalesce((select gain from sprofits where player = a.id and per = ${MONTH}), 0)::float8 as sm
+      from a order by a.id`);
+    const out = rows.map((r) => {
+      const expected = Math.round(r.base + r.led + r.placed + r.paid), gap = Math.round(r.bal - expected);
+      // drapeau seulement quand le téléphone annonce PLUS que ce que le serveur peut expliquer (un retard de synchro donne un écart négatif)
+      const flag = gap > Math.max(150, expected * 0.05) || r.cw - r.sw > 150 || r.cm - r.sm > 150;
+      return { id: r.id, name: r.name, reported: Math.round(r.bal), expected, gap, open: r.open, week: { phone: Math.round(r.cw), server: Math.round(r.sw) }, month: { phone: Math.round(r.cm), server: Math.round(r.sm) }, flag };
+    });
+    return { players: out.length, flagged: out.filter((x) => x.flag), all: out };
   },
   async recovery_make(s, b) {
     const p = await me(s, b.token);

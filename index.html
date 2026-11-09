@@ -770,7 +770,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.78"></script>
+<script src="engine.js?v=1.79"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -1490,7 +1490,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"tsim":S.sim=!S.sim;save();render();break;
     case"torg":S.orgMode=!S.orgMode;save();render();if(S.orgMode)toast("Mode organisateur activé : ajoute tes matchs depuis l’onglet Matchs.");break;
     case"rename":U.open="welcome";layer(viewWelcome(true));setTimeout(()=>$("#w-name")&&$("#w-name").focus(),50);break;
-    case"reset":if(confirm("Effacer tes paris et repartir avec 1 000 jetons ?")){Object.assign(S,{bal:1000,peak:1000,bets:[]});U.sel=[];save();render()}break;
+    case"reset":if(confirm("Effacer tes paris et repartir avec 1 000 jetons ?")){Object.assign(S,{bal:1000,peak:1000,bets:[]});U.sel=[];save();render();if(S.tok)api("reset_log",{}).catch(()=>{})}break;
     case"addm":U.open="add";layer(viewAdd());break;
     case"savem":{const h=$("#f-h").value.trim(),aa=$("#f-a").value.trim(),t=Date.parse($("#f-t").value);if(!h||!aa){toast("Indique les deux "+(U.sp==="tennis"?"joueurs.":"équipes."),"bad");return}
       if(isNaN(t)){toast("Date invalide.","bad");return}const lv=+$("#f-lv").value,f=+$("#f-f").value,sv=[[0,0],[.6,-.2],[-.2,.6],[1.2,-.5],[-.5,1.2]][f];
@@ -1785,7 +1785,7 @@ function introEnd(coach){S.introSeen=INTRO_V;save();closeLayer();if(coach)startC
 // 2) match d'entraînement : un faux match qui se joue en quelques secondes, sans toucher aux vrais matchs.
 // Le premier pari est forcément gagné et débloque les 1 000 premiers jetons du nouveau joueur.
 const TR_O=[1.85,3.4,4.2],TR_T=["Les Novices FC","Tribune United"];
-function grantStarter(quiet){if(S.starter!=="pending")return false;S.starter="done";S.bal+=1000;S.peak=Math.max(S.peak,S.bal);save();render();bump();
+function grantStarter(quiet){if(S.starter!=="pending")return false;S.starter="done";S.bal+=1000;if(S.tok)api("starter_log",{}).catch(()=>{});S.peak=Math.max(S.peak,S.bal);save();render();bump();
   if(!quiet){confetti();toast(`${ic("coin")} Tes 1 000 premiers jetons sont arrivés. À toi de jouer !`,"win")}return true}
 function openTraining(){U.tr={k:null,s:0,ph:"pick",min:0,sc:[0,0],ev:[]};U.open="train";layer(viewTrain())}
 function viewTrain(){const T=U.tr,o=T.k!=null?TR_O[T.k]:0,lab=["Victoire des Novices","Match nul","Victoire de Tribune United"];
@@ -2922,7 +2922,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.78";
+const VERSION="1.79";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
