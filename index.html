@@ -328,6 +328,41 @@ body.gated{padding-bottom:calc(24px + var(--safe-b))}
 .cmask{position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 999px #000a;outline:2px solid #fff8;pointer-events:none}
 .cempty{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:6px;color:var(--mute)}.cempty .i{width:48px;height:48px}
 .zoom{display:flex;align-items:center;gap:10px;margin:0 6px 6px;color:var(--mute)}.zoom input{flex:1;accent-color:var(--sel)}
+/* côté dark */
+body.darkside{--acc:#ff3b3b;--acc-ink:#fff;--bg:#120707;--bg2:#170909;--card:#1f0d0d;--card2:#2a1212;--card3:#361717;--line:#3d1a1a;--line2:#552424;--mute:#c39a9a;--mute2:#8a5d5d;
+  background:radial-gradient(900px 480px at 50% -160px,#ff1e1e55,transparent 72%),repeating-linear-gradient(0deg,#ffffff05 0 1px,transparent 1px 3px),var(--bg)}
+body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
+.darkbtn{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid #6b1d1d;border-radius:14px;padding:12px 14px;margin:0 0 12px;
+  background:linear-gradient(135deg,#3a0c0c,#170808 75%);color:#ffd9d9;box-shadow:0 0 22px -8px #ff2a2a}
+.darkbtn .dkic{width:40px;height:40px;border-radius:12px;background:#ff3b3b22;display:grid;place-items:center;color:#ff5a5a}.darkbtn .dkic .i{width:26px;height:26px}
+.darkbtn>span:nth-child(2){flex:1}.darkbtn .arr{font:800 28px "Barlow Condensed";color:#ff6b6b}.darkbtn b{display:block;font:800 19px "Barlow Condensed";text-transform:uppercase;letter-spacing:.6px;color:#ff6b6b}.darkbtn small{color:#d8a3a3;font-size:12.5px}
+.dkwarn{text-align:center;padding:14px 4px 4px}.dkwarn .dkbig{width:76px;height:76px;margin:0 auto 8px;border-radius:22px;background:#ff3b3b22;display:grid;place-items:center;color:#ff4b4b;animation:dkpulse 1.6s infinite}
+.dkwarn .dkbig .i{width:48px;height:48px}.dkwarn h2{margin:0 0 8px;font:800 28px "Barlow Condensed";text-transform:uppercase;color:#ff5a5a}
+.dkwarn p,.dkwarn li{color:var(--mute);font-size:14.5px;text-align:left}.dkwarn b{color:var(--ink)}.dkwarn ul{padding-left:18px;margin:10px 0 16px}.dkwarn li{margin-bottom:6px}
+@keyframes dkpulse{50%{box-shadow:0 0 30px #ff2a2a88}}
+.btn.dkgo{background:linear-gradient(180deg,#ff4d4d,#c81e1e);color:#fff}
+.dkhead{border-radius:18px;padding:16px;margin:2px 0 12px;background:linear-gradient(135deg,#4a0d0d,#1a0808 70%);border:1px solid #7a2020;box-shadow:0 0 30px -10px #ff2a2a}
+.dkhead small{color:#ffb3b3;font-weight:700;text-transform:uppercase;letter-spacing:1px;font-size:12px}.dkhead h2{margin:2px 0 4px;font:800 30px/1 "Barlow Condensed";text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.dkhead h2 .i{width:30px;height:30px;color:#ff4b4b}.dkhead p{margin:0;color:#d8a3a3;font-size:14px}
+.dkbet{position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
+.dkq{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:4px}.dkq b{font-size:16px;line-height:1.25}.dkq .tag{flex:none}
+.dkbet .mut{display:block;color:var(--mute);font-size:12.5px}.dkbet .mut .i{width:14px;height:14px;vertical-align:-2px}
+.dkopts{display:grid;gap:6px;margin:10px 0 6px}
+.dkopt{position:relative;overflow:hidden;display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:1px solid var(--line2);background:var(--card2);border-radius:10px;padding:10px 12px}
+.dkopt .bar{position:absolute;left:0;top:0;bottom:0;background:#ff3b3b22}.dkopt b,.dkopt small,.dkopt i{position:relative}.dkopt b{flex:1}.dkopt small{color:var(--mute);font-size:12.5px}
+.dkopt.mine{border-color:#ff5a5a}.dkopt.win{border-color:var(--win)}.dkopt.win .bar{background:#35d07f33}.dkopt i{font-style:normal;color:var(--win);font-weight:800}
+.dkopt:disabled{opacity:1;cursor:default}
+.dkres{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.dkres small{width:100%;color:var(--mute)}.dkres .btn{flex:1;padding:9px;font-size:15px}
+.dkguess{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}.dkguess span{border:1px solid var(--line2);background:var(--card2);border-radius:999px;padding:5px 10px;font:800 16px "Barlow Condensed"}
+.dkguess small{font:600 12px Barlow;color:var(--mute)}.dkguess .mine{border-color:#ff5a5a}.dkguess .win{border-color:var(--win);background:#35d07f22}
+.dkresn{margin-top:6px;color:var(--mute)}.dkresn b{color:var(--ink);font:800 20px "Barlow Condensed"}
+.dkres input{flex:1;min-width:0;padding:10px;border-radius:10px;border:1px solid var(--line2);background:var(--card2);color:var(--ink);font:700 16px Barlow}
+.act .dkav{width:34px;height:34px;border-radius:50%;background:#3a0c0c!important;color:#ff5a5a!important;display:grid;place-items:center;flex:none;cursor:pointer}.act .dkav .i{width:22px;height:22px}
+.dkact p .dkr{color:#ff6b6b}
+.dkrep{position:absolute;right:10px;bottom:8px;font-size:12px;color:var(--mute2)!important}
+.dkl{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:#1f0d0d;border:1px solid #552424;border-radius:14px;padding:12px 14px;margin-bottom:8px;color:#ffd9d9;font:inherit}
+.dkl b{flex:1;font:800 19px "Barlow Condensed";text-transform:uppercase}.dkl small{color:#c39a9a}.dkl span{font:800 24px "Barlow Condensed";color:#ff6b6b}
+.dkcode{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px dashed var(--line2);border-radius:12px;padding:8px 12px;margin:-4px 0 12px;font-size:13px;color:var(--mute)}.dkcode b{color:var(--ink);letter-spacing:2px}
 /* notifications + chat */
 .tabs5 button{font-size:13.5px;padding:9px 2px}
 .pushb{display:flex;align-items:center;gap:10px;background:var(--card);border:1px dashed var(--sel);border-radius:14px;padding:10px 12px;margin-bottom:12px}
@@ -1040,7 +1075,7 @@ function viewMatches(){const cfg=SP[U.sp];let h=installBanner()+`<div class="spo
   h+=pushBanner()+ladder();
   let list=matchesFor(U.sp,U.lv);
   const isDep=U.lv>=0&&U.lv<cfg.dep;
-  if(S.bonus!==today())h+=`<button class="btn gold wide wheelbtn" data-act="wheel" style="margin-bottom:12px">${wheelMini()} Roue de la chance du jour</button>`;
+  if(wheelAvail())h+=`<button class="btn gold wide wheelbtn" data-act="wheel" style="margin-bottom:12px">${wheelMini()} ${extraAvail()?"Tour bonus offert aujourd’hui !":"Roue de la chance du jour"}</button>`;
   h+=lmBanner()+defisCard()+pronoBanner();
   const now=Date.now();
   let up=list.filter(m=>["pre","live","wait"].includes(status(m)));
@@ -1277,7 +1312,7 @@ function refreshLayer(){if(!U.open)return;const sc=$(".sheet")?$(".sheet").scrol
   if($(".sheet"))$(".sheet").scrollTop=sc}
 
 /* ---------- rendu global ---------- */
-function render(){document.body.dataset.sp=U.sp;$("#bal").textContent=tok(S.bal);{const st=pushState(),bd=$("#belldot"),bl=$("#bell");if(bd)bd.hidden=st==="on"||st==="na"&&!(IOS&&!STANDALONE);if(bl)bl.classList.toggle("on",st==="on")}
+function render(){document.body.dataset.sp=U.sp;document.body.classList.toggle("darkside",U.tab==="l"&&!!U.dark);$("#bal").textContent=tok(S.bal);{const st=pushState(),bd=$("#belldot"),bl=$("#bell");if(bd)bd.hidden=st==="on"||st==="na"&&!(IOS&&!STANDALONE);if(bl)bl.classList.toggle("on",st==="on")}
   $("#hello").innerHTML=S.name?`<span class="hi">Salut </span>${esc(S.name)}<span class="dv"> · ${esc(DIVS[divOf(S.peak)][0])}</span>`:"Paris gratuits · du district aux pros";
   document.querySelectorAll(".nav button").forEach(b=>b.dataset.tab===U.tab?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
   const op=S.bets.filter(b=>b.st==="open").length,nb=$("#nb");nb.hidden=!op;nb.textContent=op;
@@ -1383,6 +1418,23 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"photo":openPhoto();break;
     case"notif":openNotif();break;
     case"pushon":pushEnable();break;
+    case"dkhome":openDarkHome();break;
+    case"dkenter":darkGo();break;
+    case"dkexit":darkExit();break;
+    case"dknew":U.open="dknew";U.dkf={type:"yn",opts:["",""],when:"soir"};layer(viewDarkNew());break;
+    case"dkset":dkSet(d);break;
+    case"dkcreate":darkCreate();break;
+    case"dkpick":U.open="dkstake";U.dks={id:d.id,opt:+d.opt,amount:20};layer(viewDarkStake());break;
+    case"dkamt":{const g=$("#dks-g");if(g)U.dks.guess=g.value;U.dks.amount=+d.v;layer(viewDarkStake());break}
+    case"dkresn":{const v=$("#dkn-"+d.id);const n=v&&v.value!==""?+v.value:NaN;if(isNaN(n)){toast("Entre le vrai chiffre.","bad");break}darkResolve(d.id,0,n);break}
+    case"dkbet":darkStake();break;
+    case"dkres":darkResolve(d.id,+d.opt);break;
+    case"dkflag":darkFlag(d.id,d.kind);break;
+    case"dkdel":darkDelete(d.id);break;
+    case"dkopen":{const l=(U.dkLeagues||[]).find(x=>x.code===d.code);if(l)darkEnter(l.code,l.name);break}
+    case"dknewl":darkNewLeague();break;
+    case"dkjoin":darkJoin();break;
+    case"dkshare":{const t=`Code de la ligue secrète : ${U.dkCur.code}\n(Dans l’app : touche 5 fois le numéro de version en haut, puis « Rejoindre ».)`;if(navigator.share)navigator.share({text:t}).catch(()=>{});else{navigator.clipboard&&navigator.clipboard.writeText(t);toast("Code copié.")}break}
     case"remind":S.remind=+d.v;save();render();if(U.open==="notif")layer(viewNotif());api("set_remind",{v:S.remind}).catch(()=>{});break;
     case"pushoff":pushDisable();break;
     case"pushtest":api("push_test",{}).then(()=>toast("Notification de test envoyée.","win")).catch(()=>toast("Impossible pour l’instant.","bad"));break;
@@ -1468,7 +1520,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&e.target.id==="chin"){e.preventDefault();chatSend();return}if(e.key==="Escape"&&U.open&&U.open!=="welcome")closeLayer();
   if(e.key==="Enter"&&e.target.classList&&e.target.classList.contains("mc"))e.target.click();
   if(e.key==="Enter"&&e.target.id==="w-name")$("[data-act=wgo]").click()});
-document.addEventListener("change",e=>{if(e.target.id==="dep"){U.dep=e.target.value;render()}});
+document.addEventListener("change",e=>{if(e.target.id==="dep"){U.dep=e.target.value;render()}if(e.target.id==="dk-t"&&U.open==="dknew"){dkKeep();layer(viewDarkNew())}});
 document.addEventListener("input",e=>{if(e.target.id!=="stk")return;U.stake=Math.max(1,Math.floor(+e.target.value)||1);
   const n=U.sel.length,combo=U.combo&&n>1&&!comboBlocked(),cost=combo?U.stake:U.stake*n,gain=combo?U.stake*slipOdds():U.sel.reduce((a,s)=>a+U.stake*s.o,0);
   if($("#s1")&&!(combo&&U.open==="slip"))$("#s1").textContent=tok(cost);if($("#s2"))$("#s2").textContent=tok(gain);
@@ -1527,12 +1579,13 @@ function amBlock(m,st){const T=m.sp==="tennis";
 const AVC=["#35d07f","#ffd23f","#ff7a45","#5fa8ff","#d7f25a","#c084fc","#ff5a5f","#7ef0d8"];
 const avc=name=>AVC[hash(name)%AVC.length];
 let lgTimer=0;
-async function loadBoards(){if(U.lg.loading)return;U.lg.loading=true;if(U.lg.code)loadLm(U.lg.code);
+async function loadBoards(){if(U.lg.loading||U.dark)return;U.lg.loading=true;if(U.lg.code)loadLm(U.lg.code);
   try{if(!(await ensureSession()))throw new Error("offline");await syncNow();const j=await api("boards",{code:U.lg.code});U.lg.data=j;U.lg.err=null;if(j.code!==U.lg.code)U.lg.code=j.code}
   catch(e){U.lg.err=e.code||"offline"}
   finally{U.lg.loading=false;if(U.tab==="l"&&!U.open)render()}
   clearTimeout(lgTimer);lgTimer=setTimeout(()=>{if(U.tab==="l"&&!document.hidden)loadBoards()},6e4)}
 function viewLeagues(){const L=U.lg,d=L.data;
+  if(U.dark&&U.dkCur)return viewDark(U.dkCur)+foot();
   let h=`<div class="h2"><h2>Ligues</h2><span>${d&&d.leagues.length?d.leagues.length+" ligue"+(d.leagues.length>1?"s":""):"Entre amis"}</span></div>`;
   if(!S.name)return h+`<div class="empty">${ic("group")}<b>Choisis d’abord un pseudo</b></div>`;
   if(!d&&L.err)return h+`<div class="empty">${ic("info")}<b>Pas de connexion</b>Impossible de joindre le serveur des ligues. Tes paris restent enregistrés sur ton téléphone.<br><button class="btn ghost" style="margin-top:12px" data-act="lgretry">Réessayer</button></div>`;
@@ -1760,9 +1813,134 @@ async function savePhoto(){const im=PH.img;if(!im)return;const B=PH.box,O=320,k=
 async function deletePhoto(){if(!confirm("Supprimer ta photo de profil ?"))return;
   try{await api("set_avatar",{img:null});S.avatar=null;S.avv=0;save();closeLayer();toast("Photo supprimée.")}catch(e){toast("Pas de connexion au serveur.","bad")}}
 
-/* ---------- côté dark (retiré en v1.28) : les mises encore en jeu sont rendues une fois ---------- */
-function closeDark(){if(!S.dk)return;let r=0;for(const id in S.dk){const e=S.dk[id];if(!e.settled)r+=e.amount||0}
-  delete S.dk;if(r){S.bal+=r;S.peak=Math.max(S.peak,S.bal);toast(`Le côté dark est fermé : ${tok(r)} jetons de mises remboursés.`,"win");bump()}save();render()}
+/* ---------- côté dark : paris inventés, anonymes, en pari mutuel ---------- */
+const DK_ICON=`<svg viewBox="0 0 24 24" class="i" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l3.5 4.5M20 4l-3.5 4.5"/><path d="M12 21c-4.4 0-7-3-7-7.2C5 9.6 8 7 12 7s7 2.6 7 6.8C19 18 16.4 21 12 21z"/><path d="M8.5 13.5l2 .8M15.5 13.5l-2 .8M10 17.5c1.3.7 2.7.7 4 0"/></svg>`;
+function viewDarkWarn(){const cur=U.dkSel;
+  return`<div class="dkwarn"><div class="dkbig">${DK_ICON}</div><h2>Tu entres dans le côté dark</h2>
+  <p>Ici, ce sont les membres de <b>« ${esc(cur?cur.name:"ta ligue")} »</b> qui inventent les paris, <b>anonymement</b> : « Julien arrivera en retard lundi ? », « Combien de temps va durer la réunion de 14 h ? »…</p>
+  <ul><li>Les mises vont dans un <b>pot commun</b> : les gagnants se le partagent.</li>
+  <li>Le créateur ne peut pas parier sur son propre pari. C’est lui qui donne le résultat, et les autres ont <b>12 h pour contester</b>.</li>
+  <li><b>Rien de méchant</b> : pas de moqueries, rien sur la santé, le physique, la famille ou la vie privée de quelqu’un. Ce sont des collègues : si ça peut blesser ou mettre mal à l’aise, ce n’est plus drôle.</li>
+  <li>Tout le monde peut <b>signaler</b> un pari : à 2 signalements, il disparaît.</li></ul>
+  <button class="btn wide dkgo" data-act="dkenter">${DK_ICON} J’entre, j’ai compris</button><button class="link" data-act="dkhome" style="display:block;margin:12px auto 0">Retour</button></div>`}
+function loadDark(){const c=U.lg.code;if(!c||!S.tok)return Promise.resolve();
+  return api("dark_list",{code:c}).then(j=>{U.dk={code:c,bets:j.bets,at:Date.now()};settleDark(c,j.bets);if(U.tab==="l"&&U.dark&&!U.open)render()}).catch(()=>{U.dk=U.dk||{code:c,bets:[],err:1};if(U.tab==="l"&&U.dark&&!U.open)render()})}
+const potOf=b=>Object.values(b.pools||{}).reduce((a,v)=>a+v,0);
+function dkGain(b,opt,x){const T=potOf(b)+x,P=((b.pools||{})[opt]||0)+x;return P?Math.floor(x*T/P):x}
+function leftTxt(t){const m=Math.round((t-Date.now())/6e4);return m<60?`${m} min`:m<1440?`${Math.floor(m/60)} h ${String(m%60).padStart(2,"0")}`:`${Math.round(m/1440)} j`}
+function viewDark(cur){const D=U.dk&&U.dk.code===cur.code?U.dk.bets:null;if(!D)loadDark();else if(Date.now()-U.dk.at>3e4)setTimeout(loadDark,0);
+  let h=`<div class="dkhead"><div><small>${esc(cur.name)}</small><h2>${DK_ICON} Le côté dark</h2><p>Paris inventés par les membres. Personne ne sait qui les a créés.</p></div></div>
+  <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:12px"><button class="btn" data-act="dknew">${ic("plus")} Inventer un pari</button><button class="btn ghost" data-act="dkexit">Quitter</button></div>
+  <div class="dkcode"><span>Code secret : <b>${esc(cur.code)}</b></span><button class="link" data-act="dkshare">Partager</button></div>`;
+  if(!D)return h+`<div class="skel"></div><div class="skel"></div>`;
+  if(!D.length)return h+`<div class="empty">${DK_ICON}<b>Rien de louche pour l’instant</b>Lance le premier pari : retards, réunions, pauses café, paris entre collègues…</div>`;
+  return h+D.map(b=>{const T=potOf(b),open=b.state==="open",my=b.my;
+    const tag=open?`<span class="tag open">${leftTxt(b.closes)}</span>`:b.state==="closed"?`<span class="tag void">En attente du résultat</span>`:b.state==="contest"?`<span class="tag open">Résultat · 12 h pour contester</span>`:b.state==="final"?`<span class="tag won">Terminé</span>`:`<span class="tag lost">Annulé · remboursé</span>`;
+    const u=b.unit?" "+esc(b.unit):"",near=b.kind==="num"&&b.resultNum!=null&&(b.guesses||[]).length?Math.min(...b.guesses.map(x=>Math.abs(x.g-b.resultNum))):null;
+    const opts=b.kind==="num"?`${(b.guesses||[]).length?`<div class="dkguess">${b.guesses.map(x=>`<span class="${near!=null&&Math.abs(x.g-b.resultNum)===near?"win":""}${my&&my.guess===x.g?" mine":""}">${fr(x.g,x.g%1?1:0).replace(",0","")}${u} <small>${tok(x.a)}</small></span>`).join("")}</div>`:`<small class="mut">Aucun pronostic pour l’instant.</small>`}
+      ${b.resultNum!=null?`<div class="dkresn">Résultat : <b>${fr(b.resultNum,b.resultNum%1?1:0)}${u}</b></div>`:""}
+      ${open&&!b.mine&&!my?`<button class="btn dkgo wide" style="margin-top:8px" data-act="dkpick" data-id="${esc(b.id)}" data-opt="0">Donner mon chiffre et miser</button>`:open&&my?`<button class="btn ghost wide" style="margin-top:8px" data-act="dkpick" data-id="${esc(b.id)}" data-opt="0">Ajouter des jetons sur ${fr(my.guess,my.guess%1?1:0)}${u}</button>`:""}`
+      :b.options.map((o,k)=>{const P=(b.pools||{})[k]||0,pct=T?Math.round(P/T*100):0,win=b.result===k&&b.state!=="void",mine=my&&my.opt===k;
+      const can=open&&!b.mine&&(!my||my.opt===k);
+      return`<button class="dkopt${win?" win":""}${mine?" mine":""}" ${can?`data-act="dkpick" data-id="${esc(b.id)}" data-opt="${k}"`:"disabled"}>
+        <span class="bar" style="width:${pct}%"></span><b>${esc(o)}</b><small>${pct} % · ${tok(P)}</small>${win?`<i>✓</i>`:""}</button>`}).join("");
+    const myTxt=my?(b.kind==="num"?` · toi : ${tok(my.amount)} sur ${fr(my.guess,my.guess%1?1:0)}${u}`:` · toi : ${tok(my.amount)} sur « ${esc(b.options[my.opt])} »`):"";
+    let foot="";
+    if(b.mine)foot=b.state==="closed"?(b.kind==="num"?`<div class="dkres"><small>C’est ton pari (personne ne le sait). Quel est le vrai chiffre ?</small><input type="number" inputmode="decimal" id="dkn-${esc(b.id)}" placeholder="ex. 14"><button class="btn ghost" data-act="dkresn" data-id="${esc(b.id)}">Valider</button></div>`
+      :`<div class="dkres"><small>C’est ton pari (personne ne le sait). Qu’est-ce qui s’est passé ?</small>${b.options.map((o,k)=>`<button class="btn ghost" data-act="dkres" data-id="${esc(b.id)}" data-opt="${k}">${esc(o)}</button>`).join("")}</div>`)
+      :`<small class="mut">${ic("info")} C’est ton pari : tu ne peux pas miser dessus${open&&!b.players?` · <button class="link" data-act="dkdel" data-id="${esc(b.id)}">Supprimer</button>`:""}</small>`;
+    else if(b.state==="contest"&&!b.myContest)foot=`<small class="mut">Pas d’accord avec le résultat ? <button class="link" data-act="dkflag" data-kind="contest" data-id="${esc(b.id)}">Contester</button> (${b.contests}/2)</small>`;
+    else if(b.myContest)foot=`<small class="mut">Tu as contesté ce résultat (${b.contests}/2).</small>`;
+    return`<div class="dkbet"><div class="dkq"><b>${esc(b.question)}</b>${tag}</div>
+      <small class="mut">Pot : <b>${tok(T)}</b> jetons · ${b.players} joueur${b.players>1?"s":""}${myTxt}</small>
+      <div class="dkopts">${opts}</div>${foot}
+      ${b.mine||b.myReport?"":`<button class="link dkrep" data-act="dkflag" data-kind="report" data-id="${esc(b.id)}">Signaler</button>`}</div>`}).join("")+
+    `<p class="note">Pari mutuel : les gagnants se partagent tout le pot, au prorata de leur mise. Si personne n’a misé sur le bon choix, ou si le pari est annulé, tout le monde est remboursé.</p>`}
+function viewDarkNew(){const f=U.dkf;
+  const W=[["1h","Dans 1 h"],["soir","Ce soir 20 h"],["dem8","Demain 8 h"],["dem18","Demain 18 h"],["3j","Dans 3 jours"],["custom","Date précise…"]];
+  const loc=t=>{const d=new Date(t);return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,16)};
+  if(f.when==="custom"&&!f.t)f.t=loc(dkWhen("dem8"));
+  return`<div class="grab"><h3>Inventer un pari</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
+  <div class="form"><label>Ta question<input id="dk-q" maxlength="140" placeholder="ex. Julien arrivera en retard lundi ?" value="${esc(f.q||"")}"></label>
+  <div class="seg"><button data-act="dkset" data-f="type" data-v="yn" aria-pressed="${f.type==="yn"}">Oui / Non</button><button data-act="dkset" data-f="type" data-v="multi" aria-pressed="${f.type==="multi"}">Choix</button><button data-act="dkset" data-f="type" data-v="num" aria-pressed="${f.type==="num"}">Un chiffre</button></div>
+  ${f.type==="num"?`<label>Unité (facultatif)<input id="dk-u" maxlength="12" placeholder="ex. min, buts, fois" value="${esc(f.unit||"")}"></label><p class="note" style="margin:0">Chacun donne son chiffre en misant : <b style="color:var(--ink)">le plus proche gagne le pot</b> (partagé en cas d’égalité).</p>`:""}
+  ${f.type==="multi"?f.opts.map((o,i)=>`<input class="dk-o" data-i="${i}" maxlength="40" placeholder="Choix ${i+1}${i===0?" (ex. moins de 5 min)":i===1?" (ex. 5 à 15 min)":""}" value="${esc(o)}">`).join("")+(f.opts.length<4?`<button class="link" data-act="dkset" data-f="add">${ic("plus")} Ajouter un choix</button>`:""):""}
+  <label>Fin des paris</label><div class="chips">${W.map(([k,l])=>`<button data-act="dkset" data-f="when" data-v="${k}" aria-pressed="${f.when===k}">${l}</button>`).join("")}</div>
+  ${f.when==="custom"?`<label>Date et heure exactes<input type="datetime-local" id="dk-t" value="${f.t}" min="${loc(Date.now()+6*6e4)}" max="${loc(Date.now()+30*DAY)}"></label>`:""}
+  <p class="note" style="margin:0">Les paris se ferment : <b style="color:var(--ink)">${(()=>{const t=f.when==="custom"?Date.parse(f.t):dkWhen(f.when);return isNaN(t)?"—":fDay(t)+" à "+fTime(t)})()}</b></p>
+  <p class="note">Ton nom ne sera jamais affiché. Tu ne pourras pas miser sur ce pari, et c’est toi qui donneras le résultat après la fin. Rappel : rien de méchant ni de personnel.</p>
+  <button class="btn wide dkgo" data-act="dkcreate">${DK_ICON} Lancer le pari</button></div>`}
+function dkKeep(){const f=U.dkf,q=$("#dk-q"),t=$("#dk-t"),u=$("#dk-u");if(q)f.q=q.value;if(t)f.t=t.value;if(u)f.unit=u.value;document.querySelectorAll(".dk-o").forEach(x=>f.opts[+x.dataset.i]=x.value)}
+function dkSet(d){dkKeep();const f=U.dkf;if(d.f==="type")f.type=d.v;else if(d.f==="add"&&f.opts.length<4)f.opts.push("");else if(d.f==="when")f.when=d.v;layer(viewDarkNew())}
+function dkWhen(k){const d=new Date();if(k==="1h")return Date.now()+H;if(k==="3j")return Date.now()+3*DAY;
+  if(k==="soir"){d.setHours(20,0,0,0);if(d<Date.now()+10*6e4)d.setDate(d.getDate()+1);return+d}
+  d.setDate(d.getDate()+1);d.setHours(k==="dem8"?8:18,0,0,0);return+d}
+async function darkCreate(){dkKeep();const f=U.dkf,q=(f.q||"").trim(),num=f.type==="num",opts=num?[]:f.type==="yn"?["Oui","Non"]:f.opts.map(o=>o.trim()).filter(Boolean);
+  if(q.length<6){toast("Écris une vraie question.","bad");return}if(!num&&opts.length<2){toast("Il faut au moins 2 choix.","bad");return}
+  const closes=f.when==="custom"?Date.parse(f.t):dkWhen(f.when);
+  if(isNaN(closes)||closes<Date.now()+5*6e4){toast("Choisis une fin dans au moins 5 minutes.","bad");return}
+  if(closes>Date.now()+30*DAY){toast("30 jours maximum.","bad");return}
+  const b=$("[data-act=dkcreate]");b.disabled=true;
+  try{await api("dark_create",{code:U.lg.code,question:q,options:opts,closes,kind:num?"num":"choice",unit:num?(f.unit||"").trim():""});closeLayer();await loadDark();toast(`${DK_ICON} Pari lancé, anonymement.`,"win")}
+  catch(e){b.disabled=false;toast(e.code==="options"?"Les choix doivent être différents.":e.code==="slow_down"?"Beaucoup de paris aujourd’hui !":"Pas de connexion au serveur.","bad")}}
+function viewDarkStake(){const q=U.dks,b=U.dk.bets.find(x=>String(x.id)===String(q.id));if(!b)return"";
+  return`<div class="grab"><h3>Miser</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
+  <p style="margin:0 0 6px;font-weight:700">${esc(b.question)}</p>${b.kind==="num"?(b.my?`<p class="note" style="margin-top:0">Ton chiffre : <b style="color:var(--acc)">${fr(b.my.guess,b.my.guess%1?1:0)}${b.unit?" "+esc(b.unit):""}</b></p>`
+    :`<div class="form" style="margin-bottom:6px"><label>Ton chiffre${b.unit?" ("+esc(b.unit)+")":""}<input type="number" inputmode="decimal" id="dks-g" value="${q.guess??""}" placeholder="ex. 12"></label></div>`)
+    :`<p class="note" style="margin-top:0">Ton choix : <b style="color:var(--acc)">${esc(b.options[q.opt])}</b></p>`}
+  <div class="chips">${[10,20,50,100,250].map(v=>`<button data-act="dkamt" data-v="${v}" aria-pressed="${q.amount===v}">${v}</button>`).join("")}</div>
+  ${b.kind==="num"?`<div class="sum"><div><small>Mise</small><b>${tok(q.amount)}</b></div><div class="g"><small>Pot actuel</small><b>${tok(potOf(b)+q.amount)}</b></div></div>`
+    :`<div class="sum"><div><small>Mise</small><b>${tok(q.amount)}</b></div><div class="g"><small>Gain si ça passe (aujourd’hui)</small><b>${tok(dkGain(b,q.opt,q.amount))}</b></div></div>`}
+  <p class="note">Le gain change jusqu’à la fin des paris : plus il y a de mises sur les autres choix, plus tu gagnes.</p>
+  <button class="btn wide dkgo" data-act="dkbet" ${q.amount>S.bal?"disabled":""}>Miser ${tok(q.amount)} jetons</button>`}
+async function darkStake(){const q=U.dks;if(q.amount>S.bal){toast("Pas assez de jetons.","bad");return}
+  const bt=U.dk.bets.find(x=>String(x.id)===String(q.id)),num=bt&&bt.kind==="num",gi=$("#dks-g");let guess=num?(bt.my?bt.my.guess:gi&&gi.value!==""?+gi.value:NaN):null;
+  if(num&&isNaN(guess)){toast("Donne ton chiffre.","bad");return}
+  const b=$("[data-act=dkbet]");b.disabled=true;
+  try{await api("dark_stake",{id:q.id,opt:q.opt,amount:q.amount,guess});S.bal-=q.amount;S.dk=S.dk||{};const e=S.dk[q.id]||(S.dk[q.id]={code:U.lg.code,opt:q.opt,amount:0,guess});e.amount+=q.amount;
+    save();bump();closeLayer();await loadDark();toast("Mise enregistrée. Croise les doigts…","win")}
+  catch(e){b.disabled=false;toast(e.code==="closed"?"Trop tard, les paris sont fermés.":e.code==="other_option"?"Tu as déjà misé sur un autre choix.":"Pas de connexion au serveur.","bad");loadDark()}}
+async function darkResolve(id,opt,value){const b=U.dk.bets.find(x=>String(x.id)===String(id));
+  if(!b||!confirm(`Résultat : « ${b.kind==="num"?value+(b.unit?" "+b.unit:""):b.options[opt]} » ?\nLes autres auront 12 h pour contester.`))return;
+  try{await api("dark_resolve",{id,result:opt,value});await loadDark();toast("Résultat enregistré.","win")}catch(e){toast("Impossible pour l’instant.","bad")}}
+async function darkFlag(id,kind){if(!confirm(kind==="report"?"Signaler ce pari comme méchant ou déplacé ? À 2 signalements, il disparaît.":"Contester ce résultat ? À 2 contestations, le pari est annulé et tout le monde est remboursé."))return;
+  try{await api("dark_flag",{id,kind});await loadDark();toast(kind==="report"?"Signalement envoyé.":"Contestation enregistrée.")}catch(e){toast("Pas de connexion au serveur.","bad")}}
+async function darkDelete(id){if(!confirm("Supprimer ton pari ?"))return;try{await api("dark_delete",{id});await loadDark()}catch(e){toast("Impossible : quelqu’un a déjà misé.","bad")}}
+// gains : chaque téléphone se règle une seule fois quand le pari est définitif (ou annulé)
+function settleDark(code,bets){if(!S.dk)return;let ch=false;
+  for(const b of bets){const e=S.dk[b.id];if(!e||e.settled)continue;
+    if(b.state==="void"){e.settled=1;ch=true;S.bal+=e.amount;toast(`Pari dark annulé : ${tok(e.amount)} jetons remboursés.`)}
+    else if(b.state==="final"&&b.kind==="num"){e.settled=1;ch=true;const T=potOf(b),G=b.guesses||[];
+      const near=G.length?Math.min(...G.map(x=>Math.abs(x.g-b.resultNum))):0,W=G.filter(x=>Math.abs(x.g-b.resultNum)===near).reduce((a,x)=>a+x.a,0),mg=e.guess??(b.my&&b.my.guess);
+      if(mg!=null&&Math.abs(mg-b.resultNum)===near&&W){const g=Math.floor(e.amount*T/W);S.bal+=g;toast(`${DK_ICON} Le plus proche, c’était toi : +${tok(g)} jetons !`,"win");confetti()}
+      else toast(`Pari dark perdu : « ${esc(b.question)} »`)}
+    else if(b.state==="final"){e.settled=1;ch=true;const T=potOf(b),W=(b.pools||{})[b.result]||0;
+      if(!W){S.bal+=e.amount;toast("Personne n’avait vu juste : mise remboursée.")}
+      else if(e.opt===b.result){const g=Math.floor(e.amount*T/W);S.bal+=g;toast(`${DK_ICON} Pari dark gagné : +${tok(g)} jetons !`,"win");confetti()}
+      else toast(`Pari dark perdu : « ${esc(b.question)} »`)}}
+  for(const id in S.dk)if(S.dk[id].code===code&&!S.dk[id].settled&&!bets.some(b=>String(b.id)===String(id))){S.dk[id].settled=1;S.bal+=S.dk[id].amount;ch=true}   // pari masqué (signalé) : remboursé
+  if(ch){S.peak=Math.max(S.peak,S.bal);save();render();bump()}}
+async function checkDarkAll(){const codes=[...new Set(Object.values(S.dk||{}).filter(x=>!x.settled).map(x=>x.code))];
+  for(const c of codes){try{const j=await api("dark_list",{code:c});settleDark(c,j.bets)}catch(e){}}}
+
+/* ---------- entrée cachée : 5 tapes rapides sur le numéro de version ---------- */
+let verTaps=[];
+document.addEventListener("click",e=>{if(!e.target.closest("#ver"))return;const n=Date.now();verTaps=verTaps.filter(t=>n-t<2500);verTaps.push(n);if(verTaps.length>=5){verTaps=[];openDarkHome()}});
+U.dkLeagues=null;
+async function loadDarkLeagues(){try{const j=await api("dark_leagues",{});U.dkLeagues=j.leagues}catch(e){U.dkLeagues=U.dkLeagues||[]}if(U.open==="dkhome")layer(viewDarkHome())}
+function openDarkHome(){if(!S.name)return;U.open="dkhome";layer(viewDarkHome());ensureSession().then(loadDarkLeagues)}
+function viewDarkHome(){const L=U.dkLeagues;
+  return`<div class="dkwarn" style="padding-top:4px"><div class="dkbig">${DK_ICON}</div><h2>Le côté dark</h2><p style="text-align:center">Tes ligues secrètes. Elles n’apparaissent nulle part ailleurs : seuls ceux qui ont le code y entrent.</p></div>
+  ${!L?`<div class="skel"></div>`:L.length?L.map(l=>`<button class="dkl" data-act="dkopen" data-code="${esc(l.code)}"><b>${esc(l.name)}</b><small>${l.n} membre${l.n>1?"s":""}</small><span>›</span></button>`).join(""):`<p class="note" style="text-align:center">Aucune ligue secrète pour l’instant.</p>`}
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px"><button class="btn dkgo" data-act="dknewl">${ic("plus")} Créer</button><button class="btn ghost" data-act="dkjoin">Rejoindre</button></div>
+  <button class="link" data-act="close" style="display:block;margin:14px auto 0">Fermer</button>`}
+async function darkNewLeague(){const v=(prompt("Nom de la ligue secrète :")||"").trim();if(!v)return;
+  try{const j=await api("create_league",{name:v,dark:true});await loadDarkLeagues();darkEnter(j.code,v)}catch(e){toast(e.code==="too_many"?"Trop de ligues.":"Impossible pour l’instant.","bad")}}
+async function darkJoin(){const v=(prompt("Code de la ligue secrète :")||"").trim();if(!v)return;
+  try{const j=await api("join_league",{code:v,dark:true});await loadDarkLeagues();darkEnter(j.code,j.name)}catch(e){toast(e.code==="unknown"?"Code inconnu.":"Impossible pour l’instant.","bad")}}
+function darkEnter(code,name){U.dkSel={code,name};U.open="dkwarn";layer(viewDarkWarn())}
+function darkGo(){const c=U.dkSel;if(!c)return;if(!U.dark)U.dkPrev=U.lg.code;U.dkCur=c;U.lg.code=c.code;U.dark=true;U.tab="l";U.open=null;layer("");U.dk=null;render();loadDark();window.scrollTo({top:0})}
+function darkExit(){U.dark=false;U.dkCur=null;U.lg.code=U.dkPrev||"";U.dk=null;render();loadBoards();window.scrollTo({top:0})}
 
 /* ---------- prono du week-end ----------
    Le serveur choisit 7 gros matchs du week-end ; chacun devine les scores exacts jusqu'au coup d'envoi.
@@ -1856,6 +2034,7 @@ function viewNotif(){const st=pushState();
 function goFrom(url){try{const u=new URL(url,location.href),g=u.searchParams.get("go"),c=u.searchParams.get("code");if(!g)return;
   if(u.search)history.replaceState(null,"",location.pathname);U.open=null;layer("");U.tab="l";if(c)U.lg.code=c.toUpperCase();
   if(g==="recap"){U.dark=false;U.lg.view="rank";render();loadBoards();openRecap(U.lg.code);return}
+  if(g==="dark"&&c){U.open=null;layer("");loadDarkLeagues().then(()=>{const l=(U.dkLeagues||[]).find(x=>x.code===c.toUpperCase());if(l){U.lg.code="";U.dkSel={code:l.code,name:l.name};darkGo()}});return}
   if(g==="dark")g="rank";U.lg.view=g;render();loadBoards();if(g==="chat")loadChat();if(g==="duels")loadDuels();if(g==="feed")loadActFeed();if(g==="prono")loadProno();window.scrollTo({top:0})}catch(e){}}
 if("serviceWorker"in navigator)navigator.serviceWorker.addEventListener("message",e=>{if(e.data&&e.data.go)goFrom(e.data.go)});
 
@@ -2038,24 +2217,29 @@ function wheelSvg(){const n=WHEEL.length,R=140,c=150,pt=d=>{const r=(d-90)*Math.
 function wheelMini(){return`<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">${WCOL.map((col,i)=>{const a0=(i*45-112.5)*Math.PI/180,a1=a0+Math.PI/4;
   return`<path d="M12 12L${(12+11*Math.cos(a0)).toFixed(2)} ${(12+11*Math.sin(a0)).toFixed(2)}A11 11 0 0 1 ${(12+11*Math.cos(a1)).toFixed(2)} ${(12+11*Math.sin(a1)).toFixed(2)}Z" fill="${col}"/>`}).join("")}<circle cx="12" cy="12" r="11" fill="none" stroke="#2a1d00" stroke-width="1.5"/><circle cx="12" cy="12" r="3" fill="#2a1d00"/></svg>`}
 function nextReset(){const d=new Date();d.setHours(24,0,0,0);const m=Math.round((d-Date.now())/6e4);return(m>=60?Math.floor(m/60)+" h "+String(m%60).padStart(2,"0"):m+" min")}
-function viewWheel(){const done=S.bonus===today();
+// tour bonus offert à tout le monde, une seule journée (en plus du tour quotidien)
+const EXTRA_DAY="20261109";
+const extraAvail=()=>today()===EXTRA_DAY&&S.bonus===today()&&S.extraSpin!==today();
+const wheelAvail=()=>S.bonus!==today()||extraAvail();
+function viewWheel(){const done=!wheelAvail();
   return`<div class="grab"><h3>Roue de la chance</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   <div class="wheelbox"><div class="pointer"></div>${wheelSvg()}</div>
-  <div id="wres" class="wres">${done&&S.wheel&&S.wheel.d===today()?`Aujourd’hui : <b>+${tok(S.wheel.v)} jetons</b>`:"Un tour gratuit par jour"}</div>
-  <button class="btn gold wide" data-act="spin" id="spin" ${done?"disabled":""}>${done?"Prochain tour dans "+nextReset():"Lancer la roue"}</button>
+  <div id="wres" class="wres">${done&&S.wheel&&S.wheel.d===today()?`Aujourd’hui : <b>+${tok(S.wheel.v)} jetons</b>`:extraAvail()?"🎁 Tour bonus offert à tout le monde aujourd’hui !":"Un tour gratuit par jour"}</div>
+  <button class="btn gold wide" data-act="spin" id="spin" ${done?"disabled":""}>${done?"Prochain tour dans "+nextReset():extraAvail()?"Lancer le tour bonus":"Lancer la roue"}</button>
   <div class="info">${ic("info")}<span><b style="color:var(--ink)">100 % hasard.</b> Les 8 cases de jetons ont la même chance : 1 sur 8 chacune. La fine case dorée <b style="color:var(--sel)">JACKPOT 1 000 000</b> est tirée à part : <b style="color:var(--ink)">1 chance sur 10 millions</b> à chaque tour. Le tirage utilise le générateur aléatoire sécurisé du téléphone, sans aucun réglage caché.</span></div>`}
 let spinning=false;
-function spin(){if(spinning||S.bonus===today())return;spinning=true;
+function spin(){if(spinning||!wheelAvail())return;spinning=true;const isExtra=extraAvail();
   const jack=fairIndex(JACK_ODDS)===0,i=jack?-1:fairIndex(WHEEL.length),v=jack?JACKPOT:WHEEL[i];
   // le gain est enregistré tout de suite (recharger la page ne permet pas de relancer)
-  S.bonus=today();S.wheel={d:today(),v};S.bal+=v;S.peak=Math.max(S.peak,S.bal);if(jack)S.jackpot=(S.jackpot||0)+1;save();if(v>=200)postAct("wheel",{v});
+  if(isExtra)S.extraSpin=today();S.bonus=today();S.wheel={d:today(),v};S.bal+=v;S.peak=Math.max(S.peak,S.bal);if(jack)S.jackpot=(S.jackpot||0)+1;save();if(v>=200)postAct("wheel",{v});
   const w=$("#wheel"),b=$("#spin"),jit=(Math.random()-.5)*(jack?JW:WW)*.7,deg=360*7-wCenter(i)+jit;
   if(b){b.disabled=true;b.textContent="Ça tourne…"}
   const end=()=>{spinning=false;$("#bal").textContent=tok(S.bal);bump();
-    if($("#wres"))$("#wres").innerHTML=`Gagné : <b>+${tok(v)} jetons</b>`;if($("#spin"))$("#spin").textContent="Prochain tour dans "+nextReset();
+    if($("#wres"))$("#wres").innerHTML=`Gagné : <b>+${tok(v)} jetons</b>`;if($("#spin")){if(extraAvail()){$("#spin").disabled=false;$("#spin").textContent="Lancer le tour bonus"}else $("#spin").textContent="Prochain tour dans "+nextReset()}
     if(jack){toast(`💰 JACKPOT ! +1 000 000 jetons ! Une chance sur 10 millions…`,"win");confetti();setTimeout(confetti,900);setTimeout(confetti,1800)}
-    else{toast(`${wheelMini()} +${tok(v)} jetons ! À demain pour un nouveau tour.`,"win");if(v>=200)confetti()}if(!U.open)render()};
+    else{toast(`${wheelMini()} +${tok(v)} jetons ! ${extraAvail()?"Et tu as encore un tour bonus aujourd’hui !":"À demain pour un nouveau tour."}`,"win");if(v>=200)confetti()}if(!U.open)render()};
   if(!w||matchMedia("(prefers-reduced-motion: reduce)").matches){end();return}
+  w.style.transition="none";w.style.transform="rotate(0deg)";void w.getBoundingClientRect();
   w.style.transition="transform 5.2s cubic-bezier(.12,.75,.12,1)";requestAnimationFrame(()=>{w.style.transform=`rotate(${deg}deg)`});setTimeout(end,5400)}
 
 /* ---------- accueil ---------- */
@@ -2151,7 +2335,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.35";
+const VERSION="1.36";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -2166,7 +2350,7 @@ if(GATE)renderGate();else{
 render();
 if(!S.name){U.open="welcome";layer(viewWelcome(false))}else{syncSoon();joinFromLink()}
 loadFeeds();
-setTimeout(closeDark,1500);
+setTimeout(()=>{if(S.dk&&Object.values(S.dk).some(x=>!x.settled))checkDarkAll()},5000);
 goFrom(location.href);
 setTimeout(()=>{pushRefresh();if(S.name)loadBoards().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){loadProno();loadLm(U.lg.code||U.lg.data.leagues[0].code);const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},3000);
 setInterval(()=>{if(!document.hidden&&S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},12e4);

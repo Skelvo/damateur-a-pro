@@ -43,6 +43,7 @@ async function pronoWeek(s, noRefresh) {
 }
 const lname = async (s, code) => ((await s.query(`select name from leagues where code = $1`, [code]))[0] || {}).name || "ta ligue";
 const go = (view, code) => `./?go=${view}&code=${encodeURIComponent(code)}`;
+const isDarkMember = async (s, code, pid) => !!(code && (await s.query(`select 1 from league_members m join leagues l on l.code = m.code and l.dark where m.code = $1 and m.player = $2`, [code, pid]))[0]);
 const isMember = async (s, code, pid) => !!(code && (await s.query(`select 1 from league_members where code = $1 and player = $2`, [code, pid]))[0]);
 const ACT_KINDS = ["bet", "won", "cash", "wheel", "defis", "duel", "duelwin", "join"];
 const EMOS = ["🔥", "😂", "👏", "😱"];
@@ -86,7 +87,7 @@ function newCode() {
 async function myLeagues(s, pid) {
   const leagues = await s.query(
     `select l.code, l.name, l.owner = $1 as mine, (select count(*)::int from league_members m2 where m2.code = l.code) as n
-       from leagues l join league_members m on m.code = l.code where m.player = $1 order by m.joined_at`, [pid]);
+       from leagues l join league_members m on m.code = l.code where m.player = $1 and not l.dark order by m.joined_at`, [pid]);
   return leagues;
 }
 
@@ -190,7 +191,7 @@ async function morning(s) {
   const t = (await s.query(`select extract(isodow from now() at time zone 'Europe/Paris')::int as dow,
       extract(day from now() at time zone 'Europe/Paris')::int as day, ${PREV_WEEK} as w, ${PREV_MONTH} as m`))[0];
   const once = async (key) => !!(await s.query(`insert into meta (key, value) values ($1, '1') on conflict do nothing returning key`, [key]))[0];
-  const leagues = await s.query(`select l.code, l.name from leagues l where (select count(*) from league_members m where m.code = l.code) >= 2`);
+  const leagues = await s.query(`select l.code, l.name from leagues l where not l.dark and (select count(*) from league_members m where m.code = l.code) >= 2`);
   const out = { recap: 0, season: 0 };
   if (t.day === 1 && await once("season:" + t.m)) {
     const done = new Set();
@@ -251,19 +252,19 @@ async function reminders(s, slot) {
     if (pr) {
       const mine = new Set((await s.query(`select mid from prono_picks where week = $1 and player = $2`, [pr.week, p.id])).map((x) => x.mid));
       const left = pr.open.filter((m) => !mine.has(m.mid)).length;
-      const lg = (await s.query(`select code from league_members where player = $1 order by joined_at limit 1`, [p.id]))[0];
+      const lg = (await s.query(`select code from league_members where player = $1 and code not in (select code from leagues where dark) order by joined_at limit 1`, [p.id]))[0];
       if (left && lg) msg = { title: "🎯 Prono du week-end", body: `Il te reste ${left} match${left > 1 ? "s" : ""} à pronostiquer, premier coup d'envoi à ${hhmm(pr.first)}. Le score exact rapporte 50 jetons !`, url: go("prono", lg.code), tag: "remind-prono" };
     }
     const fm = p.fav && slot === "midi" ? M.find((m) => m.hid === p.fav.id || m.aid === p.fav.id) : null;
     if (!msg && fm) msg = { title: `❤️ ${p.fav.name} joue aujourd'hui`, body: `${fm.h} – ${fm.a} à ${hhmm(fm.t)}. Tu paries sur ton équipe ?`, url: "./", tag: "remind-fav" };
     if (!msg && lm && lm.cur && lm.cur.day === t.ymd && lm.cur.match.t > now + 20 * 60e3 && !(await s.query(`select 1 from lm_picks where day = $1 and player = $2`, [lm.cur.day, p.id]))[0]) {
       const lg = (await s.query(`select m.code, (select count(*)::int from lm_picks x join league_members m2 on m2.player = x.player and m2.code = m.code where x.day = $2) as n
-          from league_members m where m.player = $1 order by m.joined_at limit 1`, [p.id, lm.cur.day]))[0];
+          from league_members m where m.player = $1 and m.code not in (select code from leagues where dark) order by m.joined_at limit 1`, [p.id, lm.cur.day]))[0];
       if (lg) msg = { title: "⚽ Match de la ligue", body: `${lm.cur.match.h} – ${lm.cur.match.a} à ${hhmm(lm.cur.match.t)}. ${lg.n ? `${lg.n} collègue${lg.n > 1 ? "s ont" : " a"} déjà voté` : "Personne n'a encore voté"}, et toi ? Bonne réponse = +${LM_PRIZE} jetons.`, url: go("rank", lg.code), tag: "remind-lm" };
     }
     if (!msg && slot === "soir") {
       // rivalité : le joueur juste devant moi cette semaine dans ma ligue la plus active
-      const r = (await s.query(`with my as (select m.code from league_members m where m.player = $1),
+      const r = (await s.query(`with my as (select m.code from league_members m where m.player = $1 and m.code not in (select code from leagues where dark)),
           b as (select m.code, p.id, p.name, case when p.week = ${WEEK} then p.bal - coalesce(p.week_bal, p.bal) else 0 end as g
                 from league_members m join my on my.code = m.code join players p on p.id = m.player)
         select me.code, l.name as lname, me.g as mine, up.name as up, up.g as upg, (select count(*) from b b2 where b2.code = me.code) as n
@@ -456,7 +457,7 @@ const ACTIONS = {
     if (n >= MAX_LEAGUES) throw fail(400, "too_many");
     for (let i = 0; i < 8; i++) {
       const code = newCode();
-      const r = await s.query(`insert into leagues (code, name, owner) values ($1, $2, $3) on conflict do nothing returning code`, [code, name, p.id]);
+      const r = await s.query(`insert into leagues (code, name, owner, dark) values ($1, $2, $3, $4) on conflict do nothing returning code`, [code, name, p.id, !!b.dark]);
       if (r[0]) {
         await s.query(`insert into league_members (code, player) values ($1, $2)`, [code, p.id]);
         return { code };
@@ -469,8 +470,8 @@ const ACTIONS = {
     const p = await me(s, b.token);
     if (await overLimit(ipKey(req) + ":join", 40, 3600)) throw fail(429, "slow_down");
     const code = cleanName(b.code, 8).toUpperCase().replace(/[^A-Z0-9]/g, "");
-    const l = (await s.query(`select code, name, (select count(*)::int from league_members m where m.code = leagues.code) as n from leagues where code = $1`, [code]))[0];
-    if (!l) throw fail(404, "unknown");
+    const l = (await s.query(`select code, name, dark, (select count(*)::int from league_members m where m.code = leagues.code) as n from leagues where code = $1`, [code]))[0];
+    if (!l || l.dark !== !!b.dark) throw fail(404, "unknown");
     const already = (await s.query(`select 1 from league_members where code = $1 and player = $2`, [code, p.id]))[0];
     if (!already) {
       if (l.n >= MAX_MEMBERS) throw fail(400, "full");
@@ -575,7 +576,129 @@ const ACTIONS = {
       hist: (await s.query(`select day, bal::float8 as bal from bal_hist where player = $1 and day >= to_char((now() at time zone 'Europe/Paris') - interval '30 days', 'YYYYMMDD') order by day`, [id])).map((x) => [x.day, Math.round(x.bal)]) };
   },
 
-  // (le côté dark a été retiré en v1.28 ; ses tables restent en base, plus rien n'y écrit)
+  // ---- Côté dark : paris inventés par les membres (anonymes, pari mutuel), seulement dans les ligues secrètes ----
+  // (une ligue secrète n'apparaît pas dans les ligues normales et se rejoint seulement par son code, depuis l'entrée cachée)
+  async dark_leagues(s, b) {
+    const p = await me(s, b.token);
+    const leagues = await s.query(`select l.code, l.name, l.owner = $1 as mine, (select count(*)::int from league_members m2 where m2.code = l.code) as n
+       from leagues l join league_members m on m.code = l.code where m.player = $1 and l.dark order by m.joined_at`, [p.id]);
+    return { leagues };
+  },
+  // Règles : le créateur ne peut pas parier sur son pari ; il donne le résultat après la fin ;
+  // 12 h pour contester (2 contestations = annulé, tout le monde remboursé) ; 2 signalements = pari masqué.
+  // Les jetons restent gérés par chaque téléphone (comme les duels).
+  async dark_create(s, b) {
+    const p = await me(s, b.token);
+    const code = cleanName(b.code, 8).toUpperCase();
+    if (!(await isDarkMember(s, code, p.id))) throw fail(403, "not_member");
+    const q = cleanName(b.question, 140);
+    if (q.length < 6) throw fail(400, "question");
+    const kind = b.kind === "num" ? "num" : "choice";
+    const opts = kind === "num" ? [] : (Array.isArray(b.options) ? b.options : []).map((o) => cleanName(o, 40)).filter(Boolean).slice(0, 4);
+    if (kind === "choice" && (opts.length < 2 || new Set(opts.map((o) => o.toLowerCase())).size !== opts.length)) throw fail(400, "options");
+    const closes = Number(b.closes);
+    if (!Number.isFinite(closes) || closes < Date.now() + 5 * 60e3 || closes > Date.now() + 30 * 86400e3) throw fail(400, "closes");
+    const n = (await s.query(`select count(*)::int as n from dark_bets where creator = $1 and created_at > now() - interval '1 day'`, [p.id]))[0].n;
+    if (n >= 15) throw fail(429, "slow_down");
+    const r = await s.query(
+      `insert into dark_bets (code, creator, question, options, closes, kind, unit) values ($1, $2, $3, $4::jsonb, to_timestamp($5::float8 / 1000), $6, $7) returning id`,
+      [code, p.id, q, JSON.stringify(opts), closes, kind, cleanName(b.unit, 12) || null]);
+    await s.query(`insert into activity (player, kind, data) values ($1, 'darknew', $2::jsonb)`, [p.id, JSON.stringify({ code, q, id: r[0].id })]);
+    await notify(s, await members(s, code), { title: "😈 " + (await lname(s, code)), body: "Nouveau pari secret : « " + q + " »", url: go("dark", code), tag: "dark-" + r[0].id }, p.id);
+    return { id: r[0].id };
+  },
+
+  async dark_list(s, b) {
+    const p = await me(s, b.token);
+    const code = cleanName(b.code, 8).toUpperCase();
+    if (!(await isDarkMember(s, code, p.id))) throw fail(403, "not_member");
+    const rows = await s.query(
+      `select d.id, d.question, d.options, d.kind, d.unit, d.result_num::float8 as result_num, extract(epoch from d.closes) * 1000 as closes, d.result,
+         coalesce((select jsonb_agg(jsonb_build_object('g', g, 'a', a) order by g) from (select guess::float8 as g, sum(amount)::int as a from dark_stakes x where x.bet = d.id and x.guess is not null group by guess) gg), '[]') as guesses,
+         extract(epoch from d.resolved_at) * 1000 as resolved, d.creator = $2 as mine,
+         coalesce((select jsonb_object_agg(opt, tot) from (select opt, sum(amount)::int as tot from dark_stakes x where x.bet = d.id group by opt) z), '{}') as pools,
+         (select count(*)::int from dark_stakes x where x.bet = d.id) as players,
+         (select jsonb_build_object('opt', opt, 'amount', amount, 'guess', guess::float8) from dark_stakes x where x.bet = d.id and x.player = $2) as my,
+         (select count(*)::int from dark_flags f where f.bet = d.id and f.kind = 'contest') as contests,
+         (select count(*)::int from dark_flags f where f.bet = d.id and f.kind = 'report') as reports,
+         exists (select 1 from dark_flags f where f.bet = d.id and f.player = $2 and f.kind = 'contest') as my_contest,
+         exists (select 1 from dark_flags f where f.bet = d.id and f.player = $2 and f.kind = 'report') as my_report
+       from dark_bets d where d.code = $1 and d.created_at > now() - interval '30 days'
+       order by (d.result is null) desc, d.closes asc limit 80`, [code, p.id]);
+    const now = Date.now();
+    return {
+      bets: rows.filter((r) => r.reports < 2).map((r) => {
+        const resolved = r.resolved != null ? Math.round(Number(r.resolved)) : null;
+        let state = "open";
+        if (Number(r.closes) <= now) state = "closed";
+        if (r.result != null) state = r.contests >= 2 ? "void" : now - resolved > 12 * 3600e3 ? "final" : "contest";
+        if (r.result == null && now - Number(r.closes) > 7 * 86400e3) state = "void";   // jamais tranché en 7 jours
+        return { id: r.id, question: r.question, options: r.options, kind: r.kind, unit: r.unit, resultNum: r.result_num, guesses: r.guesses, closes: Math.round(Number(r.closes)), result: r.result, resolved,
+          mine: r.mine, pools: r.pools, players: r.players, my: r.my, contests: r.contests, myContest: r.my_contest, myReport: r.my_report, state };
+      }),
+    };
+  },
+
+  async dark_stake(s, b) {
+    const p = await me(s, b.token);
+    const id = int(b.id, 0, 1e15), opt = int(b.opt, 0, 3), amount = int(b.amount, 1, 1e6);
+    const d = (await s.query(`select d.* from dark_bets d where d.id = $1`, [id]))[0];
+    if (!d || !(await isDarkMember(s, d.code, p.id))) throw fail(404, "unknown");
+    if (String(d.creator) === String(p.id)) throw fail(400, "own_bet");
+    if (new Date(d.closes).getTime() <= Date.now()) throw fail(400, "closed");
+    let guess = null;
+    if (d.kind === "num") {
+      guess = Number(b.guess);
+      if (!Number.isFinite(guess) || Math.abs(guess) > 1e6) throw fail(400, "guess");
+      guess = Math.round(guess * 100) / 100;
+    } else if (opt >= d.options.length) throw fail(400, "option");
+    const o = d.kind === "num" ? 0 : opt;
+    const cur = (await s.query(`select opt, guess::float8 as guess from dark_stakes where bet = $1 and player = $2`, [id, p.id]))[0];
+    if (cur && (cur.opt !== o || (d.kind === "num" && Number(cur.guess) !== guess))) throw fail(400, "other_option");
+    await s.query(
+      `insert into dark_stakes (bet, player, opt, amount, guess) values ($1, $2, $3, $4, $5)
+       on conflict (bet, player) do update set amount = dark_stakes.amount + excluded.amount`, [id, p.id, o, amount, guess]);
+    return { ok: true };
+  },
+
+  async dark_resolve(s, b) {
+    const p = await me(s, b.token);
+    const id = int(b.id, 0, 1e15), result = int(b.result, 0, 3);
+    const val = Number(b.value);
+    const r = await s.query(
+      `update dark_bets set result = $3, result_num = case when kind = 'num' then $4::numeric else null end, resolved_at = now()
+       where id = $1 and creator = $2 and result is null and closes <= now()
+         and ((kind = 'choice' and jsonb_array_length(options) > $3) or (kind = 'num' and $4::numeric is not null))
+       returning id, code, question, kind, options, unit`, [id, p.id, result, Number.isFinite(val) && Math.abs(val) <= 1e6 ? val : null]);
+    if (!r[0]) throw fail(400, "unavailable");
+    const d = r[0], txt = d.kind === "num" ? String(val) + (d.unit ? " " + d.unit : "") : d.options[result];
+    await s.query(`insert into activity (player, kind, data) values ($1, 'darkres', $2::jsonb)`, [p.id, JSON.stringify({ code: d.code, q: d.question, r: txt, id: d.id })]);
+    const stakers = (await s.query(`select player from dark_stakes where bet = $1`, [d.id])).map((x) => x.player);
+    await notify(s, stakers, { title: "😈 Résultat du pari dark", body: `« ${d.question} » : ${txt}. Tu as 12 h pour contester.`, url: go("dark", d.code), tag: "darkres-" + d.id }, p.id);
+    return { ok: true };
+  },
+
+  // contester un résultat (12 h après) ou signaler un pari déplacé
+  async dark_flag(s, b) {
+    const p = await me(s, b.token);
+    const id = int(b.id, 0, 1e15), kind = b.kind === "report" ? "report" : "contest";
+    const d = (await s.query(`select code, creator from dark_bets where id = $1`, [id]))[0];
+    if (!d || !(await isDarkMember(s, d.code, p.id))) throw fail(404, "unknown");
+    if (String(d.creator) === String(p.id)) throw fail(400, "own_bet");
+    await s.query(`insert into dark_flags (bet, player, kind) values ($1, $2, $3) on conflict do nothing`, [id, p.id, kind]);
+    return { ok: true };
+  },
+
+  async dark_delete(s, b) {
+    const p = await me(s, b.token);
+    const r = await s.query(
+      `delete from dark_bets d where d.id = $1 and d.creator = $2 and not exists (select 1 from dark_stakes x where x.bet = d.id) returning id`,
+      [int(b.id, 0, 1e15), p.id]);
+    if (!r[0]) throw fail(400, "locked");
+    return { ok: true };
+  },
+
+  // ---- Prono du week-end ----
 
   async prono_get(s, b) {
     const p = await me(s, b.token);
@@ -804,7 +927,7 @@ const ACTIONS = {
       const a = (await s.query(`select a.player, a.kind, a.data from activity a where a.id = $1`, [id]))[0];
       if (a && !a.kind.startsWith("dark") && !(await overLimit(`pushreact:${a.player}:${p.id}`, 1, 600))) {
         const what = { bet: "ton pari", won: "ton gain", cash: "ton encaissement", wheel: "ta roue", defis: "tes défis", duel: "ton duel", duelwin: "ta victoire en duel", join: "ton arrivée" }[a.kind] || "ton activité";
-        const code = (await s.query(`select code from league_members where player = $1 intersect select code from league_members where player = $2 limit 1`, [a.player, p.id]))[0];
+        const code = (await s.query(`select code from league_members where player = $1 and code not in (select code from leagues where dark) intersect select code from league_members where player = $2 limit 1`, [a.player, p.id]))[0];
         await notify(s, [a.player], { title: `${p.name} a réagi ${emo}`, body: `à ${what}`, url: code ? go("feed", code.code) : "./", tag: "react-" + id });
       }
     }
