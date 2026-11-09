@@ -747,7 +747,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.72"></script>
+<script src="engine.js?v=1.73"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -1333,7 +1333,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"evx":U.ev=null;render();window.scrollTo({top:0});break;
     case"stats":U.open="stats";layer(viewStats());break;
     case"fav":openFav();break;
-    case"favl":U.favL=+d.i;layer(viewFav());loadFavTeams();break;
+    case"favl":{U.favL=+d.i;if(FAVT[FAVL[U.favL][1]]==="err")FAVT[FAVL[U.favL][1]]=null;const sc=$(".sheet")?$(".sheet").scrollTop:0;layer(viewFav());if($(".sheet"))$(".sheet").scrollTop=sc;loadFavTeams();break}
     case"favset":favSet(+d.i);break;
     case"favnone":S.fav=null;save();api("set_fav",{fav:null}).catch(()=>{});closeLayer();toast("Équipe de cœur retirée.");break;
     case"lmpick":lmPick(d.day,+d.k);break;
@@ -1798,7 +1798,10 @@ const GSTEPS=[["bet","🎟️","Faire ton premier pari","Touche une cote, choisi
   ["fav","❤️","Choisir ton équipe de cœur","Ses matchs remontent en premier."],["combo","🧾","Tenter un combiné","Au moins 2 pronostics sur un même ticket."]];
 let gAt=0;
 async function loadGuide(force){if(!S.tok||S.guideHide||(!force&&Date.now()-gAt<2e4))return;gAt=Date.now();try{U.gs=await api("guide_status",{});if(U.tab==="m"&&!U.open)render()}catch(e){}}
-function guideCard(){const g=U.gs;if(!g||S.guideHide||g.all)return"";const n=GSTEPS.filter(([k])=>g.done[k]).length,ready=GSTEPS.filter(([k])=>g.done[k]&&!g.claimed[k]).length,open=U.gOpen??(S.bets.length<3||ready>0);
+function guideLocal(){return{bet:S.bets.some(b=>b.sid),wheel:!!S.wheel,guild:!!(U.lg.data&&U.lg.data.leagues.length),push:pushState()==="on",fav:!!S.fav,combo:S.bets.some(b=>b.sid&&b.legs.length>1)}}
+let gLocAt=0;
+function guideCard(){const g=U.gs;if(!g||S.guideHide||g.all)return"";
+  {const L=guideLocal();if(GSTEPS.some(([k])=>L[k]&&!g.done[k])&&Date.now()-gLocAt>8e3&&(U.gTries=(U.gTries||0)+1)<=4){gLocAt=Date.now();if(L.fav&&!g.done.fav&&S.favOk!==S.fav.id)favPush();else setTimeout(()=>loadGuide(true),1500)}}const n=GSTEPS.filter(([k])=>g.done[k]).length,ready=GSTEPS.filter(([k])=>g.done[k]&&!g.claimed[k]).length,open=U.gOpen??(S.bets.length<3||ready>0);
   let h=`<div class="gcard"><button class="ghd" data-act="gtog"><span class="gico">🚀</span><span><b>Premiers pas</b><small>${n}/${GSTEPS.length} faites · +${g.reward} jetons chacune${ready?` · <b class="pos">${ready} à récupérer</b>`:""}</small></span><span class="arr">${open?"⌃":"⌄"}</span></button>
     <div class="gbar"><i style="width:${n/GSTEPS.length*100}%"></i></div>`;
   if(open){h+=GSTEPS.map(([k,e,t,s])=>{const d=g.done[k],c=g.claimed[k];
@@ -2125,20 +2128,23 @@ async function dirJoin(gid){try{const j=await api("guild_join",{gid});
 /* ---------- équipe de cœur ---------- */
 const FAVL=[["Ligue 1","soccer/fra.1","foot"],["Ligue 2","soccer/fra.2","foot"],["Top 14","rugby/270559","rugby"],["Premier League","soccer/eng.1","foot"],["Liga","soccer/esp.1","foot"],["Serie A","soccer/ita.1","foot"],["Bundesliga","soccer/ger.1","foot"],["Portugal","soccer/por.1","foot"],["NBA","basketball/nba","basket"]];
 const FAVT={};
-function openFav(){U.open="fav";U.favL=U.favL||0;layer(viewFav());loadFavTeams()}
-async function loadFavTeams(){const path=FAVL[U.favL][1];if(FAVT[path])return;
-  try{const j=await getJSON(`${API}?teams=${encodeURIComponent(path)}`);FAVT[path]=j.teams.map(t=>({id:t.id,name:frTeam(t.short||t.name),logo:fixLogo(frTeam(t.short||t.name),t.logo)})).sort((a,b)=>a.name.localeCompare(b.name,"fr"))}
-  catch(e){FAVT[path]="err"}if(U.open==="fav")layer(viewFav())}
+function openFav(){U.open="fav";U.favL=U.favL||0;favCache();layer(viewFav());FAVL.forEach((_,i)=>loadFavTeams(i))}
+function favCache(){if(FAVT._c)return;FAVT._c=1;try{const c=JSON.parse(localStorage.getItem("dap.favt")||"null");if(c&&Date.now()-c.at<7*864e5)for(const k in c.t)FAVT[k]=c.t[k]}catch(e){}}
+function favSave(){try{const t={};for(const[,p]of FAVL)if(Array.isArray(FAVT[p]))t[p]=FAVT[p];localStorage.setItem("dap.favt",JSON.stringify({at:Date.now(),t}))}catch(e){}}
+async function loadFavTeams(i){const path=FAVL[i??U.favL][1];if(Array.isArray(FAVT[path])||FAVT[path]==="load")return;FAVT[path]="load";
+  try{const j=await getJSON(`${API}?teams=${encodeURIComponent(path)}`);FAVT[path]=j.teams.map(t=>({id:t.id,name:frTeam(t.short||t.name),logo:fixLogo(frTeam(t.short||t.name),t.logo)})).sort((a,b)=>a.name.localeCompare(b.name,"fr"));favSave()}
+  catch(e){FAVT[path]="err"}if(U.open==="fav"&&FAVL[U.favL][1]===path)layer(viewFav())}
 function viewFav(){const [ln,path,sp]=FAVL[U.favL],T=FAVT[path];
   return`<div class="grab"><h3>Équipe de cœur</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   <p class="note" style="margin-top:0">Ses matchs s’affichent en premier, tu reçois un rappel les jours où elle joue, et son logo apparaît à côté de ton nom.</p>
   <div class="chips favl">${FAVL.map(([n],i)=>`<button data-act="favl" data-i="${i}" aria-pressed="${U.favL===i}">${n}</button>`).join("")}</div>
-  ${!T?`<div class="skel" style="height:200px"></div>`:T==="err"?`<div class="empty">${ic("info")}<b>Pas de connexion</b>Réessaie dans un instant.</div>`
+  ${!T||T==="load"?`<div class="skel" style="height:200px"></div>`:T==="err"?`<div class="empty">${ic("info")}<b>Pas de connexion</b>Réessaie dans un instant.</div>`
     :`<div class="favg">${T.map((t,i)=>`<button data-act="favset" data-i="${i}" class="${S.fav&&S.fav.id===t.id?"on":""}">${crest(t.name,sp,t.logo)}<span>${esc(t.name)}</span></button>`).join("")}</div>`}
   ${S.fav?`<p class="note" style="text-align:center"><button class="link" data-act="favnone" style="color:var(--loss)">Retirer mon équipe de cœur</button></p>`:""}`}
 async function favSet(i){const [,path,sp]=FAVL[U.favL],t=(FAVT[path]||[])[i];if(!t)return;
   S.fav={sp,id:t.id,path,name:t.name,logo:t.logo};save();closeLayer();toast(`❤️ ${esc(t.name)} est ton équipe de cœur !`,"win");
-  try{await ensureSession();await api("set_fav",{fav:S.fav})}catch(e){}}
+  favPush();}
+async function favPush(){try{if(!(await ensureSession()))return;await api("set_fav",{fav:S.fav});S.favOk=S.fav&&S.fav.id;saveLocal();loadGuide(true)}catch(e){}}
 function favMatch(){if(!S.fav)return null;const id=String(S.fav.id);
   return[...REG.values()].filter(m=>(String(m.hid)===id||String(m.aid)===id)&&["pre","live"].includes(status(m))).sort((a,b)=>a.t-b.t)[0]||null}
 const favCrest=(f,sz=16)=>f&&f.l?`<img class="fcr" src="${esc(f.l)}" alt="" width="${sz}" height="${sz}" referrerpolicy="no-referrer" onerror="this.remove()">`:"";
@@ -2744,7 +2750,7 @@ async function spin(){if(spinning||!wheelAvail()||U.wheelOk===false)return;spinn
   if(!j.ok){spinning=false;if(j.error==="done"){S.bonus=today();saveLocal();if(U.open==="wheel")layer(viewWheel());toast("Tu as déjà tourné la roue aujourd’hui.");render()}
     else{if(b0){b0.disabled=false;b0.textContent="Lancer la roue"}toast("Pas de connexion : réessaie dans un instant.","bad")}return}
   const jack=j.jack,i=j.i,v=j.v;
-  if(j.extra)S.extraSpin=j.day;else S.bonus=j.day;S.wheel={d:today(),v};S.bal+=v;S.peak=Math.max(S.peak,S.bal);if(jack)S.jackpot=(S.jackpot||0)+1;save();
+  gAt=0;if(j.extra)S.extraSpin=j.day;else S.bonus=j.day;S.wheel={d:today(),v};S.bal+=v;S.peak=Math.max(S.peak,S.bal);if(jack)S.jackpot=(S.jackpot||0)+1;save();
   const w=$("#wheel"),b=$("#spin"),jit=(Math.random()-.5)*(jack?JW:WA[i][1]-WA[i][0])*.7,deg=360*7-wCenter(i)+jit;
   if(b){b.disabled=true;b.textContent="Ça tourne…"}
   const end=()=>{spinning=false;$("#bal").textContent=tok(S.bal);bump();
@@ -2852,7 +2858,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.72";
+const VERSION="1.73";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

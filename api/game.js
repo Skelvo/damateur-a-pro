@@ -1520,9 +1520,11 @@ const ACTIONS = {
     const p = await me(s, b.token);
     const f = b.fav;
     if (f == null) { await s.query(`update players set fav = null where id = $1`, [p.id]); return { ok: true }; }
-    const sp = f.sp === "rugby" ? "rugby" : "foot", id = String(f.id || "");
-    const path = String(f.path || ""), logo = String(f.logo || "");
-    if (!/^\d{1,9}$/.test(id) || !/^(soccer|rugby)\/[\w.]{2,30}$/.test(path) || (logo && !/^https:\/\/a\.espncdn\.com\/[\w\/.\-]+$/.test(logo))) throw fail(400, "fav");
+    const sp = ["rugby", "basket"].includes(f.sp) ? f.sp : "foot", id = String(f.id || "");
+    const path = String(f.path || ""), logo0 = String(f.logo || "");
+    if (!/^\d{1,9}$/.test(id) || !FAV_PATHS.includes(path)) throw fail(400, "fav");
+    // logo : ESPN ou un des nôtres ; sinon on s'en passe (l'écusson est dessiné)
+    const logo = /^https:\/\/a\.espncdn\.com\/[\w\/.\-]+$/.test(logo0) || /^logos\/[\w\-]+\.png$/.test(logo0) ? logo0 : "";
     const fav = { sp, id, path, name: cleanName(f.name, 40) || "?", logo: logo || null };
     await s.query(`update players set fav = $2::jsonb where id = $1`, [p.id, JSON.stringify(fav)]);
     return { ok: true, fav };
