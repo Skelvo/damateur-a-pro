@@ -475,122 +475,8 @@ const ACTIONS = {
       bets: (r.bets && r.bets.list) || [], best: (r.bets && r.bets.best) || null, since: Math.round(Number(r.since)) };
   },
 
-  // ---- Côté dark : paris inventés par les membres (anonymes, pari mutuel) ----
-  // Règles : le créateur ne peut pas parier sur son pari ; il donne le résultat après la fin ;
-  // 12 h pour contester (2 contestations = annulé, tout le monde remboursé) ; 2 signalements = pari masqué.
-  // Les jetons restent gérés par chaque téléphone (comme les duels).
-  async dark_create(s, b) {
-    const p = await me(s, b.token);
-    const code = cleanName(b.code, 8).toUpperCase();
-    if (!(await isMember(s, code, p.id))) throw fail(403, "not_member");
-    const q = cleanName(b.question, 140);
-    if (q.length < 6) throw fail(400, "question");
-    const kind = b.kind === "num" ? "num" : "choice";
-    const opts = kind === "num" ? [] : (Array.isArray(b.options) ? b.options : []).map((o) => cleanName(o, 40)).filter(Boolean).slice(0, 4);
-    if (kind === "choice" && (opts.length < 2 || new Set(opts.map((o) => o.toLowerCase())).size !== opts.length)) throw fail(400, "options");
-    const closes = Number(b.closes);
-    if (!Number.isFinite(closes) || closes < Date.now() + 5 * 60e3 || closes > Date.now() + 30 * 86400e3) throw fail(400, "closes");
-    const n = (await s.query(`select count(*)::int as n from dark_bets where creator = $1 and created_at > now() - interval '1 day'`, [p.id]))[0].n;
-    if (n >= 15) throw fail(429, "slow_down");
-    const r = await s.query(
-      `insert into dark_bets (code, creator, question, options, closes, kind, unit) values ($1, $2, $3, $4::jsonb, to_timestamp($5::float8 / 1000), $6, $7) returning id`,
-      [code, p.id, q, JSON.stringify(opts), closes, kind, cleanName(b.unit, 12) || null]);
-    await s.query(`insert into activity (player, kind, data) values ($1, 'darknew', $2::jsonb)`, [p.id, JSON.stringify({ code, q, id: r[0].id })]);
-    await notify(s, await members(s, code), { title: "😈 Nouveau pari dark · " + (await lname(s, code)), body: q, url: go("dark", code), tag: "dark-" + r[0].id }, p.id);
-    return { id: r[0].id };
-  },
+  // (le côté dark a été retiré en v1.28 ; ses tables restent en base, plus rien n'y écrit)
 
-  async dark_list(s, b) {
-    const p = await me(s, b.token);
-    const code = cleanName(b.code, 8).toUpperCase();
-    if (!(await isMember(s, code, p.id))) throw fail(403, "not_member");
-    const rows = await s.query(
-      `select d.id, d.question, d.options, d.kind, d.unit, d.result_num::float8 as result_num, extract(epoch from d.closes) * 1000 as closes, d.result,
-         coalesce((select jsonb_agg(jsonb_build_object('g', g, 'a', a) order by g) from (select guess::float8 as g, sum(amount)::int as a from dark_stakes x where x.bet = d.id and x.guess is not null group by guess) gg), '[]') as guesses,
-         extract(epoch from d.resolved_at) * 1000 as resolved, d.creator = $2 as mine,
-         coalesce((select jsonb_object_agg(opt, tot) from (select opt, sum(amount)::int as tot from dark_stakes x where x.bet = d.id group by opt) z), '{}') as pools,
-         (select count(*)::int from dark_stakes x where x.bet = d.id) as players,
-         (select jsonb_build_object('opt', opt, 'amount', amount, 'guess', guess::float8) from dark_stakes x where x.bet = d.id and x.player = $2) as my,
-         (select count(*)::int from dark_flags f where f.bet = d.id and f.kind = 'contest') as contests,
-         (select count(*)::int from dark_flags f where f.bet = d.id and f.kind = 'report') as reports,
-         exists (select 1 from dark_flags f where f.bet = d.id and f.player = $2 and f.kind = 'contest') as my_contest,
-         exists (select 1 from dark_flags f where f.bet = d.id and f.player = $2 and f.kind = 'report') as my_report
-       from dark_bets d where d.code = $1 and d.created_at > now() - interval '30 days'
-       order by (d.result is null) desc, d.closes asc limit 80`, [code, p.id]);
-    const now = Date.now();
-    return {
-      bets: rows.filter((r) => r.reports < 2).map((r) => {
-        const resolved = r.resolved != null ? Math.round(Number(r.resolved)) : null;
-        let state = "open";
-        if (Number(r.closes) <= now) state = "closed";
-        if (r.result != null) state = r.contests >= 2 ? "void" : now - resolved > 12 * 3600e3 ? "final" : "contest";
-        if (r.result == null && now - Number(r.closes) > 7 * 86400e3) state = "void";   // jamais tranché en 7 jours
-        return { id: r.id, question: r.question, options: r.options, kind: r.kind, unit: r.unit, resultNum: r.result_num, guesses: r.guesses, closes: Math.round(Number(r.closes)), result: r.result, resolved,
-          mine: r.mine, pools: r.pools, players: r.players, my: r.my, contests: r.contests, myContest: r.my_contest, myReport: r.my_report, state };
-      }),
-    };
-  },
-
-  async dark_stake(s, b) {
-    const p = await me(s, b.token);
-    const id = int(b.id, 0, 1e15), opt = int(b.opt, 0, 3), amount = int(b.amount, 1, 1e6);
-    const d = (await s.query(`select d.* from dark_bets d where d.id = $1`, [id]))[0];
-    if (!d || !(await isMember(s, d.code, p.id))) throw fail(404, "unknown");
-    if (String(d.creator) === String(p.id)) throw fail(400, "own_bet");
-    if (new Date(d.closes).getTime() <= Date.now()) throw fail(400, "closed");
-    let guess = null;
-    if (d.kind === "num") {
-      guess = Number(b.guess);
-      if (!Number.isFinite(guess) || Math.abs(guess) > 1e6) throw fail(400, "guess");
-      guess = Math.round(guess * 100) / 100;
-    } else if (opt >= d.options.length) throw fail(400, "option");
-    const o = d.kind === "num" ? 0 : opt;
-    const cur = (await s.query(`select opt, guess::float8 as guess from dark_stakes where bet = $1 and player = $2`, [id, p.id]))[0];
-    if (cur && (cur.opt !== o || (d.kind === "num" && Number(cur.guess) !== guess))) throw fail(400, "other_option");
-    await s.query(
-      `insert into dark_stakes (bet, player, opt, amount, guess) values ($1, $2, $3, $4, $5)
-       on conflict (bet, player) do update set amount = dark_stakes.amount + excluded.amount`, [id, p.id, o, amount, guess]);
-    return { ok: true };
-  },
-
-  async dark_resolve(s, b) {
-    const p = await me(s, b.token);
-    const id = int(b.id, 0, 1e15), result = int(b.result, 0, 3);
-    const val = Number(b.value);
-    const r = await s.query(
-      `update dark_bets set result = $3, result_num = case when kind = 'num' then $4::numeric else null end, resolved_at = now()
-       where id = $1 and creator = $2 and result is null and closes <= now()
-         and ((kind = 'choice' and jsonb_array_length(options) > $3) or (kind = 'num' and $4::numeric is not null))
-       returning id, code, question, kind, options, unit`, [id, p.id, result, Number.isFinite(val) && Math.abs(val) <= 1e6 ? val : null]);
-    if (!r[0]) throw fail(400, "unavailable");
-    const d = r[0], txt = d.kind === "num" ? String(val) + (d.unit ? " " + d.unit : "") : d.options[result];
-    await s.query(`insert into activity (player, kind, data) values ($1, 'darkres', $2::jsonb)`, [p.id, JSON.stringify({ code: d.code, q: d.question, r: txt, id: d.id })]);
-    const stakers = (await s.query(`select player from dark_stakes where bet = $1`, [d.id])).map((x) => x.player);
-    await notify(s, stakers, { title: "😈 Résultat du pari dark", body: `« ${d.question} » : ${txt}. Tu as 12 h pour contester.`, url: go("dark", d.code), tag: "darkres-" + d.id }, p.id);
-    return { ok: true };
-  },
-
-  // contester un résultat (12 h après) ou signaler un pari déplacé
-  async dark_flag(s, b) {
-    const p = await me(s, b.token);
-    const id = int(b.id, 0, 1e15), kind = b.kind === "report" ? "report" : "contest";
-    const d = (await s.query(`select code, creator from dark_bets where id = $1`, [id]))[0];
-    if (!d || !(await isMember(s, d.code, p.id))) throw fail(404, "unknown");
-    if (String(d.creator) === String(p.id)) throw fail(400, "own_bet");
-    await s.query(`insert into dark_flags (bet, player, kind) values ($1, $2, $3) on conflict do nothing`, [id, p.id, kind]);
-    return { ok: true };
-  },
-
-  async dark_delete(s, b) {
-    const p = await me(s, b.token);
-    const r = await s.query(
-      `delete from dark_bets d where d.id = $1 and d.creator = $2 and not exists (select 1 from dark_stakes x where x.bet = d.id) returning id`,
-      [int(b.id, 0, 1e15), p.id]);
-    if (!r[0]) throw fail(400, "locked");
-    return { ok: true };
-  },
-
-  // ---- Prono du week-end ----
   async prono_get(s, b) {
     const p = await me(s, b.token);
     const wk = await pronoWeek(s);
@@ -747,8 +633,8 @@ const ACTIONS = {
          coalesce((select jsonb_object_agg(emo, n) from (select emo, count(*)::int as n from reactions r where r.act = a.id group by emo) x), '{}') as reacts,
          (select emo from reactions r where r.act = a.id and r.player = $2) as mine
        from activity a join league_members m on m.player = a.player and m.code = $1 join players pl on pl.id = a.player
-       where a.at > now() - interval '7 days' and (a.kind not like 'dark%' or a.data->>'code' = $1) order by a.at desc limit 60`, [code, p.id]);
-    return { me: p.id, items: rows.map((r) => r.kind.startsWith("dark") ? { id: r.id, who: null, name: "?", av: 0, kind: r.kind, data: r.data, at: Math.round(Number(r.ms)), reacts: r.reacts, mine: r.mine } : ({ id: r.id, who: r.player, name: r.name, av: r.avatar_v || 0, kind: r.kind, data: r.data, at: Math.round(Number(r.ms)), reacts: r.reacts, mine: r.mine })) };
+       where a.at > now() - interval '7 days' and a.kind not like 'dark%' order by a.at desc limit 60`, [code, p.id]);
+    return { me: p.id, items: rows.map((r) => ({ id: r.id, who: r.player, name: r.name, av: r.avatar_v || 0, kind: r.kind, data: r.data, at: Math.round(Number(r.ms)), reacts: r.reacts, mine: r.mine })) };
   },
 
   async react(s, b) {
