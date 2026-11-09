@@ -486,6 +486,9 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 .itl{display:flex;justify-content:space-between;background:#00000030;border-radius:9px;padding:7px 10px;margin-top:5px;font-size:14px}.itg{font-size:13.5px;margin-top:7px;color:#d6e0da}
 .ilist{display:grid;gap:8px;text-align:left}.ilist>div{display:flex;gap:10px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.ilist span{font-size:24px;line-height:1.2}.ilist p{margin:0!important;font-size:14px!important}
 .ifoot{display:flex;gap:8px;margin-top:14px}.ifoot .btn.ghost{width:56px;flex:none;font-size:22px;padding:10px 0}
+.trm{cursor:default}.trc{font-size:34px;line-height:1.3}.trev{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin:8px 0;font-size:14px;display:grid;gap:4px}
+.trtk{background:var(--card2,var(--card));border:1px solid var(--line2);border-radius:14px;padding:10px 12px;margin-top:10px}.trtk .chips{margin:8px 0}
+.trwin{text-align:center;margin-top:12px}.trwin>b{display:block;font:800 24px "Barlow Condensed";text-transform:uppercase;margin:8px 0 4px}.trwin p{margin:0 0 10px}.trwin .ibox{margin-bottom:8px}
 #coach{position:fixed;inset:0;z-index:55;pointer-events:none}#coach[hidden]{display:none}.cbt [hidden]{display:none!important}
 .cspot{position:fixed;border-radius:14px;box-shadow:0 0 0 9999px #000a;border:2.5px solid var(--sel);transition:all .25s;animation:cpulse 1.4s infinite}
 @keyframes cpulse{50%{border-color:#fff8;box-shadow:0 0 0 9999px #000a,0 0 18px 4px #ffd23f88}}
@@ -743,7 +746,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.69"></script>
+<script src="engine.js?v=1.70"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -1314,7 +1317,7 @@ async function place(){const n=U.sel.length;if(!n||U.placing)return;const stake=
   toast(`${ic("ticket")} Pari validé ! Bonne chance.`,"win")}
 
 document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(!t)return;const a=t.dataset.act,d=t.dataset;
-  if(a==="scrim"){if(e.target===t&&U.open!=="welcome"&&U.open!=="tos"&&U.open!=="intro")closeLayer();return}
+  if(a==="scrim"){if(e.target===t&&U.open!=="welcome"&&U.open!=="tos"&&U.open!=="intro"&&U.open!=="train")closeLayer();return}
   e.stopPropagation();
   switch(a){
     case"tab":U.tab=d.tab;U.open=null;layer("");render();window.scrollTo({top:0});if(d.tab==="l")loadBoards();break;
@@ -1410,6 +1413,11 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"istart":introEnd(true);break;
     case"cskip":stopCoach(false);toast("Guide arrêté. Tu peux le relancer dans Carrière › Comment ça marche ?");break;
     case"cnext":coachNext();break;
+    case"trk":if(U.tr&&U.tr.ph!=="play"&&U.tr.ph!=="done"){U.tr.k=+d.v;layer(viewTrain())}break;
+    case"trs":if(U.tr){U.tr.s=+d.v;layer(viewTrain())}break;
+    case"trgo":trPlay();break;
+    case"trend":trEnd();break;
+    case"train":startCoach();break;
     case"gtog":U.gOpen=!(U.gOpen??true);render();break;
     case"gclaim":guideClaim(d.k);break;
     case"ggo":guideGo(d.k);break;
@@ -1654,7 +1662,7 @@ function openIntro(){if(U.open&&U.open!=="intro"&&U.open!=="help"){setTimeout(()
 function viewIntro(){const i=U.ii,X=U.ix,O=[["PSG",1.65],["Nul",3.8],["Lens",5.2]],o=O[X.o];
   const S1=`<div class="iart">🏟️</div><h2>Parie sur les vrais matchs</h2><p>Foot, rugby, tennis et NBA : les vrais matchs, avec les scores <b>en direct</b>. Tu paries sur qui gagne, mais aussi sur les buteurs, les cartons, les corners, les essais, les aces…</p>
     <div class="ichips"><span>⚽ Foot</span><span>🏉 Rugby</span><span>🎾 Tennis</span><span>🏀 NBA</span></div>
-    <div class="ibox">🎁 <b>1 000 jetons offerts</b> pour commencer.<br>Ce sont des <b>jetons fictifs</b> : tout est gratuit, aucun argent en jeu, jamais.</div>`;
+    <div class="ibox">🎁 <b>1 000 jetons offerts</b> pour commencer${S.starter==="pending"?" : tu les gagnes sur un match d’entraînement à la fin de cette présentation":""}.<br>Ce sont des <b>jetons fictifs</b> : tout est gratuit, aucun argent en jeu, jamais.</div>`;
   const S2=`<div class="iart">🔢</div><h2>La cote, en 10 secondes</h2><p>Chaque pronostic a une <b>cote</b>. Touche un choix pour voir :</p>
     <div class="imc"><div class="imt"><b>PSG</b><span>contre</span><b>Lens</b></div><div class="odds c3">${O.map((x,k)=>`<button class="odd" data-act="ixo" data-v="${k}" aria-pressed="${X.o===k}"><span>${["1","N","2"][k]}</span><b>${fr(x[1])}</b></button>`).join("")}</div>
     <div class="ilegend"><span>1 = PSG gagne</span><span>N = match nul</span><span>2 = Lens gagne</span></div></div>
@@ -1673,46 +1681,79 @@ function viewIntro(){const i=U.ii,X=U.ix,O=[["PSG",1.65],["Nul",3.8],["Lens",5.2
   const body=[S1,S2,S3,S4][i];
   return`<div class="intro" id="intro"><div class="ihead"><span class="idots">${Array.from({length:INTRO_N},(_,k)=>`<i class="${k===i?"on":""}"></i>`).join("")}</span><button class="link" data-act="iskip">Passer</button></div>
     <div class="ibody">${body}</div>
-    <div class="ifoot">${i>0?`<button class="btn ghost" data-act="iprev">‹</button>`:""}${i<INTRO_N-1?`<button class="btn gold wide" data-act="inext">Suivant</button>`:`<button class="btn gold wide" data-act="istart">${ic("ticket")} ${S.bets.length?"Guide pas à pas":"Faire mon premier pari"}</button>`}</div>${i===INTRO_N-1&&S.bets.length?`<p class="note" style="margin:10px 0 0"><button class="link" data-act="iskip">C’est bon, j’ai compris</button></p>`:""}</div>`}
+    <div class="ifoot">${i>0?`<button class="btn ghost" data-act="iprev">‹</button>`:""}${i<INTRO_N-1?`<button class="btn gold wide" data-act="inext">Suivant</button>`:`<button class="btn gold wide" data-act="istart">${ic("ticket")} ${S.starter==="pending"?"Mon match d’entraînement":"Match d’entraînement"}</button>`}</div>${i===INTRO_N-1?`<p class="note" style="margin:10px 0 0"><button class="link" data-act="iskip">${S.starter==="pending"?"Passer et recevoir mes 1 000 jetons":"C’est bon, j’ai compris"}</button></p>`:""}</div>`}
 function introGo(d){U.ii=Math.max(0,Math.min(INTRO_N-1,U.ii+d));layer(viewIntro());const s=$(".sheet");if(s)s.scrollTop=0}
 let ixT=null;
 document.addEventListener("touchstart",e=>{if(U.open==="intro"&&e.target.closest&&e.target.closest("#intro"))ixT={x:e.touches[0].clientX,y:e.touches[0].clientY}},{passive:true});
 document.addEventListener("touchend",e=>{if(!ixT||U.open!=="intro")return;const dx=e.changedTouches[0].clientX-ixT.x,dy=e.changedTouches[0].clientY-ixT.y;ixT=null;if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5)introGo(dx<0?1:-1)},{passive:true});
-function introEnd(coach){S.introSeen=1;save();closeLayer();if(coach)startCoach();else toast("Tu peux revoir la présentation dans Carrière › Comment ça marche ?")}
+function introEnd(coach){S.introSeen=1;save();closeLayer();if(coach)startCoach();else if(!grantStarter(false))toast("Tu peux revoir la présentation dans Carrière › Comment ça marche ?")}
 
-// 2) premier pari accompagné, sur le vrai écran (un projecteur sur l'élément à toucher + une bulle)
+// 2) match d'entraînement : un faux match qui se joue en quelques secondes, sans toucher aux vrais matchs.
+// Le premier pari est forcément gagné et débloque les 1 000 premiers jetons du nouveau joueur.
+const TR_O=[1.85,3.4,4.2],TR_T=["Les Novices FC","Tribune United"];
+function grantStarter(quiet){if(S.starter!=="pending")return false;S.starter="done";S.bal+=1000;S.peak=Math.max(S.peak,S.bal);save();render();bump();
+  if(!quiet){confetti();toast(`${ic("coin")} Tes 1 000 premiers jetons sont arrivés. À toi de jouer !`,"win")}return true}
+function openTraining(){U.tr={k:null,s:0,ph:"pick",min:0,sc:[0,0],ev:[]};U.open="train";layer(viewTrain())}
+function viewTrain(){const T=U.tr,o=T.k!=null?TR_O[T.k]:0,lab=["Victoire des Novices","Match nul","Victoire de Tribune United"];
+  let h=`<div class="grab"><h3>Match d’entraînement</h3></div><p class="note" style="text-align:left;margin-top:0">Un faux match pour apprendre, <b>sans risque</b> : il se joue en quelques secondes.</p>
+  <div class="mc trm"><div class="mc-top"><span class="chip">Entraînement</span><span class="comp">Coupe des débutants</span></div>
+  <div class="teams"><div class="tm"><span class="trc">🟢</span><b>${TR_T[0]}</b></div><div class="mid">${T.ph==="pick"||T.ph==="stake"?`<div class="ko">Prêt</div><small>coup d’envoi</small>`:`<div class="score">${T.sc[0]}–${T.sc[1]}</div><small class="live-t">${T.ph==="done"?"Terminé":T.min+"’"}</small>`}</div><div class="tm"><span class="trc">🟡</span><b>${TR_T[1]}</b></div></div>
+  <div class="odds c3 tr-odds">${TR_O.map((x,k)=>`<button class="odd" data-act="trk" data-v="${k}" aria-pressed="${T.k===k}" ${T.ph==="play"||T.ph==="done"?"disabled":""}><span>${["1","N","2"][k]}</span><b>${fr(x)}</b></button>`).join("")}</div>
+  <div class="ilegend"><span>1 = Novices gagnent</span><span>N = nul</span><span>2 = Tribune gagne</span></div></div>`;
+  if(T.ev.length)h+=`<div class="trev">${T.ev.map(e=>`<div>${e}</div>`).join("")}</div>`;
+  if(T.k!=null&&T.ph!=="done")h+=`<div class="trtk"><div class="leg"><span class="ic">${ic("ticket")}</span><div><b>${lab[T.k]}</b><small>Ton pronostic</small></div><span class="o">${fr(o)}</span></div>
+    ${T.ph==="play"?"":`<div class="chips tr-chips">${[10,20,50,100].map(v=>`<button data-act="trs" data-v="${v}" aria-pressed="${T.s===v}">${v}</button>`).join("")}</div>`}
+    <div class="sum"><div><small>Mise (jetons d’entraînement)</small><b>${T.s||"—"}</b></div><div class="g"><small>Gain possible</small><b>${T.s?tok(Math.round(T.s*o)):"—"}</b></div></div>
+    ${T.s?`<p class="note" style="margin:6px 0">${T.s} × ${fr(o)} = <b>${tok(Math.round(T.s*o))}</b> jetons si c’est bon.</p>`:""}
+    ${T.ph==="play"?`<button class="btn wide" disabled>Le match se joue…</button>`:`<button class="btn gold wide tr-go" data-act="trgo" ${T.s?"":"disabled"}>${ic("ticket")} Valider mon pari</button>`}</div>`;
+  if(T.ph==="done"){const g=Math.round(T.s*o),st=S.starter==="pending";
+    h+=`<div class="trwin"><div class="tag won" style="font-size:16px">GAGNÉ ✓</div><b>Bravo, ton pronostic est bon !</b><p>Mise ${T.s} × cote ${fr(o)} = <b class="pos">+${tok(g)}</b> jetons d’entraînement.</p>
+      ${st?`<div class="ibox calc">🎁 Pour fêter ton premier pari gagné, <b>tes 1 000 premiers jetons</b> sont à toi !</div>`:""}
+      <p class="isub">Sur les vrais matchs, c’est pareil : touche une cote, choisis ta mise, valide. Le pari se règle tout seul à la fin du match.</p>
+      <button class="btn gold wide tr-end" data-act="trend">${st?ic("coin")+" Récupérer mes 1 000 jetons":"Continuer"}</button></div>`}
+  return h}
+function trPlay(){const T=U.tr;if(!T||T.k==null||!T.s)return;T.ph="play";T.min=0;T.sc=[0,0];T.ev=[];
+  // le scénario finit toujours sur le pronostic choisi
+  const goals=T.k===0?[[23,0],[58,1],[77,0]]:T.k===1?[[31,1],[66,0]]:[[18,1],[49,0],[84,1]];
+  const tick=()=>{if(!U.tr||U.open!=="train")return;T.min=Math.min(90,T.min+6);for(const[m,s]of goals)if(m<=T.min&&!T.ev.some(e=>e.startsWith(m+"’"))){T.sc[s]++;T.ev.push(`${m}’ ⚽ But pour ${TR_T[s]} (${T.sc[0]}–${T.sc[1]})`)}
+    if(T.min>=90){T.ph="done";layer(viewTrain());confetti();return}layer(viewTrain());setTimeout(tick,260)};
+  layer(viewTrain());setTimeout(tick,300)}
+function trEnd(){U.tr=null;U.open=null;layer("");grantStarter(true);if(U.coach){U.coach.end=0;U.tab="m";render();window.scrollTo({top:0});coachTick()}else render()}
 const COACH_END=[
-  {sel:()=>$('.nav [data-tab=b]'),txt:"Bravo, ton premier pari est lancé 🎉<br>Il est dans <b>Mes paris</b>. Il se règle <b>tout seul</b> à la fin du match et tu es prévenu. Avant la fin, tu peux souvent l’<b>encaisser</b> pour garder un gain."},
+  {sel:()=>$('.nav [data-tab=m]'),txt:"Voilà tes <b>1 000 jetons</b> 💰 À toi de jouer sur les <b>vrais matchs</b> quand tu veux : touche une cote, choisis ta mise, valide. Tu peux aussi toucher un match pour voir tous ses paris (buteurs, cartons, corners…)."},
+  {sel:()=>$('.nav [data-tab=b]'),txt:"<b>Mes paris</b> : tes tickets en cours et terminés. Ils se règlent <b>tout seuls</b> à la fin des matchs. Avant la fin, tu peux souvent <b>encaisser</b> pour garder un gain."},
   {sel:()=>$('.nav [data-tab=l]'),txt:"<b>Guildes</b> : crée ou rejoins un groupe avec tes potes ou tes collègues. Classements de la semaine et du mois, chat, prono du week-end, duels et combats de guildes."},
   {sel:()=>$('.nav [data-tab=c]'),txt:"<b>Carrière</b> : ta division, tes statistiques, tes succès et l’aide « Comment ça marche ? » si tu as une question."}];
-let coachT=0;
-function startCoach(){U.coach={end:-1,bets:S.bets.length};U.stakeTouched=false;if(U.open)closeLayer();if(U.tab!=="m"){U.tab="m";render()}window.scrollTo({top:0});
+let coachT=0,safeTop=null;
+function topSafe(){if(safeTop==null){const d=document.createElement("div");d.style.cssText="position:fixed;top:0;padding-top:env(safe-area-inset-top,0px);visibility:hidden";document.body.appendChild(d);safeTop=parseFloat(getComputedStyle(d).paddingTop)||0;d.remove()}return safeTop}
+function startCoach(){U.coach={end:-1};if(U.open)closeLayer();if(U.tab!=="m"){U.tab="m";render()}window.scrollTo({top:0});
   let c=$("#coach");if(!c){c=document.createElement("div");c.id="coach";c.innerHTML=`<div class="cspot"></div><div class="cbub"><small class="cst"></small><p class="ctx"></p><div class="cbt"><button class="link" data-act="cskip">Passer le guide</button><button class="btn gold" data-act="cnext" hidden>Suivant</button></div></div>`;document.body.appendChild(c)}
-  c.hidden=false;U.coachScrolled=false;clearInterval(coachT);coachT=setInterval(coachTick,250);coachTick()}
-function stopCoach(done){clearInterval(coachT);U.coach=null;const c=$("#coach");if(c)c.hidden=true;S.coachDone=1;save();
-  if(done){U.tab="m";render();window.scrollTo({top:0});confetti();toast("Guide terminé ! Il te reste quelques missions « Premiers pas » à faire pour gagner des jetons 🎁","win");loadGuide(true)}}
-function firstOdd(){return[...document.querySelectorAll("#main .mc .odd:not([disabled])")].find(b=>b.offsetParent)}
-function coachStep(){const C=U.coach,desk=!!$(".dslip");
+  c.hidden=false;openTraining();clearInterval(coachT);coachT=setInterval(coachTick,250);coachTick()}
+function stopCoach(done){clearInterval(coachT);U.coach=null;const c=$("#coach");if(c)c.hidden=true;S.coachDone=1;
+  if(U.open==="train"){U.tr=null;U.open=null;layer("")}grantStarter(false);save();
+  if(done){U.tab="m";render();window.scrollTo({top:0});toast("Guide terminé ! Il te reste quelques missions « Premiers pas » pour gagner des jetons 🎁","win");loadGuide(true)}}
+function coachStep(){const C=U.coach,T=U.tr;
   if(C.end>=0)return{n:5+C.end,...COACH_END[C.end],next:true};
-  if(S.bets.length>C.bets){C.end=0;return coachStep()}
-  if(!U.sel.length){if(U.open)return{n:1,txt:"Ferme cette fiche (✕) puis <b>touche une cote</b> sur un match."};if(U.tab!=="m")return{n:1,txt:"Va dans l’onglet <b>Matchs</b>, en bas à gauche."};
-    return{n:1,sel:firstOdd,scroll:true,txt:"<b>Touche une cote</b> pour choisir ton pronostic.<br><b>1</b> = l’équipe de gauche gagne · <b>N</b> = match nul · <b>2</b> = l’équipe de droite gagne.<br>Le nombre, c’est la cote : ce que rapporte chaque jeton misé."}}
-  if(U.open!=="slip"&&!desk){if(U.open)return{n:2,txt:"C’est dans ton ticket ! Ferme cette fiche (✕) et touche <b>Mon ticket</b> en bas de l’écran."};
-    return{n:2,sel:()=>$(".slipbar"),txt:"Ton pronostic est dans <b>ton ticket</b>. Touche-le pour choisir ta mise."}}
-  const root=desk&&U.open!=="slip"?".dslip":".sheet";
-  if(!U.stakeTouched)return{n:3,sel:()=>$(root+" .chips"),next:true,txt:"<b>Choisis ta mise</b> (en jetons). Le <b>gain possible</b> = mise × cote, il s’affiche juste en dessous.<br>Pour un premier pari, 10 ou 20 jetons suffisent."};
-  return{n:4,sel:()=>$(root+" [data-act=place]"),txt:"<b>Valide ton pari !</b> On peut parier jusqu’au coup d’envoi. Si le match a déjà commencé, le pari est refusé."}}
+  if(!T)return{n:1,txt:"…"};
+  if(T.ph==="done")return{n:4,sel:()=>$(".tr-end"),txt:"<b>Gagné !</b> Touche le bouton jaune 👇"};
+  if(T.ph==="play")return{n:4,hide:true};
+  if(T.k==null)return{n:1,sel:()=>$(".tr-odds"),txt:"<b>Touche une cote</b> : c’est ton pronostic 👇"};
+  if(!T.s)return{n:2,sel:()=>$(".tr-chips"),txt:"<b>Choisis ta mise</b> (jetons d’entraînement) 👇"};
+  return{n:3,sel:()=>$(".tr-go"),txt:"<b>Valide ton pari</b> et regarde le match 👇"}}
 function coachTick(){const C=U.coach,c=$("#coach");if(!C||!c)return;const st=coachStep(),el=st.sel&&st.sel();
-  if(el&&st.scroll&&!U.coachScrolled){U.coachScrolled=true;el.scrollIntoView({block:"center",behavior:"smooth"})}
-  const sp=c.querySelector(".cspot"),bub=c.querySelector(".cbub"),W=innerWidth,H=innerHeight,bw=Math.min(380,W-24);
-  c.querySelector(".cst").textContent=`Étape ${st.n} sur 7`;const tx=c.querySelector(".ctx");if(tx.dataset.t!==st.txt){tx.dataset.t=st.txt;tx.innerHTML=st.txt}
+  const sp=c.querySelector(".cspot"),bub=c.querySelector(".cbub"),W=innerWidth,H=innerHeight,bw=Math.min(380,W-24),top0=topSafe()+10;
+  bub.style.display=st.hide?"none":"";sp.style.display="none";if(st.hide)return;
+  if(el&&!el.dataset.cv){el.dataset.cv=1;const r0=el.getBoundingClientRect();if(r0.top<top0+60||r0.bottom>H-90)el.scrollIntoView({block:"center",behavior:"smooth"})}
+  c.querySelector(".cst").textContent=`Étape ${st.n} sur 8`;const tx=c.querySelector(".ctx");if(tx.dataset.t!==st.txt){tx.dataset.t=st.txt;tx.innerHTML=st.txt}
   const nb=c.querySelector("[data-act=cnext]");nb.hidden=!st.next;nb.textContent=C.end===COACH_END.length-1?"Terminer":"Suivant";
-  bub.style.width=bw+"px";bub.style.left=Math.round((W-bw)/2)+"px";
+  bub.style.width=bw+"px";bub.style.left=Math.round((W-bw)/2)+"px";const bh=bub.offsetHeight;
   if(el){const r=el.getBoundingClientRect(),p=6;Object.assign(sp.style,{display:"block",left:r.left-p+"px",top:r.top-p+"px",width:r.width+2*p+"px",height:r.height+2*p+"px"});
-    const bh=bub.offsetHeight;if(r.top>H/2){bub.style.top=(r.top-p-14-bh<H*.35?Math.max(8,r.top-p-14-bh):12)+"px"}else bub.style.top=Math.min(H-bh-8,r.bottom+p+14)+"px"}
-  else{sp.style.display="none";bub.style.top=Math.max(8,H-bub.offsetHeight-110)+"px"}}
-function coachNext(){const C=U.coach;if(!C)return;if(C.end<0){U.stakeTouched=true;coachTick();return}
-  if(C.end>=COACH_END.length-1){stopCoach(true);return}C.end++;coachTick()}
+    // bulle juste au-dessus de l'élément s'il est en bas de l'écran, sinon juste en dessous (jamais sous la barre d'état)
+    const sh=U.open==="train"&&$(".sheet"),st0=sh?sh.getBoundingClientRect().top:0;
+    if(sh&&st0-bh-12>=top0)bub.style.top=(st0-bh-12)+"px";   // match d'entraînement : bulle dans l'espace libre au-dessus de la fiche
+    else if(r.top>H/2)bub.style.top=Math.max(top0,r.top-p-12-bh)+"px";else bub.style.top=Math.max(top0,Math.min(H-bh-8,r.bottom+p+12))+"px"}
+  else bub.style.top=Math.max(top0,H-bh-110)+"px"}
+function coachNext(){const C=U.coach;if(!C||C.end<0)return;if(C.end>=COACH_END.length-1){stopCoach(true);return}C.end++;coachTick()}
 
 // 3) missions « Premiers pas » (vérifiées par le serveur)
 const GSTEPS=[["bet","🎟️","Faire ton premier pari","Touche une cote, choisis ta mise, valide."],["wheel","🎡","Tourner la roue de la chance","Un tour gratuit chaque jour."],
@@ -1730,7 +1771,7 @@ function guideCard(){const g=U.gs;if(!g||S.guideHide||g.all)return"";const n=GST
   return h+`</div>`}
 async function guideClaim(k){try{const j=await api("guide_claim",{step:k});if(j.error)throw j;if(j.amount){S.bal+=j.amount;S.peak=Math.max(S.peak,S.bal);save();bump();if(k==="all")confetti();toast(`🎁 +${j.amount} jetons !`,"win")}await loadGuide(true)}
   catch(e){toast("Pas encore validé : réessaie dans un instant.","bad");loadGuide(true)}}
-function guideGo(k){if(k==="bet"){startCoach();return}if(k==="wheel"){const wb=$("[data-act=wheel]");if(wheelAvail()&&wb)wb.click();else toast("Tu as déjà tourné la roue aujourd’hui : reviens demain !");return}
+function guideGo(k){if(k==="bet"){U.tab="m";render();const o=[...document.querySelectorAll("#main .mc")].find(x=>x.offsetParent);if(o)o.scrollIntoView({block:"center",behavior:"smooth"});toast("Choisis un vrai match et touche une cote : ton pronostic va dans ton ticket.");return}if(k==="wheel"){const wb=$("[data-act=wheel]");if(wheelAvail()&&wb)wb.click();else toast("Tu as déjà tourné la roue aujourd’hui : reviens demain !");return}
   if(k==="guild"){U.tab="l";render();window.scrollTo({top:0});loadBoards();toast("Crée ta guilde, rejoins-en une avec un code, ou trouve-en une dans l’annuaire.");return}
   if(k==="push"){pushEnable();return}if(k==="fav"){openFav();return}
   if(k==="combo"){openHelp("combo");return}}
@@ -1761,7 +1802,7 @@ const HELP=[["Parier",[
   ["notif","Notifications","Active-les avec la cloche en haut ou dans Carrière : coup d’envoi de tes matchs, résultats, rappels (0, 1 ou 2 par jour), messages de ta guilde. Sur iPhone, il faut d’abord installer l’app."],
   ["securite","Signaler, bloquer, supprimer","Dans le chat, touche <b>•••</b> sur un message pour le signaler ou bloquer son auteur. Un pseudo se signale depuis sa fiche. Tu peux supprimer ton compte dans Carrière. Une question ? Carrière › Nous écrire."]]]];
 function openHelp(focus){U.open="help";layer(`<div class="grab"><h3>Comment ça marche ?</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
-  <div class="hbtns"><button class="btn ghost" data-act="intro">▶️ Revoir la présentation</button><button class="btn ghost" data-act="coach">🎟️ Guide du premier pari</button></div>
+  <div class="hbtns"><button class="btn ghost" data-act="intro">▶️ Revoir la présentation</button><button class="btn ghost" data-act="coach">🎟️ Match d’entraînement</button></div>
   ${HELP.map(([g,L])=>`<div class="grp">${g}</div>`+L.map(([k,q,a])=>`<details class="hq" id="hq-${k}"${k===focus?" open":""}><summary>${q}</summary><p>${a}</p></details>`).join("")).join("")}
   <p class="note">Pas trouvé ? <button class="link" data-act="contact" style="padding:0">Écris-nous</button>.</p>`);
   if(focus)setTimeout(()=>{const e=$("#hq-"+focus);if(e)e.scrollIntoView({block:"center"})},80)}
@@ -2670,7 +2711,7 @@ function viewWelcome(rename,msg){return`<div class="welcome">${rename?`<div clas
   <div class="form" style="text-align:left"><label>Ton pseudo<input id="w-name" maxlength="18" value="${esc(S.name)}" placeholder="ex. Le Pronostiqueur" autocomplete="nickname"></label>
   <p class="warn" id="w-err" hidden></p>
   ${rename?"":`<label class="agechk"><input type="checkbox" id="w-age"><span>J’ai <b>18 ans ou plus</b> et j’accepte les <button class="link" data-act="wlegal" style="padding:0">règles du jeu et la politique de confidentialité</button>.</span></label><div id="w-legal" hidden></div>`}
-  <button class="btn gold wide" data-act="wgo">${rename?"Enregistrer":ic("coin")+" Recevoir mes 1 000 jetons"}</button></div>
+  <button class="btn gold wide" data-act="wgo">${rename?"Enregistrer":"C’est parti !"}</button></div>
   ${rename?"":STANDALONE?`<div class="info" style="text-align:left;margin-top:14px">${ic("info")}<span><b style="color:var(--ink)">Tu as déjà un compte ?</b> Nouveau téléphone, appli réinstallée… entre ton code de compte et tu retrouves tout.<br><button class="btn ghost" data-act="xfer" style="margin-top:8px">Entrer mon code</button></span></div>`
     :`<button class="link" data-act="xfer" style="margin-top:10px">J’ai déjà un compte (code de transfert)</button>`}
   ${rename?"":`<p class="note" style="margin-top:12px">Jetons fictifs, aucun argent réel. Jeu réservé au divertissement.</p>`}</div>`}
@@ -2679,11 +2720,12 @@ async function welcomeGo(){const inp=$("#w-name"),n=(inp.value||"").replace(/\s+
   if(first&&!($("#w-age")&&$("#w-age").checked)){err.hidden=false;err.textContent="Coche la case : Tribune est réservé aux 18 ans et plus.";return}b.disabled=true;err.hidden=true;
   const bad=()=>{err.hidden=false;err.textContent=`« ${n} » n’est pas accepté. Choisis un pseudo correct.`;b.disabled=false;inp.focus();inp.select()};
   const taken=()=>{err.hidden=false;err.textContent=`« ${n} » est déjà pris. Choisis un autre pseudo.`;b.disabled=false;inp.focus();inp.select()};
+  if(first&&!S.tok&&!S.bets.length&&S.starter!=="done"){S.bal=0;S.peak=Math.max(0,S.peak);S.starter="pending"}
   try{if(first||!S.tok){const j=await api("session",{name:n,bal:S.bal,peak:S.peak,...myStats()});S.tok=j.token;S.pid=j.id}
     else{const j=await api("sync",{name:n,bal:S.bal,peak:S.peak,...myStats()});if(j.name_taken){taken();return}if(j.name_bad){bad();return}}}
   catch(e){if(e.code==="name_taken"){taken();return}if(e.code==="name_bad"){bad();return}}   // hors connexion : on accepte, la vérification se fera plus tard
   if(first)S.tosV=TOS_V;S.name=n;askedName=false;save();U.open=null;layer("");render();
-  if(first){setTimeout(joinFromLink,400);setTimeout(()=>{if(!U.open&&!S.introSeen)openIntro()},1600);toast(`${ic("coin")} 1 000 jetons offerts. À toi de jouer !`,"win");confetti()}else toast("Pseudo enregistré.","win")}
+  if(first){setTimeout(joinFromLink,400);setTimeout(()=>{if(!S.introSeen)openIntro();else grantStarter(false)},900)}else toast("Pseudo enregistré.","win")}
 
 /* ---------- installer l'app / changer d'appareil ---------- */
 const UA=navigator.userAgent,STANDALONE=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
@@ -2758,7 +2800,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.69";
+const VERSION="1.70";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -2776,7 +2818,7 @@ loadFeeds();
 setTimeout(()=>{if(S.dk&&Object.values(S.dk).some(x=>!x.settled))checkDarkAll()},5000);
 goFrom(location.href);
 setTimeout(loadEvents,1200);
-setTimeout(()=>{pushRefresh();if(S.name&&S.tosV!==TOS_V)openTos();else if(S.name&&!S.introSeen)openIntro();if(S.name){claimPrizes();claimBattles();claimGifts();ensureRcode();loadGuide(true)}if(S.name)loadBoards().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){loadProno();loadLm(U.lg.code||U.lg.data.leagues[0].code);const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},3000);
+setTimeout(()=>{pushRefresh();if(S.name&&S.starter==="pending"&&S.introSeen&&!U.coach)grantStarter(false);if(S.name&&S.tosV!==TOS_V)openTos();else if(S.name&&!S.introSeen)openIntro();if(S.name){claimPrizes();claimBattles();claimGifts();ensureRcode();loadGuide(true)}if(S.name)loadBoards().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){loadProno();loadLm(U.lg.code||U.lg.data.leagues[0].code);const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},3000);
 setInterval(()=>{if(!document.hidden&&S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},12e4);
 setInterval(()=>{if(document.hidden)return;
   const anyLive=[...REG.values()].some(m=>m.src==="espn"&&m.state==="in");const stale=Object.values(FEED).some(f=>f.at&&Date.now()-f.at>(anyLive?6e4:5*6e4));
