@@ -747,7 +747,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.71"></script>
+<script src="engine.js?v=1.72"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -1517,6 +1517,9 @@ async function api(action,data={}){const c=new AbortController(),t=setTimeout(()
   finally{clearTimeout(t)}}
 function wheelSync(j){if(j&&j.av!=null&&j.av!==(S.avv||0)){S.avv=j.av;S.avatar=null;saveLocal();if(!U.open)render()}   // photo du compte (après reconnexion, autre téléphone…)
   const w=j&&j.wheel;if(!w)return;let ch=false;if(w.b&&w.b>(S.bonus||"")){S.bonus=w.b;ch=true}if(w.x&&w.x>(S.extraSpin||"")){S.extraSpin=w.x;ch=true}if(ch){saveLocal();if(!U.open)render()}}
+// paris annulés par les organisateurs : remboursés et marqués « Remboursé »
+function applyCancel(j){if(!j||!Array.isArray(j.cancel))return;let n=0;for(const c of j.cancel){const b=S.bets.find(x=>x.id===c.cid&&x.st==="open");if(!b)continue;b.st="void";b.pay=b.stake;b.done=Date.now();S.bal+=b.stake;n++}
+  if(n){save();render();toast(`↺ ${n>1?n+" paris annulés":"Un pari annulé"} par les organisateurs : mise remboursée.`)}}
 const myStats=()=>{const d=S.bets.filter(b=>b.st==="won"||b.st==="lost");return{won:d.filter(b=>b.st==="won").length,lost:d.filter(b=>b.st==="lost").length}};
 let sessP=null;
 function ensureSession(){if(S.tok)return Promise.resolve(true);if(!S.name)return Promise.resolve(false);
@@ -1527,8 +1530,8 @@ let askedName=false;
 function askNewName(bad){if(askedName||U.open==="welcome"||U.open==="tos")return;askedName=true;U.open="welcome";layer(viewWelcome(true,bad?`Le pseudo « ${esc(S.name)} » n’est pas accepté (mot interdit ou signalé par plusieurs joueurs). Choisis-en un autre.`:`Le pseudo « ${esc(S.name)} » est déjà pris par un autre joueur. Choisis-en un autre pour apparaître dans les classements.`))}
 let syncT=0;
 function syncSoon(){if(!S.name)return;clearTimeout(syncT);syncT=setTimeout(async()=>{if(!(await ensureSession()))return;
-  try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,wb:S.bonus,wx:S.extraSpin,tos:S.tosV||"",...myStats(),...betsPayload()});wheelSync(j);if(j.name_taken)askNewName();if(j.name_bad)askNewName(true);backupSoon()}catch(e){if(e.code==="no_session"&&await ensureSession())syncSoon()}},2000)}
-async function syncNow(){clearTimeout(syncT);if(!(await ensureSession()))return false;try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,wb:S.bonus,wx:S.extraSpin,tos:S.tosV||"",...myStats(),...betsPayload()});wheelSync(j);if(j.name_bad)askNewName(true);return true}catch(e){return false}}
+  try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,wb:S.bonus,wx:S.extraSpin,tos:S.tosV||"",...myStats(),...betsPayload()});wheelSync(j);applyCancel(j);if(j.name_taken)askNewName();if(j.name_bad)askNewName(true);backupSoon()}catch(e){if(e.code==="no_session"&&await ensureSession())syncSoon()}},2000)}
+async function syncNow(){clearTimeout(syncT);if(!(await ensureSession()))return false;try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,wb:S.bonus,wx:S.extraSpin,tos:S.tosV||"",...myStats(),...betsPayload()});wheelSync(j);applyCancel(j);if(j.name_bad)askNewName(true);return true}catch(e){return false}}
 const pickKey=s=>s.mk+(s.line!=null?s.line:"");
 function sendPicks(sel){const picks=sel.filter(s=>!PMK[s.mk]).map(s=>({mid:s.mid,mk:pickKey(s),k:s.k}));if(!picks.length)return;ensureSession().then(ok=>ok&&api("picks",{picks}).catch(()=>{}));
   for(const p of picks){const c=CROWD[p.mid];if(c&&c.data){const m=((c.data[p.mk]??={}));m[p.k]=(m[p.k]||0)+1}}}
@@ -1691,8 +1694,8 @@ async function shareTicket(id){const b=S.bets.find(x=>x.id===id);if(!b)return;to
 
 /* ---------- guide : présentation en 4 écrans, premier pari accompagné, missions « Premiers pas », aide ---------- */
 // 1) présentation (glisser ou « Suivant »)
-const INTRO_N=4;
-function openIntro(){if(U.open&&U.open!=="intro"&&U.open!=="help"){setTimeout(()=>{if(S.name&&!S.introSeen)openIntro()},5000);return}U.open="intro";U.ii=0;U.ix={o:1,s:20};layer(viewIntro())}
+const INTRO_N=4,INTRO_V=2;   // changer INTRO_V remontre la présentation et le tuto à tout le monde
+function openIntro(){if(U.open&&U.open!=="intro"&&U.open!=="help"){setTimeout(()=>{if(S.name&&S.introSeen!==INTRO_V)openIntro()},5000);return}U.open="intro";U.ii=0;U.ix={o:1,s:20};layer(viewIntro())}
 function viewIntro(){const i=U.ii,X=U.ix,O=[["PSG",1.65],["Nul",3.8],["Lens",5.2]],o=O[X.o];
   const S1=`<div class="iart">🏟️</div><h2>Parie sur les vrais matchs</h2><p>Foot, rugby, tennis et NBA : les vrais matchs, avec les scores <b>en direct</b>. Tu paries sur qui gagne, mais aussi sur les buteurs, les cartons, les corners, les essais, les aces…</p>
     <div class="ichips"><span>⚽ Foot</span><span>🏉 Rugby</span><span>🎾 Tennis</span><span>🏀 NBA</span></div>
@@ -1720,7 +1723,7 @@ function introGo(d){U.ii=Math.max(0,Math.min(INTRO_N-1,U.ii+d));layer(viewIntro(
 let ixT=null;
 document.addEventListener("touchstart",e=>{if(U.open==="intro"&&e.target.closest&&e.target.closest("#intro"))ixT={x:e.touches[0].clientX,y:e.touches[0].clientY}},{passive:true});
 document.addEventListener("touchend",e=>{if(!ixT||U.open!=="intro")return;const dx=e.changedTouches[0].clientX-ixT.x,dy=e.changedTouches[0].clientY-ixT.y;ixT=null;if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5)introGo(dx<0?1:-1)},{passive:true});
-function introEnd(coach){S.introSeen=1;save();closeLayer();if(coach)startCoach();else if(!grantStarter(false))toast("Tu peux revoir la présentation dans Carrière › Comment ça marche ?")}
+function introEnd(coach){S.introSeen=INTRO_V;save();closeLayer();if(coach)startCoach();else if(!grantStarter(false))toast("Tu peux revoir la présentation dans Carrière › Comment ça marche ?")}
 
 // 2) match d'entraînement : un faux match qui se joue en quelques secondes, sans toucher aux vrais matchs.
 // Le premier pari est forcément gagné et débloque les 1 000 premiers jetons du nouveau joueur.
@@ -1873,7 +1876,7 @@ function openLegal(){U.open="legal";layer(`<div class="grab"><h3>Règles et conf
 function openTos(){if(U.open&&U.open!=="tos"){setTimeout(()=>{if(S.name&&S.tosV!==TOS_V)openTos()},5000);return}U.open="tos";layer(`<div class="tosh"><h3>Avant de continuer</h3><p class="note" style="text-align:left">Tribune s’ouvre à plus de monde : voici les règles du jeu et ce qu’on fait (et ne fait pas) de tes données. Prends une minute pour les lire.</p></div>`+legalHTML()+
   `<label class="agechk"><input type="checkbox" id="tos-ok"><span>J’ai <b>18 ans ou plus</b> et j’accepte les règles du jeu et la politique de confidentialité.</span></label>
   <button class="btn gold wide" data-act="tosok">Continuer</button><p class="note"><button class="link" data-act="tosno">Je n’ai pas 18 ans</button></p>`)}
-function tosOk(){if(!$("#tos-ok")||!$("#tos-ok").checked){toast("Coche la case pour continuer.","bad");return}S.tosV=TOS_V;save();closeLayer();syncSoon();if(!S.introSeen)setTimeout(openIntro,400)}
+function tosOk(){if(!$("#tos-ok")||!$("#tos-ok").checked){toast("Coche la case pour continuer.","bad");return}S.tosV=TOS_V;save();closeLayer();syncSoon();if(S.introSeen!==INTRO_V)setTimeout(openIntro,400)}
 function tosNo(){U.open="tos";layer(`<div class="tosh"><h3>Désolé</h3></div><div class="empty">${ic("info")}<b>Tribune est réservé aux 18 ans et plus</b>Si tu t’es trompé, reviens en arrière.<br><button class="btn ghost" style="margin-top:12px" data-act="tosback">Revenir</button><br><button class="link" data-act="delacc" style="margin-top:10px;color:var(--loss)">Supprimer mon compte</button></div>`)}
 // signaler / bloquer
 const blocked=id=>(S.blocked||[]).some(x=>String(x.id)===String(id));
@@ -2774,7 +2777,7 @@ async function welcomeGo(){const inp=$("#w-name"),n=(inp.value||"").replace(/\s+
     else{const j=await api("sync",{name:n,bal:S.bal,peak:S.peak,...myStats()});if(j.name_taken){taken();return}if(j.name_bad){bad();return}}}
   catch(e){if(e.code==="name_taken"){taken();return}if(e.code==="name_bad"){bad();return}}   // hors connexion : on accepte, la vérification se fera plus tard
   if(first)S.tosV=TOS_V;S.name=n;askedName=false;save();U.open=null;layer("");render();
-  if(first){setTimeout(joinFromLink,400);setTimeout(()=>{if(!S.introSeen)openIntro();else grantStarter(false)},900)}else toast("Pseudo enregistré.","win")}
+  if(first){setTimeout(joinFromLink,400);setTimeout(()=>{if(S.introSeen!==INTRO_V)openIntro();else grantStarter(false)},900)}else toast("Pseudo enregistré.","win")}
 
 /* ---------- installer l'app / changer d'appareil ---------- */
 const UA=navigator.userAgent,STANDALONE=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
@@ -2849,7 +2852,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.71";
+const VERSION="1.72";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -2867,7 +2870,7 @@ loadFeeds();
 setTimeout(()=>{if(S.dk&&Object.values(S.dk).some(x=>!x.settled))checkDarkAll()},5000);
 goFrom(location.href);
 setTimeout(loadEvents,1200);
-setTimeout(()=>{pushRefresh();if(S.name&&S.starter==="pending"&&S.introSeen&&!U.coach)grantStarter(false);if(S.name&&S.tosV!==TOS_V)openTos();else if(S.name&&!S.introSeen)openIntro();if(S.name){claimPrizes();claimBattles();claimGifts();ensureRcode();loadGuide(true)}if(S.name)loadBoards().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){loadProno();loadLm(U.lg.code||U.lg.data.leagues[0].code);const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},3000);
+setTimeout(()=>{pushRefresh();if(S.name&&S.starter==="pending"&&S.introSeen===INTRO_V&&!U.coach)grantStarter(false);if(S.name&&S.tosV!==TOS_V)openTos();else if(S.name&&S.introSeen!==INTRO_V)openIntro();if(S.name){claimPrizes();claimBattles();claimGifts();ensureRcode();loadGuide(true)}if(S.name)loadBoards().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){loadProno();loadLm(U.lg.code||U.lg.data.leagues[0].code);const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},3000);
 setInterval(()=>{if(!document.hidden&&S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},12e4);
 setInterval(()=>{if(document.hidden)return;
   const anyLive=[...REG.values()].some(m=>m.src==="espn"&&m.state==="in");const stale=Object.values(FEED).some(f=>f.at&&Date.now()-f.at>(anyLive?6e4:5*6e4));

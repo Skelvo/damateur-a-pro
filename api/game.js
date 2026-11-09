@@ -688,7 +688,8 @@ const ACTIONS = {
         throw e;
       }
     }
-    return { ok: true, name: name || p.name, wheel: wr && wr.wheel, av: wr ? wr.avatar_v || 0 : null };
+    const cancel = await s.query(`select cid from bets where player = $1 and cancelled and at > now() - interval '30 days'`, [p.id]);
+    return { ok: true, name: name || p.name, wheel: wr && wr.wheel, av: wr ? wr.avatar_v || 0 : null, cancel };
   },
 
   // Code de transfert : emporter son compte (jetons, paris, défis…) dans l'app installée ou sur un
@@ -1106,6 +1107,18 @@ const ACTIONS = {
   },
 
   // ---- Administration (clé ADMIN_KEY dans les réglages Vercel ; désactivé sans elle) ----
+  // paris d'un joueur (pour en annuler un à sa demande)
+  async admin_bets(s, b) {
+    admin(b);
+    return { bets: await s.query(`select b.id, p.name, b.cid, b.stake, b.odds::float8 as odds, b.status, b.legs, b.at from bets b join players p on p.id = b.player
+       where lower(p.name) = lower($1) order by b.id desc limit 30`, [String(b.name || "")]) };
+  },
+  // annuler un pari pas encore réglé : remboursé, et le téléphone du joueur l'apprend à la prochaine synchro
+  async admin_void(s, b) {
+    admin(b);
+    const r = await s.query(`update bets set status = 'void', pay = stake, cancelled = true, settled_at = now() where id = $1 and status = 'open' returning id, cid, stake`, [String(int(b.id, 0, 1e15))]);
+    return r[0] ? { ok: true, ...r[0] } : { error: "not_open" };
+  },
   async admin_players(s, b) {
     admin(b);
     const rows = await s.query(
