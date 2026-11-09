@@ -464,6 +464,24 @@ async function addMember(s, code, pid, name) {
   return { code, name: l.name };
 }
 
+// ---- Modération ----
+// Mots refusés dans les pseudos, noms et devises de guilde, et masqués dans le chat (insultes, propos haineux, sexuels).
+// Comparaison sans accents, sans chiffres « leet » (0→o, 1→i, 3→e…) et sans lettres répétées (« connnnard » = « conard »).
+const BAD_TOK = new Set(("con conard conase pd pede tapete tafiole tarlouze tarlouse pute salope batard enfoire encule enculer fdp ntm tg nique niquer " +
+  "negre negro bougnoul bougnoule youpin bicot bamboula chintok pedophile pedo gouine suceur suceuse bite couile chate nichon penis porn porno viol violer " +
+  "nazi nazis hitler fuck fucker shit bitch niga nigga cunt whore slut dick pusy cock sperme").split(" "));
+const BAD_SUB = ["encul", "salope", "pedophil", "bougnoul", "tarlouz", "hitler", "fuck", "niga", "conase", "conard", "filsdepute", "ntamere", "nikta"];
+const LEET = { 0: "o", 1: "i", 3: "e", 4: "a", 5: "s", 7: "t", "@": "a", $: "s", "€": "e" };
+const norm = (v) => String(v || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[013457@$€]/g, (c) => LEET[c]).replace(/(.)\1+/g, "$1");
+function isBad(v) {
+  const n = norm(v), toks = n.split(/[^a-z]+/).filter(Boolean), flat = toks.join("");
+  return toks.some((w) => BAD_TOK.has(w)) || BAD_SUB.some((w) => flat.includes(w));
+}
+const maskBad = (text) => String(text).replace(/[\p{L}\p{N}@$€]+/gu, (w) => (BAD_TOK.has(norm(w)) || BAD_SUB.some((x) => norm(w).includes(x)) ? "•".repeat(Math.min(6, w.length)) : w));
+const isBanned = async (s, name) => !!(await s.query(`select 1 from banned_names where name = $1`, [norm(name).replace(/[^a-z]/g, "")]))[0];
+async function badName(s, name) { return isBad(name) || (await isBanned(s, name)); }
+const banName = (s, name) => s.query(`insert into banned_names (name) values ($1) on conflict do nothing`, [norm(name).replace(/[^a-z]/g, "")]);
+
 // ---- Combats de guildes ----
 // Score d'une guilde = moyenne des gains EN PARIS de la semaine (table profits) de TOUS les membres engagés,
 // inactifs compris (0). Les membres sont figés au début du combat. Défis : toujours pour la semaine suivante,
@@ -560,6 +578,7 @@ const ACTIONS = {
     const token = newToken();
     const bal = b.bal == null ? 1000 : num(b.bal, 0, MAX_BAL);
     const name = cleanName(b.name, 18) || "Joueur " + Math.floor(1000 + Math.random() * 9000);
+    if (await badName(s, name)) throw fail(400, "name_bad");
     let r;
     try {
       r = await s.query(
@@ -577,6 +596,7 @@ const ACTIONS = {
   async check_name(s, b) {
     const name = cleanName(b.name, 18);
     if (!name) return { free: false };
+    if (await badName(s, name)) return { free: false, bad: true };
     const self = b.token ? (await s.query(`select id from players where token_hash = $1`, [hashToken(b.token)]))[0] : null;
     const r = await s.query(`select id from players where lower(name) = lower($1)`, [name]);
     return { free: !r[0] || !!(self && String(r[0].id) === String(self.id)) };
@@ -633,7 +653,9 @@ const ACTIONS = {
       const json = JSON.stringify({ list: b.bets.slice(0, 40), best: b.best && typeof b.best === "object" ? b.best : null });
       if (json.length <= 150000) await s.query(`update players set bets = $2::jsonb where id = $1`, [p.id, json]);
     }
+    if (typeof b.tos === "string" && b.tos) await s.query(`update players set tos = $2, tos_at = now() where id = $1 and tos is distinct from $2`, [p.id, cleanName(b.tos, 12)]);
     const name = cleanName(b.name, 18);
+    if (name && name !== p.name && await badName(s, name)) return { ok: true, name_bad: true, name: p.name, wheel: wr && wr.wheel, av: wr ? wr.avatar_v || 0 : null };
     if (name && name !== p.name) {
       try {
         await s.query(`update players set name = $2 where id = $1`, [p.id, name]);
@@ -759,6 +781,7 @@ const ACTIONS = {
     const e = b.emblem || {}, emblem = { i: EMBLEMS.includes(e.i) ? e.i : "🛡️", c: GCOLORS.includes(e.c) ? e.c : "#35d07f" };
     const access = ["open", "request", "private"].includes(b.access) ? b.access : "private";
     const name = cleanName(b.name, 24), motto = cleanName(b.motto, 60);
+    if ((name && await badName(s, name)) || isBad(motto)) throw fail(400, "name_bad");
     await s.query(`update leagues set emblem = $2::jsonb, access = $3, motto = $4, name = case when $5 <> '' and $6 then $5 else name end where code = $1`,
       [code, JSON.stringify(emblem), access, motto || null, name, role === "chef"]);
     if (role === "chef" && typeof b.champ === "boolean") await s.query(`update leagues set champ = $2 where code = $1`, [code, b.champ]);
@@ -934,6 +957,68 @@ const ACTIONS = {
     for (const x of r) await credit(s, p.id, x.amount, "battle", x.battle);
     return { rewards: r.map((x) => ({ amount: x.amount, result: x.result })) };
   },
+  // ---- Modération : signaler un message, un pseudo ou une guilde. Tout est automatique :
+  // message masqué dès 2 signalements (3 dans une guilde de plus de 6), pseudo ou nom de guilde remplacé dès 3 joueurs différents.
+  async report(s, b) {
+    const p = await me(s, b.token);
+    if (await overLimit("report:" + p.id, 30, 3600)) throw fail(429, "slow_down");
+    const kind = ["chat", "player", "guild"].includes(b.kind) ? b.kind : null;
+    if (!kind) throw fail(400, "kind");
+    const id = String(int(b.id, 0, 1e15));
+    if (kind === "chat") {
+      const m = (await s.query(`select c.code, c.player, c.text, (select count(*)::int from league_members x where x.code = c.code) as n from chat c where c.id = $1`, [id]))[0];
+      if (!m || !(await isMember(s, m.code, p.id)) || String(m.player) === String(p.id)) throw fail(404, "unknown");
+      await s.query(`insert into reports (reporter, kind, target, text) values ($1, 'chat', $2, $3) on conflict do nothing`, [p.id, id, m.text.slice(0, 400)]);
+      const n = (await s.query(`select count(*)::int as n from reports where kind = 'chat' and target = $1`, [id]))[0].n;
+      if (n >= (m.n > 6 ? 3 : 2)) await s.query(`update chat set hidden = true where id = $1`, [id]);
+      return { ok: true, hidden: n >= (m.n > 6 ? 3 : 2) };
+    }
+    if (kind === "player") {
+      const t = (await s.query(`select id, name from players where id = $1`, [id]))[0];
+      if (!t || String(t.id) === String(p.id)) throw fail(404, "unknown");
+      await s.query(`insert into reports (reporter, kind, target, text) values ($1, 'player', $2, $3) on conflict do nothing`, [p.id, id, t.name]);
+      const n = (await s.query(`select count(*)::int as n from reports where kind = 'player' and target = $1 and text = $2`, [id, t.name]))[0].n;
+      if (n < 3) return { ok: true };
+      await banName(s, t.name);
+      for (let i = 0; i < 5; i++) {
+        try { await s.query(`update players set name = $2 where id = $1`, [id, "Joueur " + (1000 + randomInt(9000))]); break; } catch (e) { if (!isTaken(e)) throw e; }
+      }
+      await notify(s, [id], { title: "Ton pseudo a été remplacé", body: "Plusieurs joueurs l'ont signalé. Choisis-en un autre dans Carrière › Pseudo.", url: "./", tag: "rename" });
+      return { ok: true, renamed: true };
+    }
+    const g = (await s.query(`select code, name from leagues where gid = $1 and not dark`, [id]))[0];
+    if (!g || (await isMember(s, g.code, p.id))) throw fail(404, "unknown");
+    await s.query(`insert into reports (reporter, kind, target, text) values ($1, 'guild', $2, $3) on conflict do nothing`, [p.id, g.code, g.name]);
+    const n = (await s.query(`select count(*)::int as n from reports where kind = 'guild' and target = $1 and text = $2`, [g.code, g.name]))[0].n;
+    if (n < 3) return { ok: true };
+    await banName(s, g.name);
+    await s.query(`update leagues set name = $2, motto = null where code = $1`, [g.code, "Guilde " + id]);
+    return { ok: true, renamed: true };
+  },
+  // écrire aux organisateurs (question, bug, signalement grave)
+  async contact(s, b) {
+    const p = await me(s, b.token);
+    if (await overLimit("contact:" + p.id, 5, 3600)) throw fail(429, "slow_down");
+    const text = String(b.text ?? "").replace(/[\u0000-\u0008\u000b-\u001f]/g, "").trim().slice(0, 1500);
+    if (text.length < 3) throw fail(400, "empty");
+    await s.query(`insert into reports (reporter, kind, target, text) values ($1, 'contact', '', $2)`, [p.id, text]);
+    return { ok: true };
+  },
+  // supprimer son compte : tout ce qui est lié au joueur part avec lui ; ses guildes passent à un autre membre
+  async delete_account(s, b) {
+    const p = await me(s, b.token);
+    if (b.confirm !== "SUPPRIMER") throw fail(400, "confirm");
+    await s.query(`update leagues l set owner = (select m.player from league_members m where m.code = l.code and m.player <> $1 order by (m.role = 'officer') desc, m.joined_at limit 1)
+       where l.owner = $1`, [p.id]);
+    await s.query(`delete from players where id = $1`, [p.id]);
+    await s.query(`delete from leagues l where not exists (select 1 from league_members m where m.code = l.code)`);
+    return { ok: true };
+  },
+  async admin_reports(s, b) {
+    admin(b);
+    const rows = await s.query(`select r.id, r.kind, r.target, r.text, r.at, pl.name as reporter from reports r left join players pl on pl.id = r.reporter order by r.id desc limit 200`);
+    return { reports: rows };
+  },
   async recovery_make(s, b) {
     const p = await me(s, b.token);
     const cur = (await s.query(`select recovery_hash from players where id = $1`, [p.id]))[0];
@@ -1015,6 +1100,7 @@ const ACTIONS = {
     const p = await me(s, b.token);
     const name = cleanName(b.name, 24);
     if (!name) throw fail(400, "name");
+    if (await badName(s, name)) throw fail(400, "name_bad");
     const n = (await s.query(`select count(*)::int as n from league_members where player = $1`, [p.id]))[0].n;
     if (n >= MAX_LEAGUES) throw fail(400, "too_many");
     for (let i = 0; i < 8; i++) {
@@ -1443,9 +1529,10 @@ const ACTIONS = {
     const p = await me(s, b.token);
     const code = cleanName(b.code, 8).toUpperCase();
     if (!(await isMember(s, code, p.id))) throw fail(403, "not_member");
-    const text = String(b.text ?? "").replace(/[\u0000-\u0008\u000b-\u001f]/g, "").replace(/\n{3,}/g, "\n\n").trim().slice(0, 400);
+    let text = String(b.text ?? "").replace(/[\u0000-\u0008\u000b-\u001f]/g, "").replace(/\n{3,}/g, "\n\n").trim().slice(0, 400);
     if (!text) throw fail(400, "empty");
     if (await overLimit("chat:" + p.id, 30, 60)) throw fail(429, "slow_down");
+    text = maskBad(text);
     const r = await s.query(`insert into chat (code, player, text) values ($1, $2, $3) returning id, extract(epoch from at) * 1000 as ms`, [code, p.id, text]);
     // une notification de chat au plus toutes les 10 min par membre et par guilde
     const mem = (await members(s, code)).filter((x) => String(x) !== String(p.id));
@@ -1461,12 +1548,16 @@ const ACTIONS = {
     const after = int(b.after, 0, 1e15);
     const rows = await s.query(
       `select c.id, c.player, pl.name, pl.avatar_v, c.text, extract(epoch from c.at) * 1000 as ms from chat c join players pl on pl.id = c.player
-       where c.code = $1 and c.id > $2 order by c.id desc limit 120`, [code, after]);
+       where c.code = $1 and c.id > $2 and not c.hidden order by c.id desc limit 120`, [code, after]);
     return { me: p.id, msgs: rows.reverse().map((r) => ({ id: r.id, who: r.player, name: r.name, av: r.avatar_v || 0, text: r.text, at: Math.round(Number(r.ms)) })) };
   },
   async chat_delete(s, b) {
     const p = await me(s, b.token);
-    await s.query(`delete from chat where id = $1 and player = $2`, [int(b.id, 0, 1e15), p.id]);
+    const m = (await s.query(`select code, player from chat where id = $1`, [String(int(b.id, 0, 1e15))]))[0];
+    if (!m) return { ok: true };
+    const role = String(m.player) === String(p.id) ? "moi" : await guildRole(s, m.code, p.id);
+    if (role !== "moi" && role !== "chef" && role !== "adjoint") throw fail(403, "not_allowed");
+    await s.query(`delete from chat where id = $1`, [String(int(b.id, 0, 1e15))]);
     return { ok: true };
   },
 

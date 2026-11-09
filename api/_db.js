@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "26";
+const SCHEMA_VERSION = "27";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -289,6 +289,19 @@ const STATEMENTS = [
      result text not null,
      claimed boolean not null default false,
      primary key (battle, player))`,
+  // modération et cadre légal : signalements, noms retirés, messages masqués, acceptation des règles
+  `create table if not exists reports (
+     id bigserial primary key,
+     reporter bigint references players(id) on delete set null,
+     kind text not null,
+     target text not null,
+     text text,
+     at timestamptz not null default now())`,
+  `create unique index if not exists reports_u on reports(reporter, kind, target) where kind <> 'contact'`,
+  `create table if not exists banned_names (name text primary key, at timestamptz not null default now())`,
+  `alter table chat add column if not exists hidden boolean not null default false`,
+  `alter table players add column if not exists tos text`,
+  `alter table players add column if not exists tos_at timestamptz`,
   `create table if not exists rate_hits (key text not null, win bigint not null, n int not null default 0, primary key (key, win))`,
 ];
 

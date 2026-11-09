@@ -471,6 +471,13 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 .lmban{border-color:#2a6a45!important}
 .champ.season{background:linear-gradient(135deg,#4a2a05,var(--card) 70%);border-color:#a8670f}
 .sncard{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin:0 0 12px}.sncard .i{width:26px;height:26px;color:#ffb020;flex:none}.sncard b{display:block;font:800 18px "Barlow Condensed"}.sncard small{color:var(--mute);font-size:12.5px}
+.legal{text-align:left;font-size:14px;line-height:1.5;color:#d6e0da}.legal h4{font:800 17px "Barlow Condensed";text-transform:uppercase;color:var(--ink);margin:16px 0 4px}.legal p{margin:0 0 8px}.legal a{color:var(--sel)}.lgl-up{color:var(--mute);font-size:12.5px}
+.tosh h3{font:800 24px "Barlow Condensed";text-transform:uppercase;margin:4px 0 6px}
+.form .agechk,.agechk{display:flex;color:var(--ink);font-weight:500;gap:10px;align-items:flex-start;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin:12px 0 10px;font-size:14px;line-height:1.4;cursor:pointer}.form .agechk input,.agechk input{width:22px;height:22px;flex:none;margin:0;padding:0;accent-color:var(--sel)}
+.mlist{display:grid;gap:8px}.mlist button{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 14px;color:var(--ink);font:600 15px Barlow;text-align:left}
+.chquote{background:#00000030;border-radius:10px;padding:10px 12px;font-size:14px;margin:0 0 12px;max-height:140px;overflow:auto}
+.pmod{display:flex;gap:18px;justify-content:center;margin:10px 0 4px}.pmod .link{font-size:13px;color:var(--mute)}
+.x.sm{width:34px;height:34px;font-size:15px;flex:none}
 .btcard{background:linear-gradient(150deg,#3a1018,var(--card) 70%);border:1px solid #6e2533;border-radius:14px;padding:10px 12px;margin-bottom:12px}
 .bthd{display:flex;align-items:center;gap:8px;width:100%;background:none;border:0;padding:0;color:inherit;font:inherit;text-align:left}.bthd small{flex:1;color:var(--mute);font-size:12.5px}.bthd .arr{color:var(--mute);font-size:22px}
 .btdiv{font:800 19px "Barlow Condensed";text-transform:uppercase}.btnote{color:var(--mute);font-size:12.5px;margin:8px 0 2px}
@@ -709,7 +716,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.66"></script>
+<script src="engine.js?v=1.67"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -750,7 +757,8 @@ const RK=[["NC","40","30/5","30/4","30/3"],["30/2","30/1","30","15/5","15/4"],["
 /* ---------- état ---------- */
 const LS="dap.v2";
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(LS));if(x&&x.v===2)return x}catch(e){}return{v:2,name:"",bal:1000,peak:1000,bonus:"",bets:[],org:[],orgMode:false,sim:true,seen:0}})();
-const saveLocal=()=>{try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}};
+let GONE=false;   // compte supprimé : plus rien n’est réécrit sur le téléphone
+const saveLocal=()=>{if(GONE)return;try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}};
 const save=()=>{saveLocal();syncSoon()};
 const U={lg:{code:"",data:null,err:null,loading:false,mode:"season",view:"rank"},tab:"m",sp:"foot",lv:-1,dep:"",sel:[],combo:true,stake:20,open:null,dtab:"p",btab:"o"};
 const REG=new Map(),FEED={};
@@ -979,7 +987,7 @@ function emptyLevel(){const cfg=SP[U.sp],l=U.lv;
   if(l>=0&&cfg.feeds[l]&&FEED[U.sp+l]&&FEED[U.sp+l].ok===false)
     return`<div class="empty">${ic("info")}<b>Flux live indisponible</b>Impossible de joindre le flux des matchs pros pour l’instant.<br><button class="btn ghost" style="margin-top:12px" data-act="retry">Réessayer</button></div>`;
   return`<div class="empty">${ic(cfg.ic)}<b>Pas de match</b>Rien de prévu dans les prochains jours ici.</div>`}
-function foot(){return`<p class="foot">Jeu 100 % gratuit : jetons fictifs sans aucune valeur, rien à acheter, rien à gagner. Matchs pros, scores et stats en direct depuis un flux public ; cotes calculées par un modèle statistique, à titre indicatif.<br>Les jeux d’argent comportent des risques : <a href="https://www.joueurs-info-service.fr" target="_blank" rel="noopener">Joueurs Info Service</a>, 09 74 75 13 13 (appel non surtaxé).</p>`}
+function foot(){return`<p class="foot">Jeu 100 % gratuit : jetons fictifs sans aucune valeur, rien à acheter, rien à gagner. Matchs pros, scores et stats en direct depuis un flux public ; cotes calculées par un modèle statistique, à titre indicatif.<br>Réservé aux 18 ans et plus · <button class="link" data-act="legal" style="padding:0;font-size:inherit">Règles et confidentialité</button><br>Les jeux d’argent comportent des risques : <a href="https://www.joueurs-info-service.fr" target="_blank" rel="noopener">Joueurs Info Service</a>, 09 74 75 13 13 (appel non surtaxé).</p>`}
 
 /* ---------- rendu : fiche match ---------- */
 function viewDetail(m){const st=status(m),mks=markets(m),res=mks.find(x=>x.id==="res"),rs=realStats(m)||(st==="live"&&m.src!=="espn"?null:m.st);
@@ -1141,7 +1149,11 @@ function viewCareer(){const di=divOf(S.peak),nx=DIVS[di+1],pr=nx?cl((S.peak-DIVS
   ${STANDALONE?"":`<div class="row"><div><b>Installer l’app</b><small>Sur l’écran d’accueil de ton téléphone</small></div><button class="link" data-act="install">Comment ?</button></div>`}
   <div class="row"><div><b>Transférer mon compte</b><small>Vers l’app installée ou un autre téléphone</small></div><button class="link" data-act="xmake2">Créer un code</button></div>
   <div class="row"><div><b>J’ai un code de transfert</b><small>Récupérer un compte sur cet appareil</small></div><button class="link" data-act="xfer">Entrer</button></div>
+  <div class="row"><div><b>Règles et confidentialité</b><small>Le jeu, tes données, la modération</small></div><button class="link" data-act="legal">Lire</button></div>
+  <div class="row"><div><b>Nous écrire</b><small>Question, bug, idée, signalement</small></div><button class="link" data-act="contact">Écrire</button></div>
+  ${(S.blocked||[]).length?`<div class="row"><div><b>Joueurs bloqués</b><small>${S.blocked.length} joueur${S.blocked.length>1?"s":""}</small></div><button class="link" data-act="blocked">Gérer</button></div>`:""}
   <div class="row"><div><b>Recommencer</b><small>Repartir de zéro avec 1 000 jetons</small></div><button class="link" data-act="reset" style="color:var(--loss)">Réinitialiser</button></div>
+  <div class="row"><div><b>Supprimer mon compte</b><small>Efface tout, définitivement</small></div><button class="link" data-act="delacc" style="color:var(--loss)">Supprimer</button></div>
   <div class="info">${ic("info")}<span><b style="color:var(--ink)">Règles.</b> Les paris se ferment au coup d’envoi. Un pari est réglé automatiquement dès que le score et la stat concernée sont connus. Si une stat n’est jamais publiée (48 h après le match) ou si le match est reporté, la sélection est remboursée (cote 1,00 dans un combiné).</span></div>`;
   return h+foot()}
 
@@ -1272,7 +1284,7 @@ async function place(){const n=U.sel.length;if(!n||U.placing)return;const stake=
   toast(`${ic("ticket")} Pari validé ! Bonne chance.`,"win")}
 
 document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(!t)return;const a=t.dataset.act,d=t.dataset;
-  if(a==="scrim"){if(e.target===t&&U.open!=="welcome")closeLayer();return}
+  if(a==="scrim"){if(e.target===t&&U.open!=="welcome"&&U.open!=="tos")closeLayer();return}
   e.stopPropagation();
   switch(a){
     case"tab":U.tab=d.tab;U.open=null;layer("");render();window.scrollTo({top:0});if(d.tab==="l")loadBoards();break;
@@ -1355,6 +1367,18 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"lv":U.lv=+d.lv;render();break;
     case"open":U.dtab="p";openDetail(d.mid);break;
     case"close":closeLayer();break;
+    case"legal":openLegal();break;
+    case"tosok":tosOk();break;
+    case"tosno":tosNo();break;
+    case"tosback":U.open=null;openTos();break;
+    case"rep":report(d.k,d.id,d.w);break;
+    case"block":toggleBlock(d.id,d.n);break;
+    case"chmenu":openChMenu(d.id);break;
+    case"blocked":openBlocked();break;
+    case"contact":openContact();break;
+    case"ctsend":contactSend();break;
+    case"delacc":openDelAcc();break;
+    case"delgo":delAccount();break;
     case"dtab":U.dtab=d.t;refreshLayer();break;
     case"btab":U.btab=d.t;render();break;
     case"pick":pick(d.mid,d.mk,+d.k);if(U.open)refreshLayer();render();break;
@@ -1402,6 +1426,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
         .catch(e=>{b.disabled=false;toast(e.code==="too_early"?"Le match n’est pas encore fini.":"Pas de connexion au serveur.","bad")});break}
       m.res=res;REG.set(m.id,m);MKC.clear();save();U.open=m.id;U.dtab="s";layer(viewDetail(m));settle();toast("Résultat enregistré, paris réglés.","win");break}
     case"wgo":welcomeGo();break;
+    case"wlegal":{const x=$("#w-legal");if(x){x.hidden=!x.hidden;if(!x.hidden&&!x.innerHTML)x.innerHTML=legalHTML()}break}
     case"xfer":U.open="welcome";layer(viewTransferIn());setTimeout(()=>$("#x-code")&&$("#x-code").focus(),60);break;
     case"xferok":transferIn();break;
     case"xmake":transferOut();break;
@@ -1413,7 +1438,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"instx":try{localStorage.setItem("dap.inst",String(Date.now()))}catch(e){}render();break;
     case"instgo":installPrompt();break;
   }});
-document.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&e.target.id==="chin"){e.preventDefault();chatSend();return}if(e.key==="Escape"&&U.open&&U.open!=="welcome")closeLayer();
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&e.target.id==="chin"){e.preventDefault();chatSend();return}if(e.key==="Escape"&&U.open&&U.open!=="welcome"&&U.open!=="tos")closeLayer();
   if(e.key==="Enter"&&e.target.classList&&e.target.classList.contains("mc"))e.target.click();
   if(e.key==="Enter"&&e.target.id==="w-name")$("[data-act=wgo]").click()});
 document.addEventListener("change",e=>{if(e.target.id==="dep"){U.dep=e.target.value;render()}if(e.target.id==="dk-t"&&U.open==="dknew"){dkKeep();layer(viewDarkNew())}});
@@ -1438,14 +1463,14 @@ const myStats=()=>{const d=S.bets.filter(b=>b.st==="won"||b.st==="lost");return{
 let sessP=null;
 function ensureSession(){if(S.tok)return Promise.resolve(true);if(!S.name)return Promise.resolve(false);
   return sessP||(sessP=api("session",{name:S.name,bal:S.bal,peak:S.peak,...myStats()}).then(j=>{S.tok=j.token;S.pid=j.id;saveLocal();return true})
-    .catch(e=>{if(e.code==="name_taken")askNewName();return false}).finally(()=>sessP=null))}
+    .catch(e=>{if(e.code==="name_taken")askNewName();if(e.code==="name_bad")askNewName(true);return false}).finally(()=>sessP=null))}
 // Pseudo déjà pris par un autre joueur : on demande d'en choisir un autre (une fois par ouverture)
 let askedName=false;
-function askNewName(){if(askedName||U.open==="welcome")return;askedName=true;U.open="welcome";layer(viewWelcome(true,`Le pseudo « ${esc(S.name)} » est déjà pris par un autre joueur. Choisis-en un autre pour apparaître dans les classements.`))}
+function askNewName(bad){if(askedName||U.open==="welcome"||U.open==="tos")return;askedName=true;U.open="welcome";layer(viewWelcome(true,bad?`Le pseudo « ${esc(S.name)} » n’est pas accepté (mot interdit ou signalé par plusieurs joueurs). Choisis-en un autre.`:`Le pseudo « ${esc(S.name)} » est déjà pris par un autre joueur. Choisis-en un autre pour apparaître dans les classements.`))}
 let syncT=0;
 function syncSoon(){if(!S.name)return;clearTimeout(syncT);syncT=setTimeout(async()=>{if(!(await ensureSession()))return;
-  try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,wb:S.bonus,wx:S.extraSpin,...myStats(),...betsPayload()});wheelSync(j);if(j.name_taken)askNewName();backupSoon()}catch(e){if(e.code==="no_session"&&await ensureSession())syncSoon()}},2000)}
-async function syncNow(){clearTimeout(syncT);if(!(await ensureSession()))return false;try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,wb:S.bonus,wx:S.extraSpin,...myStats(),...betsPayload()});wheelSync(j);return true}catch(e){return false}}
+  try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,wb:S.bonus,wx:S.extraSpin,tos:S.tosV||"",...myStats(),...betsPayload()});wheelSync(j);if(j.name_taken)askNewName();if(j.name_bad)askNewName(true);backupSoon()}catch(e){if(e.code==="no_session"&&await ensureSession())syncSoon()}},2000)}
+async function syncNow(){clearTimeout(syncT);if(!(await ensureSession()))return false;try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,wb:S.bonus,wx:S.extraSpin,tos:S.tosV||"",...myStats(),...betsPayload()});wheelSync(j);if(j.name_bad)askNewName(true);return true}catch(e){return false}}
 const pickKey=s=>s.mk+(s.line!=null?s.line:"");
 function sendPicks(sel){const picks=sel.filter(s=>!PMK[s.mk]).map(s=>({mid:s.mid,mk:pickKey(s),k:s.k}));if(!picks.length)return;ensureSession().then(ok=>ok&&api("picks",{picks}).catch(()=>{}));
   for(const p of picks){const c=CROWD[p.mid];if(c&&c.data){const m=((c.data[p.mk]??={}));m[p.k]=(m[p.k]||0)+1}}}
@@ -1532,6 +1557,73 @@ function viewLeagues(){const L=U.lg,d=L.data;
 function lgFooter(cur){return`<button class="btn gold wide" data-act="gdir" style="margin-top:14px">${ic("group")} Trouver une guilde</button><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><button class="btn" data-act="lgnew">${ic("plus")} Créer</button><button class="btn ghost" data-act="lgjoin">Rejoindre avec un code</button></div>
   ${cur?`<p class="note"><button class="link" data-act="lgleave" style="color:var(--loss)">Quitter la guilde</button></p>`:""}`+foot()}
 
+/* ---------- règles du jeu, confidentialité, modération, suppression du compte ---------- */
+const TOS_V="2026-11";
+function legalHTML(){return`<div class="legal">
+<p class="lgl-up">Version du 9 novembre 2026</p>
+<h4>1. Le jeu</h4>
+<p>Tribune est un jeu <b>100 % gratuit</b> de pronostics sportifs, créé et géré par un particulier pour jouer entre amis, sans but commercial et sans publicité.</p>
+<p>Les <b>jetons sont fictifs</b> : ils n’ont aucune valeur, ne s’achètent pas, ne se vendent pas, ne s’échangent pas et ne se convertissent jamais en argent, en cadeau ou en avantage réel. Les récompenses (roue, défis, classements, combats de guildes…) sont uniquement des jetons fictifs. Tribune n’est donc pas un jeu d’argent : on ne mise jamais d’argent et on ne gagne rien de réel.</p>
+<h4>2. Réservé aux 18 ans et plus</h4>
+<p>Parce qu’il reprend le principe des paris sportifs, Tribune est réservé aux personnes majeures. En jouant, tu confirmes avoir 18 ans ou plus.</p>
+<h4>3. Cotes, scores et résultats</h4>
+<p>Les scores et statistiques viennent d’un flux public ; les cotes sont calculées par un modèle statistique, à titre indicatif. Des erreurs ou retards sont possibles : un pari peut être remboursé ou corrigé si une donnée était fausse. Le jeu peut évoluer, être interrompu ou remis à zéro, sans garantie ni compensation.</p>
+<h4>4. Bonne conduite</h4>
+<p>Pseudos, noms de guilde, devises et messages doivent rester corrects. Sont interdits : insultes, propos racistes, sexistes, homophobes ou haineux, harcèlement, contenus sexuels ou violents, publication d’informations personnelles sur quelqu’un, spam, triche (bugs exploités, plusieurs comptes pour gonfler un classement).</p>
+<p><b>Modération automatique</b> : les mots grossiers ou haineux sont refusés dans les noms et masqués dans le chat. Chacun peut <b>signaler</b> un message, un pseudo ou une guilde et <b>bloquer</b> un joueur. Un message signalé par plusieurs membres est masqué ; un pseudo ou un nom de guilde signalé par trois joueurs différents est remplacé. Le chef et les adjoints d’une guilde peuvent supprimer les messages de leur chat et exclure un membre. En cas d’abus grave, un compte peut être supprimé.</p>
+<h4>5. Ton compte</h4>
+<p>Pas d’e-mail ni de mot de passe : ton compte est lié à ton téléphone et à ton <b>code de compte</b>. Garde-le pour toi : quiconque l’a peut récupérer ton compte. Tu peux supprimer ton compte à tout moment dans Carrière › Supprimer mon compte.</p>
+<h4>6. Données personnelles</h4>
+<p><b>Ce qui est enregistré</b> : ton pseudo, ta photo de profil si tu en mets une, tes jetons, tes paris et tes statistiques, tes guildes, tes messages de chat, tes pronostics et duels, ton équipe de cœur, ta date d’acceptation de ces règles, et, si tu les actives, l’adresse technique de tes notifications. Pour limiter les abus, une empreinte de ton adresse IP est utilisée, brouillée et changée chaque jour : elle ne permet pas de te retrouver.</p>
+<p><b>Ce qui n’est pas enregistré</b> : ni nom réel, ni e-mail, ni téléphone, ni position, ni contacts. Aucun traceur publicitaire, aucune revente, aucun partage commercial. Ton téléphone garde une copie de ta partie (stockage local), nécessaire au jeu ; il n’y a pas de cookie publicitaire.</p>
+<p><b>Pourquoi</b> : faire fonctionner le jeu (base légale : l’exécution du service que tu utilises) et le protéger des abus (intérêt légitime).</p>
+<p><b>Qui les voit</b> : les joueurs voient ton pseudo, ta photo et tes résultats dans les classements ; les membres de tes guildes voient aussi tes paris, ton profil et tes messages. Les données sont hébergées par des prestataires techniques : Vercel (site et serveur) et Neon (base de données), qui peuvent se trouver hors de l’Union européenne avec les garanties prévues par le RGPD. Les notifications passent par le service de ton téléphone (Apple, Google ou Mozilla).</p>
+<p><b>Combien de temps</b> : tant que ton compte existe. Quand tu le supprimes, tout est effacé tout de suite (paris, messages, photo, guildes dont tu étais le seul membre…) ; seuls les signalements et messages envoyés aux organisateurs sont gardés au plus un an, sans lien avec ton compte.</p>
+<p><b>Tes droits</b> : accès, rectification (change ton pseudo), effacement (supprime ton compte), opposition et limitation. Pour toute demande : Carrière › Nous écrire. Tu peux aussi saisir la CNIL (cnil.fr).</p>
+<h4>7. Jeu responsable</h4>
+<p>Même sans argent, si les paris prennent trop de place pour toi ou un proche : <a href="https://www.joueurs-info-service.fr" target="_blank" rel="noopener">Joueurs Info Service</a>, 09 74 75 13 13 (appel non surtaxé).</p>
+<h4>8. Divers</h4>
+<p>Les noms, logos et drapeaux des équipes appartiennent à leurs propriétaires et servent seulement à reconnaître les matchs. Ces règles peuvent évoluer ; en cas de changement important, l’appli te les remontre. Droit français.</p></div>`}
+function openLegal(){U.open="legal";layer(`<div class="grab"><h3>Règles et confidentialité</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`+legalHTML())}
+// joueurs déjà inscrits : on fait accepter les règles une fois (et à chaque nouvelle version)
+function openTos(){if(U.open&&U.open!=="tos"){setTimeout(()=>{if(S.name&&S.tosV!==TOS_V)openTos()},5000);return}U.open="tos";layer(`<div class="tosh"><h3>Avant de continuer</h3><p class="note" style="text-align:left">Tribune s’ouvre à plus de monde : voici les règles du jeu et ce qu’on fait (et ne fait pas) de tes données. Prends une minute pour les lire.</p></div>`+legalHTML()+
+  `<label class="agechk"><input type="checkbox" id="tos-ok"><span>J’ai <b>18 ans ou plus</b> et j’accepte les règles du jeu et la politique de confidentialité.</span></label>
+  <button class="btn gold wide" data-act="tosok">Continuer</button><p class="note"><button class="link" data-act="tosno">Je n’ai pas 18 ans</button></p>`)}
+function tosOk(){if(!$("#tos-ok")||!$("#tos-ok").checked){toast("Coche la case pour continuer.","bad");return}S.tosV=TOS_V;save();closeLayer();syncSoon()}
+function tosNo(){U.open="tos";layer(`<div class="tosh"><h3>Désolé</h3></div><div class="empty">${ic("info")}<b>Tribune est réservé aux 18 ans et plus</b>Si tu t’es trompé, reviens en arrière.<br><button class="btn ghost" style="margin-top:12px" data-act="tosback">Revenir</button><br><button class="link" data-act="delacc" style="margin-top:10px;color:var(--loss)">Supprimer mon compte</button></div>`)}
+// signaler / bloquer
+const blocked=id=>(S.blocked||[]).some(x=>String(x.id)===String(id));
+function toggleBlock(id,name){S.blocked=S.blocked||[];if(blocked(id)){S.blocked=S.blocked.filter(x=>String(x.id)!==String(id));toast(`${esc(name)} est débloqué.`)}
+  else{if(!confirm(`Bloquer ${name} ? Tu ne verras plus ses messages dans le chat.`))return;S.blocked.push({id:String(id),name:String(name).slice(0,18)});toast(`${esc(name)} est bloqué : tu ne verras plus ses messages.`,"win")}
+  save();if(U.open==="prof"||U.open==="chmenu"||U.open==="blocked")closeLayer();if(U.open==="blocked")openBlocked();render()}
+async function report(kind,id,what){if(!confirm(`Signaler ${what} ? Les signalements sont anonymes.`))return;
+  try{const j=await api("report",{kind,id});if(j.error)throw j;closeLayer();
+    toast(j.hidden?"Merci : le message est masqué.":j.renamed?"Merci : le nom a été remplacé.":"Merci, c’est signalé. Plusieurs signalements entraînent une action automatique.","win");
+    if(kind==="chat"&&j.hidden){const c=CH[U.lg.code];if(c)c.msgs=c.msgs.filter(m=>String(m.id)!==String(id));render()}}
+  catch(e){toast("Impossible de signaler pour l’instant.","bad")}}
+function openChMenu(id){const c=CH[U.lg.code],m=c&&c.msgs.find(x=>String(x.id)===String(id));if(!m)return;const cur=U.lg.data&&U.lg.data.leagues.find(l=>l.code===U.lg.code),boss=cur&&(cur.mine||cur.role==="officer");
+  U.open="chmenu";layer(`<div class="grab"><h3>Message de ${esc(m.name)}</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div><p class="chquote">${esc(m.text).replace(/\n/g,"<br>")}</p>
+  <div class="mlist"><button data-act="rep" data-k="chat" data-id="${esc(m.id)}" data-w="ce message">🚩 Signaler ce message</button><button data-act="block" data-id="${esc(m.who)}" data-n="${esc(m.name)}">🚫 Bloquer ${esc(m.name)}</button>
+  ${boss?`<button data-act="chdel" data-id="${esc(m.id)}" style="color:var(--loss)">🗑️ Supprimer le message (chef / adjoint)</button>`:""}</div>`)}
+function openBlocked(){U.open="blocked";const L=S.blocked||[];layer(`<div class="grab"><h3>Joueurs bloqués</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`+
+  (L.length?L.map(x=>`<div class="gmrow"><div><b>${esc(x.name)}</b><small>Ses messages sont cachés</small></div><button class="btn ghost" data-act="block" data-id="${esc(x.id)}" data-n="${esc(x.name)}">Débloquer</button></div>`).join(""):`<div class="empty">Personne n’est bloqué.</div>`))}
+function openContact(){U.open="contact";layer(`<div class="grab"><h3>Nous écrire</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
+  <p class="note" style="text-align:left">Une question, un bug, une idée, un problème avec un joueur, une demande sur tes données ? Écris ici : le message arrive directement aux organisateurs.</p>
+  <div class="form"><textarea id="ct-in" rows="5" maxlength="1500" placeholder="Ton message…"></textarea><button class="btn gold wide" data-act="ctsend">Envoyer</button></div>`);setTimeout(()=>$("#ct-in")&&$("#ct-in").focus(),60)}
+async function contactSend(){const t=($("#ct-in").value||"").trim();if(t.length<3){$("#ct-in").focus();return}
+  try{if(!(await ensureSession()))throw 0;const j=await api("contact",{text:t});if(j.error)throw j;closeLayer();toast("Message envoyé, merci !","win")}catch(e){toast("Pas de connexion : réessaie plus tard.","bad")}}
+function openDelAcc(){U.open="delacc";layer(`<div class="grab"><h3>Supprimer mon compte</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
+  <div class="warn" style="text-align:left">C’est <b>définitif</b> : tes jetons, tes paris, ta photo, tes messages, tes statistiques et ton code de compte sont effacés du serveur et de ce téléphone. Si tu es chef d’une guilde, un autre membre prend la main ; une guilde où tu es seul disparaît.</div>
+  <div class="form"><label><span>Écris <b>SUPPRIMER</b> pour confirmer</span><input id="del-in" autocomplete="off" autocapitalize="characters" placeholder="SUPPRIMER"></label>
+  <button class="btn wide" data-act="delgo" style="background:var(--loss);color:#fff">Supprimer définitivement</button></div>`)}
+async function delAccount(){const v=($("#del-in").value||"").trim().toUpperCase();if(v!=="SUPPRIMER"){toast("Écris SUPPRIMER pour confirmer.","bad");return}
+  try{if(S.tok){const j=await api("delete_account",{confirm:"SUPPRIMER"});if(j.error)throw j}
+    GONE=true;S.tok=null;
+    try{for(const k of Object.keys(localStorage))if(/^dap\./.test(k))localStorage.removeItem(k)}catch(e){}
+    try{const r=await navigator.serviceWorker?.ready;const sub=r&&await r.pushManager.getSubscription();if(sub)await sub.unsubscribe()}catch(e){}
+    alert("Ton compte est supprimé. Merci d’avoir joué !");location.replace(location.pathname)}
+  catch(e){toast("Pas de connexion : la suppression n’a pas pu se faire.","bad")}}
+
 /* ---------- combats de guildes : défis et championnat (moyenne des gains en paris de tous les membres) ---------- */
 const sgnT=x=>(x>0?"+":"")+tok(x);
 const BRES={w:["Victoire","won"],d:["Match nul","void"],l:["Défaite","lost"]};
@@ -1579,7 +1671,7 @@ async function openGRank(chal){U.open="gwr";const head=`<div class="grab"><h3>${
   try{const j=await api("guild_ranking",{});if(U.open!=="gwr")return;const me=(U.bt||{})[U.lg.code],boss=me&&me.role!=="membre"&&me.guild.ok;
     layer(head+(chal?`<p class="note" style="text-align:left">Le défi dure une semaine et commence lundi prochain. La guilde défiée doit accepter.</p>`:"")
       +(j.guilds.length?j.guilds.map((g,i)=>`<div class="gdrow"><span class="rk">${i+1}</span>${emb(g,"lg")}<div><b>${esc(g.name)}</b><small>${g.div.i} ${g.div.n} · cote ${g.elo} · ${g.w}V ${g.d}N ${g.l}D · ${g.n} membres</small></div>
-        ${g.mine?`<span class="tag won">Toi</span>`:boss?`<button class="btn ${chal?"gold":""}" data-act="gchal" data-id="${esc(g.gid)}" data-n="${esc(g.name)}">Défier</button>`:""}</div>`).join("")
+        ${g.mine?`<span class="tag won">Toi</span>`:`<button class="x sm" data-act="rep" data-k="guild" data-id="${esc(g.gid)}" data-w="le nom de la guilde « ${esc(g.name)} »" aria-label="Signaler">🚩</button>`+(boss?`<button class="btn ${chal?"gold":""}" data-act="gchal" data-id="${esc(g.gid)}" data-n="${esc(g.name)}">Défier</button>`:"")}</div>`).join("")
       :`<div class="empty">${ic("trophy")}<b>Pas encore de guilde classée</b>Il faut au moins 3 membres pour entrer au classement.</div>`))}
   catch(e){if(U.open==="gwr")layer(head+`<div class="empty">${ic("info")}<b>Pas de connexion</b>Réessaie dans un instant.</div>`)}}
 const BERR={already:"Défi déjà envoyé à cette guilde.",busy:"Une des deux guildes a déjà un défi la semaine prochaine.",too_small:"Il faut au moins 3 membres dans chaque guilde.",too_many:"3 défis en attente au maximum.",not_allowed:"Seuls le chef et les adjoints peuvent faire ça."};
@@ -1658,6 +1750,7 @@ function viewProfile(p){const done=p.won+p.lost,rate=done?Math.round(p.won/done*
   <div class="pstats"><div><small>Jetons</small><b>${tok(p.bal)}</b></div><div><small>Record</small><b>${tok(p.peak)}</b></div><div><small>Réussite</small><b>${rate} %</b></div>
     <div><small>Gagnés</small><b class="pos">${p.won}</b></div><div><small>Meilleure cote</small><b>${p.best&&p.best.odds?fr(p.best.odds):"—"}</b></div><div><small>Plus gros gain</small><b class="pos">${p.best&&p.best.pay?"+"+tok(p.best.pay):"—"}</b></div></div>
   ${curve(p.hist,p.bal)}
+  ${p.me?"":`<div class="pmod"><button class="link" data-act="rep" data-k="player" data-id="${esc(p.id)}" data-w="le pseudo « ${esc(p.name)} »">🚩 Signaler le pseudo</button><button class="link" data-act="block" data-id="${esc(p.id)}" data-n="${esc(p.name)}">${blocked(p.id)?"Débloquer":"🚫 Bloquer"}</button></div>`}
   ${(p.badges||[]).length?`<div class="grp">Succès (${p.badges.length}/${SUCC.length})</div>${succGrid(p.badges)}`:""}
   <div class="grp">Paris en cours (${open.length})</div>${open.length?open.map(bet).join(""):`<p class="note">Aucun pari en cours.</p>`}
   <div class="grp">Derniers paris</div>${past.length?past.map(bet).join(""):`<p class="note">Pas encore de pari terminé.</p>`}`}
@@ -1727,7 +1820,7 @@ function viewGuildSet(){const f=U.gf;
   <div class="grp">Qui peut rejoindre ?</div>${Object.entries(ACCESS).map(([k,[t,d]])=>`<button class="gacc" data-act="gpick" data-f="a" data-v="${k}" aria-pressed="${f.a===k}"><b>${t}</b><small>${d}</small></button>`).join("")}
   ${f.chef?`<div class="grp">Championnat des guildes</div><button class="gacc" data-act="gpick" data-f="ch" data-v="1" aria-pressed="${f.ch==="1"}"><b>On participe</b><small>Chaque lundi, un adversaire de votre niveau (il faut au moins 3 membres).</small></button><button class="gacc" data-act="gpick" data-f="ch" data-v="0" aria-pressed="${f.ch==="0"}"><b>Pause</b><small>Pas de championnat ; les défis restent possibles.</small></button>`:""}
   <button class="btn gold wide" data-act="gsave" style="margin-top:12px">Enregistrer</button>`}
-async function saveGuild(){keepGuildForm();const f=U.gf;try{const j=await api("guild_update",{code:U.lg.code,emblem:{i:f.i,c:f.c},access:f.a,motto:f.m,name:f.n,...(f.chef?{champ:f.ch==="1"}:{})});if(j.error)throw j;closeLayer();toast("Guilde mise à jour.","win");loadBoards()}catch(e){toast("Impossible d’enregistrer.","bad")}}
+async function saveGuild(){keepGuildForm();const f=U.gf;try{const j=await api("guild_update",{code:U.lg.code,emblem:{i:f.i,c:f.c},access:f.a,motto:f.m,name:f.n,...(f.chef?{champ:f.ch==="1"}:{})});if(j.error)throw j;closeLayer();toast("Guilde mise à jour.","win");loadBoards()}catch(e){toast(e.code==="name_bad"?"Nom ou devise refusés : choisis des mots corrects.":"Impossible d’enregistrer.","bad")}}
 async function openDir(q){U.open="gdir";const head=`<div class="grab"><h3>Trouver une guilde</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   <div class="form"><input id="g-q" placeholder="Rechercher une guilde…" value="${esc(q||"")}" autocomplete="off"></div>`;
   layer(head+`<div class="skel"></div><div class="skel"></div>`);
@@ -2164,7 +2257,7 @@ const CH={};   // code → {msgs, last, at}
 const QUICK=["😂 La honte","👏 Bien joué","🔥 Chaud !","Revanche ?","On parie ?","Pas de chance…"];
 function chatUnread(code){const c=CH[code];if(!c||!c.msgs.length)return 0;if(U.tab==="l"&&U.lg.view==="chat"&&U.lg.code===code&&!U.dark)return 0;const seen=(S.chatSeen||{})[code]||0;return c.msgs.filter(m=>m.id>seen&&String(m.who)!==String(c.me)).length}
 async function loadChat(){const code=U.lg.code;if(!code||!S.tok)return;const c=CH[code]||(CH[code]={msgs:[],last:0});
-  try{const j=await api("chat_list",{code,after:c.last});if(j.msgs.length){c.msgs=c.msgs.concat(j.msgs).slice(-200);c.last=c.msgs[c.msgs.length-1].id}c.at=Date.now();c.me=j.me}catch(e){c.err=1}
+  try{const j=await api("chat_list",{code,after:c.last});const have=new Set(c.msgs.map(m=>String(m.id))),nw=j.msgs.filter(m=>!have.has(String(m.id)));if(nw.length){c.msgs=c.msgs.concat(nw).slice(-200);c.last=c.msgs[c.msgs.length-1].id}c.at=Date.now();c.me=j.me}catch(e){c.err=1}
   if(U.tab==="l"&&U.lg.view==="chat"&&U.lg.code===code&&!U.open){const box=$("#chbox"),stick=!box||box.scrollHeight-box.scrollTop-box.clientHeight<80;
     const inp=$("#chin"),val=inp?inp.value:"",foc=document.activeElement===inp;render();const b2=$("#chbox");if(b2&&stick)b2.scrollTop=b2.scrollHeight;
     const i2=$("#chin");if(i2){i2.value=val;if(foc)i2.focus()}
@@ -2174,8 +2267,8 @@ function viewChat(cur){const c=CH[cur.code];clearTimeout(chT);chT=setTimeout(()=
   if(!c)return`<div class="skel" style="height:240px"></div>`;
   let h=`<div class="chbox" id="chbox">`,day="";
   if(!c.msgs.length)h+=`<div class="empty" style="border:0">${ic("group")}<b>Le chat de « ${esc(cur.name)} »</b>Chambre tes collègues, prépare tes duels, commente les matchs…</div>`;
-  for(const m of c.msgs){const d=fDay(m.at);if(d!==day){h+=`<div class="chday">${d}</div>`;day=d}const mine=String(m.who)===String(c.me);
-    h+=`<div class="chm${mine?" me":""}">${mine?"":`<span data-act="prof" data-id="${esc(m.who)}">${avatar(m.who,m.name,m.av,"av")}</span>`}<div class="chb">${mine?"":`<b>${esc(m.name)}</b>`}<p>${esc(m.text).replace(/\n/g,"<br>")}</p><small>${fTime(m.at)}${mine?` · <button class="link" data-act="chdel" data-id="${esc(m.id)}">supprimer</button>`:""}</small></div></div>`}
+  for(const m of c.msgs){if(blocked(m.who))continue;const d=fDay(m.at);if(d!==day){h+=`<div class="chday">${d}</div>`;day=d}const mine=String(m.who)===String(c.me);
+    h+=`<div class="chm${mine?" me":""}">${mine?"":`<span data-act="prof" data-id="${esc(m.who)}">${avatar(m.who,m.name,m.av,"av")}</span>`}<div class="chb">${mine?"":`<b>${esc(m.name)}</b>`}<p>${esc(m.text).replace(/\n/g,"<br>")}</p><small>${fTime(m.at)}${mine?` · <button class="link" data-act="chdel" data-id="${esc(m.id)}">supprimer</button>`:` · <button class="link" data-act="chmenu" data-id="${esc(m.id)}" aria-label="Signaler ou bloquer">•••</button>`}</small></div></div>`}
   h+=`</div><div class="chq">${QUICK.map(q=>`<button data-act="chq" data-t="${esc(q)}">${esc(q)}</button>`).join("")}</div>
   <div class="chin"><textarea id="chin" rows="1" maxlength="400" placeholder="Écris à la guilde…"></textarea><button class="btn" data-act="chsend" aria-label="Envoyer">${ic("share")}</button></div>`;
   setTimeout(()=>{const b=$("#chbox");if(b&&!b._s){b._s=1;b.scrollTop=b.scrollHeight}},0);
@@ -2185,7 +2278,7 @@ async function chatSend(quick){const inp=$("#chin"),text=(quick||(inp&&inp.value
   if(!quick&&inp)inp.value="";
   try{await api("chat_send",{code,text});await loadChat();const b=$("#chbox");if(b)b.scrollTop=b.scrollHeight}
   catch(e){if(!quick&&inp)inp.value=text;toast(e.code==="slow_down"?"Doucement ! Trop de messages.":"Message non envoyé (pas de connexion).","bad")}}
-async function chatDelete(id){if(!confirm("Supprimer ce message ?"))return;try{await api("chat_delete",{id});const c=CH[U.lg.code];if(c)c.msgs=c.msgs.filter(m=>String(m.id)!==String(id));render()}catch(e){}}
+async function chatDelete(id){if(!confirm("Supprimer ce message ?"))return;try{const j=await api("chat_delete",{id});if(j&&j.error)throw j;if(U.open==="chmenu")closeLayer();const c=CH[U.lg.code];if(c)c.msgs=c.msgs.filter(m=>String(m.id)!==String(id));render()}catch(e){}}
 
 /* ---------- duels ---------- */
 async function loadDuels(){if(!S.tok)return;try{const j=await api("duels",{});U.lg.duels=j.duels;U.lg.duelsAt=Date.now();await checkDuels(j.duels,j.me)}catch(e){}
@@ -2255,7 +2348,7 @@ function viewLgForm(kind){const nw=kind==="new";
   <div class="form"><label>${nw?"Nom de la guilde":"Code de la guilde"}<input id="lg-in" maxlength="${nw?24:5}" ${nw?'placeholder="ex. Les potes du dimanche"':'placeholder="ex. K7RZP" autocapitalize="characters" style="text-transform:uppercase;letter-spacing:4px;font-weight:800"'} autocomplete="off"></label>
   <button class="btn gold wide" data-act="lgok" data-kind="${kind}">${nw?"Créer la guilde":"Rejoindre"}</button>
   <p class="note">${nw?"Tu recevras un code à 5 lettres à donner à tes amis.":"Demande le code à l’ami qui a créé la guilde."}</p></div>`}
-const LGERR={unknown:"Aucune guilde avec ce code.",full:"Cette guilde est pleine (60 joueurs).",too_many:"Tu es déjà dans 12 guildes : quittes-en une d’abord.",slow_down:"Doucement ! Réessaie dans un moment.",name:"Donne un nom à ta guilde."};
+const LGERR={unknown:"Aucune guilde avec ce code.",full:"Cette guilde est pleine (100 joueurs).",too_many:"Tu es déjà dans 12 guildes : quittes-en une d’abord.",slow_down:"Doucement ! Réessaie dans un moment.",name:"Donne un nom à ta guilde.",name_bad:"Ce nom n’est pas accepté. Choisis-en un autre."};
 async function lgSubmit(kind){const v=($("#lg-in").value||"").trim();if(!v){$("#lg-in").focus();return}const b=$("[data-act=lgok]");b.disabled=true;
   try{if(!(await ensureSession()))throw{code:"offline"};
     const j=kind==="new"?await api("create_league",{name:v}):await api("join_league",{code:v});if(kind!=="new"&&!j.already)postAct("join",{});
@@ -2364,17 +2457,20 @@ function viewWelcome(rename,msg){return`<div class="welcome">${rename?`<div clas
   <div class="feat"><div>${ic("card","yc")}Cartons, corners, hors-jeux</div><div>${ic("posts")}Essais, pénalités ratées</div><div>${ic("broken")}Doubles fautes, raquettes cassées</div></div>`}
   <div class="form" style="text-align:left"><label>Ton pseudo<input id="w-name" maxlength="18" value="${esc(S.name)}" placeholder="ex. Le Pronostiqueur" autocomplete="nickname"></label>
   <p class="warn" id="w-err" hidden></p>
+  ${rename?"":`<label class="agechk"><input type="checkbox" id="w-age"><span>J’ai <b>18 ans ou plus</b> et j’accepte les <button class="link" data-act="wlegal" style="padding:0">règles du jeu et la politique de confidentialité</button>.</span></label><div id="w-legal" hidden></div>`}
   <button class="btn gold wide" data-act="wgo">${rename?"Enregistrer":ic("coin")+" Recevoir mes 1 000 jetons"}</button></div>
   ${rename?"":STANDALONE?`<div class="info" style="text-align:left;margin-top:14px">${ic("info")}<span><b style="color:var(--ink)">Tu as déjà un compte ?</b> Nouveau téléphone, appli réinstallée… entre ton code de compte et tu retrouves tout.<br><button class="btn ghost" data-act="xfer" style="margin-top:8px">Entrer mon code</button></span></div>`
     :`<button class="link" data-act="xfer" style="margin-top:10px">J’ai déjà un compte (code de transfert)</button>`}
   ${rename?"":`<p class="note" style="margin-top:12px">Jetons fictifs, aucun argent réel. Jeu réservé au divertissement.</p>`}</div>`}
 async function welcomeGo(){const inp=$("#w-name"),n=(inp.value||"").replace(/\s+/g," ").trim().slice(0,18),err=$("#w-err"),b=$("[data-act=wgo]");
-  if(!n){inp.focus();return}const first=!S.name;b.disabled=true;err.hidden=true;
+  if(!n){inp.focus();return}const first=!S.name;
+  if(first&&!($("#w-age")&&$("#w-age").checked)){err.hidden=false;err.textContent="Coche la case : Tribune est réservé aux 18 ans et plus.";return}b.disabled=true;err.hidden=true;
+  const bad=()=>{err.hidden=false;err.textContent=`« ${n} » n’est pas accepté. Choisis un pseudo correct.`;b.disabled=false;inp.focus();inp.select()};
   const taken=()=>{err.hidden=false;err.textContent=`« ${n} » est déjà pris. Choisis un autre pseudo.`;b.disabled=false;inp.focus();inp.select()};
   try{if(first||!S.tok){const j=await api("session",{name:n,bal:S.bal,peak:S.peak,...myStats()});S.tok=j.token;S.pid=j.id}
-    else{const j=await api("sync",{name:n,bal:S.bal,peak:S.peak,...myStats()});if(j.name_taken){taken();return}}}
-  catch(e){if(e.code==="name_taken"){taken();return}}   // hors connexion : on accepte, la vérification se fera plus tard
-  S.name=n;save();U.open=null;layer("");render();
+    else{const j=await api("sync",{name:n,bal:S.bal,peak:S.peak,...myStats()});if(j.name_taken){taken();return}if(j.name_bad){bad();return}}}
+  catch(e){if(e.code==="name_taken"){taken();return}if(e.code==="name_bad"){bad();return}}   // hors connexion : on accepte, la vérification se fera plus tard
+  if(first)S.tosV=TOS_V;S.name=n;askedName=false;save();U.open=null;layer("");render();
   if(first){setTimeout(joinFromLink,400);toast(`${ic("coin")} 1 000 jetons offerts. À toi de jouer !`,"win");confetti()}else toast("Pseudo enregistré.","win")}
 
 /* ---------- installer l'app / changer d'appareil ---------- */
@@ -2450,7 +2546,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.66";
+const VERSION="1.67";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -2468,7 +2564,7 @@ loadFeeds();
 setTimeout(()=>{if(S.dk&&Object.values(S.dk).some(x=>!x.settled))checkDarkAll()},5000);
 goFrom(location.href);
 setTimeout(loadEvents,1200);
-setTimeout(()=>{pushRefresh();if(S.name){claimPrizes();claimBattles();ensureRcode()}if(S.name)loadBoards().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){loadProno();loadLm(U.lg.code||U.lg.data.leagues[0].code);const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},3000);
+setTimeout(()=>{pushRefresh();if(S.name&&S.tosV!==TOS_V)openTos();if(S.name){claimPrizes();claimBattles();ensureRcode()}if(S.name)loadBoards().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){loadProno();loadLm(U.lg.code||U.lg.data.leagues[0].code);const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},3000);
 setInterval(()=>{if(!document.hidden&&S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},12e4);
 setInterval(()=>{if(document.hidden)return;
   const anyLive=[...REG.values()].some(m=>m.src==="espn"&&m.state==="in");const stale=Object.values(FEED).some(f=>f.at&&Date.now()-f.at>(anyLive?6e4:5*6e4));
