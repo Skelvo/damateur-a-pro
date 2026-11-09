@@ -789,7 +789,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.83"></script>
+<script src="engine.js?v=1.84"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -1983,7 +1983,7 @@ const HELP=[["Parier",[
   ["1n2","1, N, 2 : ça veut dire quoi ?","<b>1</b> = l’équipe de gauche (à domicile) gagne. <b>N</b> = match nul. <b>2</b> = l’équipe de droite (à l’extérieur) gagne. Au tennis et en NBA, pas de nul : 1 ou 2."],
   ["parier","Comment parier ?","1) Touche une cote : elle va dans ton ticket. 2) Touche <b>Mon ticket</b> en bas. 3) Choisis ta mise. 4) Touche <b>Valider</b>. Touche le match lui-même pour voir tous les paris : buteurs, cartons, corners, essais, aces…"],
   ["combo","Pari simple ou combiné ?","Avec plusieurs pronostics dans ton ticket, tu choisis : <b>Simples</b> = un pari séparé pour chacun (la mise est comptée pour chacun). <b>Combiné</b> = un seul pari, les cotes se multiplient, mais <b>tout</b> doit être bon. Deux paris liés sur le même match ont une cote recalculée."],
-  ["direct","Parier en direct","Sur les <b>vrais matchs de foot et de rugby</b>, les paris restent ouverts pendant le jeu : jusqu’à la <b>85<sup>e</sup> minute</b> au foot et la <b>72<sup>e</sup></b> au rugby. Repère l’étiquette <b>Direct · paris ouverts</b> sur le match. En direct, seuls les paris sur le résultat, les buts ou les points sont proposés, et la cote change avec le score : si elle bouge au moment de valider, l’appli te demande de vérifier. Au tennis et en NBA, tout se ferme au coup d’envoi.<br><br>Pendant le direct, sur un match que tu regardes, où tu as parié, ou de ton équipe de cœur : <b>animation</b> à chaque but, carton ou essai (appli ouverte). Appli fermée : <b>notification</b> à chaque but ou essai d’un match où tu as parié (avec quelques minutes de retard)."],
+  ["direct","Parier en direct","Sur les <b>vrais matchs de foot et de rugby</b>, les paris restent ouverts pendant le jeu : jusqu’à la <b>85<sup>e</sup> minute</b> au foot et la <b>72<sup>e</sup></b> au rugby. Repère l’étiquette <b>Direct · paris ouverts</b> sur le match. En direct, seuls les paris sur le résultat, les buts ou les points sont proposés, et la cote change avec le score : si elle bouge au moment de valider, l’appli te demande de vérifier. Au tennis et en NBA, tout se ferme au coup d’envoi.<br><br>Pendant le direct, sur un match que tu regardes, où tu as parié, ou de ton équipe de cœur : <b>animation</b> à chaque but, carton ou essai (appli ouverte). Appli fermée : <b>notification</b> à chaque but, carton ou essai d’un match où tu as parié (avec quelques minutes de retard ; plusieurs actions d’affilée arrivent ensemble)."],
   ["regle","Quand mon pari est-il réglé ?","Tout seul, dès que le score et la stat du pari sont connus, en général quelques minutes après la fin. Tu reçois une notification si elles sont activées. Si une stat n’est jamais publiée (48 h) ou si le match est reporté, la sélection est <b>remboursée</b> (cote 1,00 dans un combiné)."],
   ["cash","Encaisser un pari","Dans <b>Mes paris</b>, tant que le match n’est pas fini, tu peux souvent encaisser tout de suite : tu sécurises un montant (plus petit que le gain possible) et le pari s’arrête là."]]],
  ["Jetons et classements",[
@@ -3028,7 +3028,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.83";
+const VERSION="1.84";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
