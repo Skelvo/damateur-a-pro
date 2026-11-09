@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "13";
+const SCHEMA_VERSION = "14";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -169,6 +169,22 @@ const STATEMENTS = [
      primary key (player, month))`,
   // rappels pour parier : 2 par jour, 1 (midi) ou 0
   `alter table players add column if not exists remind int not null default 2`,
+  // match de la ligue (un par jour, le même pour toutes les ligues) et votes 1 / N / 2
+  `create table if not exists day_match (day text primary key, match jsonb, updated_at timestamptz not null default now())`,
+  `create table if not exists lm_picks (
+     day text not null,
+     player bigint not null references players(id) on delete cascade,
+     pick int not null,
+     at timestamptz not null default now(),
+     primary key (day, player))`,
+  // équipe de cœur, historique des jetons, succès
+  `alter table players add column if not exists fav jsonb`,
+  `alter table players add column if not exists badges jsonb`,
+  `create table if not exists bal_hist (
+     player bigint not null references players(id) on delete cascade,
+     day text not null,
+     bal numeric not null,
+     primary key (player, day))`,
   `create table if not exists rate_hits (key text not null, win bigint not null, n int not null default 0, primary key (key, win))`,
 ];
 

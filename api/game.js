@@ -2,7 +2,7 @@
 // et « ce que parient les autres ». Tout passe par POST /api/game {action, ...}.
 import { db, hashToken, newToken, ipKey, overLimit } from "./_db.js";
 import { timingSafeEqual } from "node:crypto";
-import { buildWeek, refreshResults, points, todayMatches } from "./_prono.js";
+import { buildWeek, refreshResults, points, todayMatches, bestOfDay } from "./_prono.js";
 import { notify, members } from "./_push.js";
 
 const ORIGINS = [
@@ -55,7 +55,7 @@ const WEEK = `to_char(date_trunc('week', now() at time zone 'Europe/Paris'), 'YY
 const MONTH = `to_char(now() at time zone 'Europe/Paris', 'YYYY-MM')`;
 const PREV_WEEK = `to_char(date_trunc('week', now() at time zone 'Europe/Paris') - interval '7 days', 'YYYY-MM-DD')`;
 const PREV_MONTH = `to_char(date_trunc('month', now() at time zone 'Europe/Paris') - interval '1 month', 'YYYY-MM')`;
-const BOARD_COLS = `p.id, p.name, p.bal::float8 as bal, p.peak::float8 as peak, p.won, p.lost, p.avatar_v,
+const BOARD_COLS = `p.id, p.name, p.bal::float8 as bal, p.peak::float8 as peak, p.won, p.lost, p.avatar_v, p.fav, p.badges,
   (case when p.week = ${WEEK} then p.bal - coalesce(p.week_bal, p.bal) else 0 end)::float8 as week_gain,
   (case when p.month = ${MONTH} then p.bal - coalesce(p.month_bal, p.bal) else 0 end)::float8 as month_gain`;
 // Gains par semaine (ou par mois) des membres d'une ligue, y compris la dernière période de ceux
@@ -232,7 +232,7 @@ async function reminders(s, slot) {
   const key = `remind:${slot}:${t.ymd}`;
   if (!(await s.query(`insert into meta (key, value) values ($1, '1') on conflict do nothing returning key`, [key]))[0]) return { skipped: "déjà fait" };
   const min = slot === "midi" ? 1 : 2;
-  const ppl = await s.query(`select p.id, p.name from players p where p.remind >= $1 and p.seen_at < now() - interval '90 minutes'
+  const ppl = await s.query(`select p.id, p.name, p.fav from players p where p.remind >= $1 and p.seen_at < now() - interval '90 minutes'
       and exists (select 1 from push_subs x where x.player = p.id)`, [min]);
   if (!ppl.length) return { sent: 0 };
   const now = Date.now(), M = await todayMatches(t.ymd, now + 20 * 60e3, Math.round(Number(t.eod)));
@@ -245,6 +245,7 @@ async function reminders(s, slot) {
     const open = wk.matches.filter((m) => !m.done && !m.cancel && m.t > now + 20 * 60e3);
     if (open.length) pr = { week: wk.week, open, first: Math.min(...open.map((m) => m.t)) };
   }
+  const lm = await dayMatch(s).catch(() => null);
   const jobs = ppl.map(async (p) => {
     let msg = null;
     if (pr) {
@@ -252,6 +253,13 @@ async function reminders(s, slot) {
       const left = pr.open.filter((m) => !mine.has(m.mid)).length;
       const lg = (await s.query(`select code from league_members where player = $1 order by joined_at limit 1`, [p.id]))[0];
       if (left && lg) msg = { title: "🎯 Prono du week-end", body: `Il te reste ${left} match${left > 1 ? "s" : ""} à pronostiquer, premier coup d'envoi à ${hhmm(pr.first)}. Le score exact rapporte 50 jetons !`, url: go("prono", lg.code), tag: "remind-prono" };
+    }
+    const fm = p.fav && slot === "midi" ? M.find((m) => m.hid === p.fav.id || m.aid === p.fav.id) : null;
+    if (!msg && fm) msg = { title: `❤️ ${p.fav.name} joue aujourd'hui`, body: `${fm.h} – ${fm.a} à ${hhmm(fm.t)}. Tu paries sur ton équipe ?`, url: "./", tag: "remind-fav" };
+    if (!msg && lm && lm.cur && lm.cur.day === t.ymd && lm.cur.match.t > now + 20 * 60e3 && !(await s.query(`select 1 from lm_picks where day = $1 and player = $2`, [lm.cur.day, p.id]))[0]) {
+      const lg = (await s.query(`select m.code, (select count(*)::int from lm_picks x join league_members m2 on m2.player = x.player and m2.code = m.code where x.day = $2) as n
+          from league_members m where m.player = $1 order by m.joined_at limit 1`, [p.id, lm.cur.day]))[0];
+      if (lg) msg = { title: "⚽ Match de la ligue", body: `${lm.cur.match.h} – ${lm.cur.match.a} à ${hhmm(lm.cur.match.t)}. ${lg.n ? `${lg.n} collègue${lg.n > 1 ? "s ont" : " a"} déjà voté` : "Personne n'a encore voté"}, et toi ? Bonne réponse = +${LM_PRIZE} jetons.`, url: go("rank", lg.code), tag: "remind-lm" };
     }
     if (!msg && slot === "soir") {
       // rivalité : le joueur juste devant moi cette semaine dans ma ligue la plus active
@@ -275,6 +283,38 @@ async function reminders(s, slot) {
   });
   const n = (await Promise.all(jobs)).reduce((a, x) => a + x, 0);
   return { sent: n, matches: M.length };
+}
+
+// ---- Match de la ligue : un match par jour (le même pour tout le monde), on vote 1 / N / 2 ----
+const LM_PRIZE = 30;
+const outcome = (m) => (m && m.done && m.sh != null ? (m.sh > m.sa ? 0 : m.sh === m.sa ? 1 : 2) : null);
+async function dayMatch(s) {
+  const t = (await s.query(`select to_char(now() at time zone 'Europe/Paris', 'YYYYMMDD') as d,
+      extract(epoch from (date_trunc('day', now() at time zone 'Europe/Paris') at time zone 'Europe/Paris')) * 1000 as sod`))[0];
+  const sod = Math.round(Number(t.sod));
+  let cur = (await s.query(`select day, match, extract(epoch from updated_at) * 1000 as up from day_match where day >= $1 and match is not null order by day limit 1`, [t.d]))[0];
+  if (!cur && !(await s.query(`select 1 from day_match where day = $1`, [t.d]))[0]) {
+    // pas encore choisi : aujourd'hui, sinon le prochain jour avec des matchs (5 jours au plus) ; les jours vides sont notés
+    for (let i = 0; i < 6 && !cur; i++) {
+      const from = sod + i * 864e5, ymd = new Date(from + 12 * 3600e3).toLocaleDateString("sv-SE", { timeZone: "Europe/Paris" }).replace(/-/g, "");
+      if ((await s.query(`select 1 from day_match where day = $1`, [ymd]))[0]) break;
+      const m = await bestOfDay(ymd, from, from + 864e5);
+      await s.query(`insert into day_match (day, match) values ($1, $2::jsonb) on conflict (day) do nothing`, [ymd, m ? JSON.stringify(m) : null]);
+      if (m) cur = { day: ymd, match: m, up: Date.now() };
+    }
+    if (!cur) cur = (await s.query(`select day, match, extract(epoch from updated_at) * 1000 as up from day_match where day >= $1 and match is not null order by day limit 1`, [t.d]))[0];
+  }
+  // matchs commencés et pas finis (celui du jour et ceux d'avant) : score rafraîchi toutes les 3 min
+  const open = await s.query(`select day, match from day_match where match is not null and day >= to_char(now() - interval '8 days', 'YYYYMMDD')
+      and (match->>'done')::boolean is not true and updated_at < now() - interval '3 minutes'`);
+  const started = open.filter((r) => r.match.t < Date.now());
+  if (started.length) {
+    const M = started.map((r) => r.match);
+    const changed = await refreshResults(M).catch(() => false);
+    for (const r of started) await s.query(`update day_match set match = $2::jsonb, updated_at = now() where day = $1`, [r.day, JSON.stringify(r.match)]);
+    if (changed && cur) { const c = started.find((r) => r.day === cur.day); if (c) cur.match = c.match; }
+  }
+  return { today: t.d, cur: cur ? { day: cur.day, match: cur.match } : null };
 }
 
 const ACTIONS = {
@@ -328,6 +368,10 @@ const ACTIONS = {
          bal = $2::numeric, peak = greatest(peak, $3::numeric, $2::numeric), won = $4::int, lost = $5::int, seen_at = now()
        where id = $1`,
       [p.id, num(b.bal, 0, MAX_BAL), num(b.peak, 0, MAX_BAL), int(b.won, 0, 1e7), int(b.lost, 0, 1e7)]);
+    await s.query(`insert into bal_hist (player, day, bal) values ($1, to_char(now() at time zone 'Europe/Paris', 'YYYYMMDD'), $2::numeric)
+       on conflict (player, day) do update set bal = excluded.bal`, [p.id, num(b.bal, 0, MAX_BAL)]);
+    if (Array.isArray(b.badges)) await s.query(`update players set badges = $2::jsonb where id = $1`,
+      [p.id, JSON.stringify([...new Set(b.badges.map((x) => cleanName(x, 20)).filter(Boolean))].slice(0, 60))]);
     if (Array.isArray(b.bets)) {
       const json = JSON.stringify({ list: b.bets.slice(0, 40), best: b.best && typeof b.best === "object" ? b.best : null });
       if (json.length <= 60000) await s.query(`update players set bets = $2::jsonb where id = $1`, [p.id, json]);
@@ -487,7 +531,7 @@ const ACTIONS = {
     return {
       me: p.id, leagues, code: code && leagues.some((l) => l.code === code) ? code : "", total, rank, last, lastSeason,
       season: { month: cur.m, label: monthName(cur.m), end: Math.round(Number(cur.mend)) }, week: cur.w,
-      rows: rows.map((r) => ({ id: r.id, name: r.name, bal: Math.round(r.bal), peak: Math.round(r.peak), won: r.won, lost: r.lost, week: Math.round(r.week_gain), season: Math.round(r.month_gain), tr: trophies[r.id] || 0, sc: crowns[r.id] || 0, av: r.avatar_v || 0 })),
+      rows: rows.map((r) => ({ id: r.id, name: r.name, bal: Math.round(r.bal), peak: Math.round(r.peak), won: r.won, lost: r.lost, week: Math.round(r.week_gain), season: Math.round(r.month_gain), tr: trophies[r.id] || 0, sc: crowns[r.id] || 0, av: r.avatar_v || 0, fav: r.fav ? { n: r.fav.name, l: r.fav.logo } : null, nb: Array.isArray(r.badges) ? r.badges.length : 0 })),
     };
   },
 
@@ -521,12 +565,14 @@ const ACTIONS = {
       if (!ok) throw fail(403, "not_friend");
     }
     const r = (await s.query(
-      `select id, name, bal::float8 as bal, peak::float8 as peak, won, lost, avatar_v, bets, extract(epoch from created_at) * 1000 as since,
+      `select id, name, bal::float8 as bal, peak::float8 as peak, won, lost, avatar_v, bets, fav, badges, extract(epoch from created_at) * 1000 as since,
          (select count(*)::int from weekly w where w.player = players.id) as weeks
        from players where id = $1`, [id]))[0];
     if (!r) throw fail(404, "unknown");
     return { id: r.id, name: r.name, bal: Math.round(r.bal), peak: Math.round(r.peak), won: r.won, lost: r.lost, av: r.avatar_v || 0,
-      bets: (r.bets && r.bets.list) || [], best: (r.bets && r.bets.best) || null, since: Math.round(Number(r.since)) };
+      bets: (r.bets && r.bets.list) || [], best: (r.bets && r.bets.best) || null, since: Math.round(Number(r.since)),
+      fav: r.fav || null, badges: Array.isArray(r.badges) ? r.badges : [],
+      hist: (await s.query(`select day, bal::float8 as bal from bal_hist where player = $1 and day >= to_char((now() at time zone 'Europe/Paris') - interval '30 days', 'YYYYMMDD') order by day`, [id])).map((x) => [x.day, Math.round(x.bal)]) };
   },
 
   // (le côté dark a été retiré en v1.28 ; ses tables restent en base, plus rien n'y écrit)
@@ -630,6 +676,56 @@ const ACTIONS = {
     await s.query(`update players set remind = $2 where id = $1`, [p.id, int(b.v, 0, 2)]);
     return { ok: true };
   },
+  async set_fav(s, b) {
+    const p = await me(s, b.token);
+    const f = b.fav;
+    if (f == null) { await s.query(`update players set fav = null where id = $1`, [p.id]); return { ok: true }; }
+    const sp = f.sp === "rugby" ? "rugby" : "foot", id = String(f.id || "");
+    const path = String(f.path || ""), logo = String(f.logo || "");
+    if (!/^\d{1,9}$/.test(id) || !/^(soccer|rugby)\/[\w.]{2,30}$/.test(path) || (logo && !/^https:\/\/a\.espncdn\.com\/[\w\/.\-]+$/.test(logo))) throw fail(400, "fav");
+    const fav = { sp, id, path, name: cleanName(f.name, 40) || "?", logo: logo || null };
+    await s.query(`update players set fav = $2::jsonb where id = $1`, [p.id, JSON.stringify(fav)]);
+    return { ok: true, fav };
+  },
+  async lm_get(s, b) {
+    const p = await me(s, b.token);
+    const code = cleanName(b.code, 8).toUpperCase();
+    if (!(await isMember(s, code, p.id))) throw fail(403, "not_member");
+    const { today, cur } = await dayMatch(s);
+    const mem = await s.query(`select pl.id, pl.name, pl.avatar_v from league_members m join players pl on pl.id = m.player where m.code = $1`, [code]);
+    const ids = mem.map((x) => x.id), who = Object.fromEntries(mem.map((x) => [String(x.id), x]));
+    const days = await s.query(`select day, match from day_match where match is not null and day >= to_char((now() at time zone 'Europe/Paris') - interval '40 days', 'YYYYMMDD') order by day desc`);
+    const picks = await s.query(`select day, player, pick from lm_picks where player = any($1::bigint[]) and day = any($2::text[])`, [ids, days.map((d) => d.day)]);
+    const byDay = {};
+    for (const x of picks) (byDay[x.day] ??= []).push(x);
+    const pub = (m) => m && ({ mid: m.mid, h: m.h, a: m.a, hl: m.hl, al: m.al, t: m.t, sh: m.sh, sa: m.sa, done: !!m.done, live: m.t < Date.now() && !m.done });
+    const month = today.slice(0, 6), tally = {};
+    const hist = [];
+    for (const d of days) {
+      const res = outcome(d.match), P = byDay[d.day] || [];
+      if (d.day.startsWith(month) && res != null) for (const x of P) { const T = (tally[x.player] ??= { ok: 0, n: 0 }); T.n++; if (x.pick === res) T.ok++; }
+      if (cur && d.day === cur.day) continue;
+      if (hist.length < 7 && d.day < today) {
+        const my = P.find((x) => String(x.player) === String(p.id));
+        hist.push({ day: d.day, match: pub(d.match), res, my: my ? my.pick : null, n: P.length, ok: res == null ? 0 : P.filter((x) => x.pick === res).length });
+      }
+    }
+    const curPicks = cur ? (byDay[cur.day] || []).map((x) => ({ id: x.player, name: (who[String(x.player)] || {}).name, av: (who[String(x.player)] || {}).avatar_v || 0, pick: x.pick })) : [];
+    const myCur = curPicks.find((x) => String(x.id) === String(p.id));
+    return { me: p.id, today, prize: LM_PRIZE,
+      cur: cur ? { day: cur.day, match: pub(cur.match), res: outcome(cur.match), picks: curPicks, my: myCur ? myCur.pick : null } : null,
+      hist, month: Object.entries(tally).map(([id, t]) => ({ id, name: (who[id] || {}).name, av: (who[id] || {}).avatar_v || 0, ...t })).filter((x) => x.name).sort((a, b) => b.ok - a.ok || a.n - b.n) };
+  },
+  async lm_pick(s, b) {
+    const p = await me(s, b.token);
+    const day = String(b.day || ""), pick = int(b.pick, 0, 2);
+    const r = (await s.query(`select match from day_match where day = $1 and match is not null`, [day]))[0];
+    if (!r) throw fail(404, "unknown");
+    if (r.match.t <= Date.now()) throw fail(409, "started");
+    await s.query(`insert into lm_picks (day, player, pick) values ($1, $2, $3) on conflict (day, player) do update set pick = excluded.pick, at = now()`, [day, p.id, pick]);
+    return { ok: true };
+  },
+
   async push_test(s, b) {
     const p = await me(s, b.token);
     if (await overLimit("pushtest:" + p.id, 5, 3600)) throw fail(429, "slow_down");

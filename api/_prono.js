@@ -20,6 +20,7 @@ function parse(ev, path) {
   const ty = (ev.status && ev.status.type) || {};
   const nm = (x) => frTeam((x.team && (x.team.shortDisplayName || x.team.displayName)) || "?");
   return { mid: "e-" + path.replace(/\W/g, "") + "-" + ev.id, path, eid: String(ev.id), h: nm(H), a: nm(A), hl: H.team && H.team.logo, al: A.team && A.team.logo,
+    hid: H.team && String(H.team.id), aid: A.team && String(A.team.id),
     t: Date.parse(ev.date), state: ty.state || "pre", done: !!ty.completed, cancel: ty.state === "post" && !ty.completed,
     sh: ty.state === "pre" ? null : +H.score || 0, sa: ty.state === "pre" ? null : +A.score || 0, strength: recPts(H) + recPts(A) };
 }
@@ -42,6 +43,22 @@ export async function todayMatches(ymd, from, to) {
     .then((j) => (j.events || []).map((ev) => parse(ev, path)).filter((x) => x && x.state === "pre" && x.t >= from && x.t < to).map((x) => ({ ...x, k })))
     .catch(() => [])));
   return res.flat().sort((a, b) => a.k - b.k || b.strength - a.strength || a.t - b.t);
+}
+
+// Le match de la ligue d'un jour : le plus attendu (la France d'abord), commencé ou non
+export async function bestOfDay(ymd, from, to) {
+  const res = await Promise.all(TODAY.map((path, k) => getJSON(`${ESPN}${path}/scoreboard?dates=${ymd}&limit=200`)
+    .then((j) => (j.events || []).map((ev) => parse(ev, path)).filter((x) => x && !x.cancel && x.t >= from && x.t < to).map((x) => ({ ...x, k })))
+    .catch(() => [])));
+  const FR = /^(France|Lens|Marseille|PSG|Paris Saint-Germain|Lyon|Monaco|Lille|Nice|Rennes|Stade Toulousain|Toulouse|Bordeaux-Bègles|Toulon|La Rochelle|Racing 92)$/;
+  const BIG = /^(France|Angleterre|Irlande|Écosse|Pays de Galles|Italie|Nouvelle-Zélande|Afrique du Sud|Australie|Argentine|Fidji|Japon)$/;
+  const hour = (t) => +new Date(t).toLocaleString("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: "Europe/Paris" });
+  const fr = (m) => (FR.test(m.h) || FR.test(m.a) ? 0 : 1);
+  const L = res.flat().filter((m) => hour(m.t) >= 12 && hour(m.t) <= 22 && (m.path !== "rugby/289234" || (BIG.test(m.h) && BIG.test(m.a))))
+    .sort((a, b) => fr(a) - fr(b) || a.k - b.k || b.strength - a.strength || a.t - b.t);
+  if (!L.length) return null;
+  const { strength, k, ...m } = L[0];
+  return m;
 }
 
 // Les matchs du week-end (vendredi 0 h → lundi 0 h, heure de Paris)
