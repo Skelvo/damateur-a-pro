@@ -381,6 +381,25 @@ async function tick(s) {
   let settled = 0;
   try { settled = (await settleOpen(s, { budget: 25e3 })).length; } catch (e) { console.error("settle", e); }
   await s.query(`delete from sent_notes where at < now() - interval '30 days'`);
+  // but ou essai sur un match où tu as un pari en cours (foot et rugby réels) : une notification par changement de score
+  try {
+    const now = Date.now(), open = await s.query(`select player, legs from bets where status = 'open' and at > now() - interval '3 days'`), seen = {};
+    for (const x of open) for (const L of x.legs || []) {
+      if (!L.mid || !L.path || !(L.sp === "foot" || L.sp === "rugby") || !(L.t < now && now < L.t + 3 * 3600e3)) continue;
+      const k = L.mid + "|" + x.player;
+      if (seen[k]) continue;
+      seen[k] = 1;
+      if (!(L.mid in seen)) seen[L.mid] = await loadMatch(L).catch(() => null);
+      const m = seen[L.mid];
+      if (!m || m.state !== "in" || !m.st) continue;
+      const sc = m.st.g || m.st.pts;
+      if (!sc || sc[0] + sc[1] === 0) continue;
+      if (!(await sentOnce(s, `goal:${x.player}:${L.mid}:${sc[0]}-${sc[1]}`))) continue;
+      const last = (m.ev || []).filter((e) => e.ty === "g" || e.ty === "og").slice(-1)[0];
+      await notify(s, [x.player], { title: `${m.sp === "foot" ? "⚽ But !" : "🏉 Ça marque !"} ${m.h} ${sc[0]} – ${sc[1]} ${m.a}`,
+        body: `${last && last.n ? last.n + " · " : ""}${m.min != null ? m.min + "e minute · " : ""}Ton pari : ${L.l}`, url: "./?go=bets", tag: "goal-" + L.mid });
+    }
+  } catch (e) { console.error("goal", e); }
   // combiné de 3 sélections ou plus : plus qu'un match à passer
   try {
     for (const x of await s.query(`select id, player, stake, odds::float8 as odds, legs from bets where status = 'open' and combo and jsonb_array_length(legs) >= 3`)) {
