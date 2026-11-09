@@ -713,10 +713,10 @@ const ic=(id,cls="")=>`<svg class="i ${cls}"><use href="#i-${id}"/></svg>`;
 const SP={
   foot:{n:"Football",sub:"France · Europe",ic:"ball",c:"#35d07f",dur:115,
     lv:["Départementale 4","Départementale 3","Départementale 2","Départementale 1","Régional 3","Régional 2","Régional 1","National 3","National 2","National 1","Ligue 2","Ligue 1","Premier League","La Liga","Ligue des champions",
-      "Coupe de France","Serie A","Bundesliga","Europa League","Conference League","Championship","Liga Portugal","Eredivisie","Pro League","Ligue des nations","Coupe du monde","Euro"],base:15,
-    tiers:[["District",[0,1,2,3]],["Ligue régionale",[4,5,6]],["National",[7,8,9]],["Pro France",[10,11,15]],["Europe",[12,13,16,17,20,21,22,23]],["Coupes d’Europe",[14,18,19]],["Sélections",[24,25,26]]],dep:4,simMax:11,
+      "Coupe de France","Serie A","Bundesliga","Europa League","Conference League","Championship","Liga Portugal","Eredivisie","Pro League","Ligue des nations","Coupe du monde","Euro","JO (hommes)","JO (femmes)"],base:15,
+    tiers:[["District",[0,1,2,3]],["Ligue régionale",[4,5,6]],["National",[7,8,9]],["Pro France",[10,11,15]],["Europe",[12,13,16,17,20,21,22,23]],["Coupes d’Europe",[14,18,19]],["Sélections",[24,25,26,27,28]]],dep:4,simMax:11,
     feeds:{10:["soccer/fra.2"],11:["soccer/fra.1"],12:["soccer/eng.1"],13:["soccer/esp.1"],14:["soccer/uefa.champions"],15:["soccer/fra.coupe_de_france"],16:["soccer/ita.1"],17:["soccer/ger.1"],
-      18:["soccer/uefa.europa"],19:["soccer/uefa.europa.conf"],20:["soccer/eng.2"],21:["soccer/por.1"],22:["soccer/ned.1"],23:["soccer/bel.1"],24:["soccer/uefa.nations"],25:["soccer/fifa.world"],26:["soccer/uefa.euro"]}},
+      18:["soccer/uefa.europa"],19:["soccer/uefa.europa.conf"],20:["soccer/eng.2"],21:["soccer/por.1"],22:["soccer/ned.1"],23:["soccer/bel.1"],24:["soccer/uefa.nations"],25:["soccer/fifa.world"],26:["soccer/uefa.euro"],27:["soccer/fifa.olympics"],28:["soccer/fifa.w.olympics"]}},
   rugby:{n:"Rugby",sub:"Top 14 · Tests",ic:"rugby",c:"#ff7a45",dur:100,
     lv:["Régionale 3","Régionale 2","Régionale 1","Fédérale 3","Fédérale 2","Fédérale 1","Nationale 2","Nationale","Pro D2","Top 14","Champions Cup","Premiership","URC","Six Nations","Tests internationaux","Coupe du monde"],base:11,
     tiers:[["Régional",[0,1,2]],["Fédéral",[3,4,5]],["National",[6,7]],["Pro",[8,9,10,11,12]],["International",[13,14,15]]],dep:3,simMax:9,
@@ -726,9 +726,9 @@ const SP={
     base:7,tiers:[["Amateur",[0,1,2,3]],["Pro",[4,5,6]]],dep:2,simMax:5,
     feeds:{6:["tennis/atp","tennis/wta"]}},
   basket:{n:"Basket",sub:"NBA",ic:"basket",c:"#ff9f1c",dur:150,
-    lv:["Loisir","Départemental","Régional","Nationale","Pro B","Betclic Élite","NBA"],
-    base:7,tiers:[["Pro",[6]]],dep:2,simMax:5,
-    feeds:{6:["basketball/nba"]}}
+    lv:["Loisir","Départemental","Régional","Nationale","Pro B","Betclic Élite","NBA","JO (hommes)","JO (femmes)"],
+    base:7,tiers:[["Pro",[6]],["Jeux olympiques",[7,8]]],dep:2,simMax:5,
+    feeds:{6:["basketball/nba"],7:["basketball/mens-olympics-basketball"],8:["basketball/womens-olympics-basketball"]}}
 };
 const DEPS={"Charente":["Cognac","Angoulême","Jarnac","Ruffec","La Couronne"],"Charente-Maritime":["Saintes","Rochefort","Royan","Jonzac","Aytré"],
   "Corrèze":["Tulle","Ussel","Objat","Malemort"],"Creuse":["Guéret","Aubusson","La Souterraine","Bourganeuf"],
@@ -1783,6 +1783,10 @@ const EVENTS=[
   {id:"wc",n:"Coupe du monde",sp:"foot",lv:25,em:"🏆",c:"#d4a017"},
   {id:"euro",n:"Euro",sp:"foot",lv:26,em:"🇪🇺",c:"#2456c9"},
   {id:"nl",n:"Ligue des nations",sp:"foot",lv:24,em:"🌍",c:"#3a7bd5"},
+  {id:"jof",n:"Jeux olympiques · football",sp:"foot",lv:27,em:"🥇",c:"#0081c8"},
+  {id:"jofw",n:"Jeux olympiques · football féminin",sp:"foot",lv:28,em:"🥇",c:"#0081c8"},
+  {id:"job",n:"Jeux olympiques · basket",sp:"basket",lv:7,em:"🥇",c:"#ee334e"},
+  {id:"jobw",n:"Jeux olympiques · basket féminin",sp:"basket",lv:8,em:"🥇",c:"#ee334e"},
   {id:"rwc",n:"Coupe du monde de rugby",sp:"rugby",lv:15,em:"🏉",c:"#c8a24a"},
   {id:"6n",n:"Tournoi des Six Nations",sp:"rugby",lv:13,em:"🏉",c:"#1d6b3a"},
   {id:"tests",n:"Tests internationaux de rugby",sp:"rugby",lv:14,em:"🏉",c:"#a0522d"},
@@ -1792,7 +1796,7 @@ const EVENTS=[
   {id:"ao",n:"Open d’Australie",sp:"tennis",lv:6,re:/australian open/i,em:"🎾",c:"#1a8fd6"},
   {id:"fin",n:"Masters de fin d’année",sp:"tennis",lv:6,re:/atp finals|wta finals/i,em:"🎾",c:"#3c3c8c"},
   {id:"davis",n:"Coupe Davis",sp:"tennis",lv:6,re:/davis cup|billie jean/i,em:"🎾",c:"#b22222"}];
-const EV_ONLY={foot:[25,26],rugby:[15]};   // ces niveaux n'apparaissent que pendant leur événement
+const EV_ONLY={foot:[25,26,27,28],rugby:[15],basket:[7,8]};   // ces niveaux n'apparaissent que pendant leur événement
 const evMatches=e=>matchesFor(e.sp,e.lv).filter(m=>!e.re||e.re.test(m.comp||""));
 function evActive(e){const now=Date.now();return evMatches(e).some(m=>{const st=status(m);return st==="live"||(st==="pre"&&m.t<now+10*DAY)||(st==="post"&&m.t>now-36*H)})}
 function loadEvents(){for(const e of EVENTS)if(!FEED[e.sp+e.lv])loadFeed(e.sp,e.lv).then(()=>{if(U.tab==="m"&&!U.open)render()})}
@@ -2512,7 +2516,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.53";
+const VERSION="1.54";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
