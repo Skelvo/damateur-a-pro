@@ -506,7 +506,8 @@ const ACTIONS = {
   async recovery_make(s, b) {
     const p = await me(s, b.token);
     const cur = (await s.query(`select recovery_hash from players where id = $1`, [p.id]))[0];
-    if (cur && cur.recovery_hash && !b.renew) return { exists: true };
+    const have = String(b.have || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (cur && cur.recovery_hash && !b.renew) return have && hashToken("rc:" + have) === cur.recovery_hash ? { ok: true } : { exists: true };
     if (b.renew && await overLimit("recov:" + p.id, 5, 86400)) throw fail(429, "slow_down");
     let code = "";
     for (let j = 0; j < 12; j++) code += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];

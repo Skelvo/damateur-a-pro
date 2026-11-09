@@ -1481,6 +1481,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"lgmode":U.lg.mode=d.v;render();break;
     case"recap":openRecap(U.lg.code);break;
     case"rcrenew":renewRcode();break;
+    case"rctype":typeRcode();break;
     case"ev":U.ev=d.id;render();window.scrollTo({top:0});break;
     case"evx":U.ev=null;render();window.scrollTo({top:0});break;
     case"stats":U.open="stats";layer(viewStats());break;
@@ -1907,10 +1908,13 @@ function rcodeCard(){if(!S.name)return"";
   if(S.rcode)return`<div class="rcard"><div class="rch">🔑 <b>Mon code de compte</b></div><div class="rcodev">${esc(S.rcode)}</div>
     <small>Il ne change jamais. <b>Fais une capture d’écran</b> : avec ce code, tu retrouves ton compte (jetons, paris, ligues) sur n’importe quel téléphone, même si tu perds le tien. Ne le donne à personne.</small>
     <button class="btn ghost" data-act="copycode" data-code="${esc(S.rcode)}">Copier</button></div>`;
-  if(S.rcodeOther)return`<div class="rcard"><div class="rch">🔑 <b>Mon code de compte</b></div><small>Ton code a été créé sur un autre téléphone. Si tu ne l’as plus, crée-en un nouveau (l’ancien ne marchera plus).</small><button class="btn ghost" data-act="rcrenew">Créer un nouveau code</button></div>`;
+  if(S.rcodeOther)return`<div class="rcard"><div class="rch">🔑 <b>Mon code de compte</b></div><small>Ton code a été créé ailleurs (autre téléphone ou administrateur). Entre-le pour l’afficher ici, ou crée-en un nouveau (l’ancien ne marchera plus).</small><button class="btn" data-act="rctype">J’ai mon code</button><button class="btn ghost" data-act="rcrenew">Créer un nouveau code</button></div>`;
   return`<div class="rcard"><div class="rch">🔑 <b>Mon code de compte</b></div><div class="skel" style="height:40px"></div></div>`}
-async function ensureRcode(){if(!S.name||S.rcode||S.rcodeOther)return;try{if(!(await ensureSession()))return;const j=await api("recovery_make",{});
-  if(j.code)S.rcode=j.code;else if(j.exists)S.rcodeOther=1;saveLocal();if(U.tab==="c"&&!U.open)render()}catch(e){}}
+// au démarrage : on crée le code s'il n'existe pas, et on vérifie que celui du téléphone est toujours le bon
+async function ensureRcode(){if(!S.name)return;try{if(!(await ensureSession()))return;const j=await api("recovery_make",S.rcode?{have:S.rcode}:{});
+  if(j.code){S.rcode=j.code;delete S.rcodeOther}else if(j.exists){delete S.rcode;S.rcodeOther=1}saveLocal();if(U.tab==="c"&&!U.open)render()}catch(e){}}
+async function typeRcode(){const v=(prompt("Entre ton code de compte (12 caractères) :")||"").toUpperCase().replace(/[^A-Z0-9]/g,"");if(v.length!==12)return;
+  try{const j=await api("recovery_make",{have:v});if(j.ok){S.rcode=v.replace(/^(.{4})(.{4})(.{4})$/,"$1-$2-$3");delete S.rcodeOther;saveLocal();render();toast("Code enregistré sur ce téléphone.","win")}else toast("Ce n’est pas le bon code.","bad")}catch(e){toast("Pas de connexion, réessaie.","bad")}}
 async function renewRcode(){if(!confirm("Créer un nouveau code de compte ? L’ancien ne marchera plus."))return;
   try{const j=await api("recovery_make",{renew:true});S.rcode=j.code;delete S.rcodeOther;saveLocal();render();toast("Nouveau code créé : fais une capture d’écran !","win")}catch(e){toast("Impossible pour l’instant.","bad")}}
 // sauvegarde complète du téléphone sur le serveur (au plus toutes les 10 min), pour récupérer son compte avec le code
@@ -2538,7 +2542,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.56";
+const VERSION="1.57";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
