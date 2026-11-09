@@ -411,6 +411,13 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 .champ .i{width:30px;height:30px;color:var(--sel);flex:none}.champ small{display:block;color:#e8d79a;font-size:12px;text-transform:uppercase;letter-spacing:.8px;font-weight:700}.champ b{font:800 19px "Barlow Condensed"}
 .tabs3 button{position:relative}.pill{display:inline-grid;place-items:center;min-width:18px;height:18px;border-radius:9px;background:var(--sel);color:var(--sel-ink);font:800 11px Barlow;padding:0 5px;margin-left:3px}
 .crw{color:#ffb020}
+.evs{display:grid;gap:8px;margin:0 0 12px}
+.evc{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid color-mix(in srgb,var(--ec) 60%,transparent);border-radius:16px;padding:11px 14px;color:inherit;font:inherit;
+  background:linear-gradient(120deg,color-mix(in srgb,var(--ec) 38%,var(--card)),var(--card) 75%);box-shadow:0 0 24px -12px var(--ec)}
+.evc .em{font-size:30px;line-height:1}.evc .t{flex:1;min-width:0}.evc .t b{display:block;font:800 20px/1.05 "Barlow Condensed";text-transform:uppercase}
+.evc small{display:block;color:var(--mute);font-size:12px}.evc small b.lv{display:inline;font:700 12px Barlow;color:#ff5a5f;text-transform:none}.evc .arr{font:800 24px "Barlow Condensed";color:var(--mute)}
+.evh{text-align:center;padding:14px 12px 16px;margin:0 0 12px;border-radius:18px;border:1px solid color-mix(in srgb,var(--ec) 55%,transparent);background:linear-gradient(160deg,color-mix(in srgb,var(--ec) 45%,var(--card)),var(--card) 80%);position:relative}
+.evh .link{position:absolute;left:10px;top:10px;font-size:13px}.evh .em{font-size:44px;margin-top:10px}.evh h2{margin:4px 0 2px;font:800 28px/1 "Barlow Condensed";text-transform:uppercase}.evh small{color:var(--mute)}
 .statbtn{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 14px;margin:10px 0 4px;color:inherit;font:inherit}
 .statbtn>.i{width:26px;height:26px;color:var(--acc);flex:none}.statbtn>span:nth-child(2){flex:1}.statbtn b{display:block;font:800 18px "Barlow Condensed";text-transform:uppercase}.statbtn small{display:block;color:var(--mute);font-size:12.5px}.statbtn .arr{color:var(--mute);font-size:22px}
 .stk{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:4px 0 6px}.stk div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 6px;text-align:center}.stk small{display:block;font-size:11px;color:var(--mute)}.stk b{font:800 19px "Barlow Condensed"}
@@ -706,14 +713,14 @@ const ic=(id,cls="")=>`<svg class="i ${cls}"><use href="#i-${id}"/></svg>`;
 const SP={
   foot:{n:"Football",sub:"France · Europe",ic:"ball",c:"#35d07f",dur:115,
     lv:["Départementale 4","Départementale 3","Départementale 2","Départementale 1","Régional 3","Régional 2","Régional 1","National 3","National 2","National 1","Ligue 2","Ligue 1","Premier League","La Liga","Ligue des champions",
-      "Coupe de France","Serie A","Bundesliga","Europa League","Conference League","Championship","Liga Portugal","Eredivisie","Pro League","Ligue des nations"],base:15,
-    tiers:[["District",[0,1,2,3]],["Ligue régionale",[4,5,6]],["National",[7,8,9]],["Pro France",[10,11,15]],["Europe",[12,13,16,17,20,21,22,23]],["Coupes d’Europe",[14,18,19]],["Sélections",[24]]],dep:4,simMax:11,
+      "Coupe de France","Serie A","Bundesliga","Europa League","Conference League","Championship","Liga Portugal","Eredivisie","Pro League","Ligue des nations","Coupe du monde","Euro"],base:15,
+    tiers:[["District",[0,1,2,3]],["Ligue régionale",[4,5,6]],["National",[7,8,9]],["Pro France",[10,11,15]],["Europe",[12,13,16,17,20,21,22,23]],["Coupes d’Europe",[14,18,19]],["Sélections",[24,25,26]]],dep:4,simMax:11,
     feeds:{10:["soccer/fra.2"],11:["soccer/fra.1"],12:["soccer/eng.1"],13:["soccer/esp.1"],14:["soccer/uefa.champions"],15:["soccer/fra.coupe_de_france"],16:["soccer/ita.1"],17:["soccer/ger.1"],
-      18:["soccer/uefa.europa"],19:["soccer/uefa.europa.conf"],20:["soccer/eng.2"],21:["soccer/por.1"],22:["soccer/ned.1"],23:["soccer/bel.1"],24:["soccer/uefa.nations"]}},
+      18:["soccer/uefa.europa"],19:["soccer/uefa.europa.conf"],20:["soccer/eng.2"],21:["soccer/por.1"],22:["soccer/ned.1"],23:["soccer/bel.1"],24:["soccer/uefa.nations"],25:["soccer/fifa.world"],26:["soccer/uefa.euro"]}},
   rugby:{n:"Rugby",sub:"Top 14 · Tests",ic:"rugby",c:"#ff7a45",dur:100,
-    lv:["Régionale 3","Régionale 2","Régionale 1","Fédérale 3","Fédérale 2","Fédérale 1","Nationale 2","Nationale","Pro D2","Top 14","Champions Cup","Premiership","URC","Six Nations","Tests internationaux"],base:11,
-    tiers:[["Régional",[0,1,2]],["Fédéral",[3,4,5]],["National",[6,7]],["Pro",[8,9,10,11,12]],["International",[13,14]]],dep:3,simMax:9,
-    feeds:{9:["rugby/270559"],10:["rugby/271937"],11:["rugby/267979"],12:["rugby/270557"],13:["rugby/180659"],14:["rugby/289234"]}},
+    lv:["Régionale 3","Régionale 2","Régionale 1","Fédérale 3","Fédérale 2","Fédérale 1","Nationale 2","Nationale","Pro D2","Top 14","Champions Cup","Premiership","URC","Six Nations","Tests internationaux","Coupe du monde"],base:11,
+    tiers:[["Régional",[0,1,2]],["Fédéral",[3,4,5]],["National",[6,7]],["Pro",[8,9,10,11,12]],["International",[13,14,15]]],dep:3,simMax:9,
+    feeds:{9:["rugby/270559"],10:["rugby/271937"],11:["rugby/267979"],12:["rugby/270557"],13:["rugby/180659"],14:["rugby/289234"],15:["rugby/164205"]}},
   tennis:{n:"Tennis",sub:"ATP · WTA",ic:"tennis",c:"#d7f25a",dur:120,
     lv:["Tournoi de club","Open départemental","Open régional","Open national","ITF World Tour","Challenger","ATP / WTA Tour"],
     base:7,tiers:[["Amateur",[0,1,2,3]],["Pro",[4,5,6]]],dep:2,simMax:5,
@@ -1072,14 +1079,14 @@ function fixLogo(name,logo){const n=String(name||"").trim();
   if(logo&&/\/countries\/500\/usa\.png/.test(logo)&&n!=="États-Unis")logo=null;   // ESPN met le drapeau américain à Perpignan
   return logo||LOGO_FIX[n]||null}   // le logo ESPN d'abord, le nôtre seulement s'il manque
 // image qui ne charge pas : un 2e essai par le serveur d'images réduites d'ESPN, puis l'écusson dessiné
-function crestErr(img){if(!img.isConnected)return;const n=+(img.dataset.retry||0),src=img.getAttribute("src")||"";
+function crestErr(img){if(!img.isConnected)return;img.style.visibility="hidden";const n=+(img.dataset.retry||0),src=img.getAttribute("src")||"";
   if(n<3){img.dataset.retry=n+1;const orig=img.dataset.orig||(img.dataset.orig=src);
     // 1er essai : tout de suite par le serveur d'images réduites d'ESPN ; puis l'original, avec une pause
     const alt=/^https:\/\/a\.espncdn\.com\/i\//.test(orig)?"https://a.espncdn.com/combiner/i?img="+encodeURIComponent(orig.replace("https://a.espncdn.com",""))+"&w=96&h=96":orig;
     setTimeout(()=>{if(img.isConnected)img.src=n===0?alt:orig+(orig.includes("?")?"&":"?")+"r="+n},n===0?0:1200*n);return}
   if(img.parentNode)img.outerHTML=img.dataset.fb}
 function crest(name,sp,logo,flag,raw){if(!raw)logo=fixLogo(name,logo);
-  if(logo)return`<img class="crest" src="${esc(logo)}" alt="" referrerpolicy="no-referrer" data-fb="${esc(crest(name,sp,null,flag,1))}" onerror="crestErr(this)">`;
+  if(logo)return`<img class="crest" src="${esc(logo)}" alt="" referrerpolicy="no-referrer" data-fb="${esc(crest(name,sp,null,flag,1))}" onerror="crestErr(this)" onload="this.style.visibility=''">`;
   if(sp==="tennis"&&flag)return`<span class="crest tflag"><img src="${esc(flag)}" alt="" decoding="async" referrerpolicy="no-referrer" data-fb="${esc(crest(name,sp,null,null,1))}" onerror="this.parentNode.outerHTML=this.dataset.fb"></span>`;
   const h=hash(name),c1=PAL[h%16];let c2=PAL[(h>>5)%16];if(c2===c1)c2=PAL[(h%16+5)%16];
   const ini=esc(initials(name,sp)),tx=lum(c1)>.6?"#111":"#fff",id="c"+h.toString(36);
@@ -1129,11 +1136,13 @@ function ladder(){const cfg=SP[U.sp],now=Date.now();
   const cnt=l=>matchesFor(U.sp,l).filter(m=>status(m)==="pre"||status(m)==="live").length;
   const n=cfg.base;
   const chip=l=>{const c=cnt(l),bars=Array.from({length:5},(_,i)=>`<i class="${(i+1)/5<=Math.min(l+1,n)/n+.001||i===0?"on":""}" style="height:${6+i*3.5}px"></i>`).join("");
+    if(!c&&EV_ONLY[U.sp]&&EV_ONLY[U.sp].includes(l))return"";
     return`<button class="lvl${c?"":" zero"}" data-act="lv" data-lv="${l}" aria-pressed="${U.lv===l}"><span class="bars">${bars}</span><span>${esc(cfg.lv[l])}<em>${c?c+" match"+(c>1?"s":""):(cfg.feeds[l]&&FEED[U.sp+l]&&FEED[U.sp+l].ok===false?"Hors ligne":"—")}</em></span></button>`};
   return`<div class="ladder" id="ladder"><div class="tier"><small>Tous</small><div><button class="lvl star" data-act="lv" data-lv="-1" aria-pressed="${U.lv<0}">${ic("fire")}<span>À la une<em>Prochains</em></span></button></div></div>
     ${cfg.tiers.map(([t,ix])=>[t,ix.filter(l=>cfg.feeds[l])]).filter(([,ix])=>ix.length).map(([t,ix])=>`<div class="tier"><small>${t}</small><div>${ix.map(chip).join("")}</div></div>`).join("")}</div>`}
 function viewMatches(){const cfg=SP[U.sp];let h=installBanner()+`<div class="sports">${Object.entries(SP).map(([k,s])=>`<button class="sport" style="--c:${s.c}" data-act="sp" data-sp="${k}" aria-pressed="${U.sp===k}">${ballArt(k,"ghost")}${ballArt(k,"ball")}<span>${s.n}</span><small>${s.sub}</small></button>`).join("")}</div>`;
-  h+=pushBanner()+ladder();
+  if(U.ev){const e=EVENTS.find(x=>x.id===U.ev);if(e)return h+viewEvent(e)+foot();U.ev=null}
+  h+=pushBanner()+eventStrip()+ladder();
   let list=matchesFor(U.sp,U.lv);
   const isDep=U.lv>=0&&U.lv<cfg.dep;
   if(wheelAvail())h+=`<button class="btn gold wide wheelbtn" data-act="wheel" style="margin-bottom:12px">${wheelMini()} ${extraAvail()?"Tour bonus offert aujourd’hui !":"Roue de la chance du jour"}</button>`;
@@ -1465,6 +1474,8 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"lgsel":U.lg.code=d.code;U.lg.feed=null;U.lg.view=U.lg.view||"rank";render();loadBoards();break;
     case"lgmode":U.lg.mode=d.v;render();break;
     case"recap":openRecap(U.lg.code);break;
+    case"ev":U.ev=d.id;render();window.scrollTo({top:0});break;
+    case"evx":U.ev=null;render();window.scrollTo({top:0});break;
     case"stats":U.open="stats";layer(viewStats());break;
     case"fav":openFav();break;
     case"favl":U.favL=+d.i;layer(viewFav());loadFavTeams();break;
@@ -1520,7 +1531,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"lginv":lgInvite();break;
     case"lgleave":lgLeave();break;
     case"lgretry":U.lg.err=null;loadBoards();render();break;
-    case"sp":U.sp=d.sp;U.lv=-1;U.dep="";render();loadSport(d.sp);break;
+    case"sp":U.sp=d.sp;U.lv=-1;U.dep="";U.ev=null;render();loadSport(d.sp);break;
     case"lv":U.lv=+d.lv;render();break;
     case"open":U.dtab="p";openDetail(d.mid);break;
     case"close":closeLayer();break;
@@ -1766,6 +1777,38 @@ function viewProfile(p){const done=p.won+p.lost,rate=done?Math.round(p.won/done*
   ${(p.badges||[]).length?`<div class="grp">Succès (${p.badges.length}/${SUCC.length})</div>${succGrid(p.badges)}`:""}
   <div class="grp">Paris en cours (${open.length})</div>${open.length?open.map(bet).join(""):`<p class="note">Aucun pari en cours.</p>`}
   <div class="grp">Derniers paris</div>${past.length?past.map(bet).join(""):`<p class="note">Pas encore de pari terminé.</p>`}`}
+
+/* ---------- événements : grandes compétitions, affichées seulement pendant qu'elles se jouent ---------- */
+const EVENTS=[
+  {id:"wc",n:"Coupe du monde",sp:"foot",lv:25,em:"🏆",c:"#d4a017"},
+  {id:"euro",n:"Euro",sp:"foot",lv:26,em:"🇪🇺",c:"#2456c9"},
+  {id:"nl",n:"Ligue des nations",sp:"foot",lv:24,em:"🌍",c:"#3a7bd5"},
+  {id:"rwc",n:"Coupe du monde de rugby",sp:"rugby",lv:15,em:"🏉",c:"#c8a24a"},
+  {id:"6n",n:"Tournoi des Six Nations",sp:"rugby",lv:13,em:"🏉",c:"#1d6b3a"},
+  {id:"tests",n:"Tests internationaux de rugby",sp:"rugby",lv:14,em:"🏉",c:"#a0522d"},
+  {id:"rg",n:"Roland-Garros",sp:"tennis",lv:6,re:/roland|french open/i,em:"🎾",c:"#c4532a"},
+  {id:"wim",n:"Wimbledon",sp:"tennis",lv:6,re:/wimbledon/i,em:"🎾",c:"#4b2c83"},
+  {id:"uso",n:"US Open",sp:"tennis",lv:6,re:/us open/i,em:"🎾",c:"#1f5aa6"},
+  {id:"ao",n:"Open d’Australie",sp:"tennis",lv:6,re:/australian open/i,em:"🎾",c:"#1a8fd6"},
+  {id:"fin",n:"Masters de fin d’année",sp:"tennis",lv:6,re:/atp finals|wta finals/i,em:"🎾",c:"#3c3c8c"},
+  {id:"davis",n:"Coupe Davis",sp:"tennis",lv:6,re:/davis cup|billie jean/i,em:"🎾",c:"#b22222"}];
+const EV_ONLY={foot:[25,26],rugby:[15]};   // ces niveaux n'apparaissent que pendant leur événement
+const evMatches=e=>matchesFor(e.sp,e.lv).filter(m=>!e.re||e.re.test(m.comp||""));
+function evActive(e){const now=Date.now();return evMatches(e).some(m=>{const st=status(m);return st==="live"||(st==="pre"&&m.t<now+10*DAY)||(st==="post"&&m.t>now-36*H)})}
+function loadEvents(){for(const e of EVENTS)if(!FEED[e.sp+e.lv])loadFeed(e.sp,e.lv).then(()=>{if(U.tab==="m"&&!U.open)render()})}
+function eventStrip(){const A=EVENTS.filter(evActive);if(!A.length)return"";const now=Date.now();
+  return`<div class="evs">${A.map(e=>{const M=evMatches(e),live=M.filter(m=>status(m)==="live").length,next=M.filter(m=>status(m)==="pre").sort((a,b)=>a.t-b.t)[0],
+    today=M.filter(m=>status(m)==="pre"&&new Date(m.t).toDateString()===new Date().toDateString()).length;
+    return`<button class="evc" data-act="ev" data-id="${e.id}" style="--ec:${e.c}"><span class="em">${e.em}</span><span class="t"><small>${live?`<b class="lv">● En direct</b>`:"En ce moment"}</small><b>${esc(e.n)}</b>
+      <small>${live?`${live} match${live>1?"s":""} en cours`:today?`${today} match${today>1?"s":""} aujourd’hui`:next?`Prochain : ${esc(fDay(next.t))} ${new Date(next.t).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}`:"Derniers résultats"}</small></span><span class="arr">›</span></button>`}).join("")}</div>`}
+function viewEvent(e){const M=evMatches(e),live=M.filter(m=>status(m)==="live"),up=M.filter(m=>status(m)==="pre").sort((a,b)=>a.t-b.t),done=M.filter(m=>status(m)==="post").sort((a,b)=>b.t-a.t);
+  let h=`<div class="evh" style="--ec:${e.c}"><button class="link" data-act="evx">‹ Tous les matchs</button><div class="em">${e.em}</div><h2>${esc(e.n)}</h2>
+    <small>${up.length} match${up.length>1?"s":""} à venir · ${done.length} joué${done.length>1?"s":""}</small></div>`;
+  if(live.length)h+=`<div class="day">En direct</div><div class="mc-grid">${live.map(m=>card(m,false)).join("")}</div>`;
+  let last="";for(const m of up.slice(0,40)){const d=fDay(m.t);if(d!==last){if(last)h+="</div>";h+=`<div class="day">${d}</div><div class="mc-grid">`;last=d}h+=card(m,false)}if(last)h+="</div>";
+  if(!up.length&&!live.length)h+=`<div class="empty">${ic("trophy")}<b>C’est fini !</b>Plus aucun match à venir pour cet événement.</div>`;
+  if(done.length)h+=`<div class="h2"><h2>Résultats</h2><span>${done.length}</span></div>`+done.slice(0,20).map(resRow).join("");
+  return h}
 
 /* ---------- équipe de cœur ---------- */
 const FAVL=[["Ligue 1","soccer/fra.1","foot"],["Ligue 2","soccer/fra.2","foot"],["Top 14","rugby/270559","rugby"],["Premier League","soccer/eng.1","foot"],["Liga","soccer/esp.1","foot"],["Serie A","soccer/ita.1","foot"],["Bundesliga","soccer/ger.1","foot"],["Portugal","soccer/por.1","foot"],["NBA","basketball/nba","basket"]];
@@ -2469,7 +2512,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.52";
+const VERSION="1.53";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -2486,6 +2529,7 @@ if(!S.name){U.open="welcome";layer(viewWelcome(false))}else{syncSoon();joinFromL
 loadFeeds();
 setTimeout(()=>{if(S.dk&&Object.values(S.dk).some(x=>!x.settled))checkDarkAll()},5000);
 goFrom(location.href);
+setTimeout(loadEvents,1200);
 setTimeout(()=>{pushRefresh();if(S.name)claimPrizes();if(S.name)loadBoards().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){loadProno();loadLm(U.lg.code||U.lg.data.leagues[0].code);const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},3000);
 setInterval(()=>{if(!document.hidden&&S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},12e4);
 setInterval(()=>{if(document.hidden)return;
