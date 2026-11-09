@@ -28,6 +28,7 @@
 }
 body[data-sp="rugby"]{--acc:#ff7a45;--acc-ink:#1d0903}
 body[data-sp="tennis"]{--acc:#d7f25a;--acc-ink:#161b02}
+body[data-sp="basket"]{--acc:#ff9f1c;--acc-ink:#1d0d00}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{background:var(--bg);touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 /* écran tourné (téléphone à l'horizontale) : le jeu se met en pause derrière « Tourne ton téléphone » */
@@ -82,7 +83,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 @keyframes bump{30%{transform:scale(1.12);border-color:var(--sel)}}
 
 /* ---------- sport switch ---------- */
-.sports{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 14px}
+.sports{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:6px 0 14px}
+.sports .sport{padding:10px 8px 9px}.sports .sport span{font-size:16px}.sports .sport small{font-size:11px;line-height:1.15}.sports .sport .ball{width:30px;height:30px}
+@media (max-width:389px){.sports .sport span{font-size:14px}.sports .sport small{font-size:10px}}
 .sport{position:relative;overflow:hidden;border:1px solid var(--line);background:var(--card);border-radius:14px;padding:12px 10px 10px;text-align:left;
   display:flex;flex-direction:column;gap:6px;transition:transform .15s,border-color .3s,background .3s}
 .sport:active{transform:scale(.97)}
@@ -606,6 +609,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-ball" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.6l3.7 2.7-1.4 4.4H9.7l-1.4-4.4z" fill="currentColor"/><path d="M12 3v4.6M20.6 9.4l-4.9.9M17.4 19.6l-3.1-4.9M6.6 19.6l3.1-4.9M3.4 9.4l4.9.9"/></symbol>
+  <symbol id="i-basket" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18M5.6 5.6c3 2.6 3 10.2 0 12.8M18.4 5.6c-3 2.6-3 10.2 0 12.8"/></symbol>
   <symbol id="i-rugby" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="10.2" ry="5.8" transform="rotate(-38 12 12)"/><path d="M8.3 15.7l7.4-7.4M10.2 11.2l2.6 2.6M11.7 9.7l2.6 2.6M8.7 12.7l2.6 2.6"/></symbol>
   <symbol id="i-tennis" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M4.7 6.4c3.2 2.8 3.2 8.4 0 11.2M19.3 6.4c-3.2 2.8-3.2 8.4 0 11.2"/></symbol>
   <symbol id="i-card" viewBox="0 0 24 24"><rect x="6.5" y="3" width="11" height="18" rx="2" fill="currentColor" stroke="none" transform="rotate(8 12 12)"/></symbol>
@@ -713,7 +717,11 @@ const SP={
   tennis:{n:"Tennis",sub:"ATP · WTA",ic:"tennis",c:"#d7f25a",dur:120,
     lv:["Tournoi de club","Open départemental","Open régional","Open national","ITF World Tour","Challenger","ATP / WTA Tour"],
     base:7,tiers:[["Amateur",[0,1,2,3]],["Pro",[4,5,6]]],dep:2,simMax:5,
-    feeds:{6:["tennis/atp","tennis/wta"]}}
+    feeds:{6:["tennis/atp","tennis/wta"]}},
+  basket:{n:"Basket",sub:"NBA",ic:"basket",c:"#ff9f1c",dur:150,
+    lv:["Loisir","Départemental","Régional","Nationale","Pro B","Betclic Élite","NBA"],
+    base:7,tiers:[["Pro",[6]]],dep:2,simMax:5,
+    feeds:{6:["basketball/nba"]}}
 };
 const DEPS={"Charente":["Cognac","Angoulême","Jarnac","Ruffec","La Couronne"],"Charente-Maritime":["Saintes","Rochefort","Royan","Jonzac","Aytré"],
   "Corrèze":["Tulle","Ussel","Objat","Malemort"],"Creuse":["Guéret","Aubusson","La Souterraine","Bourganeuf"],
@@ -748,6 +756,14 @@ const SIM={
     for(const p of [0,1]){const d=(p?y-x:x-y)*.6,hm=p?-.09:.09,tr=pois(r,(2.3+1.3*a)*Math.exp(.38*d+hm)),cv=binom(r,tr,.74-.2*a),
       pa=pois(r,(3.4+.8*a)*Math.exp(.1*d)),pm=binom(r,pa,.8-.22*a),dr=pois(r,.13);
       o.tr[p]=tr;o.cv[p]=cv;o.pm[p]=pm;o.px[p]=pa-pm;o.dr[p]=dr;o.yc[p]=pois(r,.6+.45*a);o.rc[p]=pois(r,.04+.06*a);o.pts[p]=5*tr+2*cv+3*(pm+dr)}
+    return o},
+  basket(r,m){const [x,y]=m.s,nrm=()=>{let u=0,v=0;while(!u)u=r();v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
+    const o={pts:[0,0],tp:[0,0],reb:[0,0],ast:[0,0],ot:[0,0]};
+    const pace=7*nrm();   // rythme du match, commun aux deux équipes
+    for(const p of [0,1]){const d=p?y-x:x-y,hm=p?-1.6:1.6;o.pts[p]=Math.round(113+5.5*d+hm+pace+8.2*nrm())}
+    if(Math.abs(o.pts[0]-o.pts[1])<=2&&r()<.3)o.pts[1]=o.pts[0];   // fins de match serrées : égalisation au buzzer
+    while(o.pts[0]===o.pts[1]){o.ot[0]++;for(const p of [0,1])o.pts[p]+=Math.max(2,Math.round(11+3.5*nrm()))}   // prolongation de 5 min
+    for(const p of [0,1]){o.tp[p]=Math.max(2,Math.round(12.8+.11*(o.pts[p]-113)+3.4*nrm()));o.reb[p]=Math.max(25,Math.round(44+5.5*nrm()));o.ast[p]=Math.max(12,Math.round(26+.12*(o.pts[p]-113)+4.5*nrm()))}
     return o},
   tennis(r,m){const a=lvA(m),[x,y]=m.s,d=x-y,hold=[cl(.79-.13*a+.06*d,.55,.93),cl(.79-.13*a-.06*d,.55,.93)],
       ace=[(.5-.38*a)*Math.exp(.2*x),(.5-.38*a)*Math.exp(.2*y)],dfl=.26+.1*a,need=m.bo===5?3:2,
@@ -803,20 +819,31 @@ const MK={
     {id:"bk",grp:"Jeux",ic:"break",t:"Breaks",ty:"ou",need:["brk"],val:g=>tot(g,"brk")},
     {id:"ac",grp:"Service",ic:"bolt",t:"Aces",ty:"ou",need:["ac"],val:g=>tot(g,"ac")},
     {id:"df",grp:"Service",ic:"df",t:"Doubles fautes",ty:"ou",need:["df"],val:g=>tot(g,"df")},
-    {id:"rk",grp:"Nerfs",ic:"broken",t:"Raquette cassée",ty:"yn",need:["rk"],val:g=>tot(g,"rk")>0}]
+    {id:"rk",grp:"Nerfs",ic:"broken",t:"Raquette cassée",ty:"yn",need:["rk"],val:g=>tot(g,"rk")>0}],
+  basket:[
+    {id:"res",grp:"Résultat",ic:"basket",t:"Vainqueur (prolongations comprises)",ty:"res2",need:["pts"],val:g=>{const v=g("pts");return v[0]>v[1]?0:1}},
+    {id:"pt",grp:"Points",ic:"chart",t:"Total de points",ty:"ou",need:["pts"],val:g=>tot(g,"pts")},
+    {id:"ph",grp:"Points",ic:"chart",t:m=>"Points de "+m.h,ty:"ou",need:["pts"],val:g=>g("pts")[0]},
+    {id:"pa",grp:"Points",ic:"chart",t:m=>"Points de "+m.a,ty:"ou",need:["pts"],val:g=>g("pts")[1]},
+    {id:"e10",grp:"Points",ic:"target",t:"Victoire de 10 points ou plus",ty:"yn",need:["pts"],val:g=>{const v=g("pts");return Math.abs(v[0]-v[1])>=10}},
+    {id:"ot",grp:"Points",ic:"whistle",t:"Prolongation",ty:"yn",need:["ot"],val:g=>g("ot")[0]>0},
+    {id:"tp",grp:"Jeu",ic:"basket",t:"Paniers à 3 points",ty:"ou",need:["tp"],val:g=>tot(g,"tp")},
+    {id:"rb",grp:"Jeu",ic:"chart",t:"Rebonds",ty:"ou",need:["reb"],val:g=>tot(g,"reb")},
+    {id:"as",grp:"Jeu",ic:"group",t:"Passes décisives",ty:"ou",need:["ast"],val:g=>tot(g,"ast")}]
 };
-const ALLSTATS={foot:["g","sot","co","of","fo","yc","rc","pk"],rugby:["pts","tr","cv","pm","px","dr","yc","rc"],tennis:["sets","gm","ac","df","brk","tb","rk","s1"]};
+const ALLSTATS={foot:["g","sot","co","of","fo","yc","rc","pk"],rugby:["pts","tr","cv","pm","px","dr","yc","rc"],tennis:["sets","gm","ac","df","brk","tb","rk","s1"],basket:["pts","tp","reb","ast","ot"]};
 const STATL={g:["Buts","goal"],sot:["Tirs cadrés","target"],co:["Corners","corner"],of:["Hors-jeux","flag"],fo:["Fautes","whistle"],yc:["Cartons jaunes","card","yc"],rc:["Cartons rouges","card","rc"],pk:["Penalties","whistle"],
   pts:["Points","chart"],tr:["Essais","rugby"],cv:["Transformations","posts"],pm:["Pénalités réussies","posts"],px:["Pénalités ratées","miss"],dr:["Drops","drop"],
+  tp:["Paniers à 3 points","basket"],reb:["Rebonds","chart"],ast:["Passes décisives","group"],ot:["Prolongations","whistle"],
   sets:["Sets","tennis"],gm:["Jeux","chart"],ac:["Aces","bolt"],df:["Doubles fautes","df"],brk:["Breaks","break"],tb:["Tie-breaks","tb"],rk:["Raquettes cassées","broken"]};
 // stats que chaque source sait fournir (on ne propose que les paris réglables)
 function avail(m){if(m.src!=="espn")return ALLSTATS[m.sp];
-  return m.sp==="foot"?["g","sot","co","of","fo","yc","rc","pk"]:m.sp==="rugby"?["pts"]:["sets","gm","tb","s1"]}
+  return m.sp==="foot"?["g","sot","co","of","fo","yc","rc","pk"]:m.sp==="rugby"?["pts"]:m.sp==="basket"?["pts","tp","reb","ast","ot"]:["sets","gm","tb","s1"]}
 const odd=p=>p<.012?0:Math.round(cl(.93/p,1.01,60)*100)/100;
 const mt=(d,m)=>typeof d.t==="function"?d.t(m):d.t;
 // En direct : on part du score actuel et on simule seulement la fin du match
 // (chaque but / essai / pénalité d'un match complet simulé est conservé avec la probabilité « temps restant »).
-const liveOK=m=>m.src==="espn"&&m.sp!=="tennis"&&m.state==="in"&&m.st&&m.min!=null&&m.min<(m.sp==="foot"?85:72);
+const liveOK=m=>m.src==="espn"&&m.sp!=="tennis"&&m.sp!=="basket"&&m.state==="in"&&m.st&&m.min!=null&&m.min<(m.sp==="foot"?85:72);
 const canBet=m=>status(m)==="pre"||liveOK(m);
 function liveSims(m){const key=m.id+"|L|"+m.min+"|"+JSON.stringify(m.st.g||m.st.pts);let S_=MCC.get(key);if(S_)return S_;
   const r=rng(hash(key)),full=m.sp==="foot"?90:80,f=cl((full-m.min)/full,0,1),now=m.st.g||m.st.pts,k=m.sp==="foot"?"g":"pts";S_={[k]:[new Int16Array(N),new Int16Array(N)]};
@@ -871,6 +898,7 @@ async function getJSON(u,ms=9000){const c=new AbortController(),t=setTimeout(()=
 const SOCSTAT={yellowCards:"yc",redCards:"rc",offsides:"of",wonCorners:"co",foulsCommitted:"fo",shotsOnTarget:"sot",penaltyKickShots:"pk"};
 function recStrength(c,name,sp,lv){const s=c.records&&c.records[0]&&c.records[0].summary;
   if(s&&/^\d+-\d+-\d+$/.test(s)){const[w,d,l]=s.split("-").map(Number),n=w+d+l;if(n>=3)return cl(((3*w+d)/n-1.4)/.8,-1.4,1.4)}
+  if(sp==="basket"&&s&&/^\d+-\d+$/.test(s)){const[w,l]=s.split("-").map(Number),n=w+l;if(n>=3)return cl((w/n-.5)*2.6,-1.3,1.3)}
   return strength(name,sp,lv)*.6}
 // cotes américaines du bookmaker (ex. +120 / -150) → écart de niveau entre les deux équipes
 const amer=o=>{const v=parseFloat(o);return isNaN(v)?null:v>0?1+v/100:1+100/-v};
@@ -893,7 +921,10 @@ function parseTeamEvent(ev,sp,lv,path){const c=ev.competitions&&ev.competitions[
   m.s=[recStrength(Hc,m.h,sp,lv),recStrength(Ac,m.a,sp,lv)];
   if(sp==="foot"){const d=bookDiff(c);if(d!=null)m.s=[d/2,-d/2]}
   if(state!=="pre"){const k=sp==="foot"?"g":"pts";m.st={[k]:[+Hc.score||0,+Ac.score||0]};
-    if(sp==="foot")[Hc,Ac].forEach((x,p)=>(x.statistics||[]).forEach(s=>{const k2=SOCSTAT[s.name];if(k2){(m.st[k2]||(m.st[k2]=[null,null]))[p]=parseFloat(s.displayValue)}}))}
+    if(sp==="foot")[Hc,Ac].forEach((x,p)=>(x.statistics||[]).forEach(s=>{const k2=SOCSTAT[s.name];if(k2){(m.st[k2]||(m.st[k2]=[null,null]))[p]=parseFloat(s.displayValue)}}));
+    if(sp==="basket"){const BK={threePointFieldGoalsMade:"tp",rebounds:"reb",assists:"ast"};
+      [Hc,Ac].forEach((x,p)=>(x.statistics||[]).forEach(s=>{const k2=BK[s.name];if(k2){(m.st[k2]||(m.st[k2]=[null,null]))[p]=parseFloat(s.displayValue)}}));
+      const q=(Hc.linescores||[]).length;if(q>=4)m.st.ot=[q-4,0]}}
   if(sp==="foot"&&Array.isArray(c.details))m.ev=c.details.map(x=>{const a=(x.athletesInvolved||[])[0],t=(x.type&&x.type.text)||"";
     return{ty:x.scoringPlay?(x.ownGoal?"og":"g"):/red/i.test(t)?"rc":/yellow/i.test(t)?"yc":"",id:a&&String(a.id),min:parseInt((x.clock&&x.clock.displayValue)||"0",10)}}).filter(e=>e.ty&&e.id);
   return m}
@@ -1083,13 +1114,13 @@ function mid(m){const st=status(m);
 function srcChip(m){return m.src==="espn"?`<span class="chip feed">Réel</span>`:m.src==="am"?`<span class="chip org">Réel · joueurs</span>`:m.src==="org"?`<span class="chip org">Organisateur</span>`:`<span class="chip">Simulation</span>`}
 function card(m,showLv){const st=status(m),mks=markets(m),res=mks.find(x=>x.id==="res");
   const nm=mks.length-1,icons=[...new Set(mks.slice(1).map(x=>x.d.ic+"|"+(x.d.cls||"")))].slice(0,4);
-  const short=m.sp==="tennis"?["1","2"]:["1","N","2"];
+  const short=m.sp==="tennis"||m.sp==="basket"?["1","2"]:["1","N","2"];
   return`<article class="mc" data-act="open" data-mid="${esc(m.id)}" tabindex="0">
     <div class="mc-top">${st==="live"?`<span class="chip live">Direct</span>`:""}${srcChip(m)}<span class="comp">${esc(showLv?m.comp:(m.dep||m.comp))}</span></div>
     <div class="teams"><div class="tm">${crestOf(m,0)}<b>${esc(m.h)}</b>${m.hs?`<small>${esc(m.hs)}</small>`:""}</div>${mid(m)}<div class="tm">${crestOf(m,1)}<b>${esc(m.a)}</b>${m.as?`<small>${esc(m.as)}</small>`:""}</div></div>
     ${res?`<div class="pbar">${res.sels.map(s=>`<i style="width:${(s.p*100).toFixed(1)}%"></i>`).join("")}</div>
     <div class="odds c${res.sels.length}">${res.sels.map((s,k)=>oddBtn(m,res,k,s,short[k])).join("")}</div>`:""}
-    ${nm>0?`<button class="more" data-act="open" data-mid="${esc(m.id)}"><span class="ics">${icons.map(x=>{const[a,b]=x.split("|");return ic(a,b)}).join("")}</span>+${nm} paris : ${m.sp==="foot"?"cartons, corners, hors-jeux…":m.sp==="rugby"?"essais, pénalités, cartons…":"aces, doubles fautes, raquettes…"}</button>`:""}
+    ${nm>0?`<button class="more" data-act="open" data-mid="${esc(m.id)}"><span class="ics">${icons.map(x=>{const[a,b]=x.split("|");return ic(a,b)}).join("")}</span>+${nm} paris : ${m.sp==="foot"?"cartons, corners, hors-jeux…":m.sp==="rugby"?"essais, pénalités, cartons…":m.sp==="basket"?"points, 3 points, rebonds…":"aces, doubles fautes, raquettes…"}</button>`:""}
   </article>`}
 function resRow(m){const sc=finalScore(m)||["–","–"],w=typeof sc[0]==="number"?(sc[0]>sc[1]?0:sc[1]>sc[0]?1:-1):-1;
   return`<div class="res-row" data-act="open" data-mid="${esc(m.id)}"><div class="n">${crestOf(m,0)}<span class="${w===0?"w":""}">${esc(m.h)}</span></div>
@@ -1163,6 +1194,8 @@ function statsBlock(m,st){if(!st)return`<div class="empty">${ic("chart")}<b>Stat
 
 /* ---------- ballons illustrés ---------- */
 function ballArt(sp,cls){
+  if(sp==="basket")return`<svg class="${cls}" viewBox="0 0 48 48" aria-hidden="true"><defs><radialGradient id="bkg" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="#ffb35c"/><stop offset="1" stop-color="#c8560f"/></radialGradient></defs>
+    <circle cx="24" cy="24" r="22" fill="url(#bkg)"/><g fill="none" stroke="#2a1205" stroke-width="1.6" stroke-linecap="round"><path d="M2 24h44M24 2v44"/><path d="M8.5 8.5c6 5.2 6 25.8 0 31M39.5 8.5c-6 5.2-6 25.8 0 31"/></g><circle cx="24" cy="24" r="22" fill="none" stroke="#2a1205" stroke-width="1.2"/></svg>`;
   if(sp==="foot"){const rad=d=>d*Math.PI/180,pt=(r,d,cx=24,cy=24)=>[cx+r*Math.cos(rad(d)),cy+r*Math.sin(rad(d))],f=q=>q[0].toFixed(2)+" "+q[1].toFixed(2);
     const pent=(cx,cy,r,rot)=>Array.from({length:5},(_,i)=>pt(r,rot+i*72,cx,cy));
     const C=pent(24,24,6.2,-90),O=[0,1,2,3,4].map(k=>{const a=-54+k*72,c=pt(19.5,a);return pent(c[0],c[1],6.2,a)});
@@ -1735,7 +1768,7 @@ function viewProfile(p){const done=p.won+p.lost,rate=done?Math.round(p.won/done*
   <div class="grp">Derniers paris</div>${past.length?past.map(bet).join(""):`<p class="note">Pas encore de pari terminé.</p>`}`}
 
 /* ---------- équipe de cœur ---------- */
-const FAVL=[["Ligue 1","soccer/fra.1","foot"],["Ligue 2","soccer/fra.2","foot"],["Top 14","rugby/270559","rugby"],["Premier League","soccer/eng.1","foot"],["Liga","soccer/esp.1","foot"],["Serie A","soccer/ita.1","foot"],["Bundesliga","soccer/ger.1","foot"],["Portugal","soccer/por.1","foot"]];
+const FAVL=[["Ligue 1","soccer/fra.1","foot"],["Ligue 2","soccer/fra.2","foot"],["Top 14","rugby/270559","rugby"],["Premier League","soccer/eng.1","foot"],["Liga","soccer/esp.1","foot"],["Serie A","soccer/ita.1","foot"],["Bundesliga","soccer/ger.1","foot"],["Portugal","soccer/por.1","foot"],["NBA","basketball/nba","basket"]];
 const FAVT={};
 function openFav(){U.open="fav";U.favL=U.favL||0;layer(viewFav());loadFavTeams()}
 async function loadFavTeams(){const path=FAVL[U.favL][1];if(FAVT[path])return;
@@ -1831,7 +1864,7 @@ function viewStats(){const head=`<div class="grab"><h3>Mes statistiques</h3><but
   const table=(title,rows,unit)=>rows.length?`<div class="grp">${title}</div><div class="sttab">${rows.map(r=>`<div class="str"><span class="stn">${r.ic?ic(r.ic):""}${esc(r.n)}</span><span class="stbar"><i style="width:${r.p}%"></i><em>${r.p} %</em></span><span class="stc">${r.c} ${unit}</span>${r.net!=null?`<b class="${r.net>=0?"pos":"neg"}">${r.net>=0?"+":""}${tok(r.net)}</b>`:""}</div>`).join("")}</div>`:"";
   const group=(arr,key,isLeg)=>{const g={};for(const x of arr){const k=key(x);if(!k)continue;const e=g[k]||(g[k]={n:k,c:0,w:0,net:isLeg?null:0});e.c++;if(isLeg?x.r==="w":x.st!=="lost")e.w++;if(!isLeg)e.net+=netOf(x)}
     return Object.values(g).map(e=>({...e,p:pct(e.w,e.c)})).sort((a,b)=>b.c-a.c)};
-  const SPN={foot:["Football","ball"],rugby:["Rugby","rugby"],tennis:["Tennis","tennis"]};
+  const SPN={foot:["Football","ball"],rugby:["Rugby","rugby"],tennis:["Tennis","tennis"],basket:["Basket","basket"]};
   const sp=group(D,b=>{const s=[...new Set(b.legs.map(L=>L.sp))];return s.length===1?s[0]:"mix"}).map(r=>({...r,n:r.n==="mix"?"Plusieurs sports":SPN[r.n]?SPN[r.n][0]:r.n,ic:SPN[r.n]?SPN[r.n][1]:"ticket"}));
   h+=table("Par sport",sp,"paris");
   const kind=group(D,b=>b.legs.length>1?"Combinés":b.legs[0].live?"Simples en direct":"Simples avant-match");h+=table("Par façon de parier",kind,"paris");
@@ -2436,7 +2469,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.51";
+const VERSION="1.52";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

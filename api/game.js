@@ -392,11 +392,11 @@ async function tick(s) {
     if (R.some((r) => !r || !r.post)) continue;
     if (!(await sentOnce(s, `end:${pid}:${b.id}`))) continue;
     const score = b.legs.length === 1 ? `${b.legs[0].ml ? b.legs[0].ml + " : " : ""}${R[0].sh} – ${R[0].sa}` : `${b.legs.length} matchs terminés`;
-    // résultat sûr seulement pour les paris « résultat du match » au foot et au rugby
-    const simple = b.legs.every((L) => L.mk === "res" && (L.sp === "foot" || L.sp === "rugby"));
+    // résultat sûr seulement pour les paris « résultat du match » au foot, au rugby et au basket
+    const simple = b.legs.every((L) => L.mk === "res" && (L.sp === "foot" || L.sp === "rugby" || L.sp === "basket"));
     let msg;
     if (simple) {
-      const ok = b.legs.every((L, i) => { const r = R[i]; const o = r.sh > r.sa ? 0 : r.sh === r.sa ? 1 : 2; return o === L.k; });
+      const ok = b.legs.every((L, i) => { const r = R[i]; const o = L.sp === "basket" ? (r.sh > r.sa ? 0 : 1) : r.sh > r.sa ? 0 : r.sh === r.sa ? 1 : 2; return o === L.k; });
       msg = ok ? { title: `✅ Pari gagné : +${Math.round(b.stake * b.odds)} jetons !`, body: `${score} · ${b.legs.map((L) => L.l).join(" + ")}. Ouvre l'appli pour les encaisser.` }
         : { title: "❌ Pari perdu", body: `${score} · ${b.legs.map((L) => L.l).join(" + ")}. La prochaine sera la bonne !` };
     } else msg = { title: "🏁 Ton pari est joué", body: `${score} · « ${b.legs.map((L) => L.l).join(" + ").slice(0, 80)} » : ouvre l'appli pour voir s'il passe !` };
