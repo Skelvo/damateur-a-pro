@@ -472,6 +472,14 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 .champ.season{background:linear-gradient(135deg,#4a2a05,var(--card) 70%);border-color:#a8670f}
 .sncard{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin:0 0 12px}.sncard .i{width:26px;height:26px;color:#ffb020;flex:none}.sncard b{display:block;font:800 18px "Barlow Condensed"}.sncard small{color:var(--mute);font-size:12.5px}
 .drow[data-act=defigo]{cursor:pointer}.drow[data-act=defigo]:active{opacity:.7}
+.sbar{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:6px 0 12px}.sbar button{display:flex;align-items:center;justify-content:center;gap:6px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--mute);font:800 15px "Barlow Condensed";text-transform:uppercase;padding:0 4px;min-width:0}
+.sbar button .ball{width:20px;height:20px;flex:none}.sbar button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sbar button[aria-pressed=true]{color:var(--ink);border-color:var(--c);background:color-mix(in srgb,var(--c) 18%,var(--card))}
+.today{display:flex;gap:12px;overflow-x:auto;scrollbar-width:none;padding:2px 16px 6px;margin:0 -16px 10px}.today::-webkit-scrollbar{display:none}
+.tdi{flex:none;width:68px;display:flex;flex-direction:column;align-items:center;gap:5px;background:none;border:0;padding:0;color:inherit;font:inherit}
+.tdc{position:relative;width:60px;height:60px;border-radius:50%;display:grid;place-items:center;font-size:27px;background:var(--card);box-shadow:inset 0 0 0 2px var(--line)}
+.tdi.on .tdc{box-shadow:inset 0 0 0 3px var(--sel),0 0 14px #ffd23f40;background:radial-gradient(circle at 50% 35%,#3d3006,var(--card) 75%)}
+.tdd{position:absolute;top:2px;right:2px;width:13px;height:13px;border-radius:50%;background:var(--loss);box-shadow:0 0 0 2.5px var(--bg)}
+.tdi small{font-size:11.5px;line-height:1.15;color:var(--mute);text-align:center;max-width:68px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.tdi.on small{color:var(--ink)}
 .webox{display:flex;gap:12px;align-items:center;background:linear-gradient(135deg,#4a2a06,var(--card) 75%);border:1px solid #a8701a;border-radius:14px;padding:11px 13px;margin-bottom:12px}.webox.soon{background:var(--card);border-style:dashed}.webox.mini{margin:0 0 10px}
 .wee{font-size:34px;line-height:1}.webox small{display:block;color:#ffc56b;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}.webox b{display:block;font:800 21px "Barlow Condensed";text-transform:uppercase}.webox p{margin:2px 0 0;font-size:13.5px;color:#e6dcc9}
 .webadge{background:#4a2a06;border:1px solid #a8701a;border-radius:10px;padding:8px 11px;font-size:13.5px;margin:8px 0}.webadge.dim{background:var(--card);border-color:var(--line);color:var(--mute)}
@@ -747,7 +755,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.73"></script>
+<script src="engine.js?v=1.74"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -987,13 +995,12 @@ function ladder(){const cfg=SP[U.sp],now=Date.now();
     return`<button class="lvl${c?"":" zero"}" data-act="lv" data-lv="${l}" aria-pressed="${U.lv===l}"><span class="bars">${bars}</span><span>${esc(cfg.lv[l])}<em>${c?c+" match"+(c>1?"s":""):(cfg.feeds[l]&&FEED[U.sp+l]&&FEED[U.sp+l].ok===false?"Hors ligne":"—")}</em></span></button>`};
   return`<div class="ladder" id="ladder"><div class="tier"><small>Tous</small><div><button class="lvl star" data-act="lv" data-lv="-1" aria-pressed="${U.lv<0}">${ic("fire")}<span>À la une<em>Prochains</em></span></button></div></div>
     ${cfg.tiers.map(([t,ix])=>[t,ix.filter(l=>cfg.feeds[l])]).filter(([,ix])=>ix.length).map(([t,ix])=>`<div class="tier"><small>${t}</small><div>${ix.map(chip).join("")}</div></div>`).join("")}</div>`}
-function viewMatches(){const cfg=SP[U.sp];let h=installBanner()+`<div class="sports">${Object.entries(SP).map(([k,s])=>`<button class="sport" style="--c:${s.c}" data-act="sp" data-sp="${k}" aria-pressed="${U.sp===k}">${ballArt(k,"ghost")}${ballArt(k,"ball")}<span>${s.n}</span><small>${s.sub}</small></button>`).join("")}</div>`;
+function viewMatches(){const cfg=SP[U.sp];let h=`<div class="sbar">${Object.entries(SP).map(([k,s])=>`<button style="--c:${s.c}" data-act="sp" data-sp="${k}" aria-pressed="${U.sp===k}">${ballArt(k,"ball")}<span>${{foot:"Foot",basket:"NBA"}[k]||s.n}</span></button>`).join("")}</div>`;
   if(U.ev){const e=EVENTS.find(x=>x.id===U.ev);if(e)return h+viewEvent(e)+foot();U.ev=null}
-  h+=weBanner()+guideCard()+pushBanner()+eventStrip()+ladder();
+  h+=todayRow()+ladder();
   let list=matchesFor(U.sp,U.lv);
   const isDep=U.lv>=0&&U.lv<cfg.dep;
-  if(wheelAvail())h+=`<button class="btn gold wide wheelbtn" data-act="wheel" style="margin-bottom:12px">${wheelMini()} ${extraAvail()?"Tour bonus offert aujourd’hui !":"Roue de la chance du jour"}</button>`;
-  h+=lmBanner()+defisCard()+pronoBanner();
+
   const now=Date.now();
   let up=list.filter(m=>["pre","live","wait"].includes(status(m)));
   const done=list.filter(m=>status(m)==="post").sort((a,b)=>b.t-a.t);
@@ -1231,7 +1238,7 @@ function refreshLayer(){if(!U.open)return;const sc=$(".sheet")?$(".sheet").scrol
   if($(".sheet"))$(".sheet").scrollTop=sc}
 
 /* ---------- rendu global ---------- */
-function render(){if(U.tab==="m"&&S.name&&!U.open)loadGuide();document.body.dataset.sp=U.sp;document.body.classList.toggle("darkside",U.tab==="l"&&!!U.dark);$("#bal").textContent=tok(S.bal);{const st=pushState(),bd=$("#belldot"),bl=$("#bell");if(bd)bd.hidden=st==="on"||st==="na"&&!(IOS&&!STANDALONE);if(bl)bl.classList.toggle("on",st==="on")}
+function render(){if(U.tab==="m"&&S.name&&!U.open)loadGuide();if(U.open&&U.open.startsWith("td:")){const v=U.open.slice(3),h=viewToday(v);if(h)layer(h)}document.body.dataset.sp=U.sp;document.body.classList.toggle("darkside",U.tab==="l"&&!!U.dark);$("#bal").textContent=tok(S.bal);{const st=pushState(),bd=$("#belldot"),bl=$("#bell");if(bd)bd.hidden=st==="on"||st==="na"&&!(IOS&&!STANDALONE);if(bl)bl.classList.toggle("on",st==="on")}
   $("#hello").innerHTML=S.name?`<span class="hi">Salut </span>${esc(S.name)}<span class="dv"> · ${esc(DIVS[divOf(S.peak)][0])}</span>`:"Paris gratuits · du district aux pros";
   document.querySelectorAll(".nav button").forEach(b=>b.dataset.tab===U.tab?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
   const op=S.bets.filter(b=>b.st==="open").length,nb=$("#nb");nb.hidden=!op;nb.textContent=op;
@@ -1406,7 +1413,8 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"legal":openLegal();break;
     case"help":openHelp();break;
     case"tshare":shareTicket(d.id);break;
-    case"defigo":defiGo(d.id);break;
+    case"defigo":if(U.open&&U.open.startsWith("td:")){U.open=null;layer("")}defiGo(d.id);break;
+    case"td":openToday(d.v);break;
     case"intro":openIntro();break;
     case"coach":startCoach();break;
     case"ixo":U.ix.o=+d.v;layer(viewIntro());break;
@@ -1424,7 +1432,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"train":startCoach();break;
     case"gtog":U.gOpen=!(U.gOpen??true);render();break;
     case"gclaim":guideClaim(d.k);break;
-    case"ggo":guideGo(d.k);break;
+    case"ggo":if(U.open&&U.open.startsWith("td:")){U.open=null;layer("")}guideGo(d.k);break;
     case"ghide":if(confirm("Masquer les missions « Premiers pas » ?")){S.guideHide=1;save();render()}break;
     case"tosok":tosOk();break;
     case"tosno":tosNo();break;
@@ -1617,6 +1625,29 @@ function viewLeagues(){const L=U.lg,d=L.data;
   return h+`<p class="note">${note}</p>`+lgFooter(cur)}
 function lgFooter(cur){return`<button class="btn gold wide" data-act="gdir" style="margin-top:14px">${ic("group")} Trouver une guilde</button><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><button class="btn" data-act="lgnew">${ic("plus")} Créer</button><button class="btn ghost" data-act="lgjoin">Rejoindre avec un code</button></div>
   ${cur?`<p class="note"><button class="link" data-act="lgleave" style="color:var(--loss)">Quitter la guilde</button></p>`:""}`+foot()}
+
+/* ---------- « Aujourd'hui » : une rangée de pastilles au lieu des cartes empilées (roue, défis, missions, prono…) ---------- */
+function todayItems(){const T=[],we=WE();
+  if(we.on||we.soon)T.push({k:"we",e:we.e,l:we.on?"Week-end":"Demain",dot:we.on,act:"td",v:"we"});
+  if(wheelAvail())T.push({k:"wheel",e:"🎡",l:extraAvail()?"Tour bonus":"Roue",dot:true,act:"wheel"});
+  if(S.name){const D=defisState(),got=D.filter(d=>d.got).length;
+    if(!S.dch.all)T.push({k:"defis",e:"🎯",l:`Défis ${got}/3`,dot:D.some(d=>d.n>=d.g&&!d.got)||got===3,act:"td",v:"defis"})}
+  const g=U.gs;if(g&&!S.guideHide&&!g.all){const n=GSTEPS.filter(([k])=>g.done[k]).length,r=GSTEPS.some(([k])=>g.done[k]&&!g.claimed[k])||GSTEPS.every(([k])=>g.claimed[k]);
+    T.push({k:"guide",e:"🚀",l:`Missions ${n}/6`,dot:r,act:"td",v:"guide"})}
+  if(lmBanner())T.push({k:"lm",e:"🛡️",l:"Match guilde",dot:true,act:"lmgo"});
+  if(pronoBanner()){const j=U.pr.data,todo=j.matches.some(m=>m.t>Date.now()&&!m.my);T.push({k:"prono",e:"🔮",l:"Prono",dot:todo,act:"prgo"})}
+  for(const e of EVENTS.filter(evActive))T.push({k:"ev"+e.id,e:e.em,l:e.n,dot:evMatches(e).some(m=>status(m)==="live"),act:"ev",id:e.id,live:true});
+  if(pushBanner())T.push({k:"push",e:"🔔",l:"Notifs",dot:true,act:"notif"});
+  if(installBanner())T.push({k:"inst",e:"📲",l:"Installer",dot:false,act:"install"});
+  return T}
+function todayRow(){const T=todayItems();if(!T.length)return"";
+  return`<div class="today">${T.map(x=>`<button class="tdi${x.dot?" on":""}" data-act="${x.act}"${x.v?` data-v="${x.v}"`:""}${x.id?` data-id="${x.id}"`:""}><span class="tdc">${x.e}${x.dot?`<i class="tdd"></i>`:""}</span><small>${esc(x.l)}</small></button>`).join("")}</div>`}
+function openToday(v){U.open="td:"+v;U.gOpen=true;layer(viewToday(v))}
+function viewToday(v){const x=`<button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button>`;
+  if(v==="defis")return`<div class="grab"><h3>Aujourd’hui</h3>${x}</div><p class="note" style="text-align:left;margin-top:0">Touche un défi pour aller au bon endroit. Les jetons se récupèrent ici dès qu’il est réussi.</p>${defisCard()}`;
+  if(v==="guide")return`<div class="grab"><h3>Premiers pas</h3>${x}</div>${guideCard()||`<div class="empty">Toutes les missions sont faites 🎉</div>`}`;
+  if(v==="we"){const w=WE();return`<div class="grab"><h3>Week-end spécial</h3>${x}</div>${weBanner()}<p class="note" style="text-align:left">Chaque week-end a son thème, à tour de rôle : 🧾 combinés (+25 % de bonus), 🎡 roue (gains ×2), 🎯 défis (×2). Tout est automatique.</p>`}
+  return""}
 
 /* ---------- week-ends spéciaux (thème automatique, à tour de rôle) ---------- */
 const WE=()=>weekendOf(today());
@@ -2858,7 +2889,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.73";
+const VERSION="1.74";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
