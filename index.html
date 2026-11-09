@@ -472,6 +472,12 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 .champ.season{background:linear-gradient(135deg,#4a2a05,var(--card) 70%);border-color:#a8670f}
 .sncard{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin:0 0 12px}.sncard .i{width:26px;height:26px;color:#ffb020;flex:none}.sncard b{display:block;font:800 18px "Barlow Condensed"}.sncard small{color:var(--mute);font-size:12.5px}
 .drow[data-act=defigo]{cursor:pointer}.drow[data-act=defigo]:active{opacity:.7}
+.gcomp{padding:12px 14px}.gcomp .gtop{gap:10px}.gti{flex:1;min-width:0}.gti h3{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gti small .link{padding:0;font-size:inherit;color:inherit;text-decoration:underline}
+.gsm{width:42px;height:42px;padding:0;flex:none;display:grid;place-items:center}.gsm .i{width:18px;height:18px}
+.gdots{position:relative;width:42px;height:42px;flex:none;border-radius:12px;border:1px solid var(--line2);background:#0003;color:var(--ink);font:800 14px Barlow;letter-spacing:1px}.gdots .tdd{top:-4px;right:-4px}
+.gtabs{display:grid;grid-template-columns:repeat(4,1fr)}.gtabs button{font-size:14px;padding-left:2px;padding-right:2px}
+.gsub{margin-top:-4px}
+.gquick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}.gquick button{position:relative;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 12px;color:var(--ink);font:600 14px Barlow;text-align:left;min-width:0}.gquick span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gquick .tdd{top:-4px;right:-4px}
 .sbar{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:6px 0 12px}.sbar button{display:flex;align-items:center;justify-content:center;gap:6px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--mute);font:800 15px "Barlow Condensed";text-transform:uppercase;padding:0 4px;min-width:0}
 .sbar button .ball{width:20px;height:20px;flex:none}.sbar button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sbar button[aria-pressed=true]{color:var(--ink);border-color:var(--c);background:color-mix(in srgb,var(--c) 18%,var(--card))}
 .today{display:flex;gap:12px;overflow-x:auto;scrollbar-width:none;padding:2px 16px 6px;margin:0 -16px 10px}.today::-webkit-scrollbar{display:none}
@@ -755,7 +761,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.74"></script>
+<script src="engine.js?v=1.75"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -1350,7 +1356,8 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"prjk":pronoJoker(d.mid);break;
     case"prtab":U.pr.tab=d.v;render();break;
     case"prgo":{const L0=U.lg.data&&U.lg.data.leagues[0];if(!L0)break;U.tab="l";U.lg.code=U.lg.code||L0.code;U.lg.view="prono";U.dark=false;render();loadBoards();loadProno();window.scrollTo({top:0});break}
-    case"lgview":U.lg.view=d.v;if(d.v==="prono")loadProno();if(d.v==="chat")loadChat();render();if(d.v==="feed")loadActFeed();if(d.v==="duels")loadDuels();break;
+    case"gmenu":openGMenu();break;
+    case"lgview":U.lg.view=d.v;if(["chat","feed","duels"].includes(d.v))U.lg.talk=d.v;if(d.v==="fights")loadBattles(U.lg.code);if(d.v==="prono")loadProno();if(d.v==="chat")loadChat();render();if(d.v==="feed")loadActFeed();if(d.v==="duels")loadDuels();break;
     case"react":reactTo(d.id,d.e);break;
     case"prof":openProfile(d.id);break;
     case"photo":openPhoto();break;
@@ -1585,24 +1592,26 @@ function viewLeagues(){const L=U.lg,d=L.data;
   h+=`<div class="lgchips"><button data-act="lgsel" data-code="" aria-pressed="${!L.code}">${ic("fire")} Général</button>${d.leagues.map(l=>`<button data-act="lgsel" data-code="${esc(l.code)}" aria-pressed="${L.code===l.code}">${emb(l,"sm")}${esc(l.name)}</button>`).join("")}</div>`;
   const cur=d.leagues.find(l=>l.code===L.code);
   if(cur){const R=cur.mine?"chef":cur.role==="officer"?"adjoint":"membre",boss=R!=="membre";
-    h+=`<div class="lgcard" style="--gc:${esc((cur.emblem&&cur.emblem.c)||"#35d07f")}"><div class="gtop">${emb(cur,"lg")}<div><h3>${esc(cur.name)}</h3>
-    ${cur.motto?`<em class="gmotto">« ${esc(cur.motto)} »</em>`:""}<small>${cur.n} membre${cur.n>1?"s":""} · ${ACCESS[cur.access||"private"][0]} · tu es ${R}</small></div></div>
-    <div class="gbtns"><button class="btn ghost" data-act="gmem">${ic("group")} Membres${boss&&cur.nreq?` <span class="pill">${cur.nreq}</span>`:""}</button>${boss?`<button class="btn ghost" data-act="gset">${ic("info")} Gérer</button>`:""}</div>
-    <div class="lgcode"><div><small>Code de la guilde</small><br><b>${esc(cur.code)}</b></div><button class="btn gold" data-act="lginv">${ic("share")} Inviter</button></div></div>`}
+    h+=`<div class="lgcard gcomp" style="--gc:${esc((cur.emblem&&cur.emblem.c)||"#35d07f")}"><div class="gtop">${emb(cur,"lg")}<div class="gti"><h3>${esc(cur.name)}</h3>
+    ${cur.motto?`<em class="gmotto">« ${esc(cur.motto)} »</em>`:""}<small><button class="link" data-act="gmem">${cur.n} membre${cur.n>1?"s":""}</button> · tu es ${R}</small></div>
+    <button class="btn gold gsm" data-act="lginv" aria-label="Inviter">${ic("share")}</button><button class="gdots" data-act="gmenu" aria-label="Menu de la guilde">•••${boss&&cur.nreq?`<i class="tdd"></i>`:""}</button></div></div>`}
   else h+=`<div class="lgcard"><h3>Classement général</h3><small>Tous les joueurs${d.rank?` · tu es <b style="color:var(--sel)">${d.rank}<sup>e</sup></b> sur ${d.total}`:""}</small></div>`;
   if(cur&&d.last)h+=`<div class="champ">${ic("trophy")}<div><small>Vainqueur${d.last.winners.length>1?"s":""} de la semaine dernière</small><b>${d.last.winners.map(w=>esc(w.name)+` <span class="pos">+${tok(w.gain)}</span>`).join(" · ")}</b></div></div>`;
   if(cur){const nd=(L.duels||[]).filter(x=>x.status==="open"&&String(x.a)!==String(d.me)).length;
     const nc=chatUnread(cur.code);
-    h+=pushBanner()+`<div class="seg tabs3 tabs5"><button data-act="lgview" data-v="rank" aria-pressed="${L.view==="rank"}">Rang</button><button data-act="lgview" data-v="prono" aria-pressed="${L.view==="prono"}">Prono</button><button data-act="lgview" data-v="feed" aria-pressed="${L.view==="feed"}">Fil</button><button data-act="lgview" data-v="duels" aria-pressed="${L.view==="duels"}">Duels${nd?` <span class="pill">${nd}</span>`:""}</button><button data-act="lgview" data-v="chat" aria-pressed="${L.view==="chat"}">Chat${nc?` <span class="pill">${nc}</span>`:""}</button></div>`;
+    const talk=["chat","feed","duels"].includes(L.view),bt=(U.bt||{})[cur.code],nb=bt?bt.battles.filter(x=>x.status==="pending"&&x.incoming).length:0;
+    h+=`<div class="seg gtabs"><button data-act="lgview" data-v="rank" aria-pressed="${L.view==="rank"}">Classement</button><button data-act="lgview" data-v="fights" aria-pressed="${L.view==="fights"}">Combats${nb?` <span class="pill">${nb}</span>`:""}</button><button data-act="lgview" data-v="prono" aria-pressed="${L.view==="prono"}">Pronos</button><button data-act="lgview" data-v="${U.lg.talk||"chat"}" aria-pressed="${talk}">Discussion${nd+nc?` <span class="pill">${nd+nc}</span>`:""}</button></div>`;
+    if(talk)h+=`<div class="seg mini gsub"><button data-act="lgview" data-v="chat" aria-pressed="${L.view==="chat"}">💬 Chat${nc?` <span class="pill">${nc}</span>`:""}</button><button data-act="lgview" data-v="feed" aria-pressed="${L.view==="feed"}">📰 Fil</button><button data-act="lgview" data-v="duels" aria-pressed="${L.view==="duels"}">🤺 Duels${nd?` <span class="pill">${nd}</span>`:""}</button></div>`;
     if(L.view==="chat")return h+viewChat(cur);
-    if(L.view==="prono")return h+viewProno(cur)+lgFooter(cur);
+    if(L.view==="prono")return h+viewLm(cur.code)+viewProno(cur)+lgFooter(cur);
     if(L.view==="feed")return h+viewFeed()+lgFooter(cur);
-    if(L.view==="duels")return h+viewDuels(cur)+lgFooter(cur)}
+    if(L.view==="duels")return h+viewDuels(cur)+lgFooter(cur);
+    if(L.view==="fights"){if(!bt)loadBattles(cur.code);return h+(bt?viewBattle(cur):`<div class="skel" style="height:180px"></div>`)+`<p class="note">Combats de guildes : chaque lundi un adversaire de votre niveau, ou un défi lancé par le chef. Score = moyenne des gains en paris de tous les membres. <button class="link" data-act="gbt" data-id="" style="padding:0">Règles et historique</button></p>`+lgFooter(cur)}}
   const M=L.mode,SN=d.season;
   if(cur&&d.lastSeason&&(M==="season"||new Date().getDate()<=7))h+=`<div class="champ season">${ic("crown")}<div><small>Champion${d.lastSeason.winners.length>1?"s":""} du mois de ${esc(d.lastSeason.label)}</small><b>${d.lastSeason.winners.map(w=>esc(w.name)+` <span class="pos">+${tok(w.gain)}</span>`).join(" · ")}</b></div></div>`;
-  if(cur)h+=viewLm(cur.code);
-  if(cur)h+=viewBattle(cur);
-  if(cur)h+=`<button class="recapbtn" data-act="recap">${ic("chart")}<span><b>Le bilan de la semaine</b><small>Podium, plus grosse cote, plus gros flop, roi du prono…</small></span>${(S.recapSeen||{})[cur.code]!==d.week?`<span class="pill">Nouveau</span>`:""}<span class="arr">›</span></button>`;
+  if(cur){const b=(U.bt||{})[cur.code],lv=b&&b.battles.find(x=>x.status==="live");
+    h+=`<div class="gquick"><button data-act="recap">📊 <span>Bilan de la semaine</span>${(S.recapSeen||{})[cur.code]!==d.week?`<i class="tdd"></i>`:""}</button>
+    <button data-act="lgview" data-v="fights">⚔️ <span>${lv?`${lv.my>lv.their?"On mène":lv.my<lv.their?"On est mené":"Égalité"} ${lv.my>0?"+":""}${tok(lv.my)} / ${lv.their>0?"+":""}${tok(lv.their)}`:b?`${b.guild.div.i} ${b.guild.div.n}`:"Combats"}</span></button></div>`}
   h+=`<div class="seg tabs3"><button data-act="lgmode" data-v="season" aria-pressed="${M==="season"}">Mois</button><button data-act="lgmode" data-v="week" aria-pressed="${M==="week"}">Semaine</button><button data-act="lgmode" data-v="total" aria-pressed="${M==="total"}">Jetons</button></div>`;
   if(M==="season"&&SN){const left=Math.max(0,Math.ceil((SN.end-Date.now())/864e5));
     if(cur){const P=prizesOf(cur);h+=`<div class="przcard"><div class="pzh">🎁 <b>Récompenses de fin de mois</b></div>
@@ -1623,7 +1632,7 @@ function viewLeagues(){const L=U.lg,d=L.data;
     :M==="season"?`« Mois » = jetons gagnés <b>en pariant</b> depuis le 1er du mois : seuls les paris comptent (pas la roue, les défis, le prono ni le match de la guilde). Paris gagnés + encaissés − paris perdus. Repart à zéro chaque mois ; le premier est sacré champion ${ic("crown")}.`
     :"« Jetons » = tout ce que tu as, depuis le début.";
   return h+`<p class="note">${note}</p>`+lgFooter(cur)}
-function lgFooter(cur){return`<button class="btn gold wide" data-act="gdir" style="margin-top:14px">${ic("group")} Trouver une guilde</button><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><button class="btn" data-act="lgnew">${ic("plus")} Créer</button><button class="btn ghost" data-act="lgjoin">Rejoindre avec un code</button></div>
+function lgFooter(cur){if(cur)return foot();return`<button class="btn gold wide" data-act="gdir" style="margin-top:14px">${ic("group")} Trouver une guilde</button><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><button class="btn" data-act="lgnew">${ic("plus")} Créer</button><button class="btn ghost" data-act="lgjoin">Rejoindre avec un code</button></div>
   ${cur?`<p class="note"><button class="link" data-act="lgleave" style="color:var(--loss)">Quitter la guilde</button></p>`:""}`+foot()}
 
 /* ---------- « Aujourd'hui » : une rangée de pastilles au lieu des cartes empilées (roue, défis, missions, prono…) ---------- */
@@ -2128,6 +2137,12 @@ function viewMembers(j){const boss=j.role!=="membre",RL={chef:"👑 Chef",adjoin
     const acts=me||!boss||m.role==="chef"||(j.role==="adjoint"&&m.role!=="membre")?"":`<div class="gmact">${j.role==="chef"?(m.role==="adjoint"?`<button class="link" data-act="grole" data-id="${esc(m.id)}" data-r="membre">Retirer adjoint</button>`:`<button class="link" data-act="grole" data-id="${esc(m.id)}" data-r="adjoint">Nommer adjoint</button>`)+`<button class="link" data-act="grole" data-id="${esc(m.id)}" data-r="chef">Faire chef</button>`:""}<button class="link" data-act="gkick" data-id="${esc(m.id)}" style="color:var(--loss)">Exclure</button></div>`;
     return`<div class="gmrow"><span data-act="prof" data-id="${esc(m.id)}">${avatar(m.id,m.name,m.av,"av")}</span><div><b>${esc(m.name)}${me?" (toi)":""}</b><small>${RL[m.role]} · ${seenTxt(m.seen)}</small>${acts}</div></div>`}).join("");
   return h}
+function openGMenu(){const d=U.lg.data,cur=d&&d.leagues.find(l=>l.code===U.lg.code);if(!cur)return;const boss=cur.mine||cur.role==="officer";U.open="gmenu";
+  layer(`<div class="grab"><h3>${esc(cur.name)}</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
+  <div class="lgcode" style="margin-bottom:10px"><div><small>Code de la guilde</small><br><b>${esc(cur.code)}</b></div><button class="btn gold" data-act="lginv">${ic("share")} Inviter</button></div>
+  <div class="mlist"><button data-act="gmem">👥 Membres${boss&&cur.nreq?` · <b style="color:var(--sel)">${cur.nreq} demande${cur.nreq>1?"s":""}</b>`:""}</button>${boss?`<button data-act="gset">⚙️ Gérer la guilde (emblème, devise, accès, championnat)</button>`:""}
+  <button data-act="gdir">🔎 Trouver une autre guilde</button><button data-act="lgnew">➕ Créer une guilde</button><button data-act="lgjoin">🔑 Rejoindre avec un code</button>
+  <button data-act="lgleave" style="color:var(--loss)">🚪 Quitter la guilde</button></div>`)}
 async function guildAct(action,args,ask){if(ask&&!confirm(ask))return;try{const j=await api(action,{code:U.lg.code,...args});if(j&&j.error)throw j;toast("C’est fait.","win");await loadBoards();openMembers()}
   catch(e){toast(e&&e.error==="full"?"La guilde est pleine.":e&&e.error==="too_many"?"Ce joueur est déjà dans trop de guildes.":"Action impossible.","bad")}}
 function openGuildSet(){const cur=U.lg.data.leagues.find(l=>l.code===U.lg.code);if(!cur)return;const e=cur.emblem||{};U.gf={i:e.i||"🛡️",c:e.c||"#35d07f",a:cur.access||"private",m:cur.motto||"",n:cur.name,chef:!!cur.mine,ch:cur.champ===false?"0":"1"};U.open="gset";layer(viewGuildSet())}
@@ -2573,7 +2588,7 @@ function goFrom(url){try{const u=new URL(url,location.href),g=u.searchParams.get
   if(g==="recap"){U.dark=false;U.lg.view="rank";render();loadBoards();openRecap(U.lg.code);return}
   if(g==="dark"&&c){U.open=null;layer("");loadDarkLeagues().then(()=>{const l=(U.dkLeagues||[]).find(x=>x.code===c.toUpperCase());if(l){U.lg.code="";U.dkSel={code:l.code,name:l.name};darkGo()}});return}
   if(g==="bets"){U.dark=false;U.tab="b";render();window.scrollTo({top:0});return}
-  if(g==="dark")g="rank";U.lg.view=g;render();loadBoards();if(g==="chat")loadChat();if(g==="duels")loadDuels();if(g==="feed")loadActFeed();if(g==="prono")loadProno();window.scrollTo({top:0})}catch(e){}}
+  if(g==="dark")g="rank";U.lg.view=g;if(g==="fights")loadBattles(U.lg.code);render();loadBoards();if(g==="chat")loadChat();if(g==="duels")loadDuels();if(g==="feed")loadActFeed();if(g==="prono")loadProno();window.scrollTo({top:0})}catch(e){}}
 if("serviceWorker"in navigator)navigator.serviceWorker.addEventListener("message",e=>{if(e.data&&e.data.go)goFrom(e.data.go)});
 
 /* ---------- chat de la guilde ---------- */
@@ -2889,7 +2904,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.74";
+const VERSION="1.75";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

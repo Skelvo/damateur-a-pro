@@ -552,7 +552,7 @@ async function settleBattle(s, id) {
       const amt = x.bet ? BREWARD[r] : 0;
       if (amt) await s.query(`insert into battle_rewards (battle, player, amount, result) values ($1, $2, $3, $4) on conflict do nothing`, [id, x.player, amt, r]);
       await notify(s, [x.player], { title: head, body: `Contre ${opp} : ${sgn(my)} à ${sgn(their)} de moyenne. ${amt ? `+${amt} jetons pour toi 🎁` : "Tu n'as pas parié cette semaine : pas de récompense."} Cote ${elo} (${dv.i} ${dv.n}).`,
-        url: go("rank", code), tag: "battle-" + id });
+        url: go("fights", code), tag: "battle-" + id });
     }
   }
   return true;
@@ -570,7 +570,7 @@ async function battlesTick(s) {
     if (!(await s.query(`update battles set status = 'live' where id = $1 and status = 'ready' returning id`, [x.id]))[0]) continue;
     const n = await s.query(`select code, name from leagues where code in ($1, $2)`, [x.a, x.b]), nm = Object.fromEntries(n.map((y) => [y.code, y.name]));
     for (const [c, o] of [[x.a, x.b], [x.b, x.a]])
-      await notify(s, await members(s, c), { title: `⚔️ Le défi commence · ${nm[c]}`, body: `Cette semaine contre ${nm[o]} : chaque pari compte pour la moyenne de la guilde. À vous de jouer !`, url: go("rank", c), tag: "battle-" + x.id });
+      await notify(s, await members(s, c), { title: `⚔️ Le défi commence · ${nm[c]}`, body: `Cette semaine contre ${nm[o]} : chaque pari compte pour la moyenne de la guilde. À vous de jouer !`, url: go("fights", c), tag: "battle-" + x.id });
     out.started++;
   }
   await s.query(`update battles set status = 'expired' where status = 'pending' and week <= $1`, [t.w]);
@@ -588,7 +588,7 @@ async function battlesTick(s) {
       await snapshot(s, id, A.code); await snapshot(s, id, B.code);
       await s.query(`update battles set status = 'live' where id = $1`, [id]);
       for (const [X, Y] of [[A, B], [B, A]]) { const dv = division(Y.elo);
-        await notify(s, await members(s, X.code), { title: `⚔️ Championnat des guildes · ${X.name}`, body: `Cette semaine, vous affrontez ${Y.name} (${dv.i} ${dv.n}). Score = moyenne des gains en paris de tous les membres : chacun compte !`, url: go("rank", X.code), tag: "battle-" + id }); }
+        await notify(s, await members(s, X.code), { title: `⚔️ Championnat des guildes · ${X.name}`, body: `Cette semaine, vous affrontez ${Y.name} (${dv.i} ${dv.n}). Score = moyenne des gains en paris de tous les membres : chacun compte !`, url: go("fights", X.code), tag: "battle-" + id }); }
       out.paired++;
     }
   }
@@ -951,7 +951,7 @@ const ACTIONS = {
     if (busy.filter((x) => x.a === code).length >= 3) throw fail(400, "too_many");
     await s.query(`insert into battles (kind, week, a, b, status, by_player) values ('challenge', $1, $2, $3, 'pending', $4)`, [w, code, T.code, p.id]);
     const chiefs = (await s.query(`select player from league_members where code = $1 and (role = 'officer' or player = $2)`, [T.code, T.owner])).map((x) => x.player);
-    await notify(s, chiefs, { title: `⚔️ ${M.name} défie ${T.name} !`, body: "Un combat d'une semaine, à partir de lundi. Le chef ou un adjoint peut accepter ou refuser.", url: go("rank", T.code), tag: "chal-" + T.code });
+    await notify(s, chiefs, { title: `⚔️ ${M.name} défie ${T.name} !`, body: "Un combat d'une semaine, à partir de lundi. Le chef ou un adjoint peut accepter ou refuser.", url: go("fights", T.code), tag: "chal-" + T.code });
     return { ok: true, week: w };
   },
   // répondre à un défi reçu (chef/adjoint de la guilde défiée) ou retirer un défi envoyé
@@ -967,7 +967,7 @@ const ACTIONS = {
     if (!b.accept) {
       await s.query(`update battles set status = 'refused' where id = $1 and status = 'pending'`, [bt.id]);
       const chiefs = (await s.query(`select m.player from league_members m join leagues l on l.code = m.code where m.code = $1 and (m.role = 'officer' or m.player = l.owner)`, [bt.a])).map((x) => x.player);
-      await notify(s, chiefs, { title: `⚔️ ${bt.nb} refuse le défi`, body: "Trouve un autre adversaire dans le classement des guildes.", url: go("rank", bt.a), tag: "chal-" + bt.a });
+      await notify(s, chiefs, { title: `⚔️ ${bt.nb} refuse le défi`, body: "Trouve un autre adversaire dans le classement des guildes.", url: go("fights", bt.a), tag: "chal-" + bt.a });
       return { ok: true };
     }
     if ((await s.query(`select 1 from battles where kind = 'challenge' and week = $1 and status = 'ready' and (a in ($2, $3) or b in ($2, $3))`, [bt.week, bt.a, bt.b]))[0]) throw fail(400, "busy");
@@ -975,7 +975,7 @@ const ACTIONS = {
     // un seul défi par semaine : les autres défis en attente de ces deux guildes tombent
     await s.query(`update battles set status = 'expired' where kind = 'challenge' and week = $1 and status = 'pending' and (a in ($2, $3) or b in ($2, $3))`, [bt.week, bt.a, bt.b]);
     for (const [c, o] of [[bt.a, bt.nb], [bt.b, bt.na]])
-      await notify(s, await members(s, c), { title: `⚔️ Défi accepté contre ${o}`, body: "Ça commence lundi, pour une semaine : la moyenne des gains en paris de tous les membres compte. Préparez-vous !", url: go("rank", c), tag: "battle-" + bt.id });
+      await notify(s, await members(s, c), { title: `⚔️ Défi accepté contre ${o}`, body: "Ça commence lundi, pour une semaine : la moyenne des gains en paris de tous les membres compte. Préparez-vous !", url: go("fights", c), tag: "battle-" + bt.id });
     return { ok: true };
   },
   // récompenses de combats, créditées par le téléphone (et notées au registre)
