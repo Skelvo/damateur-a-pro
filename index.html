@@ -490,8 +490,15 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 @keyframes fxshake{0%,100%{transform:none}20%{transform:translateX(-14px)}40%{transform:translateX(12px)}60%{transform:translateX(-8px)}80%{transform:translateX(5px)}}
 .mcflash{box-shadow:0 0 0 2px var(--sel),0 0 18px #ffd23f55!important}.mcfl{position:absolute;top:10px;right:12px;z-index:2;background:var(--sel);color:#1b1400;font:800 13px "Barlow Condensed";padding:3px 9px;border-radius:20px;animation:fxpop .5s both}.mc{position:relative}
 @media (prefers-reduced-motion:reduce){.fxt,.fxic,.fxcard,.fx-rc .fxin{animation:none}}
+.chero .who h2{display:flex;align-items:center;gap:8px}.cfav img{width:24px;height:24px;object-fit:contain;vertical-align:middle}.chero .div{background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer}
+.ckpi{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0 4px}.ckpi>div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 4px;text-align:center;min-width:0}.ckpi small{display:block;font-size:11px;color:var(--mute)}.ckpi b{display:block;font:800 21px "Barlow Condensed";white-space:nowrap}
+.csucc{display:flex;align-items:center;gap:10px;width:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-top:10px;color:inherit;font:inherit;text-align:left}.csucc>span:first-child{flex:1}.csucc b{display:block;font-size:15px}.csucc small{color:var(--mute);font-size:12.5px}.csi{display:flex;gap:4px;color:var(--sel)}.csi .i{width:20px;height:20px}.csucc .arr{color:var(--mute);font-size:20px}
+.ctiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 14px}.ctiles button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;color:inherit;font:inherit;font-size:22px;text-align:left}.ctiles b{font-size:15px;margin-top:4px}.ctiles small{font-size:12px;color:var(--mute)}
+.csec{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:8px;overflow:hidden}.csec>summary{cursor:pointer;list-style:none;padding:14px;font:800 17px "Barlow Condensed";text-transform:uppercase;display:flex;justify-content:space-between}.csec>summary::after{content:"⌄";color:var(--mute)}.csec[open]>summary::after{content:"⌃"}.csec>summary::-webkit-details-marker{display:none}
+.csec>.row,.csec>.rcard{margin:0 12px 8px}.csec>.row:last-child{margin-bottom:12px}
 .palm{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.palm>div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 4px;text-align:center;opacity:.55}.palm>div.on{opacity:1;border-color:#7a610f;background:linear-gradient(160deg,#3d3006,var(--card) 75%)}
 .palm span{font-size:22px;display:block}.palm b{display:block;font:800 24px "Barlow Condensed"}.palm small{display:block;font-size:11px;color:var(--mute);line-height:1.15}
+.palm0{background:var(--card);border:1px dashed var(--line2);border-radius:12px;padding:11px 12px;font-size:13.5px;color:var(--mute)}
 .palm2{display:grid;gap:6px;margin-top:6px}.palm2>div{display:flex;justify-content:space-between;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px}.palm2 b{font:800 18px "Barlow Condensed"}
 .gcomp{padding:12px 14px}.gcomp .gtop{gap:10px}.gti{flex:1;min-width:0}.gti h3{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gti small .link{padding:0;font-size:inherit;color:inherit;text-decoration:underline}
 .gsm{width:42px;height:42px;padding:0;flex:none;display:grid;place-items:center}.gsm .i{width:18px;height:18px}
@@ -789,7 +796,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.84"></script>
+<script src="engine.js?v=1.85"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -1210,37 +1217,46 @@ const DIVS=[["Départementale 4",0],["Départementale 3",1300],["Départementale
 function divOf(v){let i=0;DIVS.forEach((d,k)=>{if(v>=d[1])i=k});return i}
 function viewCareer(){const di=divOf(S.peak),nx=DIVS[di+1],pr=nx?cl((S.peak-DIVS[di][1])/(nx[1]-DIVS[di][1]),0,1):1;
   const done=S.bets.filter(b=>b.st==="won"||b.st==="lost"),W=done.filter(b=>b.st==="won");
-  const best=W.reduce((a,b)=>Math.max(a,b.pay),0),bestO=W.reduce((a,b)=>Math.max(a,b.odds),0);
+  const best=W.reduce((a,b)=>Math.max(a,b.pay-b.stake),0);
   let streak=0;for(const b of done.slice().sort((x,y)=>(y.done||0)-(x.done||0))){if(b.st==="won")streak++;else break}
-  const legs=S.bets.flatMap(b=>b.legs);
-  const SC=succOn();
-  let h=`<div class="pcard"><span class="bgnum">${di+1}</span><div class="who"><button class="avbtn" data-act="photo" aria-label="Changer ma photo">${avatar(S.pid||"me",S.name||"?",S.avv,"av",true)}<span class="cam">${ic("plus")}</span></button><div><h2>${esc(S.name||"Joueur")}</h2><span class="div">${ic("trophy")}${esc(DIVS[di][0])}</span></div></div>
-    <div class="prog"><div class="l"><span>Record : ${tok(S.peak)} jetons</span><span>${nx?"Prochain : "+esc(nx[0])+" ("+tok(nx[1])+")":"Sommet atteint !"}</span></div><div class="t"><i style="width:${pr*100}%"></i></div></div></div>
-  <div class="kpis" style="grid-template-columns:1fr"><div class="kgrid"><div><small>Solde</small><b>${tok(S.bal)}</b></div><div><small>Plus gros gain</small><b class="pos">${tok(best)}</b></div><div><small>Série</small><b>${streak}</b></div></div></div>
-  <button class="statbtn" data-act="stats">${ic("chart")}<span><b>Mes statistiques</b><small>Réussite par sport, championnat, type de pari, bilan par mois…</small></span><span class="arr">›</span></button>
-  <div class="h2"><h2>De l’amateur au pro</h2><span>Ta division suit ton record</span></div>
-  <div class="pyr">${DIVS.map((d,k)=>`<div class="${k===di?"cur":k<di?"done":""}" style="width:${48+k*4}%"><span>${esc(d[0])}</span><b>${tok(d[1])}</b></div>`).join("")}</div>
-  <div class="h2"><h2>Succès</h2><span>${SC.length}/${SUCC.length}</span></div>
-  ${succGrid(SC,true)}
-  ${rcodeCard()}
-  <button class="statbtn" data-act="mshare">${ic("share")}<span><b>Partager mon mois</b><small>Ton bilan du mois en image : gains, réussite, meilleure cote, ta place</small></span><span class="arr">›</span></button>
-  <button class="statbtn" data-act="help">${ic("info")}<span><b>Comment ça marche ?</b><small>Cotes, combinés, guildes, combats, compte… et le guide du premier pari</small></span><span class="arr">›</span></button>
-  <div class="h2"><h2>Réglages</h2></div>
-  <div class="row" data-act="fav" style="cursor:pointer"><div style="display:flex;align-items:center;gap:10px">${S.fav?(S.fav.logo?`<img class="crest" src="${esc(S.fav.logo)}" alt="" style="width:30px;height:30px;object-fit:contain" referrerpolicy="no-referrer">`:crest(S.fav.name,S.fav.sp)):`<span style="font-size:22px">❤️</span>`}<div><b>Équipe de cœur</b><small>${S.fav?esc(S.fav.name)+" · ses matchs en premier et un rappel les jours de match":"Choisis ton club : ses matchs en premier, un rappel les jours de match"}</small></div></div><button class="link">${S.fav?"Changer":"Choisir"}</button></div>
-  <div class="row"><div><b>Notifications</b><small>${pushState()==="on"?"Activées sur ce téléphone · <button class='link' data-act='pushtest' style='padding:0'>tester</button>":pushState()==="denied"?"Refusées : autorise-les dans les réglages du téléphone":pushState()==="na"?(IOS&&!STANDALONE?"Installe d’abord l’app sur l’écran d’accueil":"Pas disponibles sur ce téléphone"):"Duels, paris dark, chat, réactions…"}</small></div>
-    ${pushState()==="on"?`<button class="sw" role="switch" data-act="pushoff" aria-checked="true" aria-label="Notifications"></button>`:pushState()==="off"?`<button class="sw" role="switch" data-act="pushon" aria-checked="false" aria-label="Notifications"></button>`:""}</div>
-  ${pushState()==="on"?`<div class="row" style="flex-wrap:wrap;gap:8px"><div><b>Rappels pour parier</b><small>${["Aucun rappel","Un rappel à midi","À midi et vers 18 h : matchs du soir, prono, rivalité dans ta guilde"][S.remind??2]}</small></div>
-    <div class="seg" style="width:100%;margin:0">${[["2","2 / jour"],["1","1 / jour"],["0","Aucun"]].map(([v,l])=>`<button data-act="remind" data-v="${v}" aria-pressed="${String(S.remind??2)===v}">${l}</button>`).join("")}</div></div>`:""}
-  <div class="row"><div><b>Pseudo</b><small>${esc(S.name)}</small></div><button class="link" data-act="rename">Modifier</button></div>
-  ${STANDALONE?"":`<div class="row"><div><b>Installer l’app</b><small>Sur l’écran d’accueil de ton téléphone</small></div><button class="link" data-act="install">Comment ?</button></div>`}
-  <div class="row"><div><b>Récupérer un compte</b><small>Avec un code de compte, sur cet appareil</small></div><button class="link" data-act="xfer">Entrer un code</button></div>
-  <div class="row"><div><b>Règles et confidentialité</b><small>Le jeu, tes données, la modération</small></div><button class="link" data-act="legal">Lire</button></div>
-  <div class="row"><div><b>Nous écrire</b><small>Question, bug, idée, signalement</small></div><button class="link" data-act="contact">Écrire</button></div>
-  ${(S.blocked||[]).length?`<div class="row"><div><b>Joueurs bloqués</b><small>${S.blocked.length} joueur${S.blocked.length>1?"s":""}</small></div><button class="link" data-act="blocked">Gérer</button></div>`:""}
-  <div class="row"><div><b>Recommencer</b><small>Repartir de zéro avec 1 000 jetons</small></div><button class="link" data-act="reset" style="color:var(--loss)">Réinitialiser</button></div>
-  <div class="row"><div><b>Supprimer mon compte</b><small>Efface tout, définitivement</small></div><button class="link" data-act="delacc" style="color:var(--loss)">Supprimer</button></div>
-  <div class="info">${ic("info")}<span><b style="color:var(--ink)">Règles.</b> Les paris se ferment au coup d’envoi, sauf en direct sur les vrais matchs de foot (jusqu’à la 85<sup>e</sup>) et de rugby (jusqu’à la 72<sup>e</sup>), sur le résultat, les buts et les points. Un pari est réglé automatiquement dès que le score et la stat concernée sont connus. Si une stat n’est jamais publiée (48 h après le match) ou si le match est reporté, la sélection est remboursée (cote 1,00 dans un combiné).</span></div>`;
+  const SC=succOn(),rate=done.length?Math.round(W.length/done.length*100):0;
+  if(S.pid&&!U.mePal&&!U.mePalLoad){U.mePalLoad=1;api("profile",{id:S.pid}).then(r=>{U.mePal=r.pal||{};if(U.tab==="c"&&!U.open)render()}).catch(()=>{U.mePalLoad=0})}
+  const pushTxt=pushState()==="on"?"Activées sur ce téléphone · <button class='link' data-act='pushtest' style='padding:0'>tester</button>":pushState()==="denied"?"Refusées : autorise-les dans les réglages du téléphone":pushState()==="na"?(IOS&&!STANDALONE?"Installe d’abord l’app sur l’écran d’accueil":"Pas disponibles sur ce téléphone"):"Désactivées";
+  let h=`<div class="pcard chero"><span class="bgnum">${di+1}</span><div class="who"><button class="avbtn" data-act="photo" aria-label="Changer ma photo">${avatar(S.pid||"me",S.name||"?",S.avv,"av",true)}<span class="cam">${ic("plus")}</span></button>
+    <div><h2>${esc(S.name||"Joueur")}${S.fav?` <span class="cfav">${S.fav.logo?`<img src="${esc(S.fav.logo)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:"❤️"}</span>`:""}</h2><button class="div" data-act="divs">${ic("trophy")}${esc(DIVS[di][0])} ›</button></div></div>
+    <div class="prog"><div class="l"><span>Record : ${tok(S.peak)}</span><span>${nx?"Prochaine : "+esc(nx[0])+" à "+tok(nx[1]):"Sommet atteint !"}</span></div><div class="t"><i style="width:${pr*100}%"></i></div></div></div>
+  <div class="ckpi"><div><small>Jetons</small><b>${tok(S.bal)}</b></div><div><small>Réussite</small><b>${rate} %</b></div><div><small>Série</small><b>${streak}${streak>=3?" 🔥":""}</b></div><div><small>Plus gros gain</small><b class="pos">${best?"+"+tok(Math.round(best)):"—"}</b></div></div>
+  ${palmares({id:S.pid,pal:U.mePal,best:{odds:W.reduce((a,b)=>Math.max(a,b.odds),0),pay:best}})}
+  <button class="csucc" data-act="succ"><span><b>🏅 Succès</b><small>${SC.length} / ${SUCC.length} débloqués</small></span><span class="csi">${SUCC.filter(s=>SC.includes(s[0])).slice(-5).map(s=>ic(s[1])).join("")}</span><span class="arr">›</span></button>
+  <div class="ctiles"><button data-act="stats">📊<b>Mes stats</b><small>Par sport, par pari, par mois</small></button><button data-act="mshare">📤<b>Mon mois</b><small>Bilan en image</small></button>
+    <button data-act="prof" data-id="${esc(S.pid||"")}">👤<b>Mon profil</b><small>Ce que voient les autres</small></button><button data-act="help">❓<b>Aide</b><small>Comment ça marche</small></button></div>
+  <details class="csec"><summary>⚙️ Réglages</summary>
+    <div class="row" data-act="fav" style="cursor:pointer"><div><b>Équipe de cœur</b><small>${S.fav?esc(S.fav.name):"Ses matchs en premier et un rappel quand elle joue"}</small></div><button class="link" data-act="fav">${S.fav?"Changer":"Choisir"}</button></div>
+    <div class="row"><div><b>Notifications</b><small>${pushTxt}</small></div>
+      ${pushState()==="on"?`<button class="sw" role="switch" data-act="pushoff" aria-checked="true" aria-label="Notifications"></button>`:pushState()==="off"?`<button class="sw" role="switch" data-act="pushon" aria-checked="false" aria-label="Notifications"></button>`:""}</div>
+    ${pushState()==="on"?`<div class="row" style="flex-wrap:wrap;gap:8px"><div><b>Rappels pour parier</b><small>${["Aucun rappel","Un rappel à midi","À midi et vers 18 h"][S.remind??2]}</small></div>
+      <div class="seg" style="width:100%;margin:0">${[["2","2 / jour"],["1","1 / jour"],["0","Aucun"]].map(([v,l])=>`<button data-act="remind" data-v="${v}" aria-pressed="${String(S.remind??2)===v}">${l}</button>`).join("")}</div></div>`:""}
+    <div class="row"><div><b>Pseudo</b><small>${esc(S.name)}</small></div><button class="link" data-act="rename">Modifier</button></div>
+    <div class="row"><div><b>Photo de profil</b><small>Visible dans les classements et le chat</small></div><button class="link" data-act="photo">Changer</button></div>
+    ${STANDALONE?"":`<div class="row"><div><b>Installer l’app</b><small>Sur l’écran d’accueil de ton téléphone</small></div><button class="link" data-act="install">Comment ?</button></div>`}
+  </details>
+  <details class="csec"><summary>🔑 Mon compte</summary>
+    ${rcodeCard()}
+    <div class="row"><div><b>Récupérer un compte</b><small>Avec un code de compte, sur cet appareil</small></div><button class="link" data-act="xfer">Entrer un code</button></div>
+    <div class="row"><div><b>Recommencer</b><small>Repartir de zéro avec 1 000 jetons</small></div><button class="link" data-act="reset" style="color:var(--loss)">Réinitialiser</button></div>
+    <div class="row"><div><b>Supprimer mon compte</b><small>Efface tout, définitivement</small></div><button class="link" data-act="delacc" style="color:var(--loss)">Supprimer</button></div>
+  </details>
+  <details class="csec"><summary>📜 Aide et règles</summary>
+    <div class="row"><div><b>Comment ça marche ?</b><small>Cotes, combinés, guildes, combats, animations…</small></div><button class="link" data-act="help">Ouvrir</button></div>
+    <div class="row"><div><b>Règles et confidentialité</b><small>Le jeu, tes données, la modération</small></div><button class="link" data-act="legal">Lire</button></div>
+    <div class="row"><div><b>Nous écrire</b><small>Question, bug, idée, signalement</small></div><button class="link" data-act="contact">Écrire</button></div>
+    ${(S.blocked||[]).length?`<div class="row"><div><b>Joueurs bloqués</b><small>${S.blocked.length} joueur${S.blocked.length>1?"s":""}</small></div><button class="link" data-act="blocked">Gérer</button></div>`:""}
+  </details>`;
   return h+foot()}
+function openDivs(){const di=divOf(S.peak);U.open="divs";layer(`<div class="grab"><h3>De l’amateur au pro</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
+  <p class="note" style="text-align:left;margin-top:0">Ta division suit ton <b>record</b> de jetons : elle ne redescend jamais.</p>
+  <div class="pyr">${DIVS.map((d,k)=>`<div class="${k===di?"cur":k<di?"done":""}" style="width:${48+k*4}%"><span>${esc(d[0])}</span><b>${tok(d[1])}</b></div>`).join("")}</div>`)}
+function openSucc(){const SC=succOn();U.open="succ";layer(`<div class="grab"><h3>Succès · ${SC.length}/${SUCC.length}</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>${succGrid(SC,true)}`)}
 
 /* ---------- formulaires organisateur ---------- */
 const AMX={foot:9,rugby:8,tennis:5};   // niveaux amateurs (au-dessus : matchs pros du flux)
@@ -1459,6 +1475,8 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"help":openHelp();break;
     case"tshare":shareTicket(d.id);break;
     case"mshare":shareMonth();break;
+    case"divs":openDivs();break;
+    case"succ":openSucc();break;
     case"fxdemo":{const k=d.v,ru=k==="try";FXQ.push({k,team:ru?"Toulouse":k==="g"?"Rennes":"Lille",who:ru?"":k==="g"?"B. Dia":k==="yc"?"C. Verdonk":"M. Kjaergaard",min:67,m:ru?{h:"Toulouse",a:"Toulon",sc:[17,10]}:{h:"Rennes",a:"Lille",sc:k==="g"?[2,1]:[1,1]}});fxNext();break}
     case"gstats":if(U.open==="gmenu"){U.open=null;layer("")}openGStats();break;
     case"defigo":if(U.open&&U.open.startsWith("td:")){U.open=null;layer("")}defiGo(d.id);break;
@@ -1704,8 +1722,10 @@ function viewToday(v){const x=`<button class="x" data-act="close" aria-label="Fe
 function palmares(p){const a=p.pal||{},row=(U.lg.data&&U.lg.data.rows||[]).find(r=>String(r.id)===String(p.id))||{};
   const it=[[a.months||row.sc||0,"👑","mois gagné","mois gagnés"],[row.tr||0,"🏆","semaine gagnée","semaines gagnées"],[a.podiums||0,"🥉","podium du mois","podiums du mois"],[a.battles||0,"⚔️","combat gagné","combats gagnés"]];
   const best=a.best_odds||(p.best&&p.best.odds)||0,big=a.big_win||(p.best&&p.best.pay)||0;
-  return`<div class="grp">Palmarès</div><div class="palm">${it.map(([n,e,s1,s2])=>`<div class="${n?"on":""}"><span>${e}</span><b>${n}</b><small>${n>1?s2:s1}</small></div>`).join("")}</div>
-  ${best||big?`<div class="palm2">${best?`<div>🎯 Meilleure cote gagnée <b>${fr(best)}</b></div>`:""}${big?`<div>💰 Plus gros gain <b class="pos">+${tok(big)}</b></div>`:""}</div>`:""}`}
+  const any=it.some(x=>x[0]),mine=String(p.id)===String(S.pid);
+  return`<div class="grp">Palmarès</div>${any?`<div class="palm">${it.map(([n,e,s1,s2])=>`<div class="${n?"on":""}"><span>${e}</span><b>${n}</b><small>${n>1?s2:s1}</small></div>`).join("")}</div>`
+    :`<div class="palm0">🏆 ${mine?"Pas encore de titre : gagne une semaine ou un mois dans ta guilde, ou un combat de guildes !":"Pas encore de titre."}</div>`}
+  ${best||(big&&!mine)?`<div class="palm2">${best?`<div>🎯 Meilleure cote gagnée <b>${fr(best)}</b></div>`:""}${big&&!mine?`<div>💰 Plus gros gain <b class="pos">+${tok(big)}</b></div>`:""}</div>`:""}`}
 
 /* ---------- statistiques de la guilde ---------- */
 async function openGStats(){U.open="gstats";const head=`<div class="grab"><h3>Statistiques de la guilde</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
@@ -2203,10 +2223,10 @@ function viewProfile(p){const done=p.won+p.lost,rate=done?Math.round(p.won/done*
     <div><small>Gagnés</small><b class="pos">${p.won}</b></div><div><small>Meilleure cote</small><b>${p.best&&p.best.odds?fr(p.best.odds):"—"}</b></div><div><small>Plus gros gain</small><b class="pos">${p.best&&p.best.pay?"+"+tok(p.best.pay):"—"}</b></div></div>
   ${curve(p.hist,p.bal)}
   ${palmares(p)}
-  ${p.me?"":`<div class="pmod"><button class="link" data-act="rep" data-k="player" data-id="${esc(p.id)}" data-w="le pseudo « ${esc(p.name)} »">🚩 Signaler le pseudo</button><button class="link" data-act="block" data-id="${esc(p.id)}" data-n="${esc(p.name)}">${blocked(p.id)?"Débloquer":"🚫 Bloquer"}</button></div>`}
   ${(p.badges||[]).length?`<div class="grp">Succès (${p.badges.length}/${SUCC.length})</div>${succGrid(p.badges)}`:""}
   <div class="grp">Paris en cours (${open.length})</div>${open.length?open.map(bet).join(""):`<p class="note">Aucun pari en cours.</p>`}
-  <div class="grp">Derniers paris</div>${past.length?past.map(bet).join(""):`<p class="note">Pas encore de pari terminé.</p>`}`}
+  <div class="grp">Derniers paris</div>${past.length?past.map(bet).join(""):`<p class="note">Pas encore de pari terminé.</p>`}
+  ${p.me?"":`<div class="pmod"><button class="link" data-act="rep" data-k="player" data-id="${esc(p.id)}" data-w="le pseudo « ${esc(p.name)} »">🚩 Signaler le pseudo</button><button class="link" data-act="block" data-id="${esc(p.id)}" data-n="${esc(p.name)}">${blocked(p.id)?"Débloquer":"🚫 Bloquer"}</button></div>`}`}
 
 /* ---------- événements : grandes compétitions, affichées seulement pendant qu'elles se jouent ---------- */
 const EVENTS=[
@@ -3028,7 +3048,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.84";
+const VERSION="1.85";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
