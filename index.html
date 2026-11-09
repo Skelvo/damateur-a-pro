@@ -1620,7 +1620,8 @@ async function api(action,data={}){const c=new AbortController(),t=setTimeout(()
     if(r.status===401&&action!=="session"&&S.tok){S.tok="";saveLocal()}   // compte inconnu du serveur : on en recrée un
     if(!r.ok)throw Object.assign(new Error(j.error||r.status),{code:j.error||String(r.status)});return j}
   finally{clearTimeout(t)}}
-function wheelSync(j){const w=j&&j.wheel;if(!w)return;let ch=false;if(w.b&&w.b>(S.bonus||"")){S.bonus=w.b;ch=true}if(w.x&&w.x>(S.extraSpin||"")){S.extraSpin=w.x;ch=true}if(ch){saveLocal();if(!U.open)render()}}
+function wheelSync(j){if(j&&j.av!=null&&j.av!==(S.avv||0)){S.avv=j.av;S.avatar=null;saveLocal();if(!U.open)render()}   // photo du compte (après reconnexion, autre téléphone…)
+  const w=j&&j.wheel;if(!w)return;let ch=false;if(w.b&&w.b>(S.bonus||"")){S.bonus=w.b;ch=true}if(w.x&&w.x>(S.extraSpin||"")){S.extraSpin=w.x;ch=true}if(ch){saveLocal();if(!U.open)render()}}
 const myStats=()=>{const d=S.bets.filter(b=>b.st==="won"||b.st==="lost");return{won:d.filter(b=>b.st==="won").length,lost:d.filter(b=>b.st==="lost").length}};
 let sessP=null;
 function ensureSession(){if(S.tok)return Promise.resolve(true);if(!S.name)return Promise.resolve(false);
@@ -1965,13 +1966,13 @@ function curve(H,now){if(!H||!H.length)return"";const pts=H.map(([d,v])=>[Date.U
 
 /* ---------- photo de profil : choisir, déplacer, zoomer, valider ---------- */
 const PH={img:null,x:0,y:0,z:1,min:1,box:260,pts:new Map(),d0:0,z0:1};
-function openPhoto(){U.open="photo";layer(`<div class="grab"><h3>Ma photo</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
-  <div class="crop" id="crop"><div class="cimg" id="cimg">${S.avatar?`<img class="cur" src="${S.avatar}" alt="">`:""}</div><div class="cmask"></div>${S.avatar?"":`<div class="cempty">${ic("user")}<span>Aucune photo</span></div>`}</div>
+function openPhoto(){U.open="photo";const CUR=S.avatar||(S.avv&&S.pid?avUrl(S.pid,S.avv):null);layer(`<div class="grab"><h3>Ma photo</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
+  <div class="crop" id="crop"><div class="cimg" id="cimg">${CUR?`<img class="cur" src="${CUR}" alt="">`:""}</div><div class="cmask"></div>${CUR?"":`<div class="cempty">${ic("user")}<span>Aucune photo</span></div>`}</div>
   <label class="zoom" id="zoomw" hidden>${ic("target")}<input type="range" id="zoom" min="1" max="4" step="0.01" value="1" aria-label="Zoom"></label>
-  <p class="note" id="phhint" style="text-align:center">${S.avatar?"Ta photo actuelle.":"Choisis une photo dans ta galerie ou prends-en une."}</p>
-  <label class="btn ghost wide" style="margin-bottom:8px">${ic("plus")} ${S.avatar?"Choisir une autre photo":"Choisir une photo"}<input type="file" id="phfile" accept="image/*" hidden></label>
+  <p class="note" id="phhint" style="text-align:center">${CUR?"Ta photo actuelle.":"Choisis une photo dans ta galerie ou prends-en une."}</p>
+  <label class="btn ghost wide" style="margin-bottom:8px">${ic("plus")} ${CUR?"Choisir une autre photo":"Choisir une photo"}<input type="file" id="phfile" accept="image/*" hidden></label>
   <button class="btn gold wide" data-act="phok" id="phok" hidden>Valider ma photo</button>
-  ${S.avatar?`<button class="link" data-act="phdel" style="display:block;margin:10px auto 0;color:var(--loss)">Supprimer ma photo</button>`:""}`);
+  ${CUR?`<button class="link" data-act="phdel" style="display:block;margin:10px auto 0;color:var(--loss)">Supprimer ma photo</button>`:""}`);
   $("#phfile").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(f)loadPhoto(f)})}
 function loadPhoto(file){const url=URL.createObjectURL(file),img=new Image();
   img.onload=()=>{PH.img=img;const B=PH.box=$("#crop").clientWidth;PH.min=Math.max(B/img.naturalWidth,B/img.naturalHeight);PH.z=1;PH.x=0;PH.y=0;
@@ -2543,7 +2544,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.58";
+const VERSION="1.59";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

@@ -462,7 +462,7 @@ const ACTIONS = {
     const day = (v) => (/^\d{8}$/.test(String(v || "")) ? String(v) : "");
     const wr = (await s.query(`update players set wheel = jsonb_build_object(
         'b', greatest(coalesce(wheel->>'b', ''), $2::text), 'x', greatest(coalesce(wheel->>'x', ''), $3::text))
-      where id = $1 returning wheel`, [p.id, day(b.wb), day(b.wx)]))[0];
+      where id = $1 returning wheel, avatar_v`, [p.id, day(b.wb), day(b.wx)]))[0];
     if (b.profits && typeof b.profits === "object") {
       const P = Object.entries(b.profits).filter(([k]) => /^\d{4}-\d{2}(-\d{2})?$/.test(k) && k >= "2026-10").slice(0, 40);
       for (const [per, g] of P) await s.query(`insert into profits (player, per, gain) values ($1, $2, $3::numeric) on conflict (player, per) do update set gain = excluded.gain`,
@@ -479,11 +479,11 @@ const ACTIONS = {
       try {
         await s.query(`update players set name = $2 where id = $1`, [p.id, name]);
       } catch (e) {
-        if (isTaken(e)) return { ok: true, name_taken: true, name: p.name, wheel: wr && wr.wheel };
+        if (isTaken(e)) return { ok: true, name_taken: true, name: p.name, wheel: wr && wr.wheel, av: wr ? wr.avatar_v || 0 : null };
         throw e;
       }
     }
-    return { ok: true, name: name || p.name, wheel: wr && wr.wheel };
+    return { ok: true, name: name || p.name, wheel: wr && wr.wheel, av: wr ? wr.avatar_v || 0 : null };
   },
 
   // Code de transfert : emporter son compte (jetons, paris, défis…) dans l'app installée ou sur un
