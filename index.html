@@ -199,7 +199,7 @@ img.crest{object-fit:contain}
 .link{border:0;background:none;color:var(--acc);font-weight:600;padding:4px}
 
 /* ---------- bottom nav ---------- */
-.nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:color-mix(in srgb,var(--bg2) 92%,transparent);backdrop-filter:none;border-top:1px solid var(--line);padding-bottom:var(--safe-b)}
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#0e1714;border-top:1px solid var(--line);padding-bottom:var(--safe-b)}
 .nav .wrap{display:grid;grid-template-columns:repeat(4,1fr)}
 .nav button{position:relative;border:0;background:none;padding:10px 0 9px;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--mute);font:600 12px Barlow,sans-serif}
 .nav button .i{width:24px;height:24px}
@@ -773,7 +773,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.80"></script>
+<script src="engine.js?v=1.81"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -2987,7 +2987,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.80";
+const VERSION="1.81";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
