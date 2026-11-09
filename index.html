@@ -1633,8 +1633,8 @@ function viewLeagues(){const L=U.lg,d=L.data;
     <div><b>${esc(r.name)}${favCrest(r.fav)}${r.id===d.me?" (toi)":""}${r.sc?` <span class="trs crw">${ic("crown")}${r.sc>1?r.sc:""}</span>`:""}${r.tr?` <span class="trs">${ic("trophy")}${r.tr>1?r.tr:""}</span>`:""}</b><small>${r.won} gagné${r.won>1?"s":""} · ${r.lost} perdu${r.lost>1?"s":""} · record ${tok(r.peak)}</small></div>
     <span class="v ${cls(r)}">${val(r)}</span></div>`).join("");
   if(!cur&&d.rank&&!rows.some(r=>r.id===d.me))h+=`<div class="note" style="text-align:center">…</div>`;
-  const note=M==="week"?`« Semaine » = jetons gagnés depuis lundi : repart à zéro chaque lundi. Le meilleur de la semaine gagne un trophée ${ic("trophy")}.`
-    :M==="season"?`« Mois » = jetons gagnés depuis le 1er du mois : le classement repart à zéro chaque mois, tes jetons ne bougent pas. Le premier du mois est sacré champion ${ic("crown")} pour toujours.`
+  const note=M==="week"?`« Semaine » = jetons gagnés <b>en pariant</b> depuis lundi (la roue, les défis et les bonus ne comptent pas). Repart à zéro chaque lundi ; le meilleur gagne un trophée ${ic("trophy")}.`
+    :M==="season"?`« Mois » = jetons gagnés <b>en pariant</b> depuis le 1er du mois : seuls les paris comptent (pas la roue, les défis, le prono ni le match de la ligue). Paris gagnés + encaissés − paris perdus. Repart à zéro chaque mois ; le premier est sacré champion ${ic("crown")}.`
     :"« Jetons » = tout ce que tu as, depuis le début.";
   return h+`<p class="note">${note}</p>`+lgFooter(cur)}
 function lgFooter(cur){return`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px"><button class="btn" data-act="lgnew">${ic("plus")} Créer</button><button class="btn ghost" data-act="lgjoin">Rejoindre</button></div>
@@ -1674,9 +1674,16 @@ function avatar(id,name,v,cls,mine){const meNow=mine||(U.lg.data&&String(id)===S
   const src=meNow&&S.avatar?S.avatar:v?avUrl(id,v):"";
   return`<span class="${cls}" style="background:${avc(name||"?")}">${src?`<img src="${src}" alt="" decoding="async" onerror="this.remove()">`:""}<i>${esc((name||"?")[0].toUpperCase())}</i></span>`}
 // résumé des paris envoyé au serveur (visible par les membres de mes ligues)
+// gains des PARIS seuls (gain net : paiement − mise ; perdu = −mise), par semaine (lundi) et par mois, d'après la date de fin du pari
+function betProfits(){const out={},lim=Date.now()-75*DAY;
+  for(const b of S.bets){if(!["won","lost","cashed"].includes(b.st))continue;const t=b.done||b.at;if(!t||t<lim)continue;
+    const g=b.st==="lost"?-b.stake:(b.pay||0)-b.stake,d=new Date(t),mon=new Date(d);mon.setHours(12,0,0,0);mon.setDate(mon.getDate()-((mon.getDay()+6)%7));
+    const wk=mon.getFullYear()+"-"+String(mon.getMonth()+1).padStart(2,"0")+"-"+String(mon.getDate()).padStart(2,"0"),mo=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+    out[wk]=(out[wk]||0)+g;out[mo]=(out[mo]||0)+g}
+  for(const k in out)out[k]=Math.round(out[k]);return out}
 function betsPayload(){const B=S.bets.slice(-40).reverse().map(b=>({at:b.at,done:b.done||0,st:b.st,stake:b.stake,odds:b.odds,pay:b.pay||0,
     legs:b.legs.slice(0,8).map(L=>({l:String(L.l).slice(0,60),ml:String(L.ml||"").slice(0,60),mt:String(L.mt||"").slice(0,40),r:L.r||null}))}));
-  const W=S.bets.filter(b=>b.st==="won");return{bets:B,best:{odds:W.reduce((a,b)=>Math.max(a,b.odds),0),pay:W.reduce((a,b)=>Math.max(a,b.pay||0),0)},badges:succOn()}}
+  const W=S.bets.filter(b=>b.st==="won");return{bets:B,best:{odds:W.reduce((a,b)=>Math.max(a,b.odds),0),pay:W.reduce((a,b)=>Math.max(a,b.pay||0),0)},badges:succOn(),profits:betProfits()}}
 
 /* ---------- fiche d'un joueur ---------- */
 async function openProfile(id){const me=U.lg.data&&String(id)===String(U.lg.data.me)||String(id)===String(S.pid);
@@ -2218,23 +2225,28 @@ function checkDefis(){const D=defisState();for(const d of D)if(d.n>=d.g&&!d.got&
 /* ---------- roue de la chance ----------
    8 cases, chacune exactement 1 chance sur 8 : tirage uniforme avec le générateur
    aléatoire cryptographique du navigateur (rejet des valeurs biaisées). */
-const WHEEL=[25,50,75,100,150,200,300,500],WCOL=["#35d07f","#ffd23f","#ff7a45","#5fa8ff","#d7f25a","#c084fc","#ff5a5f","#f8fafc"];
+// chances en % (de plus en plus faibles) : la taille de chaque case est proportionnelle à sa chance
+const WHEEL=[25,50,75,100,150,200,300,500],WP=[28,24,18,13,8,5,3,1],WCOL=["#35d07f","#ffd23f","#ff7a45","#5fa8ff","#d7f25a","#c084fc","#ff5a5f","#f8fafc"];
 function fairIndex(n){const a=new Uint32Array(1),lim=Math.floor(4294967296/n)*n;do{crypto.getRandomValues(a)}while(a[0]>=lim);return a[0]%n}
-// 8 cases égales (1 chance sur 8) + une fine case JACKPOT tirée à part (1 chance sur 10 millions)
-const JACKPOT=1000000,JACK_ODDS=10000000,JW=8,WW=(360-JW)/WHEEL.length;
-const wCenter=i=>i<0?7.5*WW+JW/2:i*WW;
+// cases de taille proportionnelle à leur chance + une fine case JACKPOT tirée à part (1 chance sur 10 millions)
+const JACKPOT=1000000,JACK_ODDS=10000000,JW=8,WSPAN=360-JW;
+const WA=(()=>{let a=0;return WP.map(p=>{const w=p/100*WSPAN,r=[a,a+w];a+=w;return r})})();   // [début, fin] en degrés
+const wCenter=i=>i<0?WSPAN+JW/2:(WA[i][0]+WA[i][1])/2;
+function wheelPick(){const r=fairIndex(100);let c=0;for(let i=0;i<WP.length;i++){c+=WP[i];if(r<c)return i}return 0}
 function wheelSvg(){const n=WHEEL.length,R=140,c=150,pt=d=>{const r=(d-90)*Math.PI/180;return(c+R*Math.cos(r)).toFixed(2)+" "+(c+R*Math.sin(r)).toFixed(2)};
-  const j0=7.5*WW,j1=j0+JW;
+  const j0=WSPAN,j1=360;
   return`<svg viewBox="0 0 300 300" class="wheel" id="wheel" aria-hidden="true"><defs><linearGradient id="jg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3b0"/><stop offset=".5" stop-color="#ffd23f"/><stop offset="1" stop-color="#b8860b"/></linearGradient></defs>
-    ${WHEEL.map((v,i)=>{const a0=i*WW-WW/2,a1=a0+WW,dark=lum(WCOL[i])>.55;
-    return`<path d="M150 150L${pt(a0)}A${R} ${R} 0 0 1 ${pt(a1)}Z" fill="${WCOL[i]}" stroke="#0a110f" stroke-width="3"/>
-    <g transform="rotate(${i*WW} 150 150)"><text x="150" y="52" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-weight="800" font-size="30" fill="${dark?"#0a110f":"#fff"}">${v}</text>
-    <text x="150" y="72" text-anchor="middle" font-family="Barlow,sans-serif" font-weight="700" font-size="11" fill="${dark?"#0a110f":"#fff"}" opacity=".75">JETONS</text></g>`}).join("")}
+    ${WHEEL.map((v,i)=>{const [a0,a1]=WA[i],w=a1-a0,mid=(a0+a1)/2,dark=lum(WCOL[i])>.55,col=dark?"#0a110f":"#fff",big=w>=38;
+    return`<path d="M150 150L${pt(a0)}A${R} ${R} 0 ${w>180?1:0} 1 ${pt(a1)}Z" fill="${WCOL[i]}" stroke="#0a110f" stroke-width="3"/>
+    <g transform="rotate(${mid} 150 150)">${big?`<text x="150" y="50" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-weight="800" font-size="30" fill="${col}">${v}</text>
+    <text x="150" y="68" text-anchor="middle" font-family="Barlow,sans-serif" font-weight="700" font-size="11" fill="${col}" opacity=".75">JETONS</text>
+    <text x="150" y="86" text-anchor="middle" font-family="Barlow,sans-serif" font-weight="800" font-size="12" fill="${col}">${WP[i]} %</text>`
+    :`<text transform="translate(150 ${w>=14?66:72}) rotate(-90)" text-anchor="middle" dominant-baseline="central" font-family="Barlow Condensed,sans-serif" font-weight="800" font-size="${w>=14?17:11}" fill="${col}">${v}${w>=14?` · ${WP[i]}%`:""}</text>`}</g>`}).join("")}
     <path d="M150 150L${pt(j0)}A${R} ${R} 0 0 1 ${pt(j1)}Z" fill="#0a110f" stroke="#ffd23f" stroke-width="1.5"/>
     <g transform="rotate(${(j0+j1)/2} 150 150)"><text transform="translate(150 86) rotate(-90)" text-anchor="middle" dominant-baseline="central" font-family="Barlow Condensed,sans-serif" font-weight="800" font-size="10.5" fill="url(#jg)" letter-spacing=".5">1 000 000</text></g>
     <circle cx="150" cy="150" r="141" fill="none" stroke="#ffd23f" stroke-width="6"/>
-    ${Array.from({length:n},(_,i)=>{const r=(i*WW+WW/2-90)*Math.PI/180;return`<circle cx="${(150+141*Math.cos(r)).toFixed(1)}" cy="${(150+141*Math.sin(r)).toFixed(1)}" r="4.5" fill="#fff"/>`}).join("")}
-    <circle cx="${(150+141*Math.cos((j1-90)*Math.PI/180)).toFixed(1)}" cy="${(150+141*Math.sin((j1-90)*Math.PI/180)).toFixed(1)}" r="4.5" fill="#fff"/>
+    ${WA.map(([a0])=>{const r=(a0-90)*Math.PI/180;return`<circle cx="${(150+141*Math.cos(r)).toFixed(1)}" cy="${(150+141*Math.sin(r)).toFixed(1)}" r="4.5" fill="#fff"/>`}).join("")}
+    <circle cx="150" cy="9" r="4.5" fill="#fff"/>
     <circle cx="150" cy="150" r="26" fill="#0a110f" stroke="#ffd23f" stroke-width="5"/></svg>`}
 function wheelMini(){return`<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">${WCOL.map((col,i)=>{const a0=(i*45-112.5)*Math.PI/180,a1=a0+Math.PI/4;
   return`<path d="M12 12L${(12+11*Math.cos(a0)).toFixed(2)} ${(12+11*Math.sin(a0)).toFixed(2)}A11 11 0 0 1 ${(12+11*Math.cos(a1)).toFixed(2)} ${(12+11*Math.sin(a1)).toFixed(2)}Z" fill="${col}"/>`}).join("")}<circle cx="12" cy="12" r="11" fill="none" stroke="#2a1d00" stroke-width="1.5"/><circle cx="12" cy="12" r="3" fill="#2a1d00"/></svg>`}
@@ -2248,13 +2260,13 @@ function viewWheel(){const done=!wheelAvail();
   <div class="wheelbox"><div class="pointer"></div>${wheelSvg()}</div>
   <div id="wres" class="wres">${done&&S.wheel&&S.wheel.d===today()?`Aujourd’hui : <b>+${tok(S.wheel.v)} jetons</b>`:extraAvail()?"🎁 Tour bonus offert à tout le monde aujourd’hui !":"Un tour gratuit par jour"}</div>
   <button class="btn gold wide" data-act="spin" id="spin" ${done?"disabled":""}>${done?"Prochain tour dans "+nextReset():extraAvail()?"Lancer le tour bonus":"Lancer la roue"}</button>
-  <div class="info">${ic("info")}<span><b style="color:var(--ink)">100 % hasard.</b> Les 8 cases de jetons ont la même chance : 1 sur 8 chacune. La fine case dorée <b style="color:var(--sel)">JACKPOT 1 000 000</b> est tirée à part : <b style="color:var(--ink)">1 chance sur 10 millions</b> à chaque tour. Le tirage utilise le générateur aléatoire sécurisé du téléphone, sans aucun réglage caché.</span></div>`}
+  <div class="info">${ic("info")}<span><b style="color:var(--ink)">100 % hasard.</b> Plus le gain est gros, plus il est rare : ${WHEEL.map((v,i)=>`<b style="color:var(--ink)">${v}</b> ${WP[i]} %`).join(" · ")}. La taille de chaque case correspond à sa chance. Les jetons de la roue <b style="color:var(--ink)">ne comptent pas</b> dans les classements. La fine case dorée <b style="color:var(--sel)">JACKPOT 1 000 000</b> est tirée à part : <b style="color:var(--ink)">1 chance sur 10 millions</b> à chaque tour. Le tirage utilise le générateur aléatoire sécurisé du téléphone, sans aucun réglage caché.</span></div>`}
 let spinning=false;
 function spin(){if(spinning||!wheelAvail())return;spinning=true;const isExtra=extraAvail();
-  const jack=fairIndex(JACK_ODDS)===0,i=jack?-1:fairIndex(WHEEL.length),v=jack?JACKPOT:WHEEL[i];
+  const jack=fairIndex(JACK_ODDS)===0,i=jack?-1:wheelPick(),v=jack?JACKPOT:WHEEL[i];
   // le gain est enregistré tout de suite (recharger la page ne permet pas de relancer)
   if(isExtra)S.extraSpin=today();S.bonus=today();S.wheel={d:today(),v};S.bal+=v;S.peak=Math.max(S.peak,S.bal);if(jack)S.jackpot=(S.jackpot||0)+1;save();if(v>=200)postAct("wheel",{v});
-  const w=$("#wheel"),b=$("#spin"),jit=(Math.random()-.5)*(jack?JW:WW)*.7,deg=360*7-wCenter(i)+jit;
+  const w=$("#wheel"),b=$("#spin"),jit=(Math.random()-.5)*(jack?JW:WA[i][1]-WA[i][0])*.7,deg=360*7-wCenter(i)+jit;
   if(b){b.disabled=true;b.textContent="Ça tourne…"}
   const end=()=>{spinning=false;$("#bal").textContent=tok(S.bal);bump();
     if($("#wres"))$("#wres").innerHTML=`Gagné : <b>+${tok(v)} jetons</b>`;if($("#spin")){if(extraAvail()){$("#spin").disabled=false;$("#spin").textContent="Lancer le tour bonus"}else $("#spin").textContent="Prochain tour dans "+nextReset()}
@@ -2357,7 +2369,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.42";
+const VERSION="1.43";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

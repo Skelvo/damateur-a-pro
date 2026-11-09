@@ -57,15 +57,20 @@ const MONTH = `to_char(now() at time zone 'Europe/Paris', 'YYYY-MM')`;
 const PREV_WEEK = `to_char(date_trunc('week', now() at time zone 'Europe/Paris') - interval '7 days', 'YYYY-MM-DD')`;
 const PREV_MONTH = `to_char(date_trunc('month', now() at time zone 'Europe/Paris') - interval '1 month', 'YYYY-MM')`;
 const BOARD_COLS = `p.id, p.name, p.bal::float8 as bal, p.peak::float8 as peak, p.won, p.lost, p.avatar_v, p.fav, p.badges,
-  (case when p.week = ${WEEK} then p.bal - coalesce(p.week_bal, p.bal) else 0 end)::float8 as week_gain,
-  (case when p.month = ${MONTH} then p.bal - coalesce(p.month_bal, p.bal) else 0 end)::float8 as month_gain`;
+  coalesce((select x.gain from profits x where x.player = p.id and x.per = ${WEEK}), 0)::float8 as week_gain,
+  coalesce((select x.gain from profits x where x.player = p.id and x.per = ${MONTH}), 0)::float8 as month_gain`;
 // Gains par semaine (ou par mois) des membres d'une ligue, y compris la dernière période de ceux
 // qui n'ont pas rouvert l'app depuis ; rk = place dans la ligue pour cette période.
+// Depuis le 9 novembre 2026, seuls les PARIS comptent (table profits, envoyée par chaque téléphone) :
+// la roue, les défis, le prono et le match de la ligue ne comptent plus. Avant, c'était l'écart de solde.
+const CUT = { week: "2026-11-09", month: "2026-11" };
 const periodGains = (tbl, col, cur, bal) => `with mem as (select player from league_members where code = $1),
-  g as (select w.player, w.${col} as per, w.gain from ${tbl} w join mem on mem.player = w.player
+  g as (select pr.player, pr.per, pr.gain from profits pr join mem on mem.player = pr.player where length(pr.per) = ${col === "week" ? 10 : 7} and pr.per >= '${CUT[col]}'
+        union all
+        select w.player, w.${col} as per, w.gain from ${tbl} w join mem on mem.player = w.player where w.${col} < '${CUT[col]}'
         union all
         select p.id, p.${col}, p.bal - coalesce(p.${bal}, p.bal) from players p join mem on mem.player = p.id
-          where p.${col} is not null and p.${col} <> ${cur}
+          where p.${col} is not null and p.${col} <> ${cur} and p.${col} < '${CUT[col]}'
             and not exists (select 1 from ${tbl} w2 where w2.player = p.id and w2.${col} = p.${col})),
   r as (select player, per, gain::float8 as gain, rank() over (partition by per order by gain desc) as rk from g)`;
 const MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
@@ -371,6 +376,11 @@ const ACTIONS = {
       [p.id, num(b.bal, 0, MAX_BAL), num(b.peak, 0, MAX_BAL), int(b.won, 0, 1e7), int(b.lost, 0, 1e7)]);
     await s.query(`insert into bal_hist (player, day, bal) values ($1, to_char(now() at time zone 'Europe/Paris', 'YYYYMMDD'), $2::numeric)
        on conflict (player, day) do update set bal = excluded.bal`, [p.id, num(b.bal, 0, MAX_BAL)]);
+    if (b.profits && typeof b.profits === "object") {
+      const P = Object.entries(b.profits).filter(([k]) => /^\d{4}-\d{2}(-\d{2})?$/.test(k) && k >= "2026-10").slice(0, 40);
+      for (const [per, g] of P) await s.query(`insert into profits (player, per, gain) values ($1, $2, $3::numeric) on conflict (player, per) do update set gain = excluded.gain`,
+        [p.id, per, num(g, -MAX_BAL, MAX_BAL)]);
+    }
     if (Array.isArray(b.badges)) await s.query(`update players set badges = $2::jsonb where id = $1`,
       [p.id, JSON.stringify([...new Set(b.badges.map((x) => cleanName(x, 20)).filter(Boolean))].slice(0, 60))]);
     if (Array.isArray(b.bets)) {
@@ -518,9 +528,9 @@ const ACTIONS = {
       rows = await s.query(
         `(select ${BOARD_COLS} from players p where p.seen_at > now() - interval '60 days' order by p.bal desc limit 100)
          union
-         (select ${BOARD_COLS} from players p where p.week = ${WEEK} order by p.bal - coalesce(p.week_bal, p.bal) desc limit 100)
+         (select ${BOARD_COLS} from players p where p.week = ${WEEK} order by week_gain desc limit 100)
          union
-         (select ${BOARD_COLS} from players p where p.month = ${MONTH} order by p.bal - coalesce(p.month_bal, p.bal) desc limit 100)
+         (select ${BOARD_COLS} from players p where p.month = ${MONTH} order by month_gain desc limit 100)
          union
          (select ${BOARD_COLS} from players p where p.id = $1)`, [p.id]);
       total = (await s.query(`select count(*)::int as n from players where seen_at > now() - interval '60 days'`))[0].n;

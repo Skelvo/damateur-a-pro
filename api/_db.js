@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "15";
+const SCHEMA_VERSION = "16";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -187,6 +187,12 @@ const STATEMENTS = [
      primary key (player, day))`,
   // ligues secrètes (côté dark caché)
   `alter table leagues add column if not exists dark boolean not null default false`,
+  // gains des paris seuls, par semaine (YYYY-MM-DD, le lundi) et par mois (YYYY-MM) : base des classements
+  `create table if not exists profits (
+     player bigint not null references players(id) on delete cascade,
+     per text not null,
+     gain numeric not null,
+     primary key (player, per))`,
   `create table if not exists rate_hits (key text not null, win bigint not null, n int not null default 0, primary key (key, win))`,
 ];
 
