@@ -2244,7 +2244,7 @@ function wheelSvg(){const n=WHEEL.length,R=140,c=150,pt=d=>{const r=(d-90)*Math.
     :`<text x="150" y="44" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-weight="800" font-size="${w>=28?26:22}" fill="${col}">${v}</text>
     <text x="150" y="60" text-anchor="middle" font-family="Barlow,sans-serif" font-weight="800" font-size="10.5" fill="${col}" opacity=".9">${WP[i]} %</text>`}</g>`}).join("")}
     <path d="M150 150L${pt(j0)}A${R} ${R} 0 0 1 ${pt(j1)}Z" fill="#0a110f" stroke="#ffd23f" stroke-width="1.5"/>
-    <g transform="rotate(${(j0+j1)/2} 150 150)"><text transform="translate(150 76) rotate(-90)" text-anchor="middle" dominant-baseline="central" font-family="Barlow Condensed,sans-serif" font-weight="800" font-size="14" fill="url(#jg)" letter-spacing=".3">1 000 000</text></g>
+    <g transform="rotate(${(j0+j1)/2} 150 150)"><text transform="translate(150 50) rotate(-90)" text-anchor="middle" dominant-baseline="central" font-family="Barlow Condensed,sans-serif" font-weight="800" font-size="14" fill="url(#jg)" letter-spacing=".3">1 000 000</text></g>
     <circle cx="150" cy="150" r="141" fill="none" stroke="#ffd23f" stroke-width="6"/>
     ${WA.map(([a0])=>{const r=(a0-90)*Math.PI/180;return`<circle cx="${(150+141*Math.cos(r)).toFixed(1)}" cy="${(150+141*Math.sin(r)).toFixed(1)}" r="4.5" fill="#fff"/>`}).join("")}
     <circle cx="150" cy="9" r="4.5" fill="#fff"/>
@@ -2370,7 +2370,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.45";
+const VERSION="1.46";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
