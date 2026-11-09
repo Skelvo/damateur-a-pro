@@ -350,6 +350,62 @@ async function ensurePrizes(s, month) {
   return true;
 }
 
+// ---- Notifications de paris (appelé toutes les ~10 min par GitHub Actions, sans clé : idempotent et limité) ----
+// Avant le coup d'envoi (≤ 20 min) : « ton match commence » ; matchs tous finis : gagné / perdu (paris 1N2) ou « terminé ».
+const ESPN_API = "https://site.api.espn.com/apis/site/v2/sports/";
+async function espnJSON(u) { const c = new AbortController(), t = setTimeout(() => c.abort(), 7000); try { const r = await fetch(u, { signal: c.signal }); if (!r.ok) throw new Error(r.status); return await r.json(); } finally { clearTimeout(t); } }
+const sentOnce = async (s, key) => !!(await s.query(`insert into sent_notes (key) values ($1) on conflict do nothing returning key`, [key]))[0];
+async function tick(s) {
+  if (await overLimit("tick:global", 1, 240)) return { skipped: "trop tôt" };
+  await s.query(`delete from sent_notes where at < now() - interval '30 days'`);
+  const ppl = await s.query(`select p.id, p.bets from players p where p.bets is not null and exists (select 1 from push_subs x where x.player = p.id)`);
+  const now = Date.now(), out = { ko: 0, end: 0, fetched: 0 };
+  const open = [];
+  for (const p of ppl) for (const b of (p.bets.list || [])) if (b.st === "open" && b.id && Array.isArray(b.legs) && b.legs.length && b.legs.every((L) => L.e && L.p && L.t)) open.push({ pid: p.id, b });
+  // 1) coup d'envoi imminent (une fois par joueur et par match)
+  for (const { pid, b } of open) for (const L of b.legs) {
+    if (L.t - now > 0 && L.t - now <= 20 * 60e3 && await sentOnce(s, `ko:${pid}:${L.p}:${L.e}`)) {
+      await notify(s, [pid], { title: `⏱️ ${L.ml || "Ton match"} commence à ${hhmm(L.t)}`, body: `Ton pari : ${L.l}${b.legs.length > 1 ? ` (combiné de ${b.legs.length})` : ""} · mise ${b.stake}`, url: "./?go=bets", tag: "ko-" + L.e });
+      out.ko++;
+    }
+  }
+  // 2) fin des matchs : on ne regarde que les paris dont tous les matchs ont commencé il y a plus de 1 h 45
+  let cand = open.filter(({ b }) => b.legs.every((L) => now - L.t > 105 * 60e3) && now - Math.max(...b.legs.map((L) => L.t)) < 3 * 864e5);
+  if (cand.length) {
+    const done = new Set((await s.query(`select key from sent_notes where key = any($1::text[])`, [cand.map(({ pid, b }) => `end:${pid}:${b.id}`)])).map((x) => x.key));
+    cand = cand.filter(({ pid, b }) => !done.has(`end:${pid}:${b.id}`));
+  }
+  const res = {};
+  for (const { b } of cand) for (const L of b.legs) {
+    const k = L.p + "|" + L.e;
+    if (k in res || out.fetched >= 40) continue;
+    out.fetched++;
+    try {
+      const j = await espnJSON(`${ESPN_API}${L.p}/summary?event=${encodeURIComponent(L.e)}`);
+      const c = j.header && j.header.competitions && j.header.competitions[0];
+      const H = c && c.competitors.find((x) => x.homeAway === "home"), A = c && c.competitors.find((x) => x.homeAway === "away");
+      res[k] = c ? { post: c.status && c.status.type && c.status.type.state === "post", sh: H ? +H.score : null, sa: A ? +A.score : null } : null;
+    } catch (e) { res[k] = null; }
+  }
+  for (const { pid, b } of cand) {
+    const R = b.legs.map((L) => res[L.p + "|" + L.e]);
+    if (R.some((r) => !r || !r.post)) continue;
+    if (!(await sentOnce(s, `end:${pid}:${b.id}`))) continue;
+    const score = b.legs.length === 1 ? `${b.legs[0].ml ? b.legs[0].ml + " : " : ""}${R[0].sh} – ${R[0].sa}` : `${b.legs.length} matchs terminés`;
+    // résultat sûr seulement pour les paris « résultat du match » au foot et au rugby
+    const simple = b.legs.every((L) => L.mk === "res" && (L.sp === "foot" || L.sp === "rugby"));
+    let msg;
+    if (simple) {
+      const ok = b.legs.every((L, i) => { const r = R[i]; const o = r.sh > r.sa ? 0 : r.sh === r.sa ? 1 : 2; return o === L.k; });
+      msg = ok ? { title: `✅ Pari gagné : +${Math.round(b.stake * b.odds)} jetons !`, body: `${score} · ${b.legs.map((L) => L.l).join(" + ")}. Ouvre l'appli pour les encaisser.` }
+        : { title: "❌ Pari perdu", body: `${score} · ${b.legs.map((L) => L.l).join(" + ")}. La prochaine sera la bonne !` };
+    } else msg = { title: "🏁 Ton pari est joué", body: `${score} · « ${b.legs.map((L) => L.l).join(" + ").slice(0, 80)} » : ouvre l'appli pour voir s'il passe !` };
+    await notify(s, [pid], { ...msg, url: "./?go=bets", tag: "end-" + b.id });
+    out.end++;
+  }
+  return out;
+}
+
 const ACTIONS = {
   // Crée un joueur anonyme. Le jeton n'est gardé qu'en empreinte sha256.
   async session(s, b, req) {
@@ -412,7 +468,7 @@ const ACTIONS = {
       [p.id, JSON.stringify([...new Set(b.badges.map((x) => cleanName(x, 20)).filter(Boolean))].slice(0, 60))]);
     if (Array.isArray(b.bets)) {
       const json = JSON.stringify({ list: b.bets.slice(0, 40), best: b.best && typeof b.best === "object" ? b.best : null });
-      if (json.length <= 60000) await s.query(`update players set bets = $2::jsonb where id = $1`, [p.id, json]);
+      if (json.length <= 150000) await s.query(`update players set bets = $2::jsonb where id = $1`, [p.id, json]);
     }
     const name = cleanName(b.name, 18);
     if (name && name !== p.name) {
@@ -1160,6 +1216,9 @@ export default async function handler(req, res) {
         res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
         return res.status(200).end(buf);
       } catch (e) { return res.status(500).json({ error: "server" }); }
+    }
+    if (q.cron && q.slot === "tick") {
+      try { return res.status(200).json(await tick(await db())); } catch (e) { console.error(e); return res.status(500).json({ error: "server" }); }
     }
     if (q.cron) {
       const want = process.env.CRON_SECRET || "", got = String(req.headers.authorization || "");
