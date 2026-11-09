@@ -4,7 +4,7 @@ import { db, hashToken, newToken, ipKey, overLimit } from "./_db.js";
 import { timingSafeEqual, randomInt } from "node:crypto";
 import { buildWeek, refreshResults, points, todayMatches, bestOfDay } from "./_prono.js";
 import { notify, members } from "./_push.js";
-import { checkBet, settleOpen, cashValueServer } from "./_bets.js";
+import { checkBet, settleOpen, cashValueServer, loadMatch } from "./_bets.js";
 
 const ORIGINS = [
   "https://skelvo.fr", "https://www.skelvo.fr", "https://skelvo.github.io",
@@ -415,6 +415,31 @@ async function credit(s, pid, delta, kind, ref) {
 }
 const parisDay = async (s) => (await s.query(`select to_char(now() at time zone 'Europe/Paris', 'YYYYMMDD') as d`))[0].d;
 const EG = globalThis.ENGINE;
+
+// gains d'un pari dark terminé (pot partagé entre les gagnants, ou tout le monde remboursé), notés une seule fois
+async function darkPay(s, x) {
+  const st = await s.query(`select player, opt, amount, guess::float8 as guess from dark_stakes where bet = $1`, [x.id]);
+  if (!st.length) return;
+  const T = st.reduce((a, y) => a + y.amount, 0);
+  let win = [];
+  if (x.state === "final") {
+    if (x.kind === "num") { const near = Math.min(...st.map((y) => Math.abs(y.guess - x.resultNum))); win = st.filter((y) => Math.abs(y.guess - x.resultNum) === near); }
+    else win = st.filter((y) => y.opt === x.result);
+  }
+  const W = win.reduce((a, y) => a + y.amount, 0);
+  if (x.state === "void" || !W) { for (const y of st) await credit(s, y.player, y.amount, "dark_pay", x.id); return; }
+  for (const y of win) await credit(s, y.player, Math.floor(y.amount * T / W), "dark_pay", x.id);
+}
+
+// prono du week-end terminé : 10 jetons par point, noté une seule fois par semaine
+async function pronoCredit(s, pid, week) {
+  const w = (await s.query(`select matches from prono_weeks where week = $1`, [week]))[0];
+  if (!w || !w.matches.length || !w.matches.every((m) => m.done || m.cancel)) return;
+  const picks = await s.query(`select mid, sh, sa, joker from prono_picks where week = $1 and player = $2`, [week, pid]);
+  let pts = 0;
+  for (const x of picks) { const M = w.matches.find((m) => m.mid === x.mid); const pt = M ? points(M, x) : null; if (pt) pts += pt; }
+  if (pts > 0) await credit(s, pid, pts * 10, "prono", week);
+}
 
 const ACTIONS = {
   // Crée un joueur anonyme. Le jeton n'est gardé qu'en empreinte sha256.
@@ -868,7 +893,7 @@ const ACTIONS = {
        from dark_bets d where d.code = $1 and d.created_at > now() - interval '30 days'
        order by (d.result is null) desc, d.closes asc limit 80`, [code, p.id]);
     const now = Date.now();
-    return {
+    const out = {
       bets: rows.filter((r) => r.reports < 2).map((r) => {
         const resolved = r.resolved != null ? Math.round(Number(r.resolved)) : null;
         let state = "open";
@@ -879,6 +904,10 @@ const ACTIONS = {
           mine: r.mine, pools: r.pools, players: r.players, my: r.my, contests: r.contests, myContest: r.my_contest, myReport: r.my_report, state };
       }),
     };
+    for (const x of out.bets) if (x.state === "final" || x.state === "void") await darkPay(s, x);
+    // pari masqué (2 signalements) : tout le monde est remboursé
+    for (const r of rows) if (r.reports >= 2) await darkPay(s, { id: r.id, state: "void" });
+    return out;
   },
 
   async dark_stake(s, b) {
@@ -900,6 +929,7 @@ const ACTIONS = {
     await s.query(
       `insert into dark_stakes (bet, player, opt, amount, guess) values ($1, $2, $3, $4, $5)
        on conflict (bet, player) do update set amount = dark_stakes.amount + excluded.amount`, [id, p.id, o, amount, guess]);
+    await credit(s, p.id, -amount, "dark", id + ":" + Date.now());
     return { ok: true };
   },
 
@@ -945,6 +975,8 @@ const ACTIONS = {
   async prono_get(s, b) {
     const p = await me(s, b.token);
     const wk = await pronoWeek(s);
+    await pronoCredit(s, p.id, wk.week);
+    await pronoCredit(s, p.id, (await s.query(`select ${PREV_WEEK} as w`))[0].w);
     const mine = await s.query(`select mid, sh, sa, joker from prono_picks where week = $1 and player = $2`, [wk.week, p.id]);
     const now = Date.now();
     const code = cleanName(b.code, 8).toUpperCase();
@@ -1085,6 +1117,7 @@ const ACTIONS = {
         hist.push({ day: d.day, match: pub(d.match), res, my: my ? my.pick : null, n: P.length, ok: res == null ? 0 : P.filter((x) => x.pick === res).length });
       }
     }
+    for (const d of days) { const res = outcome(d.match), mine = (byDay[d.day] || []).find((x) => String(x.player) === String(p.id)); if (res != null && mine && mine.pick === res) await credit(s, p.id, LM_PRIZE, "lm", d.day); }
     const curPicks = cur ? (byDay[cur.day] || []).map((x) => ({ id: x.player, name: (who[String(x.player)] || {}).name, av: (who[String(x.player)] || {}).avatar_v || 0, pick: x.pick })) : [];
     const myCur = curPicks.find((x) => String(x.id) === String(p.id));
     return { me: p.id, today, prize: LM_PRIZE,
@@ -1198,8 +1231,9 @@ const ACTIONS = {
     const n = (await s.query(`select count(*)::int as n from duels where a = $1 and created_at > now() - interval '1 day'`, [p.id]))[0].n;
     if (n >= 20) throw fail(429, "slow_down");
     const r = await s.query(
-      `insert into duels (code, a, mid, mlabel, opts, t, ka, stake) values ($1, $2, $3, $4, $5::jsonb, to_timestamp($6::float8 / 1000), $7, $8) returning id`,
-      [code, p.id, cleanName(b.mid, 80), cleanName(b.mlabel, 80), JSON.stringify(opts), t, ka, stake]);
+      `insert into duels (code, a, mid, mlabel, opts, t, ka, stake, path) values ($1, $2, $3, $4, $5::jsonb, to_timestamp($6::float8 / 1000), $7, $8, $9) returning id`,
+      [code, p.id, cleanName(b.mid, 80), cleanName(b.mlabel, 80), JSON.stringify(opts), t, ka, stake, /^[a-z]+\/[\w.]+$/.test(String(b.path || "")) ? String(b.path) : null]);
+    await credit(s, p.id, -stake, "duel", r[0].id + ":a");
     await notify(s, await members(s, code), { title: `⚔️ ${p.name} lance un duel`, body: `${opts[ka] || ""} sur ${cleanName(b.mlabel, 80)} · ${stake} jetons. Qui relève ?`, url: go("duels", code), tag: "duel-" + r[0].id }, p.id);
     return { id: r[0].id };
   },
@@ -1214,6 +1248,7 @@ const ACTIONS = {
        returning id, stake, a, code, mlabel, opts`, [int(b.id, 0, 1e15), p.id, kb]);
     if (!r[0]) throw fail(400, "unavailable");
     const d = r[0];
+    await credit(s, p.id, -d.stake, "duel", d.id + ":b");
     await notify(s, [d.a], { title: `⚔️ ${p.name} a relevé ton duel !`, body: `${d.mlabel} : il mise ${d.stake} jetons sur « ${(d.opts || [])[kb] || ""} ».`, url: go("duels", d.code), tag: "duel-" + d.id });
     return { ok: true, stake: d.stake };
   },
@@ -1225,22 +1260,33 @@ const ACTIONS = {
     const d = (await s.query(`select d.* from duels d join league_members m on m.code = d.code and m.player = $2 where d.id = $1`, [id, p.id]))[0];
     if (!d) throw fail(404, "unknown");
     if (d.status === "live" && new Date(d.t).getTime() < Date.now()) {
-      const winner = d.ka === res ? d.a : d.kb === res ? d.b : null;
-      const u = await s.query(`update duels set status = 'done', res = $2, winner = $3 where id = $1 and status = 'live' returning id`, [id, res, winner]);
+      let rr = res;
+      if (d.path) {   // le serveur lit lui-même le score final (le téléphone ne décide plus)
+        const m = await loadMatch({ mid: d.mid, path: d.path, t: new Date(d.t).getTime() });
+        const sc = m && EG.status(m) === "post" ? EG.realStats(m) : null, v = sc && (sc.g || sc.pts || sc.sets);
+        if (!v) return { ok: true, pending: true };
+        rr = m.sp === "tennis" || m.sp === "basket" ? (v[0] > v[1] ? 0 : 1) : EG.cmp3(v);
+      }
+      const winner = d.ka === rr ? d.a : d.kb === rr ? d.b : null;
+      const u = await s.query(`update duels set status = 'done', res = $2, winner = $3 where id = $1 and status = 'live' returning id`, [id, rr, winner]);
       if (u[0]) {
+        if (winner) await credit(s, winner, 2 * d.stake, "duel_win", id);
+        else for (const x of [[d.a, "a"], [d.b, "b"]]) if (x[0]) await credit(s, x[0], d.stake, "duel_ref", id + ":" + x[1]);
         const names = Object.fromEntries((await s.query(`select id, name from players where id = any($1::bigint[])`, [[d.a, d.b].filter(Boolean)])).map((x) => [String(x.id), x.name]));
         await notify(s, [d.a, d.b].filter(Boolean), { title: "⚔️ Duel terminé · " + d.mlabel,
           body: winner ? `${names[String(winner)] || "?"} remporte ${2 * d.stake} jetons !` : "Personne n'a vu juste : mises remboursées.", url: go("duels", d.code), tag: "duel-" + id });
       }
     }
-    return { ok: true };
+    const f = (await s.query(`select status, res, winner from duels where id = $1`, [id]))[0];
+    return { ok: true, status: f.status, res: f.res, winner: f.winner };
   },
 
   async duels(s, b) {
     const p = await me(s, b.token);
     const code = cleanName(b.code, 8).toUpperCase();
     // les duels jamais relevés avant le coup d'envoi expirent
-    await s.query(`update duels set status = 'expired' where status = 'open' and t < now()`);
+    const exp = await s.query(`update duels set status = 'expired' where status = 'open' and t < now() returning id, a, stake`);
+    for (const x of exp) await credit(s, x.a, x.stake, "duel_ref", x.id + ":a");   // duel jamais relevé : mise rendue
     const rows = await s.query(
       `select d.id, d.code, d.a, pa.name as aname, pa.avatar_v as aav, d.b, pb.name as bname, pb.avatar_v as bav, d.mid, d.mlabel, d.opts, extract(epoch from d.t) * 1000 as tms,
          d.ka, d.kb, d.stake, d.status, d.res, d.winner

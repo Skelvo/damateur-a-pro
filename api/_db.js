@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "23";
+const SCHEMA_VERSION = "24";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -244,6 +244,7 @@ const STATEMENTS = [
      ref text not null,
      at timestamptz not null default now(),
      unique (player, kind, ref))`,
+  `alter table duels add column if not exists path text`,
   `create table if not exists rate_hits (key text not null, win bigint not null, n int not null default 0, primary key (key, win))`,
 ];
 

@@ -685,7 +685,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.63"></script>
+<script src="engine.js?v=1.64"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -2052,8 +2052,10 @@ async function checkDuels(D,me){let changed=false;S.duel=S.duel||{};
   for(const x of D){const mine=myDuel(x.id);if(!mine)continue;
     if(x.status==="live"&&Date.now()>x.t+90*6e4){let m=REG.get(x.mid);if(!m&&mine.snap&&!mine.ref){mine.ref=1;await espnRefetch({...mine.snap,t:x.t});m=REG.get(x.mid)}
       const sc=m&&status(m)==="post"&&!m.cancel&&finalScore(m);
-      if(sc){const res=m.sp==="tennis"?(sc[0]>sc[1]?0:1):cmp3(sc);await api("duel_result",{id:x.id,res}).catch(()=>{});x.status="done";x.res=res;
-        x.winner=x.ka===res?x.a:x.kb===res?x.b:null}
+      if(sc){const res=m.sp==="tennis"||m.sp==="basket"?(sc[0]>sc[1]?0:1):cmp3(sc);
+        // le serveur lit lui-même le score et décide ; on suit son verdict
+        const r=await api("duel_result",{id:x.id,res}).catch(()=>null);
+        if(r&&r.status==="done"){x.status="done";x.res=r.res;x.winner=r.winner}else if(!r){x.status="done";x.res=res;x.winner=x.ka===res?x.a:x.kb===res?x.b:null}}
       else if(m&&(m.cancel||status(m)==="cancel")){x.status="done";x.winner=null}}
     if(mine.settled)continue;
     if(x.status==="done"){mine.settled=1;changed=true;
@@ -2100,7 +2102,7 @@ function viewDuelNew(m){const L=U.lg.data.leagues,res=markets(m).find(x=>x.id===
 async function createDuel(mid){const m=findMatch(mid);if(!m||status(m)!=="pre")return;const res=markets(m).find(x=>x.id==="res"),opts=res.sels.map(x=>x.l),q=U.dn;
   if(q.stake>S.bal){toast("Pas assez de jetons.","bad");return}const b=$("[data-act=dgo]");b.disabled=true;
   try{if(!(await ensureSession()))throw{code:"offline"};
-    const j=await api("duel_create",{code:q.code,mid:m.id,mlabel:m.h+" – "+m.a,opts,t:m.t,ka:q.k,stake:q.stake});
+    const j=await api("duel_create",{code:q.code,mid:m.id,path:m.path,mlabel:m.h+" – "+m.a,opts,t:m.t,ka:q.k,stake:q.stake});
     S.bal-=q.stake;S.duel=S.duel||{};S.duel[j.id]={stake:q.stake,snap:{path:m.path,sp:m.sp,lv:m.lv}};save();bump();
     postAct("duel",{mlabel:m.h+" – "+m.a,pick:opts[q.k],stake:q.stake});U.lg.code=q.code;U.lg.view="duels";U.lg.duels=null;U.open=null;layer("");U.tab="l";render();loadBoards();loadDuels();
     toast(`${ic("target")} Duel lancé ! Tes potes peuvent le relever dans Ligues › Duels.`,"win")}
@@ -2305,7 +2307,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.63";
+const VERSION="1.64";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
