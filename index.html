@@ -413,6 +413,9 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 .champ .i{width:30px;height:30px;color:var(--sel);flex:none}.champ small{display:block;color:#e8d79a;font-size:12px;text-transform:uppercase;letter-spacing:.8px;font-weight:700}.champ b{font:800 19px "Barlow Condensed"}
 .tabs3 button{position:relative}.pill{display:inline-grid;place-items:center;min-width:18px;height:18px;border-radius:9px;background:var(--sel);color:var(--sel-ink);font:800 11px Barlow;padding:0 5px;margin-left:3px}
 .crw{color:#ffb020}
+.rcard{background:linear-gradient(160deg,#10301f,var(--card) 70%);border:1px solid #2a6a45;border-radius:16px;padding:12px 14px;margin:12px 0 6px;display:grid;gap:8px;text-align:center}
+.rch b{font:800 17px "Barlow Condensed";text-transform:uppercase}.rcodev{font:800 30px/1 "Barlow Condensed";letter-spacing:3px;color:var(--acc);background:#00000040;border-radius:12px;padding:12px 6px;user-select:all;-webkit-user-select:all}
+.rcard small{color:var(--mute);font-size:12.5px}.rcard small b{color:var(--ink)}
 .evs{display:grid;gap:8px;margin:0 0 12px}
 .evc{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid color-mix(in srgb,var(--ec) 60%,transparent);border-radius:16px;padding:11px 14px;color:inherit;font:inherit;
   background:linear-gradient(120deg,color-mix(in srgb,var(--ec) 38%,var(--card)),var(--card) 75%);box-shadow:0 0 24px -12px var(--ec)}
@@ -1335,6 +1338,7 @@ function viewCareer(){const di=divOf(S.peak),nx=DIVS[di+1],pr=nx?cl((S.peak-DIVS
   <div class="pyr">${DIVS.map((d,k)=>`<div class="${k===di?"cur":k<di?"done":""}" style="width:${48+k*4}%"><span>${esc(d[0])}</span><b>${tok(d[1])}</b></div>`).join("")}</div>
   <div class="h2"><h2>Succès</h2><span>${SC.length}/${SUCC.length}</span></div>
   ${succGrid(SC,true)}
+  ${rcodeCard()}
   <div class="h2"><h2>Réglages</h2></div>
   <div class="row" data-act="fav" style="cursor:pointer"><div style="display:flex;align-items:center;gap:10px">${S.fav?(S.fav.logo?`<img class="crest" src="${esc(S.fav.logo)}" alt="" style="width:30px;height:30px;object-fit:contain" referrerpolicy="no-referrer">`:crest(S.fav.name,S.fav.sp)):`<span style="font-size:22px">❤️</span>`}<div><b>Équipe de cœur</b><small>${S.fav?esc(S.fav.name)+" · ses matchs en premier et un rappel les jours de match":"Choisis ton club : ses matchs en premier, un rappel les jours de match"}</small></div></div><button class="link">${S.fav?"Changer":"Choisir"}</button></div>
   <div class="row"><div><b>Notifications</b><small>${pushState()==="on"?"Activées sur ce téléphone · <button class='link' data-act='pushtest' style='padding:0'>tester</button>":pushState()==="denied"?"Refusées : autorise-les dans les réglages du téléphone":pushState()==="na"?(IOS&&!STANDALONE?"Installe d’abord l’app sur l’écran d’accueil":"Pas disponibles sur ce téléphone"):"Duels, paris dark, chat, réactions…"}</small></div>
@@ -1476,6 +1480,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"lgsel":U.lg.code=d.code;U.lg.feed=null;U.lg.view=U.lg.view||"rank";render();loadBoards();break;
     case"lgmode":U.lg.mode=d.v;render();break;
     case"recap":openRecap(U.lg.code);break;
+    case"rcrenew":renewRcode();break;
     case"ev":U.ev=d.id;render();window.scrollTo({top:0});break;
     case"evx":U.ev=null;render();window.scrollTo({top:0});break;
     case"stats":U.open="stats";layer(viewStats());break;
@@ -1624,7 +1629,7 @@ let askedName=false;
 function askNewName(){if(askedName||U.open==="welcome")return;askedName=true;U.open="welcome";layer(viewWelcome(true,`Le pseudo « ${esc(S.name)} » est déjà pris par un autre joueur. Choisis-en un autre pour apparaître dans les classements.`))}
 let syncT=0;
 function syncSoon(){if(!S.name)return;clearTimeout(syncT);syncT=setTimeout(async()=>{if(!(await ensureSession()))return;
-  try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,...myStats(),...betsPayload()});if(j.name_taken)askNewName()}catch(e){if(e.code==="no_session"&&await ensureSession())syncSoon()}},2000)}
+  try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,...myStats(),...betsPayload()});if(j.name_taken)askNewName();backupSoon()}catch(e){if(e.code==="no_session"&&await ensureSession())syncSoon()}},2000)}
 async function syncNow(){clearTimeout(syncT);if(!(await ensureSession()))return false;try{await api("sync",{name:S.name,bal:S.bal,peak:S.peak,...myStats(),...betsPayload()});return true}catch(e){return false}}
 const pickKey=s=>s.mk+(s.line!=null?s.line:"");
 function sendPicks(sel){const picks=sel.filter(s=>!PMK[s.mk]).map(s=>({mid:s.mid,mk:pickKey(s),k:s.k}));if(!picks.length)return;ensureSession().then(ok=>ok&&api("picks",{picks}).catch(()=>{}));
@@ -1896,6 +1901,21 @@ function viewRecap(r){const d0=new Date(r.from+3600e3),d1=new Date(r.to-3600e3),
   if(r.busy)c+=card("","ticket","Le plus accro",`${who(r.busy)}<div class="rcv"><b>${r.busy.n}</b> pari${r.busy.n>1?"s":""} dans la semaine</div>`);
   if(r.red)c+=card("red","chart","Lanterne rouge",`${who(r.red)}<div class="rcv"><b class="neg">${tok(r.red.gain)}</b> sur la semaine</div>`);
   return h+`<div class="rcgrid">${c}</div><p class="note">Le bilan sort chaque lundi matin. Les gains comptent du lundi au dimanche ; plus grosse cote et plus gros flop parmi les paris terminés dans la semaine.</p>`}
+
+/* ---------- code de compte permanent + sauvegarde automatique ---------- */
+function rcodeCard(){if(!S.name)return"";
+  if(S.rcode)return`<div class="rcard"><div class="rch">🔑 <b>Mon code de compte</b></div><div class="rcodev">${esc(S.rcode)}</div>
+    <small>Il ne change jamais. <b>Fais une capture d’écran</b> : avec ce code, tu retrouves ton compte (jetons, paris, ligues) sur n’importe quel téléphone, même si tu perds le tien. Ne le donne à personne.</small>
+    <button class="btn ghost" data-act="copycode" data-code="${esc(S.rcode)}">Copier</button></div>`;
+  if(S.rcodeOther)return`<div class="rcard"><div class="rch">🔑 <b>Mon code de compte</b></div><small>Ton code a été créé sur un autre téléphone. Si tu ne l’as plus, crée-en un nouveau (l’ancien ne marchera plus).</small><button class="btn ghost" data-act="rcrenew">Créer un nouveau code</button></div>`;
+  return`<div class="rcard"><div class="rch">🔑 <b>Mon code de compte</b></div><div class="skel" style="height:40px"></div></div>`}
+async function ensureRcode(){if(!S.name||S.rcode||S.rcodeOther)return;try{if(!(await ensureSession()))return;const j=await api("recovery_make",{});
+  if(j.code)S.rcode=j.code;else if(j.exists)S.rcodeOther=1;saveLocal();if(U.tab==="c"&&!U.open)render()}catch(e){}}
+async function renewRcode(){if(!confirm("Créer un nouveau code de compte ? L’ancien ne marchera plus."))return;
+  try{const j=await api("recovery_make",{renew:true});S.rcode=j.code;delete S.rcodeOther;saveLocal();render();toast("Nouveau code créé : fais une capture d’écran !","win")}catch(e){toast("Impossible pour l’instant.","bad")}}
+// sauvegarde complète du téléphone sur le serveur (au plus toutes les 10 min), pour récupérer son compte avec le code
+async function backupSoon(){if(!S.tok||Date.now()-(S.bkAt||0)<10*6e4)return;S.bkAt=Date.now();saveLocal();
+  const st={...S};delete st.tok;delete st.pid;delete st.bkAt;try{await api("backup",{state:st})}catch(e){S.bkAt=0}}
 
 /* ---------- statistiques perso (tout l'historique du téléphone) ---------- */
 const netOf=b=>b.st==="lost"?-b.stake:b.st==="won"||b.st==="cashed"?(b.pay||0)-b.stake:0;
@@ -2433,7 +2453,7 @@ function viewWelcome(rename,msg){return`<div class="welcome">${rename?`<div clas
   <div class="form" style="text-align:left"><label>Ton pseudo<input id="w-name" maxlength="18" value="${esc(S.name)}" placeholder="ex. Le Pronostiqueur" autocomplete="nickname"></label>
   <p class="warn" id="w-err" hidden></p>
   <button class="btn gold wide" data-act="wgo">${rename?"Enregistrer":ic("coin")+" Recevoir mes 1 000 jetons"}</button></div>
-  ${rename?"":STANDALONE?`<div class="info" style="text-align:left;margin-top:14px">${ic("info")}<span><b style="color:var(--ink)">Tu jouais déjà dans Safari ?</b> Récupère tes jetons et tes paris avec ton code.<br><button class="btn ghost" data-act="xfer" style="margin-top:8px">Entrer mon code</button></span></div>`
+  ${rename?"":STANDALONE?`<div class="info" style="text-align:left;margin-top:14px">${ic("info")}<span><b style="color:var(--ink)">Tu as déjà un compte ?</b> Nouveau téléphone, appli réinstallée… entre ton code de compte et tu retrouves tout.<br><button class="btn ghost" data-act="xfer" style="margin-top:8px">Entrer mon code</button></span></div>`
     :`<button class="link" data-act="xfer" style="margin-top:10px">J’ai déjà un compte (code de transfert)</button>`}
   ${rename?"":`<p class="note" style="margin-top:12px">Jetons fictifs, aucun argent réel. Jeu réservé au divertissement.</p>`}</div>`}
 async function welcomeGo(){const inp=$("#w-name"),n=(inp.value||"").replace(/\s+/g," ").trim().slice(0,18),err=$("#w-err"),b=$("[data-act=wgo]");
@@ -2495,18 +2515,19 @@ async function transferOut(){const box=$("#xbox");if(box)box.innerHTML=`<div cla
       <p class="note">Entre-le dans l’app installée ou sur ton autre téléphone. Une fois utilisé, ce navigateur-ci est déconnecté du compte.</p>`;
     if($("#xbox"))$("#xbox").innerHTML=html}
   catch(e){if($("#xbox"))$("#xbox").innerHTML=`<p class="warn">Pas de connexion au serveur, réessaie dans un instant.</p><button class="btn gold wide" data-act="xmake">Réessayer</button>`}}
-function viewTransferIn(){return`<div class="grab"><h3>Code de transfert</h3><button class="x" data-act="${S.name?"close":"xback"}" aria-label="Retour">${ic("x")}</button></div>
-  <div class="form"><label>Ton code (8 caractères)<input id="x-code" maxlength="9" placeholder="ex. K7RZ-P3QA" autocapitalize="characters" autocomplete="off" style="text-transform:uppercase;letter-spacing:4px;font-weight:800;text-align:center;font-size:22px"></label>
+function viewTransferIn(){return`<div class="grab"><h3>Récupérer mon compte</h3><button class="x" data-act="${S.name?"close":"xback"}" aria-label="Retour">${ic("x")}</button></div>
+  <div class="form"><label>Ton code de compte (ou de transfert)<input id="x-code" maxlength="14" placeholder="ex. K7RZ-P3QA-M8XW" autocapitalize="characters" autocomplete="off" style="text-transform:uppercase;letter-spacing:4px;font-weight:800;text-align:center;font-size:22px"></label>
   <p class="warn" id="x-err" hidden></p><button class="btn gold wide" data-act="xferok">Récupérer mon compte</button>
-  <p class="note">Le code se crée dans l’ancien navigateur : Carrière › « Transférer mon compte », ou depuis « Installer l’app ».${S.name?" Attention : ce que tu as sur cet appareil sera remplacé.":""}</p></div>`}
+  <p class="note">Ton code de compte est dans Carrière › « Mon code de compte » (12 caractères, il ne change jamais).${S.name?" Attention : ce que tu as sur cet appareil sera remplacé.":""}</p></div>`}
 async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x-err"),b=$("[data-act=xferok]");if(code.replace(/[^a-z0-9]/gi,"").length<8){$("#x-code").focus();return}
   b.disabled=true;err.hidden=true;
   try{const j=await api("use_transfer",{code});const st=j.state&&typeof j.state==="object"?j.state:{};
     if(j.state&&typeof j.state==="object")S=Object.assign({v:2,name:"",bal:1000,peak:1000,bonus:"",bets:[],org:[],orgMode:false,sim:false},st,{tok:j.token,pid:j.id,name:j.name});
-    else Object.assign(S,{tok:j.token,pid:j.id,name:j.name});   // code sans sauvegarde : on garde ce qu'il y a sur ce téléphone
+    else Object.assign(S,{tok:j.token,pid:j.id,name:j.name,bal:j.bal,peak:Math.max(S.peak||0,j.peak)});   // pas de sauvegarde : on garde ce téléphone, avec le solde du serveur
+    if(j.permanent){S.rcode=code.toUpperCase().replace(/[^A-Z0-9]/g,"").replace(/^(.{4})(.{4})(.{4})$/,"$1-$2-$3");delete S.rcodeOther}
     saveLocal();
     toast(`${ic("coin")} Compte récupéré : bon retour ${esc(j.name)} !`,"win");setTimeout(()=>location.reload(),900)}
-  catch(e){b.disabled=false;err.hidden=false;err.textContent=e.code==="unknown"?"Code inconnu ou expiré (48 h). Crée un nouveau code dans l’ancien navigateur.":e.code==="slow_down"?"Trop d’essais : réessaie dans une heure.":"Pas de connexion au serveur."}}
+  catch(e){b.disabled=false;err.hidden=false;err.textContent=e.code==="unknown"?"Code inconnu. Vérifie les 12 caractères de ton code de compte.":e.code==="slow_down"?"Trop d’essais : réessaie dans une heure.":"Pas de connexion au serveur."}}
 
 /* ---------- pas de zoom (sauf pour recadrer la photo), écran en vertical ---------- */
 (function(){const inCrop=e=>e.target&&e.target.closest&&e.target.closest("#crop");
@@ -2517,7 +2538,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.55";
+const VERSION="1.56";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -2535,7 +2556,7 @@ loadFeeds();
 setTimeout(()=>{if(S.dk&&Object.values(S.dk).some(x=>!x.settled))checkDarkAll()},5000);
 goFrom(location.href);
 setTimeout(loadEvents,1200);
-setTimeout(()=>{pushRefresh();if(S.name)claimPrizes();if(S.name)loadBoards().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){loadProno();loadLm(U.lg.code||U.lg.data.leagues[0].code);const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},3000);
+setTimeout(()=>{pushRefresh();if(S.name){claimPrizes();ensureRcode()}if(S.name)loadBoards().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){loadProno();loadLm(U.lg.code||U.lg.data.leagues[0].code);const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},3000);
 setInterval(()=>{if(!document.hidden&&S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},12e4);
 setInterval(()=>{if(document.hidden)return;
   const anyLive=[...REG.values()].some(m=>m.src==="espn"&&m.state==="in");const stale=Object.values(FEED).some(f=>f.at&&Date.now()-f.at>(anyLive?6e4:5*6e4));

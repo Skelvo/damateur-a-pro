@@ -501,9 +501,38 @@ const ACTIONS = {
     throw fail(500, "code");
   },
 
+  // ---- Code de compte permanent (12 caractères, ne change jamais) + sauvegarde du téléphone sur le serveur ----
+  // Le serveur ne garde que l'empreinte du code ; le téléphone garde le code en clair pour l'afficher.
+  async recovery_make(s, b) {
+    const p = await me(s, b.token);
+    const cur = (await s.query(`select recovery_hash from players where id = $1`, [p.id]))[0];
+    if (cur && cur.recovery_hash && !b.renew) return { exists: true };
+    if (b.renew && await overLimit("recov:" + p.id, 5, 86400)) throw fail(429, "slow_down");
+    let code = "";
+    for (let j = 0; j < 12; j++) code += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+    await s.query(`update players set recovery_hash = $2 where id = $1`, [p.id, hashToken("rc:" + code)]);
+    return { code: code.slice(0, 4) + "-" + code.slice(4, 8) + "-" + code.slice(8) };
+  },
+  async backup(s, b) {
+    const p = await me(s, b.token);
+    const json = JSON.stringify(b.state && typeof b.state === "object" ? b.state : null);
+    if (json.length > 400000) throw fail(400, "too_big");
+    if (await overLimit("backup:" + p.id, 1, 240)) return { ok: true, later: true };
+    await s.query(`update players set backup = $2::jsonb, backup_at = now() where id = $1`, [p.id, json]);
+    return { ok: true };
+  },
+
   async use_transfer(s, b, req) {
     if (await overLimit(ipKey(req) + ":transfer", 20, 3600)) throw fail(429, "slow_down");
     const code = String(b.code || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    // code de compte permanent : on se connecte et on récupère la dernière sauvegarde (le code reste valable)
+    if (code.length === 12) {
+      const r = (await s.query(`select id from players where recovery_hash = $1`, [hashToken("rc:" + code)]))[0];
+      if (!r) throw fail(404, "unknown");
+      const token = newToken();
+      const p = (await s.query(`update players set token_hash = $2, seen_at = now() where id = $1 returning id, name, bal::float8 as bal, peak::float8 as peak, backup`, [r.id, hashToken(token)]))[0];
+      return { token, id: p.id, name: p.name, bal: p.bal, peak: p.peak, state: p.backup || null, permanent: true };
+    }
     const t = (await s.query(`select player, state from transfers where code = $1 and expires > now()`, [code]))[0];
     if (!t) throw fail(404, "unknown");
     const token = newToken();
@@ -529,6 +558,14 @@ const ACTIONS = {
     const r = await s.query(`delete from players where id = any($1::bigint[]) returning id`, [ids]);
     await s.query(`delete from leagues l where not exists (select 1 from league_members m where m.code = l.code)`);
     return { deleted: r.length };
+  },
+  async admin_recovery(s, b) {
+    admin(b);
+    let code = "";
+    for (let j = 0; j < 12; j++) code += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+    const r = await s.query(`update players set recovery_hash = $2 where id = $1 returning id`, [Number(b.id), hashToken("rc:" + code)]);
+    if (!r[0]) throw fail(404, "unknown");
+    return { code: code.slice(0, 4) + "-" + code.slice(4, 8) + "-" + code.slice(8) };
   },
   async admin_transfer(s, b) {
     admin(b);
