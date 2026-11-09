@@ -63,6 +63,13 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .upd{position:fixed;left:12px;right:12px;top:calc(10px + var(--safe-t));z-index:65;max-width:520px;margin:0 auto;display:flex;align-items:center;gap:10px;padding:10px 10px 10px 14px;border:0;border-radius:14px;background:var(--sel);color:var(--sel-ink);font:700 15px Barlow;box-shadow:0 10px 30px #000a;text-align:left}
 .upd span{flex:1}.upd b{background:#00000018;border-radius:9px;padding:7px 10px;font:800 16px "Barlow Condensed";text-transform:uppercase}
 .brand small{display:block;color:var(--mute);font-size:12px;margin-top:2px;white-space:nowrap}
+.hright{display:flex;align-items:center;gap:8px;flex:none}
+.bell{position:relative;width:40px;height:40px;border-radius:50%;background:var(--card);border:1px solid var(--line);display:grid;place-items:center;color:var(--ink);padding:0}
+.bell .i{width:21px;height:21px}.bell .dot{position:absolute;top:6px;right:7px;width:10px;height:10px;border-radius:50%;background:var(--loss);box-shadow:0 0 0 2px var(--bg)}
+.bell.on{color:var(--acc)}
+.nfhero{text-align:center;padding:6px 0 4px}.nfhero .big{width:72px;height:72px;margin:0 auto 10px;border-radius:22px;display:grid;place-items:center;background:var(--card2);color:var(--mute)}
+.nfhero .big .i{width:40px;height:40px}.nfhero.on .big{background:#35d07f22;color:var(--acc)}.nfhero h2{margin:0 0 4px;font:800 26px "Barlow Condensed";text-transform:uppercase}.nfhero p{margin:0 0 12px;color:var(--mute)}
+.nflist{display:grid;gap:8px;margin:12px 0}.nflist div{display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 12px;font-size:14px}.nflist .i{width:20px;height:20px;color:var(--acc);flex:none}
 .bank{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 14px 6px 8px}
 .bank .coin{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;
   background:radial-gradient(circle at 35% 30%,#fff3b0,#ffcf3a 45%,#c48a00);color:#5a3d00;box-shadow:0 0 0 2px #00000040 inset}
@@ -546,6 +553,7 @@ body.gated{padding-bottom:calc(24px + var(--safe-b))}
   <symbol id="i-tb" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.6"/><path d="M12 9.5v4.2l2.6 2M9.8 2.5h4.4M18.8 6.4l1.6-1.6"/></symbol>
   <symbol id="i-break" viewBox="0 0 24 24"><path d="M4 8h14l-3.5-3.5M20 16H6l3.5 3.5"/></symbol>
   <symbol id="i-coin" viewBox="0 0 24 24"><path d="M9 8.5h4.5a2.2 2.2 0 0 1 0 4.4H9.5M9 8.5v7M8 15.5h5.5"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></symbol>
   <symbol id="i-crown" viewBox="0 0 24 24"><path d="M3.5 8l4.5 4 4-7 4 7 4.5-4-2 11h-13z"/><path d="M5.5 21h13"/></symbol>
   <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M7.5 3.5h9v5.5a4.5 4.5 0 0 1-9 0z"/><path d="M7.5 5.5H4.5a3 3 0 0 0 3.3 4.4M16.5 5.5h3a3 3 0 0 1-3.3 4.4M12 13.5v3.5M8 21h8M9.5 17h5v4h-5z"/></symbol>
   <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M3.5 7a1 1 0 0 1 1-1h15a1 1 0 0 1 1 1v3a2 2 0 0 0 0 4v3a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1v-3a2 2 0 0 0 0-4z"/><path d="M14.5 6.5v11" stroke-dasharray="1.6 2"/></symbol>
@@ -568,9 +576,10 @@ body.gated{padding-bottom:calc(24px + var(--safe-b))}
       <img src="icon-180.png?v=2" width="40" height="40" alt="" class="blogo">
       <div><b>D’amateur <em>à&nbsp;pro</em> <span class="ver" id="ver"></span></b><small id="hello">Paris gratuits · du district aux pros</small></div>
     </div>
+    <div class="hright"><button class="bell" id="bell" data-act="notif" aria-label="Notifications"><svg class="i"><use href="#i-bell"/></svg><span class="dot" id="belldot" hidden></span></button>
     <button class="bank" id="bank" data-act="tab" data-tab="c" aria-label="Mes jetons">
       <span class="coin"><svg class="i"><use href="#i-coin"/></svg></span><strong id="bal">1 000</strong>
-    </button>
+    </button></div>
   </div>
 </header>
 
@@ -800,10 +809,12 @@ function bookDiff(c){try{const ml=c.odds&&c.odds[0]&&c.odds[0].moneyline;if(!ml)
     for(let d=-3;d<=3.001;d+=.05){const[h,,a]=footProbs(d,0);const e=(h-ph)**2+(a-pa)**2;if(e<be){be=e;best=d}}return best}catch(e){return null}}
 function footProbs(d,a){const l1=(1.3+.6*a)*Math.exp(.33*d+.12),l2=(1.3+.6*a)*Math.exp(-.33*d-.12),P=(l,k)=>{let p=Math.exp(-l);for(let i=1;i<=k;i++)p*=l/i;return p};
   let h=0,x=0,w=0;for(let i=0;i<12;i++)for(let j=0;j<12;j++){const p=P(l1,i)*P(l2,j);if(i>j)h+=p;else if(i===j)x+=p;else w+=p}return[h,x,w]}
+// noms d'équipes en français (même liste que api/_teams.js)
+const TEAM_FR={"Albania":"Albanie","Andorra":"Andorre","Armenia":"Arménie","Australia":"Australie","Austria":"Autriche","Azerbaijan":"Azerbaïdjan","Belarus":"Biélorussie","Belgium":"Belgique","Bosnia-Herz":"Bosnie-Herzégovine","Bosnia and Herzegovina":"Bosnie-Herzégovine","Brazil":"Brésil","Bulgaria":"Bulgarie","Croatia":"Croatie","Cyprus":"Chypre","Czechia":"Tchéquie","Czech Republic":"Tchéquie","Denmark":"Danemark","England":"Angleterre","Estonia":"Estonie","Faroe Islands":"Îles Féroé","Fiji":"Fidji","Finland":"Finlande","Georgia":"Géorgie","Germany":"Allemagne","Greece":"Grèce","Hungary":"Hongrie","Iceland":"Islande","Israel":"Israël","Italy":"Italie","Japan":"Japon","Latvia":"Lettonie","Lithuania":"Lituanie","Malta":"Malte","Moldova":"Moldavie","Montenegro":"Monténégro","N Ireland":"Irlande du Nord","Northern Ireland":"Irlande du Nord","Netherlands":"Pays-Bas","New Zealand":"Nouvelle-Zélande","North Macedonia":"Macédoine du Nord","Norway":"Norvège","Poland":"Pologne","Rep Ireland":"Irlande","Republic of Ireland":"Irlande","Ireland":"Irlande","Romania":"Roumanie","San Marino":"Saint-Marin","Scotland":"Écosse","Serbia":"Serbie","Slovakia":"Slovaquie","Slovenia":"Slovénie","Spain":"Espagne","Sweden":"Suède","Switzerland":"Suisse","Türkiye":"Turquie","Turkey":"Turquie","Uzbekistan":"Ouzbékistan","Wales":"Pays de Galles","South Africa":"Afrique du Sud","Argentina":"Argentine","Chile":"Chili","United States":"États-Unis","USA":"États-Unis","Mexico":"Mexique","Morocco":"Maroc","Algeria":"Algérie","Tunisia":"Tunisie","Senegal":"Sénégal","Ivory Coast":"Côte d'Ivoire","Cameroon":"Cameroun","Egypt":"Égypte","Colombia":"Colombie","Ecuador":"Équateur","Peru":"Pérou","Russia":"Russie","South Korea":"Corée du Sud","Korea Republic":"Corée du Sud","Saudi Arabia":"Arabie saoudite","Namibia":"Namibie","Ukraine":"Ukraine","Kazakhstan":"Kazakhstan","Kosovo":"Kosovo","Uruguay":"Uruguay","Canada":"Canada","Portugal":"Portugal","France":"France","Bremen":"Werder Brême","Frankfurt":"Francfort","Hamburg":"Hambourg","Gladbach":"M'gladbach","Spurs":"Tottenham","C Palace":"Crystal Palace","Nottm Forest":"Nottingham Forest","Boro":"Middlesbrough","Man City":"Manchester City","Man Utd":"Manchester United","Sevilla":"Séville","Athletic":"Athletic Bilbao","Atlético":"Atlético Madrid","Rayo":"Rayo Vallecano","S Bratislava":"Slovan Bratislava","AEK Athens":"AEK Athènes","København":"FC Copenhague","Standard Liege":"Standard de Liège","Slavia Prague":"Slavia Prague","Sporting":"Sporting Portugal","Red Star":"Étoile rouge","Bayern":"Bayern Munich","Dortmund":"Dortmund","Leverkusen":"Leverkusen","Inter Milan":"Inter Milan","Milan":"AC Milan","Napoli":"Naples","Celta Vigo":"Celta Vigo","Deportivo":"La Corogne","St. Étienne":"Saint-Étienne","Stade Francais Paris":"Stade Français","Bordeaux Begles":"Bordeaux-Bègles","Montpellier Herault":"Montpellier","LOU Rugby":"Lyon OU","Castres Olympique":"Castres","Chambery":"Chambéry","Angouleme":"Angoulême","Montlucon":"Montluçon","Nimes":"Nîmes","Chalon-sur-Saone":"Chalon-sur-Saône","Frejus":"Fréjus","Epinal":"Épinal","Fecamp":"Fécamp","Trelissac":"Trélissac","Vitre":"Vitré","Le Havre AC":"Le Havre","Clermont Foot":"Clermont","Dijon FCO":"Dijon","Red Star FC":"Red Star","Rodez Aveyron":"Rodez","SC Amiens":"Amiens"},frTeam=n=>TEAM_FR[String(n).trim()]||String(n).trim();
 function parseTeamEvent(ev,sp,lv,path){const c=ev.competitions&&ev.competitions[0];if(!c||!c.competitors||c.competitors.length<2)return null;
   const Hc=c.competitors.find(x=>x.homeAway==="home")||c.competitors[0],Ac=c.competitors.find(x=>x.homeAway==="away")||c.competitors[1];
   const ty=(ev.status&&ev.status.type)||{},state=ty.state||"pre";
-  const nm=t=>(t.team&&(t.team.shortDisplayName||t.team.displayName))||"?";
+  const nm=t=>frTeam((t.team&&(t.team.shortDisplayName||t.team.displayName))||"?");
   const m={id:"e-"+path.replace(/\W/g,"")+"-"+ev.id,src:"espn",path,eid:ev.id,sp,lv,bo:3,comp:SP[sp].lv[lv],h:nm(Hc),a:nm(Ac),
     hl:Hc.team&&Hc.team.logo,al:Ac.team&&Ac.team.logo,hid:Hc.team&&Hc.team.id,aid:Ac.team&&Ac.team.id,t:Date.parse(ev.date),
     state,clock:ty.shortDetail||"",done:!!ty.completed,cancel:state==="post"&&!ty.completed};
@@ -1006,7 +1017,7 @@ function ladder(){const cfg=SP[U.sp],now=Date.now();
   return`<div class="ladder" id="ladder"><div class="tier"><small>Tous</small><div><button class="lvl star" data-act="lv" data-lv="-1" aria-pressed="${U.lv<0}">${ic("fire")}<span>À la une<em>Prochains</em></span></button></div></div>
     ${cfg.tiers.map(([t,ix])=>[t,ix.filter(l=>cfg.feeds[l])]).filter(([,ix])=>ix.length).map(([t,ix])=>`<div class="tier"><small>${t}</small><div>${ix.map(chip).join("")}</div></div>`).join("")}</div>`}
 function viewMatches(){const cfg=SP[U.sp];let h=installBanner()+`<div class="sports">${Object.entries(SP).map(([k,s])=>`<button class="sport" style="--c:${s.c}" data-act="sp" data-sp="${k}" aria-pressed="${U.sp===k}">${ballArt(k,"ghost")}${ballArt(k,"ball")}<span>${s.n}</span><small>${s.sub}</small></button>`).join("")}</div>`;
-  h+=ladder();
+  h+=pushBanner()+ladder();
   let list=matchesFor(U.sp,U.lv);
   const isDep=U.lv>=0&&U.lv<cfg.dep;
   if(S.bonus!==today())h+=`<button class="btn gold wide wheelbtn" data-act="wheel" style="margin-bottom:12px">${wheelMini()} Roue de la chance du jour</button>`;
@@ -1225,7 +1236,7 @@ function refreshLayer(){if(!U.open)return;const sc=$(".sheet")?$(".sheet").scrol
   if($(".sheet"))$(".sheet").scrollTop=sc}
 
 /* ---------- rendu global ---------- */
-function render(){document.body.dataset.sp=U.sp;$("#bal").textContent=tok(S.bal);
+function render(){document.body.dataset.sp=U.sp;$("#bal").textContent=tok(S.bal);{const st=pushState(),bd=$("#belldot"),bl=$("#bell");if(bd)bd.hidden=st==="on"||st==="na"&&!(IOS&&!STANDALONE);if(bl)bl.classList.toggle("on",st==="on")}
   $("#hello").textContent=S.name?"Salut "+S.name+" · "+DIVS[divOf(S.peak)][0]:"Paris gratuits · du district aux pros";
   document.querySelectorAll(".nav button").forEach(b=>b.dataset.tab===U.tab?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
   const op=S.bets.filter(b=>b.st==="open").length,nb=$("#nb");nb.hidden=!op;nb.textContent=op;
@@ -1323,8 +1334,9 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"react":reactTo(d.id,d.e);break;
     case"prof":openProfile(d.id);break;
     case"photo":openPhoto();break;
+    case"notif":openNotif();break;
     case"pushon":pushEnable();break;
-    case"remind":S.remind=+d.v;save();render();api("set_remind",{v:S.remind}).catch(()=>{});break;
+    case"remind":S.remind=+d.v;save();render();if(U.open==="notif")layer(viewNotif());api("set_remind",{v:S.remind}).catch(()=>{});break;
     case"pushoff":pushDisable();break;
     case"pushtest":api("push_test",{}).then(()=>toast("Notification de test envoyée.","win")).catch(()=>toast("Impossible pour l’instant.","bad"));break;
     case"pushx":try{localStorage.setItem("dap.pushx",String(Date.now()))}catch(e){}render();break;
@@ -1698,18 +1710,37 @@ const pushOK=()=>"serviceWorker"in navigator&&"PushManager"in window&&"Notificat
 function pushState(){if(!pushOK())return"na";if(Notification.permission==="denied")return"denied";return S.push&&Notification.permission==="granted"?"on":"off"}
 const b64u=s=>{const p="=".repeat((4-s.length%4)%4),r=atob((s+p).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from(r,c=>c.charCodeAt(0))};
 async function pushEnable(){if(!pushOK()){toast(IOS&&!STANDALONE?"Installe d’abord l’app sur l’écran d’accueil.":"Notifications indisponibles sur ce téléphone.","bad");return}
-  try{const perm=await Notification.requestPermission();if(perm!=="granted"){toast("Notifications refusées.","bad");render();return}
+  try{const perm=await Notification.requestPermission();if(perm!=="granted"){toast("Notifications refusées.","bad");render();if(U.open==="notif")layer(viewNotif());return}
     const reg=await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();
     if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID_PUB)});
-    if(!(await ensureSession()))throw new Error("offline");await api("push_sub",{sub:sub.toJSON()});S.push=1;save();render();toast("🔔 Notifications activées !","win")}
+    if(!(await ensureSession()))throw new Error("offline");await api("push_sub",{sub:sub.toJSON()});S.push=1;save();render();if(U.open==="notif")layer(viewNotif());toast("🔔 Notifications activées !","win")}
   catch(e){toast("Impossible d’activer les notifications pour l’instant.","bad")}}
 async function pushDisable(){try{const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();if(sub){api("push_unsub",{endpoint:sub.endpoint}).catch(()=>{});await sub.unsubscribe()}}catch(e){}
-  S.push=0;save();render();toast("Notifications désactivées.")}
+  S.push=0;save();render();if(U.open==="notif")layer(viewNotif());toast("Notifications désactivées.")}
 // le téléphone peut renouveler son abonnement : on le renvoie au serveur à chaque ouverture
 async function pushRefresh(){if(!S.push||!pushOK()||Notification.permission!=="granted")return;try{const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();
   if(sub&&S.tok)api("push_sub",{sub:sub.toJSON()}).catch(()=>{});else if(!sub)pushEnable()}catch(e){}}
 function pushBanner(){if(pushState()!=="off")return"";let x=0;try{x=+localStorage.getItem("dap.pushx")||0}catch(e){}if(Date.now()-x<5*DAY)return"";
-  return`<div class="pushb">${ic("fire")}<div><b>Active les notifications</b><small>Pour savoir quand un collègue te défie, réagit à ton pari ou t’écrit.</small></div><button class="btn" data-act="pushon">Activer</button><button class="x" data-act="pushx" aria-label="Plus tard">${ic("x")}</button></div>`}
+  return`<div class="pushb">${ic("fire")}<div><b>Active les notifications</b><small>Duels, matchs du soir, prono, classement : ne rate rien.</small></div><button class="btn" data-act="notif">Activer</button><button class="x" data-act="pushx" aria-label="Plus tard">${ic("x")}</button></div>`}
+function openNotif(){U.open="notif";layer(viewNotif())}
+function viewNotif(){const st=pushState();
+  const head=`<div class="grab"><h3>Notifications</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
+  const list=`<div class="nflist"><div>${ic("target")}Un collègue te lance un duel ou l’accepte</div><div>${ic("ball")}Les gros matchs du jour et le prono du week-end</div>
+    <div>${ic("chart")}Quand quelqu’un te passe devant dans ta ligue</div><div>${ic("group")}Les messages du chat de ta ligue</div><div>${ic("trophy")}Le bilan du lundi et le champion du mois</div></div>`;
+  if(st==="on")return head+`<div class="nfhero on"><div class="big">${ic("bell")}</div><h2>Activées</h2><p>Tu recevras les notifications sur ce téléphone.</p></div>
+    <div class="row" style="flex-wrap:wrap;gap:8px"><div><b>Rappels pour parier</b><small>${["Aucun rappel","Un rappel à midi","À midi et vers 18 h"][S.remind??2]}</small></div>
+    <div class="seg" style="width:100%;margin:0">${[["2","2 / jour"],["1","1 / jour"],["0","Aucun"]].map(([v,l])=>`<button data-act="remind" data-v="${v}" aria-pressed="${String(S.remind??2)===v}">${l}</button>`).join("")}</div></div>
+    ${list}<button class="btn ghost wide" data-act="pushtest">Envoyer une notification de test</button>
+    <p class="note" style="text-align:center"><button class="link" data-act="pushoff" style="color:var(--loss)">Couper les notifications</button></p>`;
+  if(st==="denied")return head+`<div class="nfhero"><div class="big">${ic("bell")}</div><h2>Bloquées</h2><p>Tu as refusé les notifications : il faut les réautoriser dans les réglages du téléphone.</p></div>
+    <ol class="steps">${IOS?`<li><span class="n">1</span><div>Ouvre <b>Réglages</b> › <b>Notifications</b>.</div></li><li><span class="n">2</span><div>Choisis <b>D’amateur à pro</b> et active <b>Autoriser les notifications</b>.</div></li>`
+      :`<li><span class="n">1</span><div>Appuie longtemps sur l’icône de l’app › <b>Infos sur l’appli</b> (ⓘ).</div></li><li><span class="n">2</span><div><b>Notifications</b> › active-les.</div></li>`}
+    <li><span class="n">3</span><div>Reviens ici et touche <b>Activer</b>.</div></li></ol><button class="btn gold wide" data-act="pushon">${ic("bell")} Activer</button>`;
+  if(st==="na")return head+`<div class="nfhero"><div class="big">${ic("bell")}</div><h2>Pas disponible ici</h2><p>${IOS&&!STANDALONE?"Installe d’abord l’app sur ton écran d’accueil, puis ouvre-la depuis l’icône.":IOS?"Il faut iOS 16.4 ou plus récent : mets ton iPhone à jour (Réglages › Général › Mise à jour logicielle).":"Ton navigateur ne gère pas les notifications. Utilise Chrome."}</p></div>${list}`;
+  return head+`<div class="nfhero"><div class="big">${ic("bell")}</div><h2>Ne rate rien</h2><p>Un appui suffit. Tu pourras régler les rappels ou tout couper quand tu veux.</p></div>
+    <button class="btn gold wide" data-act="pushon" style="font-size:19px;padding:15px">${ic("bell")} Activer les notifications</button>${list}
+    <p class="note" style="text-align:center">Ton téléphone va te demander l’autorisation : choisis <b>Autoriser</b>.</p>`}
+
 // ouvrir le bon écran depuis une notification (…?go=duels&code=ABCDE)
 function goFrom(url){try{const u=new URL(url,location.href),g=u.searchParams.get("go"),c=u.searchParams.get("code");if(!g)return;
   if(u.search)history.replaceState(null,"",location.pathname);U.open=null;layer("");U.tab="l";if(c)U.lg.code=c.toUpperCase();
@@ -2000,7 +2031,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.31";
+const VERSION="1.32";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

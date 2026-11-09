@@ -1,4 +1,5 @@
 // Prono du week-end : choix des matchs (flux ESPN), mise à jour des résultats et calcul des points.
+import { frTeam } from "./_teams.js";
 const ESPN = "https://site.api.espn.com/apis/site/v2/sports/";
 // [compétition, nombre de matchs retenus]
 const LEAGUES = [["soccer/fra.1", 3], ["soccer/eng.1", 1], ["soccer/esp.1", 1], ["soccer/ita.1", 1], ["soccer/ger.1", 1]];
@@ -17,7 +18,7 @@ function parse(ev, path) {
   if (!c || !c.competitors || c.competitors.length < 2) return null;
   const H = c.competitors.find((x) => x.homeAway === "home") || c.competitors[0], A = c.competitors.find((x) => x.homeAway === "away") || c.competitors[1];
   const ty = (ev.status && ev.status.type) || {};
-  const nm = (x) => (x.team && (x.team.shortDisplayName || x.team.displayName)) || "?";
+  const nm = (x) => frTeam((x.team && (x.team.shortDisplayName || x.team.displayName)) || "?");
   return { mid: "e-" + path.replace(/\W/g, "") + "-" + ev.id, path, eid: String(ev.id), h: nm(H), a: nm(A), hl: H.team && H.team.logo, al: A.team && A.team.logo,
     t: Date.parse(ev.date), state: ty.state || "pre", done: !!ty.completed, cancel: ty.state === "post" && !ty.completed,
     sh: ty.state === "pre" ? null : +H.score || 0, sa: ty.state === "pre" ? null : +A.score || 0, strength: recPts(H) + recPts(A) };
