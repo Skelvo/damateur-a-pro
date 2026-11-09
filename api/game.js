@@ -1,4 +1,4 @@
-// Seule fonction serveur de Tribune : comptes anonymes, ligues entre amis, classements,
+// Seule fonction serveur de Tribune : comptes anonymes, guildes entre amis, classements,
 // et « ce que parient les autres ». Tout passe par POST /api/game {action, ...}.
 import { db, hashToken, newToken, ipKey, overLimit } from "./_db.js";
 import { timingSafeEqual, randomInt } from "node:crypto";
@@ -11,7 +11,7 @@ const ORIGINS = [
   "https://damateur-a-pro.vercel.app",
 ];
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sans 0/O ni 1/I
-const MAX_LEAGUES = 12, MAX_MEMBERS = 60, MAX_BAL = 1e9;
+const MAX_LEAGUES = 12, MAX_MEMBERS = 100, MAX_BAL = 1e9;
 
 const cleanName = (v, max) => String(v ?? "").replace(/[\u0000-\u001f<>]/g, "").replace(/\s+/g, " ").trim().slice(0, max);
 const num = (v, lo, hi) => { const n = Number(v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : lo; };
@@ -42,7 +42,7 @@ async function pronoWeek(s, noRefresh) {
   }
   return { week: w.w, from, to, matches: row.matches };
 }
-const lname = async (s, code) => ((await s.query(`select name from leagues where code = $1`, [code]))[0] || {}).name || "ta ligue";
+const lname = async (s, code) => ((await s.query(`select name from leagues where code = $1`, [code]))[0] || {}).name || "ta guilde";
 const go = (view, code) => `./?go=${view}&code=${encodeURIComponent(code)}`;
 const isDarkMember = async (s, code, pid) => !!(code && (await s.query(`select 1 from league_members m join leagues l on l.code = m.code and l.dark where m.code = $1 and m.player = $2`, [code, pid]))[0]);
 const isMember = async (s, code, pid) => !!(code && (await s.query(`select 1 from league_members where code = $1 and player = $2`, [code, pid]))[0]);
@@ -60,10 +60,10 @@ const PREV_MONTH = `to_char(date_trunc('month', now() at time zone 'Europe/Paris
 const BOARD_COLS = `p.id, p.name, p.bal::float8 as bal, p.peak::float8 as peak, p.won, p.lost, p.avatar_v, p.fav, p.badges,
   coalesce((select x.gain from profits x where x.player = p.id and x.per = ${WEEK}), 0)::float8 as week_gain,
   coalesce((select x.gain from profits x where x.player = p.id and x.per = ${MONTH}), 0)::float8 as month_gain`;
-// Gains par semaine (ou par mois) des membres d'une ligue, y compris la dernière période de ceux
-// qui n'ont pas rouvert l'app depuis ; rk = place dans la ligue pour cette période.
+// Gains par semaine (ou par mois) des membres d'une guilde, y compris la dernière période de ceux
+// qui n'ont pas rouvert l'app depuis ; rk = place dans la guilde pour cette période.
 // Depuis le 9 novembre 2026, seuls les PARIS comptent (table profits, envoyée par chaque téléphone) :
-// la roue, les défis, le prono et le match de la ligue ne comptent plus. Avant, c'était l'écart de solde.
+// la roue, les défis, le prono et le match de la guilde ne comptent plus. Avant, c'était l'écart de solde.
 const CUT = { week: "2026-11-09", month: "2026-11" };
 const periodGains = (tbl, col, cur, bal) => `with mem as (select player from league_members where code = $1),
   g as (select pr.player, pr.per, pr.gain from profits pr join mem on mem.player = pr.player where length(pr.per) = ${col === "week" ? 10 : 7} and pr.per >= '${CUT[col]}'
@@ -92,7 +92,7 @@ function newCode() {
 
 async function myLeagues(s, pid) {
   const leagues = await s.query(
-    `select l.code, l.name, l.owner = $1 as mine, l.prizes, (select count(*)::int from league_members m2 where m2.code = l.code) as n
+    `select l.code, l.name, l.owner = $1 as mine, l.prizes, l.emblem, l.motto, l.access, m.role, (select count(*)::int from requests rq where rq.code = l.code) as nreq, (select count(*)::int from league_members m2 where m2.code = l.code) as n
        from leagues l join league_members m on m.code = l.code where m.player = $1 and not l.dark order by m.joined_at`, [pid]);
   return leagues;
 }
@@ -141,7 +141,7 @@ function verdict(m, R) {
   return { res, conf: best.length };
 }
 
-// ---- Bilan de la semaine passée d'une ligue (calculé à la demande, rien n'est stocké) ----
+// ---- Bilan de la semaine passée d'une guilde (calculé à la demande, rien n'est stocké) ----
 async function recapFor(s, code) {
   const per = (await s.query(`select ${PREV_WEEK} as w,
       extract(epoch from ((date_trunc('week', now() at time zone 'Europe/Paris') - interval '7 days') at time zone 'Europe/Paris')) * 1000 as a,
@@ -274,10 +274,10 @@ async function reminders(s, slot) {
     if (!msg && lm && lm.cur && lm.cur.day === t.ymd && lm.cur.match.t > now + 20 * 60e3 && !(await s.query(`select 1 from lm_picks where day = $1 and player = $2`, [lm.cur.day, p.id]))[0]) {
       const lg = (await s.query(`select m.code, (select count(*)::int from lm_picks x join league_members m2 on m2.player = x.player and m2.code = m.code where x.day = $2) as n
           from league_members m where m.player = $1 and m.code not in (select code from leagues where dark) order by m.joined_at limit 1`, [p.id, lm.cur.day]))[0];
-      if (lg) msg = { title: "⚽ Match de la ligue", body: `${lm.cur.match.h} – ${lm.cur.match.a} à ${hhmm(lm.cur.match.t)}. ${lg.n ? `${lg.n} collègue${lg.n > 1 ? "s ont" : " a"} déjà voté` : "Personne n'a encore voté"}, et toi ? Bonne réponse = +${LM_PRIZE} jetons.`, url: go("rank", lg.code), tag: "remind-lm" };
+      if (lg) msg = { title: "⚽ Match de la guilde", body: `${lm.cur.match.h} – ${lm.cur.match.a} à ${hhmm(lm.cur.match.t)}. ${lg.n ? `${lg.n} collègue${lg.n > 1 ? "s ont" : " a"} déjà voté` : "Personne n'a encore voté"}, et toi ? Bonne réponse = +${LM_PRIZE} jetons.`, url: go("rank", lg.code), tag: "remind-lm" };
     }
     if (!msg && slot === "soir") {
-      // rivalité : le joueur juste devant moi cette semaine dans ma ligue la plus active
+      // rivalité : le joueur juste devant moi cette semaine dans ma guilde la plus active
       const r = (await s.query(`with my as (select m.code from league_members m where m.player = $1 and m.code not in (select code from leagues where dark)),
           b as (select m.code, p.id, p.name, case when p.week = ${WEEK} then p.bal - coalesce(p.week_bal, p.bal) else 0 end as g
                 from league_members m join my on my.code = m.code join players p on p.id = m.player)
@@ -300,7 +300,7 @@ async function reminders(s, slot) {
   return { sent: n, matches: M.length };
 }
 
-// ---- Match de la ligue : un match par jour (le même pour tout le monde), on vote 1 / N / 2 ----
+// ---- Match de la guilde : un match par jour (le même pour tout le monde), on vote 1 / N / 2 ----
 const LM_PRIZE = 30;
 const outcome = (m) => (m && m.done && m.sh != null ? (m.sh > m.sa ? 0 : m.sh === m.sa ? 1 : 2) : null);
 async function dayMatch(s) {
@@ -332,9 +332,9 @@ async function dayMatch(s) {
   return { today: t.d, cur: cur ? { day: cur.day, match: cur.match } : null };
 }
 
-// ---- Récompenses du mois : à la fin du mois, chaque ligue (2 membres ou plus) donne des jetons selon le classement final ----
+// ---- Récompenses du mois : à la fin du mois, chaque guilde (2 membres ou plus) donne des jetons selon le classement final ----
 // (1er, 2e, 3e, puis « tous les autres » ; il faut avoir au moins un pari terminé dans le mois). Les égalités gagnent pareil.
-// Montants IDENTIQUES pour toutes les ligues, fixés ici (même liste dans index.html : PRZ).
+// Montants IDENTIQUES pour toutes les guildes, fixés ici (même liste dans index.html : PRZ).
 const PRIZES = [1000, 500, 250, 25];
 const prizeOf = (P, rk) => PRIZES[Math.min(rk, 4) - 1] || 0;
 async function ensurePrizes(s, month) {
@@ -439,6 +439,26 @@ async function pronoCredit(s, pid, week) {
   let pts = 0;
   for (const x of picks) { const M = w.matches.find((m) => m.mid === x.mid); const pt = M ? points(M, x) : null; if (pt) pts += pt; }
   if (pts > 0) await credit(s, pid, pts * 10, "prono", week);
+}
+
+// ---- Guildes : emblème, devise, accès (ouverte / sur demande / privée), rôles (chef, adjoints, membres) ----
+const EMBLEMS = ["🦁","🐺","🦅","🐉","🦈","🐻","🦊","🐯","🔥","⚡","👑","🏆","⚽","🏉","🎾","🏀","💎","🚀","🎯","🛡️","⚔️","🌟","🍀","🐐"];
+const GCOLORS = ["#35d07f","#ffd23f","#ff7a45","#5fa8ff","#c084fc","#ff5a5f","#2ec4b6","#f8fafc","#ff9f1c","#8ac926"];
+async function guildRole(s, code, pid) {
+  const r = (await s.query(`select l.owner, m.role from leagues l join league_members m on m.code = l.code and m.player = $2 where l.code = $1 and not l.dark`, [code, pid]))[0];
+  if (!r) return null;
+  return String(r.owner) === String(pid) ? "chef" : r.role === "officer" ? "adjoint" : "membre";
+}
+async function addMember(s, code, pid, name) {
+  const l = (await s.query(`select name, (select count(*)::int from league_members m where m.code = leagues.code) as n from leagues where code = $1`, [code]))[0];
+  if (!l) throw fail(404, "unknown");
+  if (l.n >= MAX_MEMBERS) throw fail(400, "full");
+  const n = (await s.query(`select count(*)::int as n from league_members where player = $1`, [pid]))[0].n;
+  if (n >= MAX_LEAGUES) throw fail(400, "too_many");
+  const r = await s.query(`insert into league_members (code, player) values ($1, $2) on conflict do nothing returning player`, [code, pid]);
+  await s.query(`delete from requests where code = $1 and player = $2`, [code, pid]);
+  if (r[0]) await notify(s, await members(s, code), { title: l.name, body: `${name} a rejoint la guilde 👋`, url: go("rank", code), tag: "join-" + code }, pid);
+  return { code, name: l.name };
 }
 
 const ACTIONS = {
@@ -639,6 +659,90 @@ const ACTIONS = {
     return { open, done, diffs };
   },
 
+  // ---- Guildes ----
+  async guild_update(s, b) {
+    const p = await me(s, b.token);
+    const code = cleanName(b.code, 8).toUpperCase(), role = await guildRole(s, code, p.id);
+    if (role !== "chef" && role !== "adjoint") throw fail(403, "not_allowed");
+    const e = b.emblem || {}, emblem = { i: EMBLEMS.includes(e.i) ? e.i : "🛡️", c: GCOLORS.includes(e.c) ? e.c : "#35d07f" };
+    const access = ["open", "request", "private"].includes(b.access) ? b.access : "private";
+    const name = cleanName(b.name, 24), motto = cleanName(b.motto, 60);
+    await s.query(`update leagues set emblem = $2::jsonb, access = $3, motto = $4, name = case when $5 <> '' and $6 then $5 else name end where code = $1`,
+      [code, JSON.stringify(emblem), access, motto || null, name, role === "chef"]);
+    return { ok: true };
+  },
+  async guild_members(s, b) {
+    const p = await me(s, b.token);
+    const code = cleanName(b.code, 8).toUpperCase(), role = await guildRole(s, code, p.id);
+    if (!role) throw fail(403, "not_member");
+    const owner = (await s.query(`select owner from leagues where code = $1`, [code]))[0].owner;
+    const rows = await s.query(`select pl.id, pl.name, pl.avatar_v, m.role, extract(epoch from m.joined_at) * 1000 as since, extract(epoch from pl.seen_at) * 1000 as seen
+       from league_members m join players pl on pl.id = m.player where m.code = $1 order by (pl.id = $2) desc, (m.role = 'officer') desc, m.joined_at`, [code, owner]);
+    const req = role === "membre" ? [] : await s.query(`select pl.id, pl.name, pl.avatar_v, extract(epoch from r.at) * 1000 as at from requests r join players pl on pl.id = r.player where r.code = $1 order by r.at`, [code]);
+    return { me: p.id, role, members: rows.map((r) => ({ id: r.id, name: r.name, av: r.avatar_v || 0, role: String(r.id) === String(owner) ? "chef" : r.role === "officer" ? "adjoint" : "membre",
+      since: Math.round(Number(r.since)), seen: Math.round(Number(r.seen)) })), requests: req.map((r) => ({ id: r.id, name: r.name, av: r.avatar_v || 0, at: Math.round(Number(r.at)) })) };
+  },
+  async guild_kick(s, b) {
+    const p = await me(s, b.token);
+    const code = cleanName(b.code, 8).toUpperCase(), role = await guildRole(s, code, p.id), target = String(int(b.id, 0, 1e15));
+    const trole = await guildRole(s, code, target);
+    if (!trole || target === String(p.id)) throw fail(400, "unknown");
+    if (!(role === "chef" || (role === "adjoint" && trole === "membre"))) throw fail(403, "not_allowed");
+    await s.query(`delete from league_members where code = $1 and player = $2`, [code, target]);
+    return { ok: true };
+  },
+  async guild_role(s, b) {
+    const p = await me(s, b.token);
+    const code = cleanName(b.code, 8).toUpperCase(), target = String(int(b.id, 0, 1e15));
+    if ((await guildRole(s, code, p.id)) !== "chef") throw fail(403, "not_allowed");
+    const trole = await guildRole(s, code, target);
+    if (!trole || trole === "chef") throw fail(400, "unknown");
+    if (b.role === "chef") {   // passer la main : l'ancien chef devient adjoint
+      await s.query(`update leagues set owner = $2 where code = $1`, [code, target]);
+      await s.query(`update league_members set role = 'officer' where code = $1 and player = $2`, [code, p.id]);
+      await s.query(`update league_members set role = 'member' where code = $1 and player = $2`, [code, target]);
+    } else await s.query(`update league_members set role = $3 where code = $1 and player = $2`, [code, target, b.role === "adjoint" ? "officer" : "member"]);
+    return { ok: true };
+  },
+  // annuaire : guildes ouvertes ou sur demande, les plus actives d'abord
+  async guild_dir(s, b) {
+    const p = await me(s, b.token);
+    const q = cleanName(b.q, 30);
+    const rows = await s.query(`select l.code, l.name, l.emblem, l.motto, l.access, count(m.player)::int as n,
+         count(*) filter (where pl.seen_at > now() - interval '7 days')::int as active,
+         bool_or(m.player = $1) as mine, exists (select 1 from requests r where r.code = l.code and r.player = $1) as asked
+       from leagues l join league_members m on m.code = l.code join players pl on pl.id = m.player
+       where not l.dark and l.access in ('open', 'request') and ($2 = '' or l.name ilike '%' || $2 || '%')
+       group by l.code order by active desc, n desc limit 50`, [p.id, q]);
+    return { guilds: rows };
+  },
+  // rejoindre depuis l'annuaire : tout de suite si ouverte, sinon une demande au chef et aux adjoints
+  async guild_join(s, b, req) {
+    const p = await me(s, b.token);
+    if (await overLimit(ipKey(req) + ":join", 40, 3600)) throw fail(429, "slow_down");
+    const code = cleanName(b.code, 8).toUpperCase();
+    const l = (await s.query(`select code, name, access, owner from leagues where code = $1 and not dark`, [code]))[0];
+    if (!l || l.access === "private") throw fail(404, "unknown");
+    if (l.access === "open") return { joined: true, ...(await addMember(s, code, p.id, p.name)) };
+    await s.query(`insert into requests (code, player) values ($1, $2) on conflict do nothing`, [code, p.id]);
+    const chiefs = (await s.query(`select player from league_members where code = $1 and (role = 'officer' or player = $2)`, [code, l.owner])).map((x) => x.player);
+    await notify(s, chiefs, { title: `🛡️ ${l.name}`, body: `${p.name} demande à rejoindre la guilde.`, url: go("rank", code), tag: "req-" + code });
+    return { requested: true, name: l.name };
+  },
+  async guild_answer(s, b) {
+    const p = await me(s, b.token);
+    const code = cleanName(b.code, 8).toUpperCase(), role = await guildRole(s, code, p.id), target = String(int(b.id, 0, 1e15));
+    if (role !== "chef" && role !== "adjoint") throw fail(403, "not_allowed");
+    const r = (await s.query(`delete from requests where code = $1 and player = $2 returning player`, [code, target]))[0];
+    if (!r) throw fail(404, "unknown");
+    const name = (await s.query(`select name from players where id = $1`, [target]))[0].name;
+    if (b.accept) {
+      const g = await addMember(s, code, target, name);
+      await notify(s, [target], { title: `🛡️ ${g.name}`, body: "Ta demande est acceptée : bienvenue dans la guilde !", url: go("rank", code), tag: "acc-" + code });
+    }
+    return { ok: true };
+  },
+
   async recovery_make(s, b) {
     const p = await me(s, b.token);
     const cur = (await s.query(`select recovery_hash from players where id = $1`, [p.id]))[0];
@@ -745,7 +849,7 @@ const ACTIONS = {
       const n = (await s.query(`select count(*)::int as n from league_members where player = $1`, [p.id]))[0].n;
       if (n >= MAX_LEAGUES) throw fail(400, "too_many");
       await s.query(`insert into league_members (code, player) values ($1, $2) on conflict do nothing`, [code, p.id]);
-      await notify(s, await members(s, code), { title: l.name, body: `${p.name} a rejoint la ligue 👋`, url: go("rank", code), tag: "join-" + code }, p.id);
+      await notify(s, await members(s, code), { title: l.name, body: `${p.name} a rejoint la guilde 👋`, url: go("rank", code), tag: "join-" + code }, p.id);
     }
     return { code, name: l.name, already: !!already };
   },
@@ -754,12 +858,14 @@ const ACTIONS = {
     const p = await me(s, b.token);
     const code = cleanName(b.code, 8).toUpperCase();
     await s.query(`delete from league_members where code = $1 and player = $2`, [code, p.id]);
-    // ligue vide : on la supprime
+    await s.query(`update leagues l set owner = (select m.player from league_members m where m.code = l.code order by (m.role = 'officer') desc, m.joined_at limit 1)
+       where l.code = $1 and l.owner = $2`, [code, p.id]);
+    // guilde vide : on la supprime
     await s.query(`delete from leagues where code = $1 and not exists (select 1 from league_members where code = $1)`, [code]);
     return { ok: true };
   },
 
-  // Mes ligues + le classement de celle demandée (ou le général si code = "")
+  // Mes guildes + le classement de celle demandée (ou le général si code = "")
   async boards(s, b) {
     const p = await me(s, b.token);
     const leagues = await myLeagues(s, p.id);
@@ -823,7 +929,7 @@ const ACTIONS = {
     return { v: r[0].avatar_v };
   },
 
-  // ---- Fiche d'un joueur (visible si on partage une ligue avec lui) ----
+  // ---- Fiche d'un joueur (visible si on partage une guilde avec lui) ----
   async profile(s, b) {
     const p = await me(s, b.token);
     const id = String(int(b.id, 0, 1e15));
@@ -843,8 +949,8 @@ const ACTIONS = {
       hist: (await s.query(`select day, bal::float8 as bal from bal_hist where player = $1 and day >= to_char((now() at time zone 'Europe/Paris') - interval '30 days', 'YYYYMMDD') order by day`, [id])).map((x) => [x.day, Math.round(x.bal)]) };
   },
 
-  // ---- Côté dark : paris inventés par les membres (anonymes, pari mutuel), seulement dans les ligues secrètes ----
-  // (une ligue secrète n'apparaît pas dans les ligues normales et se rejoint seulement par son code, depuis l'entrée cachée)
+  // ---- Côté dark : paris inventés par les membres (anonymes, pari mutuel), seulement dans les guildes secrètes ----
+  // (une guilde secrète n'apparaît pas dans les guildes normales et se rejoint seulement par son code, depuis l'entrée cachée)
   async dark_leagues(s, b) {
     const p = await me(s, b.token);
     const leagues = await s.query(`select l.code, l.name, l.owner = $1 as mine, (select count(*)::int from league_members m2 where m2.code = l.code) as n
@@ -1141,7 +1247,7 @@ const ACTIONS = {
     return { ok: true };
   },
 
-  // ---- Chat de la ligue ----
+  // ---- Chat de la guilde ----
   async chat_send(s, b, req) {
     const p = await me(s, b.token);
     const code = cleanName(b.code, 8).toUpperCase();
@@ -1150,7 +1256,7 @@ const ACTIONS = {
     if (!text) throw fail(400, "empty");
     if (await overLimit("chat:" + p.id, 30, 60)) throw fail(429, "slow_down");
     const r = await s.query(`insert into chat (code, player, text) values ($1, $2, $3) returning id, extract(epoch from at) * 1000 as ms`, [code, p.id, text]);
-    // une notification de chat au plus toutes les 10 min par membre et par ligue
+    // une notification de chat au plus toutes les 10 min par membre et par guilde
     const mem = (await members(s, code)).filter((x) => String(x) !== String(p.id));
     const to = [];
     for (const m of mem) if (!(await overLimit(`pushchat:${m}:${code}`, 1, 600))) to.push(m);
@@ -1219,7 +1325,7 @@ const ACTIONS = {
     return { ok: true };
   },
 
-  // ---- Duels entre membres d'une ligue (sur le résultat d'un vrai match) ----
+  // ---- Duels entre membres d'une guilde (sur le résultat d'un vrai match) ----
   // Les jetons restent gérés par chaque téléphone : le serveur garde l'état du duel et son vainqueur.
   async duel_create(s, b) {
     const p = await me(s, b.token);

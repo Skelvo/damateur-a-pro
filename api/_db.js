@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "24";
+const SCHEMA_VERSION = "25";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -245,6 +245,16 @@ const STATEMENTS = [
      at timestamptz not null default now(),
      unique (player, kind, ref))`,
   `alter table duels add column if not exists path text`,
+  // guildes : emblème, devise, accès, rôles, demandes d'adhésion
+  `alter table leagues add column if not exists emblem jsonb`,
+  `alter table leagues add column if not exists motto text`,
+  `alter table leagues add column if not exists access text not null default 'private'`,
+  `alter table league_members add column if not exists role text not null default 'member'`,
+  `create table if not exists requests (
+     code text not null references leagues(code) on delete cascade,
+     player bigint not null references players(id) on delete cascade,
+     at timestamptz not null default now(),
+     primary key (code, player))`,
   `create table if not exists rate_hits (key text not null, win bigint not null, n int not null default 0, primary key (key, win))`,
 ];
 
