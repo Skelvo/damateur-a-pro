@@ -1028,11 +1028,14 @@ function fixLogo(name,logo){const n=String(name||"").trim();
   if(logo&&/\/countries\/500\/usa\.png/.test(logo)&&n!=="États-Unis")logo=null;   // ESPN met le drapeau américain à Perpignan
   return logo||LOGO_FIX[n]||null}   // le logo ESPN d'abord, le nôtre seulement s'il manque
 // image qui ne charge pas : un 2e essai par le serveur d'images réduites d'ESPN, puis l'écusson dessiné
-function crestErr(img){const src=img.getAttribute("src")||"";
-  if(!img.dataset.retry&&/^https:\/\/a\.espncdn\.com\/i\//.test(src)){img.dataset.retry=1;img.src="https://a.espncdn.com/combiner/i?img="+encodeURIComponent(src.replace("https://a.espncdn.com",""))+"&w=96&h=96";return}
-  img.outerHTML=img.dataset.fb}
+function crestErr(img){if(!img.isConnected)return;const n=+(img.dataset.retry||0),src=img.getAttribute("src")||"";
+  if(n<3){img.dataset.retry=n+1;const orig=img.dataset.orig||(img.dataset.orig=src);
+    // 1er essai : tout de suite par le serveur d'images réduites d'ESPN ; puis l'original, avec une pause
+    const alt=/^https:\/\/a\.espncdn\.com\/i\//.test(orig)?"https://a.espncdn.com/combiner/i?img="+encodeURIComponent(orig.replace("https://a.espncdn.com",""))+"&w=96&h=96":orig;
+    setTimeout(()=>{if(img.isConnected)img.src=n===0?alt:orig+(orig.includes("?")?"&":"?")+"r="+n},n===0?0:1200*n);return}
+  if(img.parentNode)img.outerHTML=img.dataset.fb}
 function crest(name,sp,logo,flag,raw){if(!raw)logo=fixLogo(name,logo);
-  if(logo)return`<img class="crest" src="${esc(logo)}" alt="" decoding="async" referrerpolicy="no-referrer" data-fb="${esc(crest(name,sp,null,flag,1))}" onerror="crestErr(this)">`;
+  if(logo)return`<img class="crest" src="${esc(logo)}" alt="" referrerpolicy="no-referrer" data-fb="${esc(crest(name,sp,null,flag,1))}" onerror="crestErr(this)">`;
   if(sp==="tennis"&&flag)return`<span class="crest tflag"><img src="${esc(flag)}" alt="" decoding="async" referrerpolicy="no-referrer" data-fb="${esc(crest(name,sp,null,null,1))}" onerror="this.parentNode.outerHTML=this.dataset.fb"></span>`;
   const h=hash(name),c1=PAL[h%16];let c2=PAL[(h>>5)%16];if(c2===c1)c2=PAL[(h%16+5)%16];
   const ini=esc(initials(name,sp)),tx=lum(c1)>.6?"#111":"#fff",id="c"+h.toString(36);
@@ -1331,7 +1334,7 @@ function render(){document.body.dataset.sp=U.sp;document.body.classList.toggle("
   document.querySelectorAll(".nav button").forEach(b=>b.dataset.tab===U.tab?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
   const op=S.bets.filter(b=>b.st==="open").length,nb=$("#nb");nb.hidden=!op;nb.textContent=op;
   const lx=$("#ladder")?$("#ladder").scrollLeft:null;
-  $("#main").innerHTML=U.tab==="m"?viewMatches():U.tab==="b"?viewBets():U.tab==="l"?viewLeagues():viewCareer();
+  {const html=U.tab==="m"?viewMatches():U.tab==="b"?viewBets():U.tab==="l"?viewLeagues():viewCareer(),M=$("#main");if(html!==M._html){M.innerHTML=html;M._html=html}}
   if(lx!=null&&$("#ladder"))$("#ladder").scrollLeft=lx;
   renderSlipBar()}
 
@@ -2336,7 +2339,7 @@ async function installPrompt(){if(!installEvt)return;installEvt.prompt();const r
 const GATE=!STANDALONE&&!matchMedia("(display-mode: fullscreen), (display-mode: minimal-ui)").matches&&(IOS||ANDROID);
 function renderGate(){const lg=new URLSearchParams(location.search).get("ligue");
   document.body.classList.add("gated");
-  $("#main").innerHTML=`<div class="gate"><img src="icon-180.png" alt="" class="gicon">
+  $("#main")._html=null;$("#main").innerHTML=`<div class="gate"><img src="icon-180.png" alt="" class="gicon">
     <h1>D’amateur <em>à pro</em></h1><small style="color:var(--mute2)">v${VERSION}</small><p class="gsub">Le jeu se joue <b>uniquement depuis l’app</b> sur ton écran d’accueil. C’est gratuit, sans store, et ça prend 10 secondes.</p>
     ${lg?`<div class="xcode" style="margin-bottom:12px"><small>Invitation à une ligue : une fois dans l’app, va dans Ligues › Rejoindre et entre ce code</small><b>${esc(lg.toUpperCase().slice(0,8))}</b></div>`:""}
     ${viewInstall(true)}</div>`}
@@ -2371,7 +2374,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.47";
+const VERSION="1.48";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
