@@ -155,6 +155,7 @@ function outcome(d,m,st,line){ // index de la sélection gagnante, null si stats
   if(d.ty==="ou")return v>line?0:1;if(d.ty==="yn")return v?0:1;return v}
 const ESPN="https://site.api.espn.com/apis/site/v2/sports/";
 const SOCSTAT={yellowCards:"yc",redCards:"rc",offsides:"of",wonCorners:"co",foulsCommitted:"fo",shotsOnTarget:"sot",penaltyKickShots:"pk"};
+const strength=(name,sp,lv)=>((hash(name+"|"+sp)%2001)/1000-1)*(lv<3?1.1:.9);
 function recStrength(c,name,sp,lv){const s=c.records&&c.records[0]&&c.records[0].summary;
   if(s&&/^\d+-\d+-\d+$/.test(s)){const[w,d,l]=s.split("-").map(Number),n=w+d+l;if(n>=3)return cl(((3*w+d)/n-1.4)/.8,-1.4,1.4)}
   if(sp==="basket"&&s&&/^\d+-\d+$/.test(s)){const[w,l]=s.split("-").map(Number),n=w+l;if(n>=3)return cl((w/n-.5)*2.6,-1.3,1.3)}
@@ -212,5 +213,18 @@ function status(m){const now=Date.now();
   return now<m.t?"pre":now<m.t+SP[m.sp].dur*6e4?"live":"post"}
 function realStats(m){const s=status(m);if(s!=="post")return null;if(m.src==="sim")return simOne(m);if(m.src==="org"||m.src==="am")return m.res;return m.st||null}
 
-if(typeof globalThis!=="undefined")globalThis.ENGINE={fr,SP,SIM,MK,N,ALLSTATS,STATL,ESPN,MCC,MKC,ONE,cl,hash,rng,pois,binom,H,DAY,lvA,sims,simOne,tot,cmp3,avail,odd,mt,liveOK,canBet,liveSims,marketSims,markets,outcome,
-  SOCSTAT,recStrength,amer,bookDiff,footProbs,TEAM_FR,frTeam,parseTeamEvent,parseTennis,status,realStats};
+/* ---------- combinés : cote d'un ensemble de sélections (mêmes règles pour l'appli et le serveur) ---------- */
+const PMK={psc:{t:"Buteur",ic:"goal"},p2:{t:"Doublé",ic:"goal"},pyc:{t:"Carton",ic:"card",cls:"yc"}};
+function legIdx(d,m,g,L){const v=d.val(g,m);return d.ty==="ou"?(v>L.line?0:1):d.ty==="yn"?(v?0:1):v}
+// probabilité que toutes les sélections d'un même match passent ensemble (même tirage Monte-Carlo)
+function jointP(m,legs){if(!m)return 0;const S_=marketSims(m),defs=legs.map(L=>MK[m.sp].find(d=>d.id===L.mk));let c=0;
+  for(let i=0;i<N;i++){const g=k=>[S_[k][0][i],S_[k][1][i]];let ok=true;for(let j=0;j<legs.length;j++)if(legIdx(defs[j],m,g,legs[j])!==legs[j].k){ok=false;break}if(ok)c++}return c/N}
+// sel : [{mid,mk,k,line,o}] ; getM(mid) → match. Matchs différents : cotes multipliées ; même match : cote jointe.
+function comboCalc(sel,getM){const by={};sel.forEach(s=>(by[s.mid]=by[s.mid]||[]).push(s));let odds=1,bad=false,linked=0;const groups={};
+  for(const mid in by){const L=by[mid];if(L.length===1){odds*=L[0].o;continue}
+    if(L.some(s=>PMK[s.mk])){const o=Math.round(cl(L.reduce((a,s)=>a*s.o,1)*.92,1.01,2000)*100)/100;linked++;groups[mid]=o;odds*=o;continue}
+    linked++;const p=jointP(getM(mid),L);if(p<.004){bad=true;continue}const o=Math.round(cl(.9/p,1.01,500)*100)/100;groups[mid]=o;odds*=o}
+  return{odds:Math.round(odds*100)/100,groups,bad,linked}}
+
+if(typeof globalThis!=="undefined")globalThis.ENGINE={fr,strength,SP,SIM,MK,N,ALLSTATS,STATL,ESPN,MCC,MKC,ONE,cl,hash,rng,pois,binom,H,DAY,lvA,sims,simOne,tot,cmp3,avail,odd,mt,liveOK,canBet,liveSims,marketSims,markets,outcome,
+  SOCSTAT,recStrength,amer,bookDiff,footProbs,TEAM_FR,frTeam,parseTeamEvent,parseTennis,status,realStats,PMK,legIdx,jointP,comboCalc};

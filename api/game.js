@@ -4,6 +4,7 @@ import { db, hashToken, newToken, ipKey, overLimit } from "./_db.js";
 import { timingSafeEqual } from "node:crypto";
 import { buildWeek, refreshResults, points, todayMatches, bestOfDay } from "./_prono.js";
 import { notify, members } from "./_push.js";
+import { checkBet } from "./_bets.js";
 
 const ORIGINS = [
   "https://skelvo.fr", "https://www.skelvo.fr", "https://skelvo.github.io",
@@ -507,6 +508,35 @@ const ACTIONS = {
 
   // ---- Code de compte permanent (12 caractères, ne change jamais) + sauvegarde du téléphone sur le serveur ----
   // Le serveur ne garde que l'empreinte du code ; le téléphone garde le code en clair pour l'afficher.
+  // ---- Paris enregistrés et contrôlés par le serveur ----
+  // {bets:[{cid, stake, combo, odds, sels:[{mid,path,t,mk,k,line,o,l,ml,mt}]}]} : tout passe ou rien n'est enregistré.
+  async place_bets(s, b) {
+    const p = await me(s, b.token);
+    if (await overLimit("place:" + p.id, 40, 60)) throw fail(429, "slow_down");
+    const list = (Array.isArray(b.bets) ? b.bets : []).slice(0, 12);
+    if (!list.length) throw fail(400, "empty");
+    const bal = Number((await s.query(`select bal from players where id = $1`, [p.id]))[0].bal);
+    const total = list.reduce((a, x) => a + int(x.stake, 0, 1e9), 0);
+    if (list.some((x) => int(x.stake, 0, 1e9) < 1)) throw fail(400, "stake");
+    if (total > bal + 0.5) return { error: "balance", bal: Math.round(bal) };
+    const ok = [];
+    for (let i = 0; i < list.length; i++) {
+      const r = await checkBet(list[i]);
+      if (!r.ok) return { ...r, index: i };
+      ok.push(r);
+    }
+    const out = [];
+    for (let i = 0; i < list.length; i++) {
+      const x = list[i], r = ok[i], cid = cleanName(x.cid, 40) || "b" + Date.now() + "-" + i;
+      const legs = r.legs.map((L) => ({ mid: String(L.mid), path: String(L.path), eid: L.eid, t: L.t, sp: L.sp, lv: L.lv, mk: String(L.mk), k: L.k, line: L.line ?? null,
+        o: Number(L.o), live: !!L.live, l: cleanName(L.l, 80), ml: cleanName(L.ml, 80), mt: cleanName(L.mt, 60) }));
+      const row = (await s.query(`insert into bets (player, cid, stake, odds, combo, legs, groups) values ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb)
+         on conflict (player, cid) do nothing returning id`, [p.id, cid, int(x.stake, 1, 1e9), r.odds, !!(x.combo && legs.length > 1), JSON.stringify(legs), JSON.stringify(r.groups)]))[0];
+      out.push({ cid, id: row ? row.id : null, odds: r.odds });
+    }
+    return { ok: true, bets: out };
+  },
+
   async recovery_make(s, b) {
     const p = await me(s, b.token);
     const cur = (await s.query(`select recovery_hash from players where id = $1`, [p.id]))[0];

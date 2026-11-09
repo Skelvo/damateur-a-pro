@@ -685,7 +685,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.60"></script>
+<script src="engine.js?v=1.61"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -732,7 +732,6 @@ const U={lg:{code:"",data:null,err:null,loading:false,mode:"season",view:"rank"}
 const REG=new Map(),FEED={};
 
 /* ---------- fixtures simulées ---------- */
-const strength=(name,sp,lv)=>((hash(name+"|"+sp)%2001)/1000-1)*(lv<3?1.1:.9);
 function simFixtures(sp,lv,mon){const key=`${sp}-${lv}-${ymd(mon)}`,r=rng(hash(key)),cfg=SP[sp],out=[],used=new Set();
   const n=sp==="tennis"?6:8,dep=lv<cfg.dep,pro=lv>=7&&sp!=="tennis";
   const pick=a=>a[Math.floor(r()*a.length)];
@@ -791,7 +790,6 @@ function loadSquad(path,tid){const k=path+"|"+tid,c=SQ[k];if(c&&(c.p||Date.now()
       return{id:String(a.id),name:a.displayName||a.shortName||"?",pos:((a.position||{}).abbreviation||"").slice(0,1),apps:st.appearances||0,sub:st.subIns||0,goals:st.totalGoals||0,yc:st.yellowCards||0,rc:st.redCards||0,hurt:(a.injuries||[]).length>0}});return true})
     .catch(()=>false).finally(()=>{e.p=null;e.at=Date.now()})}
 const PRIOR={F:.34,M:.12,D:.04,G:0};
-const PMK={psc:{t:"Buteur",ic:"goal"},p2:{t:"Doublé",ic:"goal"},pyc:{t:"Carton",ic:"card",cls:"yc"}};
 function playerOdds(m){if(m.sp!=="foot"||m.src!=="espn")return null;
   const sq=[m.hid,m.aid].map(t=>SQ[m.path+"|"+t]&&SQ[m.path+"|"+t].list);if(!sq[0]||!sq[1])return null;
   const key="P|"+m.id+"|"+(m.lineupAt||0);if(MKC.has(key))return MKC.get(key);
@@ -1022,16 +1020,8 @@ function ballArt(sp,cls){
 /* ---------- ticket ---------- */
 // Combiné : les paris d'un même match sont liés (ex. victoire + plus de 2,5 buts), on ne peut pas
 // multiplier leurs cotes. On compte dans les simulations du match les cas où tous se réalisent ensemble.
-function legIdx(d,m,g,L){const v=d.val(g,m);return d.ty==="ou"?(v>L.line?0:1):d.ty==="yn"?(v?0:1):v}
-function jointP(mid,legs){const m=findMatch(mid);if(!m)return 0;const S_=marketSims(m),defs=legs.map(L=>MK[m.sp].find(d=>d.id===L.mk));let c=0;
-  for(let i=0;i<N;i++){const g=k=>[S_[k][0][i],S_[k][1][i]];let ok=true;for(let j=0;j<legs.length;j++)if(legIdx(defs[j],m,g,legs[j])!==legs[j].k){ok=false;break}if(ok)c++}return c/N}
 let CIK="",CIV=null;
-function comboInfo(sel=U.sel){const key=sel.map(s=>s.mid+s.mk+s.k+s.o).join("|");if(key===CIK&&CIV)return CIV;
-  const by={};sel.forEach(s=>(by[s.mid]=by[s.mid]||[]).push(s));let odds=1,bad=false,linked=0;const groups={};
-  for(const mid in by){const L=by[mid];if(L.length===1){odds*=L[0].o;continue}
-    if(L.some(s=>PMK[s.mk])){const o=Math.round(cl(L.reduce((a,s)=>a*s.o,1)*.92,1.01,2000)*100)/100;linked++;groups[mid]=o;odds*=o;continue}
-    linked++;const p=jointP(mid,L);if(p<.004){bad=true;continue}const o=Math.round(cl(.9/p,1.01,500)*100)/100;groups[mid]=o;odds*=o}
-  CIK=key;CIV={odds:Math.round(odds*100)/100,groups,bad,linked};return CIV}
+function comboInfo(sel=U.sel){const key=sel.map(s=>s.mid+s.mk+s.k+s.o).join("|");if(key===CIK&&CIV)return CIV;CIK=key;CIV=comboCalc(sel,findMatch);return CIV}
 function slipOdds(){return comboInfo().odds}
 const comboBlocked=()=>comboInfo().bad;
 function renderSlipBar(){const el=$("#slipbar");if(!U.sel.length||U.open==="slip"){el.innerHTML="";return}
@@ -1067,7 +1057,7 @@ function cashValue(b){if(b.st!=="open"||b.legs.some(L=>L.r==="l"||L.r==="v"))ret
   for(const L of b.legs.filter(L=>!L.r)){if(PMK[L.mk])return 0;const m=findMatch(L.mid);if(!m)return 0;const st=status(m);if(st!=="pre"&&!liveOK(m))return 0;
     const d=MK[m.sp].find(x=>x.id===L.mk);if(!d)return 0;if(liveOK(m)&&d.need.some(k=>k!==(m.sp==="foot"?"g":"pts")))return 0;
     (by[L.mid]=by[L.mid]||[]).push(L)}
-  if(!Object.keys(by).length)return 0;let p=1;for(const mid in by)p*=jointP(mid,by[mid]);
+  if(!Object.keys(by).length)return 0;let p=1;for(const mid in by)p*=jointP(findMatch(mid),by[mid]);
   const full=Math.floor(b.stake*b.odds);return cl(Math.floor(full*p*.9),1,full-1)}
 function cashOut(id){const b=S.bets.find(x=>x.id===id);const v=b&&cashValue(b);if(!v){toast("Encaissement plus possible pour ce pari.","bad");render();return}
   if(!confirm(`Encaisser ce pari maintenant pour ${tok(v)} jetons ?\n(Gain possible si tu attends : ${tok(b.stake*b.odds)})`))return;
@@ -1247,7 +1237,7 @@ function pick(mid,mkId,k){const m=findMatch(mid);if(!m||!canBet(m))return;const 
     U.sel.push({mid,mk:mkId,k,line:mk.line,o:s.o,live:liveOK(m),l:s.l,mt:mk.title,ml:m.h+" – "+m.a,ic:mk.d.ic,cls:mk.d.cls,sp:m.sp,t:m.t,
       snap:m.src==="espn"?{path:m.path,sp:m.sp,lv:m.lv}:null})}
   if(navigator.vibrate)try{navigator.vibrate(8)}catch(e){}}
-function place(){const n=U.sel.length;if(!n)return;const stake=Math.floor(U.stake);if(!(stake>0)){toast("Mise minimum : 1 jeton.","bad");return}
+async function place(){const n=U.sel.length;if(!n||U.placing)return;const stake=Math.floor(U.stake);if(!(stake>0)){toast("Mise minimum : 1 jeton.","bad");return}
   const gone=U.sel.filter(s=>{const m=findMatch(s.mid);return!m||!canBet(m)});
   // en direct, la cote a pu bouger depuis la sélection : on met à jour et on fait revalider
   let moved=0;U.sel.forEach(s=>{const m=findMatch(s.mid);if(!m||!liveOK(m))return;const mk=markets(m).find(x=>x.id===s.mk);
@@ -1256,9 +1246,24 @@ function place(){const n=U.sel.length;if(!n)return;const stake=Math.floor(U.stak
   if(gone.length){U.sel=U.sel.filter(s=>!gone.includes(s));toast("Un match a commencé : sélection retirée.","bad");refreshLayer();renderSlipBar();return}
   const combo=U.combo&&n>1&&!comboBlocked(),cost=combo?stake:stake*n;if(cost>S.bal){toast("Solde insuffisant.","bad");return}
   const leg=s=>({mid:s.mid,mk:s.mk,k:s.k,line:s.line,o:s.o,live:!!s.live,l:s.l,mt:s.mt,ml:s.ml,ic:s.ic,sp:s.sp,t:s.t,snap:s.snap});
-  S.bal-=cost;const at=Date.now();
-  if(combo)S.bets.push({id:"b"+at,at,stake,odds:slipOdds(),groups:comboInfo().groups,legs:U.sel.map(leg),st:"open"});
-  else U.sel.forEach((s,i)=>S.bets.push({id:"b"+at+"-"+i,at,stake,odds:s.o,legs:[leg(s)],st:"open"}));
+  const at=Date.now();
+  // le serveur vérifie chaque pari (match pas commencé, vraie cote) et l'enregistre avant qu'on le garde ici
+  if(U.sel.some(s=>!s.snap||!s.snap.path)){toast("Ce match ne peut pas être parié.","bad");return}
+  const ss=s=>({mid:s.mid,path:s.snap.path,t:s.t,mk:s.mk,k:s.k,line:s.line,o:s.o,live:!!s.live,l:s.l,ml:s.ml,mt:s.mt});
+  const req=combo?[{cid:"b"+at,stake,combo:true,odds:slipOdds(),sels:U.sel.map(ss)}]:U.sel.map((s,i)=>({cid:"b"+at+"-"+i,stake,sels:[ss(s)]}));
+  U.placing=true;const bt=$("[data-act=place]");if(bt){bt.disabled=true;bt.dataset.txt=bt.innerHTML;bt.innerHTML="Vérification…"}
+  let j;try{if(!(await ensureSession()))throw{code:"offline"};await syncNow();j=await api("place_bets",{bets:req})}
+  catch(e){j={error:e.code==="slow_down"?"slow":"offline"}}
+  finally{U.placing=false;const b2=$("[data-act=place]");if(b2){b2.disabled=false;if(b2.dataset.txt)b2.innerHTML=b2.dataset.txt}}
+  if(!j||!j.ok){const E_=j&&j.error;
+    if(E_==="odds_changed"){(j.changed||[]).forEach(c=>{const s=U.sel.find(x=>x.mid===c.mid&&x.mk===c.mk&&x.k===c.k);if(!s)return;if(c.o)s.o=c.o;else U.sel=U.sel.filter(x=>x!==s)});
+      CIK="";toast("Les cotes ont bougé : vérifie et valide à nouveau.");refreshLayer();renderSlipBar();return}
+    if(E_==="started"||E_==="unknown_match"){U.sel=U.sel.filter(x=>x.mid!==j.mid);toast("Un match a commencé : sélection retirée.","bad");refreshLayer();renderSlipBar();return}
+    toast(E_==="balance"?"Solde insuffisant.":E_==="combo_impossible"?"Ce combiné est impossible.":E_==="slow"?"Doucement ! Réessaie dans un instant.":E_==="offline"?"Pas de connexion : pari non enregistré.":"Pari refusé, réessaie.","bad");return}
+  const sid={};(j.bets||[]).forEach(x=>sid[x.cid]=x);
+  S.bal-=cost;
+  if(combo)S.bets.push({id:"b"+at,sid:(sid["b"+at]||{}).id,at,stake,odds:(sid["b"+at]||{}).odds||slipOdds(),groups:comboInfo().groups,legs:U.sel.map(leg),st:"open"});
+  else U.sel.forEach((s,i)=>{const r=sid["b"+at+"-"+i]||{};S.bets.push({id:"b"+at+"-"+i,sid:r.id,at,stake,odds:r.odds||s.o,legs:[leg(s)],st:"open"})});
   {const placed=combo?[S.bets[S.bets.length-1]]:S.bets.slice(-n);
     postAct("bet",{legs:U.sel.slice(0,4).map(s=>s.l+(s.mk==="res"||PMK[s.mk]?"":" ("+s.mt+")")),stake:cost,odds:combo?slipOdds():(n===1?U.sel[0].o:null),n:combo?n:1})}
   sendPicks(U.sel);U.sel=[];save();setTimeout(checkDefis,900);U.open=null;layer("");U.tab="b";U.btab="o";render();bump();window.scrollTo({top:0,behavior:"smooth"});
@@ -2336,7 +2341,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.60";
+const VERSION="1.61";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
