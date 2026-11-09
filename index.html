@@ -692,9 +692,16 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 .foot a{color:var(--mute)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (min-width:640px){.mc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mc-grid .mc{margin:0}}
+#splash{position:fixed;inset:0;z-index:90;background:radial-gradient(circle at 50% 35%,#123526,#0a110f 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;transition:opacity .3s}
+#splash img{width:min(62vw,280px);height:auto;animation:sppulse 1.6s ease-in-out infinite}#splash.gone{opacity:0;pointer-events:none}
+.spbar{width:min(56vw,240px);height:5px;border-radius:5px;background:#ffffff14;overflow:hidden}.spbar i{display:block;height:100%;width:40%;border-radius:5px;background:linear-gradient(90deg,#35d07f,#ffd23f);animation:spmove 1.1s ease-in-out infinite}
+#splash small{color:#9fb2a8;font:600 14px Barlow,system-ui,sans-serif;min-height:18px}
+@keyframes spmove{0%{transform:translateX(-110%)}100%{transform:translateX(260%)}}@keyframes sppulse{50%{transform:scale(1.04)}}
 </style>
 </head>
 <body data-sp="foot">
+<div id="splash"><img src="logo-tribune.png?v=1" alt="Tribune"><div class="spbar"><i></i></div><small id="spt">Chargement des matchs…</small></div>
+<script>/* filet de sécurité : l'écran de chargement ne reste jamais bloqué */setTimeout(function(){var s=document.getElementById("splash");if(s)s.remove()},10000)</script>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-ball" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.6l3.7 2.7-1.4 4.4H9.7l-1.4-4.4z" fill="currentColor"/><path d="M12 3v4.6M20.6 9.4l-4.9.9M17.4 19.6l-3.1-4.9M6.6 19.6l3.1-4.9M3.4 9.4l4.9.9"/></symbol>
@@ -762,7 +769,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.76"></script>
+<script src="engine.js?v=1.77"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -844,7 +851,7 @@ async function loadFeed(sp,lv){const paths=SP[sp].feeds[lv],key=sp+lv,now=Date.n
 async function loadSport(sp){const jobs=Object.keys(SP[sp].feeds).filter(l=>!FEED[sp+l]).map(l=>loadFeed(sp,+l));if(!jobs.length)return;await Promise.all(jobs);
   if(sp===U.sp){if(!U.open||U.open==="slip")render()}else renderSoon();settle()}
 const idle=ms=>new Promise(ok=>"requestIdleCallback"in window?requestIdleCallback(()=>ok(),{timeout:ms}):setTimeout(ok,ms));
-async function loadFeeds(){await loadSport(U.sp);await idle(1500);for(const sp in SP)if(sp!==U.sp){await loadSport(sp);await idle(800)}for(const sp in SP)if(sp!==U.sp)await warmSport(sp)}
+let FIRST=null;async function loadFeeds(){await (FIRST=loadSport(U.sp));await idle(1500);for(const sp in SP)if(sp!==U.sp){await loadSport(sp);await idle(800)}for(const sp in SP)if(sp!==U.sp)await warmSport(sp)}
 // cotes des prochains matchs des autres sports calculées par petits paquets quand le téléphone ne fait rien : changer de sport devient instantané
 async function warmSport(sp){const ms=matchesFor(sp,-1).filter(m=>["pre","live"].includes(status(m))).sort((a,b)=>a.t-b.t).slice(0,24);
   for(let i=0;i<ms.length;i+=2){await idle(400);if(document.hidden)return;for(const m of ms.slice(i,i+2))try{resMarket(m)}catch(e){}}}
@@ -2116,7 +2123,7 @@ const EVENTS=[
 const EV_ONLY={foot:[25,26,27,28],rugby:[15],basket:[7,8]};   // ces niveaux n'apparaissent que pendant leur événement
 const evMatches=e=>matchesFor(e.sp,e.lv).filter(m=>!e.re||e.re.test(m.comp||""));
 function evActive(e){const now=Date.now();return evMatches(e).some(m=>{const st=status(m);return st==="live"||(st==="pre"&&m.t<now+10*DAY)||(st==="post"&&m.t>now-36*H)})}
-function loadEvents(){for(const e of EVENTS)if(!FEED[e.sp+e.lv])loadFeed(e.sp,e.lv).then(()=>{if(U.tab==="m"&&!U.open)render()})}
+function loadEvents(){return Promise.allSettled(EVENTS.filter(e=>!FEED[e.sp+e.lv]).map(e=>loadFeed(e.sp,e.lv).then(()=>{if(U.tab==="m"&&!U.open)renderSoon()})))}
 function eventStrip(){const A=EVENTS.filter(evActive);if(!A.length)return"";const now=Date.now();
   return`<div class="evs">${A.map(e=>{const M=evMatches(e),live=M.filter(m=>status(m)==="live").length,next=M.filter(m=>status(m)==="pre").sort((a,b)=>a.t-b.t)[0],
     today=M.filter(m=>status(m)==="pre"&&new Date(m.t).toDateString()===new Date().toDateString()).length;
@@ -2915,7 +2922,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.76";
+const VERSION="1.77";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -2925,15 +2932,22 @@ async function checkUpdate(){try{const r=await fetch("version.txt?t="+Date.now()
 showVersion();checkUpdate();
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkUpdate()});setInterval(checkUpdate,5*6e4);
 
-/* ---------- démarrage ---------- */
+/* ---------- démarrage : écran de chargement le temps que tout soit prêt, puis tout s'affiche d'un coup ---------- */
+function hideSplash(){const s=$("#splash");if(!s)return;s.classList.add("gone");setTimeout(()=>s.remove(),350)}
+async function boot(){if(GATE||!S.name){hideSplash();setTimeout(afterBoot,300);return}
+  const msg=["Chargement des matchs…","Les cotes du jour…","Ta guilde…","Presque prêt…"];let k=0;const mt=setInterval(()=>{const e=$("#spt");if(e)e.textContent=msg[Math.min(++k,msg.length-1)]},1300);
+  const jobs=[(async()=>{for(let i=0;i<20&&!FIRST;i++)await new Promise(r=>setTimeout(r,20));await FIRST})(),loadEvents(),
+    (async()=>{if(!(await ensureSession()))return;await Promise.allSettled([loadGuide(true),(async()=>{await loadBoards();const L0=U.lg.data&&U.lg.data.leagues[0];
+      if(L0)await Promise.allSettled([loadProno(),loadLm(U.lg.code||L0.code)])})()])})()];
+  await Promise.race([Promise.allSettled(jobs),new Promise(r=>setTimeout(r,6500))]);
+  clearInterval(mt);U.lg.loading=false;render();hideSplash();setTimeout(afterBoot,400)}
 if(GATE)renderGate();else{
 render();
-if(!S.name){U.open="welcome";layer(viewWelcome(false))}else{syncSoon();joinFromLink()}
-loadFeeds();
+if(!S.name){hideSplash();U.open="welcome";layer(viewWelcome(false))}else{syncSoon();joinFromLink()}
+loadFeeds();boot();
 setTimeout(()=>{if(S.dk&&Object.values(S.dk).some(x=>!x.settled))checkDarkAll()},5000);
 goFrom(location.href);
-setTimeout(loadEvents,1200);
-setTimeout(()=>{pushRefresh();if(S.name&&S.starter==="pending"&&S.introSeen===INTRO_V&&!U.coach)grantStarter(false);if(S.name&&S.tosV!==TOS_V)openTos();else if(S.name&&S.introSeen!==INTRO_V)openIntro();if(S.name){claimPrizes();claimBattles();claimGifts();ensureRcode();loadGuide(true)}if(S.name)loadBoards().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){loadProno();loadLm(U.lg.code||U.lg.data.leagues[0].code);const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},3000);
+var afterBoot=function(){pushRefresh();if(S.name&&S.starter==="pending"&&S.introSeen===INTRO_V&&!U.coach)grantStarter(false);if(S.name&&S.tosV!==TOS_V)openTos();else if(S.name&&S.introSeen!==INTRO_V)openIntro();if(S.name){claimPrizes();claimBattles();claimGifts();ensureRcode()}if(S.name)Promise.resolve().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()};
 setInterval(()=>{if(!document.hidden&&S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},12e4);
 setInterval(()=>{if(document.hidden)return;
   const anyLive=[...REG.values()].some(m=>m.src==="espn"&&m.state==="in");const stale=Object.values(FEED).some(f=>f.at&&Date.now()-f.at>(anyLive?6e4:5*6e4));
