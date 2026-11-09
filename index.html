@@ -685,7 +685,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.62"></script>
+<script src="engine.js?v=1.63"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -2133,28 +2133,7 @@ async function joinFromLink(){const c=new URLSearchParams(location.search).get("
 /* ---------- défis du jour ----------
    3 défis par jour (les mêmes pour tout le monde, tirés de la date) : un facile, un moyen, un difficile.
    Progression calculée à partir des paris du jour : rien à tricher, rien à perdre si on ne joue pas. */
-const legsOf=B=>B.flatMap(b=>b.legs);
-const DEFIS=[
-  [{id:"p3",ic:"ticket",t:"Place 3 paris",g:3,r:50,f:P=>P.length},
-   {id:"card",ic:"card",cls:"yc",t:"Parie sur les cartons",g:1,r:40,f:P=>legsOf(P).filter(l=>l.mk==="yc"||l.mk==="rc").length},
-   {id:"corn",ic:"corner",t:"Parie sur les corners",g:1,r:40,f:P=>legsOf(P).filter(l=>l.mk==="co").length},
-   {id:"bt1",ic:"goal",t:"Parie sur un buteur",g:1,r:40,f:P=>legsOf(P).filter(l=>l.mk==="psc").length},
-   {id:"rug",ic:"rugby",t:"Parie sur un match de rugby",g:1,r:50,f:P=>legsOf(P).filter(l=>l.sp==="rugby").length},
-   {id:"ten",ic:"tennis",t:"Parie sur un match de tennis",g:1,r:50,f:P=>legsOf(P).filter(l=>l.sp==="tennis").length},
-   {id:"w1e",ic:"trophy",t:"Gagne un pari simple",g:1,r:50,f:(P,W)=>W.filter(b=>b.legs.length===1).length}],
-  [{id:"p5",ic:"ticket",t:"Place 5 paris",g:5,r:80,f:P=>P.length},
-   {id:"cb3",ic:"chart",t:"Fais un combiné d’au moins 3 sélections",g:1,r:70,f:P=>P.filter(b=>b.legs.length>=3).length},
-   {id:"bb",ic:"target",t:"Fais un combiné sur un même match",g:1,r:70,f:P=>P.filter(b=>new Set(b.legs.map(l=>l.mid)).size<b.legs.length).length},
-   {id:"live",ic:"fire",t:"Fais un pari en direct",g:1,r:80,f:P=>legsOf(P).filter(l=>l.live).length},
-   {id:"3sp",ic:"trophy",t:"Parie sur les 3 sports",g:3,r:100,f:P=>new Set(legsOf(P).map(l=>l.sp)).size},
-   {id:"w1",ic:"trophy",t:"Gagne un pari",g:1,r:60,f:(P,W)=>W.length}],
-  [{id:"w2",ic:"trophy",t:"Gagne 2 paris",g:2,r:100,f:(P,W)=>W.length},
-   {id:"o25",ic:"bolt",t:"Gagne un pari à une cote de 2,50 ou plus",g:1,r:120,f:(P,W)=>W.filter(b=>b.odds>=2.5).length},
-   {id:"wcard",ic:"card",cls:"rc",t:"Gagne un pari sur les cartons",g:1,r:100,f:(P,W)=>legsOf(W).filter(l=>(l.mk==="yc"||l.mk==="rc")&&l.r==="w").length},
-   {id:"wbt",ic:"goal",t:"Trouve un buteur",g:1,r:120,f:(P,W)=>legsOf(W).filter(l=>l.mk==="psc"&&l.r==="w").length},
-   {id:"wcb",ic:"chart",t:"Gagne un combiné",g:1,r:120,f:(P,W)=>W.filter(b=>b.legs.length>1).length}]];
-const DEFI_BONUS=150;
-function defisToday(){const r=rng(hash("defis|"+today()));return DEFIS.map(L=>L[Math.floor(r()*L.length)])}
+function defisToday(){return defisFor(today())}
 function defisState(){if(!S.dch||S.dch.d!==today())S.dch={d:today(),got:[],seen:[],all:false};
   const t=today(),P=S.bets.filter(b=>ymd(b.at)===t),W=S.bets.filter(b=>b.st==="won"&&b.done&&ymd(b.done)===t);
   return defisToday().map(d=>({...d,n:Math.min(d.g,d.f(P,W)),got:S.dch.got.includes(d.id)}))}
@@ -2164,9 +2143,13 @@ function defisCard(){const D=defisState(),done=D.filter(d=>d.got).length;
   ${D.map(d=>`<div class="drow${d.got?" ok":""}"><span class="dic">${ic(d.ic,d.cls||"")}</span><div><b>${esc(d.t)}</b><div class="dbar"><i style="width:${d.n/d.g*100}%"></i></div></div>
     ${d.got?`<span class="dgot">✓</span>`:d.n>=d.g?`<button class="btn gold" data-act="defi" data-id="${d.id}">+${d.r}</button>`:`<span class="drw">${d.n}/${d.g} · +${d.r}</span>`}</div>`).join("")}
   ${done===3?`<button class="btn gold wide" data-act="defiall" style="margin-top:8px">${ic("gift")} Bonus des 3 défis : +${DEFI_BONUS}</button>`:""}</div>`}
-function claimDefi(id){const D=defisState(),d=D.find(x=>x.id===id);if(!d||d.got||d.n<d.g)return;S.dch.got.push(id);S.bal+=d.r;S.peak=Math.max(S.peak,S.bal);save();render();bump();
-  toast(`${ic("target")} Défi réussi : +${d.r} jetons`,"win")}
-function claimAll(){const D=defisState();if(S.dch.all||D.some(d=>!d.got))return;S.dch.all=true;postAct("defis",{});S.bal+=DEFI_BONUS;S.peak=Math.max(S.peak,S.bal);save();render();bump();confetti();
+async function claimDefi(id){const D=defisState(),d=D.find(x=>x.id===id);if(!d||d.got||d.n<d.g)return;
+  let j;try{j=await api("defi_claim",{id})}catch(e){toast("Pas de connexion : réessaie dans un instant.","bad");return}
+  if(j.error==="not_done"){toast("Le serveur n’a pas encore validé ce défi (paris vérifiés toutes les 10 min). Réessaie un peu plus tard.");return}
+  if(!S.dch.got.includes(id))S.dch.got.push(id);if(j.ok){S.bal+=j.v;S.peak=Math.max(S.peak,S.bal);toast(`${ic("target")} Défi réussi : +${j.v} jetons`,"win");bump()}save();render()}
+async function claimAll(){const D=defisState();if(S.dch.all||D.some(d=>!d.got))return;let j;try{j=await api("defi_claim",{all:true})}catch(e){toast("Pas de connexion : réessaie dans un instant.","bad");return}
+  if(j.error==="not_done"){toast("Le serveur n’a pas encore validé tous tes défis. Réessaie un peu plus tard.");return}
+  S.dch.all=true;if(!j.ok){save();render();return}S.bal+=j.v;S.peak=Math.max(S.peak,S.bal);save();render();bump();confetti();
   toast(`${ic("gift")} Les 3 défis du jour : +${DEFI_BONUS} jetons !`,"win")}
 function checkDefis(){const D=defisState();for(const d of D)if(d.n>=d.g&&!d.got&&!S.dch.seen.includes(d.id)){S.dch.seen.push(d.id);saveLocal();
   toast(`${ic("target")} Défi réussi : « ${esc(d.t)} ». Récupère +${d.r} dans l’onglet Matchs.`,"win")}}
@@ -2175,10 +2158,10 @@ function checkDefis(){const D=defisState();for(const d of D)if(d.n>=d.g&&!d.got&
    8 cases, chacune exactement 1 chance sur 8 : tirage uniforme avec le générateur
    aléatoire cryptographique du navigateur (rejet des valeurs biaisées). */
 // chances en % (de plus en plus faibles) ; taille des cases en % du tour : elles rapetissent un peu à chaque palier (le jackpot = la plus petite), la vraie chance est écrite dessus
-const WHEEL=[25,50,75,100,150,200,300,500],WP=[28,24,18,13,8,5,3,1],WD=[16,15,14,13,12,11,9,6],JD=4,WCOL=["#35d07f","#ffd23f","#ff7a45","#5fa8ff","#d7f25a","#c084fc","#ff5a5f","#f8fafc"];
+const WD=[16,15,14,13,12,11,9,6],JD=4,WCOL=["#35d07f","#ffd23f","#ff7a45","#5fa8ff","#d7f25a","#c084fc","#ff5a5f","#f8fafc"];
 function fairIndex(n){const a=new Uint32Array(1),lim=Math.floor(4294967296/n)*n;do{crypto.getRandomValues(a)}while(a[0]>=lim);return a[0]%n}
 // cases de taille dégressive + la case JACKPOT tirée à part (1 chance sur 10 millions)
-const JACKPOT=1000000,JACK_ODDS=10000000,JW=JD*3.6,WSPAN=360-JW;
+const JW=JD*3.6,WSPAN=360-JW;
 const WA=(()=>{let a=0;return WD.map(p=>{const w=p*3.6,r=[a,a+w];a+=w;return r})})();   // [début, fin] en degrés
 const wCenter=i=>i<0?WSPAN+JW/2:(WA[i][0]+WA[i][1])/2;
 function wheelPick(){const r=fairIndex(100);let c=0;for(let i=0;i<WP.length;i++){c+=WP[i];if(r<c)return i}return 0}
@@ -2202,7 +2185,6 @@ function wheelMini(){return`<svg width="22" height="22" viewBox="0 0 24 24" aria
   return`<path d="M12 12L${(12+11*Math.cos(a0)).toFixed(2)} ${(12+11*Math.sin(a0)).toFixed(2)}A11 11 0 0 1 ${(12+11*Math.cos(a1)).toFixed(2)} ${(12+11*Math.sin(a1)).toFixed(2)}Z" fill="${col}"/>`}).join("")}<circle cx="12" cy="12" r="11" fill="none" stroke="#2a1d00" stroke-width="1.5"/><circle cx="12" cy="12" r="3" fill="#2a1d00"/></svg>`}
 function nextReset(){const d=new Date();d.setHours(24,0,0,0);const m=Math.round((d-Date.now())/6e4);return(m>=60?Math.floor(m/60)+" h "+String(m%60).padStart(2,"0"):m+" min")}
 // tour bonus offert à tout le monde, une seule journée (en plus du tour quotidien)
-const EXTRA_DAY="20261109";
 const extraAvail=()=>today()===EXTRA_DAY&&S.bonus===today()&&S.extraSpin!==today();
 const wheelAvail=()=>S.bonus!==today()||extraAvail();
 function viewWheel(){const done=!wheelAvail();
@@ -2212,10 +2194,14 @@ function viewWheel(){const done=!wheelAvail();
   <button class="btn gold wide" data-act="spin" id="spin" ${done||U.wheelOk===false?"disabled":""}>${done?"Prochain tour dans "+nextReset():U.wheelOk===false?"Un instant…":extraAvail()?"Lancer le tour bonus":"Lancer la roue"}</button>
   <div class="info">${ic("info")}<span><b style="color:var(--ink)">100 % hasard.</b> Plus le gain est gros, plus il est rare : ${WHEEL.map((v,i)=>`<b style="color:var(--ink)">${v}</b> ${WP[i]} %`).join(" · ")}. Les cases rapetissent avec le gain ; la vraie chance est écrite sur chacune. Les jetons de la roue <b style="color:var(--ink)">ne comptent pas</b> dans les classements. La fine case dorée <b style="color:var(--sel)">JACKPOT 1 000 000</b> est tirée à part : <b style="color:var(--ink)">1 chance sur 10 millions</b> à chaque tour. Le tirage utilise le générateur aléatoire sécurisé du téléphone, sans aucun réglage caché.</span></div>`}
 let spinning=false;
-function spin(){if(spinning||!wheelAvail()||U.wheelOk===false)return;spinning=true;const isExtra=extraAvail();
-  const jack=fairIndex(JACK_ODDS)===0,i=jack?-1:wheelPick(),v=jack?JACKPOT:WHEEL[i];
-  // le gain est enregistré tout de suite (recharger la page ne permet pas de relancer)
-  if(isExtra)S.extraSpin=today();S.bonus=today();S.wheel={d:today(),v};S.bal+=v;S.peak=Math.max(S.peak,S.bal);if(jack)S.jackpot=(S.jackpot||0)+1;save();if(v>=200)postAct("wheel",{v});
+async function spin(){if(spinning||!wheelAvail()||U.wheelOk===false)return;spinning=true;
+  const b0=$("#spin");if(b0){b0.disabled=true;b0.textContent="Tirage…"}
+  // le tirage est fait par le serveur (impossible à rejouer ou à truquer depuis le téléphone)
+  let j;try{j=await api("wheel_spin",{})}catch(e){j={error:"offline"}}
+  if(!j.ok){spinning=false;if(j.error==="done"){S.bonus=today();saveLocal();if(U.open==="wheel")layer(viewWheel());toast("Tu as déjà tourné la roue aujourd’hui.");render()}
+    else{if(b0){b0.disabled=false;b0.textContent="Lancer la roue"}toast("Pas de connexion : réessaie dans un instant.","bad")}return}
+  const jack=j.jack,i=j.i,v=j.v;
+  if(j.extra)S.extraSpin=j.day;else S.bonus=j.day;S.wheel={d:today(),v};S.bal+=v;S.peak=Math.max(S.peak,S.bal);if(jack)S.jackpot=(S.jackpot||0)+1;save();
   const w=$("#wheel"),b=$("#spin"),jit=(Math.random()-.5)*(jack?JW:WA[i][1]-WA[i][0])*.7,deg=360*7-wCenter(i)+jit;
   if(b){b.disabled=true;b.textContent="Ça tourne…"}
   const end=()=>{spinning=false;$("#bal").textContent=tok(S.bal);bump();
@@ -2319,7 +2305,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.62";
+const VERSION="1.63";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

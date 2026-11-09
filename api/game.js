@@ -1,7 +1,7 @@
 // Seule fonction serveur de Tribune : comptes anonymes, ligues entre amis, classements,
 // et « ce que parient les autres ». Tout passe par POST /api/game {action, ...}.
 import { db, hashToken, newToken, ipKey, overLimit } from "./_db.js";
-import { timingSafeEqual } from "node:crypto";
+import { timingSafeEqual, randomInt } from "node:crypto";
 import { buildWeek, refreshResults, points, todayMatches, bestOfDay } from "./_prono.js";
 import { notify, members } from "./_push.js";
 import { checkBet, settleOpen, cashValueServer } from "./_bets.js";
@@ -409,6 +409,13 @@ async function tick(s) {
   return out;
 }
 
+// ---- Registre des jetons : chaque gain ou dépense hors paris, une seule fois par (joueur, type, référence) ----
+async function credit(s, pid, delta, kind, ref) {
+  return !!(await s.query(`insert into ledger (player, delta, kind, ref) values ($1, $2, $3, $4) on conflict do nothing returning id`, [pid, Math.round(delta), kind, String(ref)]))[0];
+}
+const parisDay = async (s) => (await s.query(`select to_char(now() at time zone 'Europe/Paris', 'YYYYMMDD') as d`))[0].d;
+const EG = globalThis.ENGINE;
+
 const ACTIONS = {
   // Crée un joueur anonyme. Le jeton n'est gardé qu'en empreinte sha256.
   async session(s, b, req) {
@@ -549,6 +556,45 @@ const ACTIONS = {
       out.push({ cid, id: row ? row.id : null, odds: r.odds });
     }
     return { ok: true, bets: out };
+  },
+
+  // ---- Roue : tirage fait par le serveur (hasard cryptographique), un tour par jour (+ le tour bonus du jour offert) ----
+  async wheel_spin(s, b) {
+    const p = await me(s, b.token);
+    const day = await parisDay(s);
+    const w = (await s.query(`select wheel from players where id = $1`, [p.id]))[0].wheel || {};
+    const extra = day === EG.EXTRA_DAY && w.b === day && w.x !== day;
+    if (w.b === day && !extra) return { error: "done" };
+    const jack = randomInt(EG.JACK_ODDS) === 0;
+    let i = -1, v = EG.JACKPOT;
+    if (!jack) { const r = randomInt(100); let c = 0; for (i = 0; i < EG.WP.length; i++) { c += EG.WP[i]; if (r < c) break; } v = EG.WHEEL[i]; }
+    const nw = extra ? { ...w, x: day } : { ...w, b: day };
+    const u = await s.query(`update players set wheel = $2::jsonb where id = $1 and coalesce(wheel->>${extra ? "'x'" : "'b'"}, '') <> $3 returning id`, [p.id, JSON.stringify(nw), day]);
+    if (!u[0]) return { error: "done" };
+    await credit(s, p.id, v, "wheel", day + (extra ? "x" : ""));
+    if (v >= 200) await s.query(`insert into activity (player, kind, data) values ($1, 'wheel', $2::jsonb)`, [p.id, JSON.stringify({ v })]);
+    return { ok: true, i, v, jack, day, extra };
+  },
+  // ---- Défis du jour : vérifiés avec les paris enregistrés par le serveur ----
+  async defi_claim(s, b) {
+    const p = await me(s, b.token);
+    const day = await parisDay(s);
+    await settleOpen(s, { player: p.id, budget: 8e3 });
+    const rows = await s.query(`select legs, odds::float8 as odds, status, to_char(at at time zone 'Europe/Paris', 'YYYYMMDD') as d,
+        to_char(settled_at at time zone 'Europe/Paris', 'YYYYMMDD') as sd from bets where player = $1 and (at > now() - interval '2 days' or settled_at > now() - interval '2 days')`, [p.id]);
+    const P = rows.filter((r) => r.d === day), W = rows.filter((r) => r.status === "won" && r.sd === day);
+    const D = EG.defisFor(day).map((d) => ({ id: d.id, r: d.r, ok: d.f(P, W) >= d.g }));
+    if (b.all) {
+      const got = (await s.query(`select ref from ledger where player = $1 and kind = 'defi' and ref like $2`, [p.id, day + ":%"])).map((x) => x.ref.split(":")[1]);
+      if (D.some((d) => !got.includes(d.id))) return { error: "not_done" };
+      const ok = await credit(s, p.id, EG.DEFI_BONUS, "defis", day);
+      if (ok) await s.query(`insert into activity (player, kind, data) values ($1, 'defis', '{}'::jsonb)`, [p.id]);
+      return ok ? { ok: true, v: EG.DEFI_BONUS } : { error: "already" };
+    }
+    const d = D.find((x) => x.id === String(b.id || ""));
+    if (!d) return { error: "unknown" };
+    if (!d.ok) return { error: "not_done" };
+    return (await credit(s, p.id, d.r, "defi", day + ":" + d.id)) ? { ok: true, v: d.r } : { error: "already" };
   },
 
   async cash_out(s, b) {
@@ -1013,6 +1059,7 @@ const ACTIONS = {
     if (prev >= CUT.month) await ensurePrizes(s, prev);
     const r = await s.query(`update month_prizes mp set claimed = true from leagues l where l.code = mp.code and mp.player = $1 and not mp.claimed
        returning mp.month, mp.rank, mp.amount, l.name`, [p.id]);
+    for (const x of r) await credit(s, p.id, x.amount, "prize", x.month + ":" + x.name);
     return { prizes: r.map((x) => ({ month: x.month, label: monthName(x.month), rank: x.rank, amount: x.amount, league: x.name })) };
   },
   async lm_get(s, b) {

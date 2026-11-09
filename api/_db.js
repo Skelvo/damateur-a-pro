@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "22";
+const SCHEMA_VERSION = "23";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -235,6 +235,15 @@ const STATEMENTS = [
      server text, client text, spay numeric, cpay numeric,
      at timestamptz not null default now(),
      primary key (player, cid))`,
+  // registre des jetons hors paris (roue, défis, prono, match de la ligue, récompenses…)
+  `create table if not exists ledger (
+     id bigserial primary key,
+     player bigint not null references players(id) on delete cascade,
+     delta int not null,
+     kind text not null,
+     ref text not null,
+     at timestamptz not null default now(),
+     unique (player, kind, ref))`,
   `create table if not exists rate_hits (key text not null, win bigint not null, n int not null default 0, primary key (key, win))`,
 ];
 

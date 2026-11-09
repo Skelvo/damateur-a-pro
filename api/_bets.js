@@ -87,9 +87,9 @@ async function summary(m) {   // compositions + stats complètes d'un match de f
   } catch (e) { return null; } finally { clearTimeout(t); }
 }
 // Règle les paris ouverts dont les matchs sont finis. Renvoie [{id, player, cid, status, pay, legs}] des paris réglés.
-export async function settleOpen(s, { limit = 300, budget = 40e3 } = {}) {
+export async function settleOpen(s, { limit = 300, budget = 40e3, player = null } = {}) {
   const t0 = Date.now(), now = Date.now();
-  const rows = await s.query(`select id, player, cid, stake, odds, legs, groups from bets where status = 'open' order by id limit $1`, [limit]);
+  const rows = await s.query(`select id, player, cid, stake, odds, legs, groups from bets where status = 'open' and ($2::bigint is null or player = $2) order by id limit $1`, [limit, player]);
   const M = {}, done = [];
   for (const row of rows) {
     if (Date.now() - t0 > budget) break;

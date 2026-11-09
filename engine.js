@@ -262,5 +262,32 @@ function cashValueM(b,getM){if(b.st!=="open"||b.legs.some(L=>L.r==="l"||L.r==="v
   if(!Object.keys(by).length)return 0;let p=1;for(const mid in by)p*=jointP(getM(mid),by[mid]);
   const full=Math.floor(b.stake*b.odds);return cl(Math.floor(full*p*.9),1,full-1)}
 
+/* ---------- roue et défis du jour (le serveur tire la roue et vérifie les défis) ---------- */
+const WHEEL=[25,50,75,100,150,200,300,500],WP=[28,24,18,13,8,5,3,1];   // gains et chances en %
+const JACKPOT=1000000,JACK_ODDS=10000000;   // case jackpot tirée à part : 1 chance sur 10 millions
+const EXTRA_DAY="20261109";   // tour bonus offert à tout le monde ce jour-là
+const legsOf=B=>B.flatMap(b=>b.legs);
+const DEFIS=[
+  [{id:"p3",ic:"ticket",t:"Place 3 paris",g:3,r:50,f:P=>P.length},
+   {id:"card",ic:"card",cls:"yc",t:"Parie sur les cartons",g:1,r:40,f:P=>legsOf(P).filter(l=>l.mk==="yc"||l.mk==="rc").length},
+   {id:"corn",ic:"corner",t:"Parie sur les corners",g:1,r:40,f:P=>legsOf(P).filter(l=>l.mk==="co").length},
+   {id:"bt1",ic:"goal",t:"Parie sur un buteur",g:1,r:40,f:P=>legsOf(P).filter(l=>l.mk==="psc").length},
+   {id:"rug",ic:"rugby",t:"Parie sur un match de rugby",g:1,r:50,f:P=>legsOf(P).filter(l=>l.sp==="rugby").length},
+   {id:"ten",ic:"tennis",t:"Parie sur un match de tennis",g:1,r:50,f:P=>legsOf(P).filter(l=>l.sp==="tennis").length},
+   {id:"w1e",ic:"trophy",t:"Gagne un pari simple",g:1,r:50,f:(P,W)=>W.filter(b=>b.legs.length===1).length}],
+  [{id:"p5",ic:"ticket",t:"Place 5 paris",g:5,r:80,f:P=>P.length},
+   {id:"cb3",ic:"chart",t:"Fais un combiné d’au moins 3 sélections",g:1,r:70,f:P=>P.filter(b=>b.legs.length>=3).length},
+   {id:"bb",ic:"target",t:"Fais un combiné sur un même match",g:1,r:70,f:P=>P.filter(b=>new Set(b.legs.map(l=>l.mid)).size<b.legs.length).length},
+   {id:"live",ic:"fire",t:"Fais un pari en direct",g:1,r:80,f:P=>legsOf(P).filter(l=>l.live).length},
+   {id:"3sp",ic:"trophy",t:"Parie sur les 3 sports",g:3,r:100,f:P=>new Set(legsOf(P).map(l=>l.sp)).size},
+   {id:"w1",ic:"trophy",t:"Gagne un pari",g:1,r:60,f:(P,W)=>W.length}],
+  [{id:"w2",ic:"trophy",t:"Gagne 2 paris",g:2,r:100,f:(P,W)=>W.length},
+   {id:"o25",ic:"bolt",t:"Gagne un pari à une cote de 2,50 ou plus",g:1,r:120,f:(P,W)=>W.filter(b=>b.odds>=2.5).length},
+   {id:"wcard",ic:"card",cls:"rc",t:"Gagne un pari sur les cartons",g:1,r:100,f:(P,W)=>legsOf(W).filter(l=>(l.mk==="yc"||l.mk==="rc")&&l.r==="w").length},
+   {id:"wbt",ic:"goal",t:"Trouve un buteur",g:1,r:120,f:(P,W)=>legsOf(W).filter(l=>l.mk==="psc"&&l.r==="w").length},
+   {id:"wcb",ic:"chart",t:"Gagne un combiné",g:1,r:120,f:(P,W)=>W.filter(b=>b.legs.length>1).length}]];
+const DEFI_BONUS=150;
+function defisFor(day){const r=rng(hash("defis|"+day));return DEFIS.map(L=>L[Math.floor(r()*L.length)])}
+
 if(typeof globalThis!=="undefined")globalThis.ENGINE={fr,strength,SP,SIM,MK,N,ALLSTATS,STATL,ESPN,MCC,MKC,ONE,cl,hash,rng,pois,binom,H,DAY,lvA,sims,simOne,tot,cmp3,avail,odd,mt,liveOK,canBet,liveSims,marketSims,markets,outcome,
-  SOCSTAT,recStrength,amer,bookDiff,footProbs,TEAM_FR,frTeam,parseTeamEvent,parseTennis,status,realStats,PMK,legIdx,jointP,comboCalc,readLineup,applySummary,playerLegResult,legResultM,betResult,cashValueM};
+  SOCSTAT,recStrength,amer,bookDiff,footProbs,TEAM_FR,frTeam,parseTeamEvent,parseTennis,status,realStats,PMK,legIdx,jointP,comboCalc,readLineup,applySummary,playerLegResult,legResultM,betResult,cashValueM,WHEEL,WP,JACKPOT,JACK_ODDS,EXTRA_DAY,DEFIS,DEFI_BONUS,defisFor,legsOf};
