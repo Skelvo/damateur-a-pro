@@ -1196,7 +1196,7 @@ const SUCC=[["first","ticket","Premier pari","Faire un pari"],["win1","trophy","
   ["cash","coin","Prudent","Encaisser un pari avant la fin"],["b50","ticket","Habitué","50 paris"],["b200","ticket","Accro","200 paris"],["cards","card","Roi des cartons","Gagner un pari sur les cartons"],
   ["rk","broken","Raquette !","Deviner une raquette cassée"],["posts","posts","Buteur","Gagner un pari pénalité ou drop"],["duel","target","Duelliste","Gagner un duel"],["duel5","target","Terreur","Gagner 5 duels"],
   ["lm5","target","Œil de lynx","5 bonnes réponses au match de la ligue"],["week","trophy","Roi de la semaine","Gagner une semaine dans sa ligue"],["season","crown","Champion","Gagner une saison (un mois)"],
-  ["fav","ball","Supporter","Choisir son équipe de cœur"],["k5","coin","5 000 jetons","Record à 5 000 jetons"],["k10","coin","10 000 jetons","Record à 10 000 jetons"]];
+  ["fav","ball","Supporter","Choisir son équipe de cœur"],["jack","coin","Légende","Toucher le jackpot de la roue (1 chance sur 10 millions)"],["k5","coin","5 000 jetons","Record à 5 000 jetons"],["k10","coin","10 000 jetons","Record à 10 000 jetons"]];
 const SUCCD=Object.fromEntries(SUCC.map(x=>[x[0],x]));
 function succOn(){const done=S.bets.filter(b=>b.st==="won"||b.st==="lost").sort((x,y)=>(x.done||x.at||0)-(y.done||y.at||0)),W=S.bets.filter(b=>b.st==="won");
   let run=0,maxRun=0;for(const b of done){run=b.st==="won"?run+1:0;maxRun=Math.max(maxRun,run)}
@@ -1205,7 +1205,7 @@ function succOn(){const done=S.bets.filter(b=>b.st==="won"||b.st==="lost").sort(
   const lmOk=Object.values(S.lmw||{}).filter(v=>v===2).length;
   const on={first:S.bets.length>0,win1:W.length>0,s3:maxRun>=3,s5:maxRun>=5,o5:bestO>=5,o10:bestO>=10,c4:W.some(b=>b.legs.length>=4),big:W.some(b=>(b.pay||0)-b.stake>=500),
     cash:S.bets.some(b=>b.st==="cashed"),b50:S.bets.length>=50,b200:S.bets.length>=200,cards:legs.some(l=>l.r==="w"&&["yc","rc"].includes(l.mk)),rk:legs.some(l=>l.r==="w"&&l.mk==="rk"&&l.k===0),
-    posts:legs.some(l=>l.r==="w"&&["pm","px","dr"].includes(l.mk)),duel:(S.dwin||0)>=1,duel5:(S.dwin||0)>=5,lm5:lmOk>=5,week:!!S.sticky.week,season:!!S.sticky.season,fav:!!S.fav,k5:S.peak>=5000,k10:S.peak>=10000};
+    posts:legs.some(l=>l.r==="w"&&["pm","px","dr"].includes(l.mk)),duel:(S.dwin||0)>=1,duel5:(S.dwin||0)>=5,lm5:lmOk>=5,week:!!S.sticky.week,season:!!S.sticky.season,fav:!!S.fav,jack:(S.jackpot||0)>0,k5:S.peak>=5000,k10:S.peak>=10000};
   return SUCC.filter(x=>on[x[0]]).map(x=>x[0])}
 const succGrid=(ids,all)=>`<div class="badges">${(all?SUCC:ids.map(i=>SUCCD[i]).filter(Boolean)).map(([id,i,t,d])=>{const on=ids.includes(id);return`<div class="bdg${on?" on":""}" title="${esc(d)}">${ic(i)}<b>${t}</b><small>${esc(d)}</small></div>`}).join("")}</div>`;
 
@@ -1585,7 +1585,7 @@ function actText(a){const d=a.data||{};const legs=(d.legs||[]).map(esc).join(" +
     case"bet":return`a parié <b>${tok(d.stake||0)}</b> sur ${legs||"un match"}${d.n>1&&d.odds?` <span class="mut">(combiné · cote ${fr(+d.odds)})</span>`:d.odds?` <span class="mut">@ ${fr(+d.odds)}</span>`:""}`;
     case"won":return`a gagné <b class="pos">+${tok(d.pay||0)}</b> ${ic("trophy")}${legs?` <span class="mut">${legs}</span>`:""}`;
     case"cash":return`a encaissé <b>${tok(d.pay||0)}</b> avant la fin`;
-    case"wheel":return`a gagné <b>${tok(d.v||0)}</b> à la roue de la chance`;
+    case"wheel":return d.v>=1e6?`a touché le <b style="color:var(--sel)">JACKPOT</b> de la roue : <b class="pos">+${tok(d.v)}</b> 💰 (1 chance sur 10 millions !)`:`a gagné <b>${tok(d.v||0)}</b> à la roue de la chance`;
     case"defis":return`a réussi les 3 défis du jour`;
     case"duel":if(d.acc)return`relève le duel de ${esc(d.opp||"?")} : <b>${esc(d.pick||"")}</b> sur ${esc(d.mlabel||"")} <span class="mut">(${tok(d.stake||0)} jetons)</span>`;
       return`lance un duel : <b>${esc(d.pick||"")}</b> sur ${esc(d.mlabel||"")} <span class="mut">(${tok(d.stake||0)} jetons)</span>`;
@@ -2019,13 +2019,21 @@ function checkDefis(){const D=defisState();for(const d of D)if(d.n>=d.g&&!d.got&
    aléatoire cryptographique du navigateur (rejet des valeurs biaisées). */
 const WHEEL=[25,50,75,100,150,200,300,500],WCOL=["#35d07f","#ffd23f","#ff7a45","#5fa8ff","#d7f25a","#c084fc","#ff5a5f","#f8fafc"];
 function fairIndex(n){const a=new Uint32Array(1),lim=Math.floor(4294967296/n)*n;do{crypto.getRandomValues(a)}while(a[0]>=lim);return a[0]%n}
-function wheelSvg(){const n=WHEEL.length,st=360/n,R=140,c=150,pt=d=>{const r=(d-90)*Math.PI/180;return(c+R*Math.cos(r)).toFixed(2)+" "+(c+R*Math.sin(r)).toFixed(2)};
-  return`<svg viewBox="0 0 300 300" class="wheel" id="wheel" aria-hidden="true">${WHEEL.map((v,i)=>{const a0=i*st-st/2,a1=a0+st,dark=lum(WCOL[i])>.55;
+// 8 cases égales (1 chance sur 8) + une fine case JACKPOT tirée à part (1 chance sur 10 millions)
+const JACKPOT=1000000,JACK_ODDS=10000000,JW=8,WW=(360-JW)/WHEEL.length;
+const wCenter=i=>i<0?7.5*WW+JW/2:i*WW;
+function wheelSvg(){const n=WHEEL.length,R=140,c=150,pt=d=>{const r=(d-90)*Math.PI/180;return(c+R*Math.cos(r)).toFixed(2)+" "+(c+R*Math.sin(r)).toFixed(2)};
+  const j0=7.5*WW,j1=j0+JW;
+  return`<svg viewBox="0 0 300 300" class="wheel" id="wheel" aria-hidden="true"><defs><linearGradient id="jg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3b0"/><stop offset=".5" stop-color="#ffd23f"/><stop offset="1" stop-color="#b8860b"/></linearGradient></defs>
+    ${WHEEL.map((v,i)=>{const a0=i*WW-WW/2,a1=a0+WW,dark=lum(WCOL[i])>.55;
     return`<path d="M150 150L${pt(a0)}A${R} ${R} 0 0 1 ${pt(a1)}Z" fill="${WCOL[i]}" stroke="#0a110f" stroke-width="3"/>
-    <g transform="rotate(${i*st} 150 150)"><text x="150" y="52" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-weight="800" font-size="30" fill="${dark?"#0a110f":"#fff"}">${v}</text>
+    <g transform="rotate(${i*WW} 150 150)"><text x="150" y="52" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-weight="800" font-size="30" fill="${dark?"#0a110f":"#fff"}">${v}</text>
     <text x="150" y="72" text-anchor="middle" font-family="Barlow,sans-serif" font-weight="700" font-size="11" fill="${dark?"#0a110f":"#fff"}" opacity=".75">JETONS</text></g>`}).join("")}
+    <path d="M150 150L${pt(j0)}A${R} ${R} 0 0 1 ${pt(j1)}Z" fill="#0a110f" stroke="#ffd23f" stroke-width="1.5"/>
+    <g transform="rotate(${(j0+j1)/2} 150 150)"><text transform="translate(150 86) rotate(-90)" text-anchor="middle" dominant-baseline="central" font-family="Barlow Condensed,sans-serif" font-weight="800" font-size="10.5" fill="url(#jg)" letter-spacing=".5">1 000 000</text></g>
     <circle cx="150" cy="150" r="141" fill="none" stroke="#ffd23f" stroke-width="6"/>
-    ${Array.from({length:n},(_,i)=>{const r=(i*st+st/2-90)*Math.PI/180;return`<circle cx="${(150+141*Math.cos(r)).toFixed(1)}" cy="${(150+141*Math.sin(r)).toFixed(1)}" r="4.5" fill="#fff"/>`}).join("")}
+    ${Array.from({length:n},(_,i)=>{const r=(i*WW+WW/2-90)*Math.PI/180;return`<circle cx="${(150+141*Math.cos(r)).toFixed(1)}" cy="${(150+141*Math.sin(r)).toFixed(1)}" r="4.5" fill="#fff"/>`}).join("")}
+    <circle cx="${(150+141*Math.cos((j1-90)*Math.PI/180)).toFixed(1)}" cy="${(150+141*Math.sin((j1-90)*Math.PI/180)).toFixed(1)}" r="4.5" fill="#fff"/>
     <circle cx="150" cy="150" r="26" fill="#0a110f" stroke="#ffd23f" stroke-width="5"/></svg>`}
 function wheelMini(){return`<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">${WCOL.map((col,i)=>{const a0=(i*45-112.5)*Math.PI/180,a1=a0+Math.PI/4;
   return`<path d="M12 12L${(12+11*Math.cos(a0)).toFixed(2)} ${(12+11*Math.sin(a0)).toFixed(2)}A11 11 0 0 1 ${(12+11*Math.cos(a1)).toFixed(2)} ${(12+11*Math.sin(a1)).toFixed(2)}Z" fill="${col}"/>`}).join("")}<circle cx="12" cy="12" r="11" fill="none" stroke="#2a1d00" stroke-width="1.5"/><circle cx="12" cy="12" r="3" fill="#2a1d00"/></svg>`}
@@ -2035,17 +2043,18 @@ function viewWheel(){const done=S.bonus===today();
   <div class="wheelbox"><div class="pointer"></div>${wheelSvg()}</div>
   <div id="wres" class="wres">${done&&S.wheel&&S.wheel.d===today()?`Aujourd’hui : <b>+${tok(S.wheel.v)} jetons</b>`:"Un tour gratuit par jour"}</div>
   <button class="btn gold wide" data-act="spin" id="spin" ${done?"disabled":""}>${done?"Prochain tour dans "+nextReset():"Lancer la roue"}</button>
-  <div class="info">${ic("info")}<span><b style="color:var(--ink)">100 % hasard.</b> Les 8 cases ont exactement la même chance : 1 sur 8, soit 12,5 % chacune. Le tirage utilise le générateur aléatoire sécurisé du téléphone, sans aucun réglage caché.</span></div>`}
+  <div class="info">${ic("info")}<span><b style="color:var(--ink)">100 % hasard.</b> Les 8 cases de jetons ont la même chance : 1 sur 8 chacune. La fine case dorée <b style="color:var(--sel)">JACKPOT 1 000 000</b> est tirée à part : <b style="color:var(--ink)">1 chance sur 10 millions</b> à chaque tour. Le tirage utilise le générateur aléatoire sécurisé du téléphone, sans aucun réglage caché.</span></div>`}
 let spinning=false;
 function spin(){if(spinning||S.bonus===today())return;spinning=true;
-  const i=fairIndex(WHEEL.length),v=WHEEL[i];
+  const jack=fairIndex(JACK_ODDS)===0,i=jack?-1:fairIndex(WHEEL.length),v=jack?JACKPOT:WHEEL[i];
   // le gain est enregistré tout de suite (recharger la page ne permet pas de relancer)
-  S.bonus=today();S.wheel={d:today(),v};S.bal+=v;S.peak=Math.max(S.peak,S.bal);save();if(v>=200)postAct("wheel",{v});
-  const w=$("#wheel"),b=$("#spin"),jit=(Math.random()-.5)*(360/WHEEL.length)*.7,deg=360*7-i*(360/WHEEL.length)+jit;
+  S.bonus=today();S.wheel={d:today(),v};S.bal+=v;S.peak=Math.max(S.peak,S.bal);if(jack)S.jackpot=(S.jackpot||0)+1;save();if(v>=200)postAct("wheel",{v});
+  const w=$("#wheel"),b=$("#spin"),jit=(Math.random()-.5)*(jack?JW:WW)*.7,deg=360*7-wCenter(i)+jit;
   if(b){b.disabled=true;b.textContent="Ça tourne…"}
   const end=()=>{spinning=false;$("#bal").textContent=tok(S.bal);bump();
     if($("#wres"))$("#wres").innerHTML=`Gagné : <b>+${tok(v)} jetons</b>`;if($("#spin"))$("#spin").textContent="Prochain tour dans "+nextReset();
-    toast(`${wheelMini()} +${tok(v)} jetons ! À demain pour un nouveau tour.`,"win");if(v>=200)confetti();if(!U.open)render()};
+    if(jack){toast(`💰 JACKPOT ! +1 000 000 jetons ! Une chance sur 10 millions…`,"win");confetti();setTimeout(confetti,900);setTimeout(confetti,1800)}
+    else{toast(`${wheelMini()} +${tok(v)} jetons ! À demain pour un nouveau tour.`,"win");if(v>=200)confetti()}if(!U.open)render()};
   if(!w||matchMedia("(prefers-reduced-motion: reduce)").matches){end();return}
   w.style.transition="transform 5.2s cubic-bezier(.12,.75,.12,1)";requestAnimationFrame(()=>{w.style.transform=`rotate(${deg}deg)`});setTimeout(end,5400)}
 
@@ -2142,7 +2151,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.34";
+const VERSION="1.35";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
