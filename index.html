@@ -2225,12 +2225,12 @@ function checkDefis(){const D=defisState();for(const d of D)if(d.n>=d.g&&!d.got&
 /* ---------- roue de la chance ----------
    8 cases, chacune exactement 1 chance sur 8 : tirage uniforme avec le générateur
    aléatoire cryptographique du navigateur (rejet des valeurs biaisées). */
-// chances en % (de plus en plus faibles) : la taille de chaque case est proportionnelle à sa chance
-const WHEEL=[25,50,75,100,150,200,300,500],WP=[28,24,18,13,8,5,3,1],WCOL=["#35d07f","#ffd23f","#ff7a45","#5fa8ff","#d7f25a","#c084fc","#ff5a5f","#f8fafc"];
+// chances en % (de plus en plus faibles) ; taille des cases en % du tour : elles rapetissent un peu à chaque palier (le jackpot = la plus petite), la vraie chance est écrite dessus
+const WHEEL=[25,50,75,100,150,200,300,500],WP=[28,24,18,13,8,5,3,1],WD=[16,15,14,13,12,11,9,6],JD=4,WCOL=["#35d07f","#ffd23f","#ff7a45","#5fa8ff","#d7f25a","#c084fc","#ff5a5f","#f8fafc"];
 function fairIndex(n){const a=new Uint32Array(1),lim=Math.floor(4294967296/n)*n;do{crypto.getRandomValues(a)}while(a[0]>=lim);return a[0]%n}
-// cases de taille proportionnelle à leur chance + une fine case JACKPOT tirée à part (1 chance sur 10 millions)
-const JACKPOT=1000000,JACK_ODDS=10000000,JW=8,WSPAN=360-JW;
-const WA=(()=>{let a=0;return WP.map(p=>{const w=p/100*WSPAN,r=[a,a+w];a+=w;return r})})();   // [début, fin] en degrés
+// cases de taille dégressive + la case JACKPOT tirée à part (1 chance sur 10 millions)
+const JACKPOT=1000000,JACK_ODDS=10000000,JW=JD*3.6,WSPAN=360-JW;
+const WA=(()=>{let a=0;return WD.map(p=>{const w=p*3.6,r=[a,a+w];a+=w;return r})})();   // [début, fin] en degrés
 const wCenter=i=>i<0?WSPAN+JW/2:(WA[i][0]+WA[i][1])/2;
 function wheelPick(){const r=fairIndex(100);let c=0;for(let i=0;i<WP.length;i++){c+=WP[i];if(r<c)return i}return 0}
 function wheelSvg(){const n=WHEEL.length,R=140,c=150,pt=d=>{const r=(d-90)*Math.PI/180;return(c+R*Math.cos(r)).toFixed(2)+" "+(c+R*Math.sin(r)).toFixed(2)};
@@ -2241,9 +2241,11 @@ function wheelSvg(){const n=WHEEL.length,R=140,c=150,pt=d=>{const r=(d-90)*Math.
     <g transform="rotate(${mid} 150 150)">${big?`<text x="150" y="50" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-weight="800" font-size="30" fill="${col}">${v}</text>
     <text x="150" y="68" text-anchor="middle" font-family="Barlow,sans-serif" font-weight="700" font-size="11" fill="${col}" opacity=".75">JETONS</text>
     <text x="150" y="86" text-anchor="middle" font-family="Barlow,sans-serif" font-weight="800" font-size="12" fill="${col}">${WP[i]} %</text>`
-    :`<text transform="translate(150 ${w>=14?66:72}) rotate(-90)" text-anchor="middle" dominant-baseline="central" font-family="Barlow Condensed,sans-serif" font-weight="800" font-size="${w>=14?17:11}" fill="${col}">${v}${w>=14?` · ${WP[i]}%`:""}</text>`}</g>`}).join("")}
+    :`<text x="150" y="44" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-weight="800" font-size="${w>=28?26:22}" fill="${col}">${v}</text>
+    <text x="150" y="60" text-anchor="middle" font-family="Barlow,sans-serif" font-weight="800" font-size="10.5" fill="${col}" opacity=".9">${WP[i]} %</text>`}</g>`}).join("")}
     <path d="M150 150L${pt(j0)}A${R} ${R} 0 0 1 ${pt(j1)}Z" fill="#0a110f" stroke="#ffd23f" stroke-width="1.5"/>
-    <g transform="rotate(${(j0+j1)/2} 150 150)"><text transform="translate(150 86) rotate(-90)" text-anchor="middle" dominant-baseline="central" font-family="Barlow Condensed,sans-serif" font-weight="800" font-size="10.5" fill="url(#jg)" letter-spacing=".5">1 000 000</text></g>
+    <g transform="rotate(${(j0+j1)/2} 150 150)"><text transform="translate(146.5 76) rotate(-90)" text-anchor="middle" dominant-baseline="central" font-family="Barlow Condensed,sans-serif" font-weight="800" font-size="13" fill="url(#jg)" letter-spacing=".3">1 000 000</text>
+    <text transform="translate(156.5 76) rotate(-90)" text-anchor="middle" dominant-baseline="central" font-family="Barlow,sans-serif" font-weight="700" font-size="7.5" fill="#ffd23f">1 sur 10 M</text></g>
     <circle cx="150" cy="150" r="141" fill="none" stroke="#ffd23f" stroke-width="6"/>
     ${WA.map(([a0])=>{const r=(a0-90)*Math.PI/180;return`<circle cx="${(150+141*Math.cos(r)).toFixed(1)}" cy="${(150+141*Math.sin(r)).toFixed(1)}" r="4.5" fill="#fff"/>`}).join("")}
     <circle cx="150" cy="9" r="4.5" fill="#fff"/>
@@ -2260,7 +2262,7 @@ function viewWheel(){const done=!wheelAvail();
   <div class="wheelbox"><div class="pointer"></div>${wheelSvg()}</div>
   <div id="wres" class="wres">${done&&S.wheel&&S.wheel.d===today()?`Aujourd’hui : <b>+${tok(S.wheel.v)} jetons</b>`:extraAvail()?"🎁 Tour bonus offert à tout le monde aujourd’hui !":"Un tour gratuit par jour"}</div>
   <button class="btn gold wide" data-act="spin" id="spin" ${done?"disabled":""}>${done?"Prochain tour dans "+nextReset():extraAvail()?"Lancer le tour bonus":"Lancer la roue"}</button>
-  <div class="info">${ic("info")}<span><b style="color:var(--ink)">100 % hasard.</b> Plus le gain est gros, plus il est rare : ${WHEEL.map((v,i)=>`<b style="color:var(--ink)">${v}</b> ${WP[i]} %`).join(" · ")}. La taille de chaque case correspond à sa chance. Les jetons de la roue <b style="color:var(--ink)">ne comptent pas</b> dans les classements. La fine case dorée <b style="color:var(--sel)">JACKPOT 1 000 000</b> est tirée à part : <b style="color:var(--ink)">1 chance sur 10 millions</b> à chaque tour. Le tirage utilise le générateur aléatoire sécurisé du téléphone, sans aucun réglage caché.</span></div>`}
+  <div class="info">${ic("info")}<span><b style="color:var(--ink)">100 % hasard.</b> Plus le gain est gros, plus il est rare : ${WHEEL.map((v,i)=>`<b style="color:var(--ink)">${v}</b> ${WP[i]} %`).join(" · ")}. Les cases rapetissent avec le gain ; la vraie chance est écrite sur chacune. Les jetons de la roue <b style="color:var(--ink)">ne comptent pas</b> dans les classements. La fine case dorée <b style="color:var(--sel)">JACKPOT 1 000 000</b> est tirée à part : <b style="color:var(--ink)">1 chance sur 10 millions</b> à chaque tour. Le tirage utilise le générateur aléatoire sécurisé du téléphone, sans aucun réglage caché.</span></div>`}
 let spinning=false;
 function spin(){if(spinning||!wheelAvail())return;spinning=true;const isExtra=extraAvail();
   const jack=fairIndex(JACK_ODDS)===0,i=jack?-1:wheelPick(),v=jack?JACKPOT:WHEEL[i];
@@ -2369,7 +2371,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.43";
+const VERSION="1.44";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
