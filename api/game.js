@@ -201,8 +201,8 @@ async function morning(s) {
       if (!w.length) continue;
       const to = (await members(s, L.code)).filter((id) => !done.has(String(id)));
       to.forEach((id) => done.add(String(id)));
-      await notify(s, to, { title: `👑 Saison de ${monthName(t.m)} terminée · ${L.name}`,
-        body: `${w.map((x) => x.name).join(" et ")} ${w.length > 1 ? "sont champions" : "est champion"} avec +${Math.round(w[0].gain)} jetons. Nouvelle saison : tout le monde repart à zéro !`,
+      await notify(s, to, { title: `👑 Classement de ${monthName(t.m)} terminé · ${L.name}`,
+        body: `${w.map((x) => x.name).join(" et ")} ${w.length > 1 ? "sont champions du mois" : "est champion du mois"} avec +${Math.round(w[0].gain)} jetons. Nouveau mois : tout le monde repart à zéro !`,
         url: go("rank", L.code), tag: "season-" + L.code });
       out.season++;
     }
