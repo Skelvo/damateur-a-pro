@@ -53,7 +53,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .top{position:relative;z-index:20;padding:calc(38px + var(--safe-t)) 0 12px}
 .top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .brand{display:flex;align-items:center;gap:10px;min-width:0}
-.brand svg,.brand .blogo{flex:none}.blogo{width:40px;height:40px;border-radius:11px;display:block;background:url(icon-180.png?v=2) center/cover no-repeat;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.brand svg,.brand .blogo{flex:none}.blogo img{display:block;width:40px;height:40px;border-radius:11px;pointer-events:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.blogo{width:40px;height:40px;border-radius:11px;display:block;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .brand b{display:block;font:800 23px/1 "Barlow Condensed",sans-serif;letter-spacing:.2px;text-transform:uppercase;white-space:nowrap}
 .brand b em{font-style:italic;color:var(--acc);transition:color .4s}
 .ver{display:inline-block;vertical-align:4px;margin-left:4px;padding:2px 6px;border-radius:6px;background:var(--card2);border:1px solid var(--line2);color:var(--mute);font:700 11px/1.2 Barlow,sans-serif;letter-spacing:.3px;font-style:normal;text-transform:none}
@@ -630,7 +631,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <header class="top">
   <div class="wrap">
     <div class="brand">
-      <span class="blogo" role="img" aria-label="D’amateur à pro"></span>
+      <span class="blogo"><img src="icon-180.png?v=2" width="40" height="40" alt="D’amateur à pro" draggable="false"></span>
       <div><b>D’amateur <em>à&nbsp;pro</em></b><small><span id="hello">Paris gratuits · du district aux pros</span><span class="ver" id="ver"></span></small></div>
     </div>
     <div class="hright"><button class="bell" id="bell" data-act="notif" aria-label="Notifications"><svg class="i"><use href="#i-bell"/></svg><span class="dot" id="belldot" hidden></span></button>
@@ -2370,7 +2371,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.46";
+const VERSION="1.47";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
