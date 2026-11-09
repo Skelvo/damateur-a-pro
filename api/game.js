@@ -361,6 +361,7 @@ async function ensurePrizes(s, month) {
 // ---- Notifications de paris (appelé toutes les ~10 min par GitHub Actions, sans clé : idempotent et limité) ----
 // Avant le coup d'envoi (≤ 20 min) : « ton match commence » ; matchs tous finis : gagné / perdu (paris 1N2) ou « terminé ».
 const ESPN_API = "https://site.api.espn.com/apis/site/v2/sports/";
+const FAV_PATHS = ["soccer/fra.1", "soccer/fra.2", "rugby/270559", "soccer/eng.1", "soccer/esp.1", "soccer/ita.1", "soccer/ger.1", "soccer/por.1", "basketball/nba"];
 async function espnJSON(u) { const c = new AbortController(), t = setTimeout(() => c.abort(), 7000); try { const r = await fetch(u, { signal: c.signal }); if (!r.ok) throw new Error(r.status); return await r.json(); } finally { clearTimeout(t); } }
 const sentOnce = async (s, key) => !!(await s.query(`insert into sent_notes (key) values ($1) on conflict do nothing returning key`, [key]))[0];
 async function tick(s) {
@@ -1846,6 +1847,17 @@ export default async function handler(req, res) {
         res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
         return res.status(200).end(buf);
       } catch (e) { return res.status(500).json({ error: "server" }); }
+    }
+    // équipes d'un championnat (équipe de cœur) : ESPN ne permet plus de les lire depuis le navigateur
+    if (q.teams) {
+      const path = String(q.teams);
+      if (!FAV_PATHS.includes(path)) return res.status(404).json({ error: "unknown" });
+      try {
+        const j = await espnJSON(`${ESPN_API}${path}/teams`);
+        const teams = j.sports[0].leagues[0].teams.map((x) => x.team).map((t) => ({ id: String(t.id), short: t.shortDisplayName, name: t.displayName, logo: (t.logos && t.logos[0] && t.logos[0].href) || null }));
+        res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=86400");
+        return res.status(200).json({ teams });
+      } catch (e) { return res.status(502).json({ error: "espn" }); }
     }
     if (q.cron && q.slot === "tick") {
       try { return res.status(200).json(await tick(await db())); } catch (e) { console.error(e); return res.status(500).json({ error: "server" }); }
