@@ -198,7 +198,7 @@ img.crest{object-fit:contain}
 .link{border:0;background:none;color:var(--acc);font-weight:600;padding:4px}
 
 /* ---------- bottom nav ---------- */
-.nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:color-mix(in srgb,var(--bg2) 92%,transparent);backdrop-filter:blur(12px);border-top:1px solid var(--line);padding-bottom:var(--safe-b)}
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:color-mix(in srgb,var(--bg2) 92%,transparent);backdrop-filter:none;border-top:1px solid var(--line);padding-bottom:var(--safe-b)}
 .nav .wrap{display:grid;grid-template-columns:repeat(4,1fr)}
 .nav button{position:relative;border:0;background:none;padding:10px 0 9px;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--mute);font:600 12px Barlow,sans-serif}
 .nav button .i{width:24px;height:24px}
@@ -472,6 +472,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 .champ.season{background:linear-gradient(135deg,#4a2a05,var(--card) 70%);border-color:#a8670f}
 .sncard{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin:0 0 12px}.sncard .i{width:26px;height:26px;color:#ffb020;flex:none}.sncard b{display:block;font:800 18px "Barlow Condensed"}.sncard small{color:var(--mute);font-size:12.5px}
 .drow[data-act=defigo]{cursor:pointer}.drow[data-act=defigo]:active{opacity:.7}
+.mc,.res-row,.prow,.ticket{content-visibility:auto;contain-intrinsic-size:auto 180px}.res-row,.prow{contain-intrinsic-size:auto 58px}
 .gcomp{padding:12px 14px}.gcomp .gtop{gap:10px}.gti{flex:1;min-width:0}.gti h3{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gti small .link{padding:0;font-size:inherit;color:inherit;text-decoration:underline}
 .gsm{width:42px;height:42px;padding:0;flex:none;display:grid;place-items:center}.gsm .i{width:18px;height:18px}
 .gdots{position:relative;width:42px;height:42px;flex:none;border-radius:12px;border:1px solid var(--line2);background:#0003;color:var(--ink);font:800 14px Barlow;letter-spacing:1px}.gdots .tdd{top:-4px;right:-4px}
@@ -761,7 +762,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.75"></script>
+<script src="engine.js?v=1.76"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -778,10 +779,12 @@ const tok=n=>Math.round(n).toLocaleString("fr-FR");
 const ymd=d=>{const x=new Date(d);return x.getFullYear()+String(x.getMonth()+1).padStart(2,"0")+String(x.getDate()).padStart(2,"0")};
 const today=()=>ymd(Date.now());
 function monday(t){const x=new Date(t);x.setHours(0,0,0,0);x.setDate(x.getDate()-(x.getDay()+6)%7);return x}
-const fDay=t=>{const s=new Date(t).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});return s[0].toUpperCase()+s.slice(1)};
-const fTime=t=>new Date(t).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+// formateurs de dates créés une seule fois (les recréer à chaque appel coûte cher sur les vieux téléphones)
+const DFD=new Intl.DateTimeFormat("fr-FR",{weekday:"long",day:"numeric",month:"long"}),DFT=new Intl.DateTimeFormat("fr-FR",{hour:"2-digit",minute:"2-digit"}),DFS=new Intl.DateTimeFormat("fr-FR",{weekday:"short",day:"numeric",month:"short"});
+const fDay=t=>{const s=DFD.format(new Date(t));return s[0].toUpperCase()+s.slice(1)};
+const fTime=t=>DFT.format(new Date(t));
 const fShort=t=>{const d=new Date(t);const dd=Math.round((new Date(t).setHours(0,0,0,0)-new Date().setHours(0,0,0,0))/DAY);
-  return dd===0?"Aujourd’hui":dd===1?"Demain":dd===-1?"Hier":d.toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"})};
+  return dd===0?"Aujourd’hui":dd===1?"Demain":dd===-1?"Hier":DFS.format(d)};
 const ic=(id,cls="")=>`<svg class="i ${cls}"><use href="#i-${id}"/></svg>`;
 
 /* ---------- référentiel sports / niveaux ---------- */
@@ -838,8 +841,15 @@ async function loadFeed(sp,lv){const paths=SP[sp].feeds[lv],key=sp+lv,now=Date.n
     const list=[],seen=new Set();for(const[p,j]of res)for(const ev of j.events||[]){if(seen.has(p+ev.id))continue;seen.add(p+ev.id);if(sp==="tennis")list.push(...parseTennis(ev,lv,p));else{const m=parseTeamEvent(ev,sp,lv,p);if(m&&m.t>now-5*DAY&&m.t<now+22*DAY)list.push(m)}}
     FEED[key]={ok:true,list,at:now};list.forEach(m=>{const old=REG.get(m.id);if(old&&old.st&&m.st)for(const k in old.st)if(!(k in m.st))m.st[k]=old.st[k];REG.set(m.id,m)})}
   catch(e){FEED[key]={ok:false,list:[],at:now}}}
-async function loadSport(sp){const jobs=Object.keys(SP[sp].feeds).filter(l=>!FEED[sp+l]).map(l=>loadFeed(sp,+l));if(!jobs.length)return;await Promise.all(jobs);if(!U.open||U.open==="slip")render();settle()}
-async function loadFeeds(){await loadSport(U.sp);for(const sp in SP)if(sp!==U.sp)await loadSport(sp)}
+async function loadSport(sp){const jobs=Object.keys(SP[sp].feeds).filter(l=>!FEED[sp+l]).map(l=>loadFeed(sp,+l));if(!jobs.length)return;await Promise.all(jobs);
+  if(sp===U.sp){if(!U.open||U.open==="slip")render()}else renderSoon();settle()}
+const idle=ms=>new Promise(ok=>"requestIdleCallback"in window?requestIdleCallback(()=>ok(),{timeout:ms}):setTimeout(ok,ms));
+async function loadFeeds(){await loadSport(U.sp);await idle(1500);for(const sp in SP)if(sp!==U.sp){await loadSport(sp);await idle(800)}for(const sp in SP)if(sp!==U.sp)await warmSport(sp)}
+// cotes des prochains matchs des autres sports calculées par petits paquets quand le téléphone ne fait rien : changer de sport devient instantané
+async function warmSport(sp){const ms=matchesFor(sp,-1).filter(m=>["pre","live"].includes(status(m))).sort((a,b)=>a.t-b.t).slice(0,24);
+  for(let i=0;i<ms.length;i+=2){await idle(400);if(document.hidden)return;for(const m of ms.slice(i,i+2))try{resMarket(m)}catch(e){}}}
+// plusieurs mises à jour d'affilée = un seul affichage
+let rsT=0;function renderSoon(ms=250){clearTimeout(rsT);rsT=setTimeout(()=>{if(!U.open||U.open==="slip")render()},ms)}
 async function espnStats(m){ // complète les stats foot (cartons, corners…) et les compositions via le résumé du match
   if(m.sp!=="foot"||m.src!=="espn"||m._sum===m.state)return;m._sum=m.state;
   try{applySummary(m,await getJSON(`${ESPN}${m.path}/summary?event=${m.eid}`))}
@@ -980,11 +990,11 @@ function mid(m){const st=status(m);
   if(st==="wait")return`<div class="mid"><div class="ko">—</div><small>Score attendu</small></div>`;
   const sc=finalScore(m);return`<div class="mid"><div class="score">${sc?sc[0]+"–"+sc[1]:"—"}</div><small>Terminé</small></div>`}
 function srcChip(m){return m.src==="espn"?`<span class="chip feed">Réel</span>`:m.src==="am"?`<span class="chip org">Réel · joueurs</span>`:m.src==="org"?`<span class="chip org">Organisateur</span>`:`<span class="chip">Simulation</span>`}
-function card(m,showLv){const st=status(m),mks=markets(m),res=mks.find(x=>x.id==="res");
-  const nm=mks.length-1,icons=[...new Set(mks.slice(1).map(x=>x.d.ic+"|"+(x.d.cls||"")))].slice(0,4);
+function card(m,showLv){const st=status(m),res=resMarket(m),defs=marketInfo(m);
+  const nm=defs.length-1,icons=[...new Set(defs.slice(1).map(d=>d.ic+"|"+(d.cls||"")))].slice(0,4);
   const short=m.sp==="tennis"||m.sp==="basket"?["1","2"]:["1","N","2"];
   return`<article class="mc" data-act="open" data-mid="${esc(m.id)}" tabindex="0">
-    <div class="mc-top">${st==="live"?`<span class="chip live">Direct</span>`:""}${srcChip(m)}<span class="comp">${esc(showLv?m.comp:(m.dep||m.comp))}</span></div>
+    <div class="mc-top">${st==="live"?`<span class="chip live">Direct${liveOK(m)?" · paris ouverts":""}</span>`:""}${srcChip(m)}<span class="comp">${esc(showLv?m.comp:(m.dep||m.comp))}</span></div>
     <div class="teams"><div class="tm">${crestOf(m,0)}<b>${esc(m.h)}</b>${m.hs?`<small>${esc(m.hs)}</small>`:""}</div>${mid(m)}<div class="tm">${crestOf(m,1)}<b>${esc(m.a)}</b>${m.as?`<small>${esc(m.as)}</small>`:""}</div></div>
     ${res?`<div class="pbar">${res.sels.map(s=>`<i style="width:${(s.p*100).toFixed(1)}%"></i>`).join("")}</div>
     <div class="odds c${res.sels.length}">${res.sels.map((s,k)=>oddBtn(m,res,k,s,short[k])).join("")}</div>`:""}
@@ -1037,7 +1047,7 @@ function foot(){return`<p class="foot">Jeu 100 % gratuit : jetons fictifs sans a
 function viewDetail(m){const st=status(m),mks=markets(m),res=mks.find(x=>x.id==="res"),rs=realStats(m)||(st==="live"&&m.src!=="espn"?null:m.st);
   if(m.src==="espn"&&st!=="pre"&&m.sp==="foot"&&m._sum!==m.state)espnStats(m).then(()=>{MKC.clear();if(U.open===m.id)openDetail(m.id,true)});
   let h=`<div class="grab"><h3>${esc(SP[m.sp].n)}</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
-  <div class="hero">${fieldSvg(m.sp)}<div class="mc-top">${st==="live"?`<span class="chip live">Direct</span>`:""}${srcChip(m)}<span class="comp">${esc(m.comp)}</span></div>
+  <div class="hero">${fieldSvg(m.sp)}<div class="mc-top">${st==="live"?`<span class="chip live">Direct${liveOK(m)?" · paris ouverts":""}</span>`:""}${srcChip(m)}<span class="comp">${esc(m.comp)}</span></div>
     <div class="teams"><div class="tm">${crestOf(m,0)}<b>${esc(m.h)}</b>${m.hs?`<small>${esc(m.hs)}</small>`:""}</div>${mid(m)}<div class="tm">${crestOf(m,1)}<b>${esc(m.a)}</b>${m.as?`<small>${esc(m.as)}</small>`:""}</div></div>
     ${res?`<div class="prob">${res.sels.map(s=>`<span>${Math.round(s.p*100)} %</span>`).join("")}</div><div class="pbar">${res.sels.map(s=>`<i style="width:${(s.p*100).toFixed(1)}%"></i>`).join("")}</div>`:""}
     <div class="note" style="text-align:center;color:#ffffffa0;margin-top:6px">${esc(fDay(m.t))} · ${fTime(m.t)}</div></div>`;
@@ -1201,7 +1211,7 @@ function viewCareer(){const di=divOf(S.peak),nx=DIVS[di+1],pr=nx?cl((S.peak-DIVS
   ${(S.blocked||[]).length?`<div class="row"><div><b>Joueurs bloqués</b><small>${S.blocked.length} joueur${S.blocked.length>1?"s":""}</small></div><button class="link" data-act="blocked">Gérer</button></div>`:""}
   <div class="row"><div><b>Recommencer</b><small>Repartir de zéro avec 1 000 jetons</small></div><button class="link" data-act="reset" style="color:var(--loss)">Réinitialiser</button></div>
   <div class="row"><div><b>Supprimer mon compte</b><small>Efface tout, définitivement</small></div><button class="link" data-act="delacc" style="color:var(--loss)">Supprimer</button></div>
-  <div class="info">${ic("info")}<span><b style="color:var(--ink)">Règles.</b> Les paris se ferment au coup d’envoi. Un pari est réglé automatiquement dès que le score et la stat concernée sont connus. Si une stat n’est jamais publiée (48 h après le match) ou si le match est reporté, la sélection est remboursée (cote 1,00 dans un combiné).</span></div>`;
+  <div class="info">${ic("info")}<span><b style="color:var(--ink)">Règles.</b> Les paris se ferment au coup d’envoi, sauf en direct sur les vrais matchs de foot (jusqu’à la 85<sup>e</sup>) et de rugby (jusqu’à la 72<sup>e</sup>), sur le résultat, les buts et les points. Un pari est réglé automatiquement dès que le score et la stat concernée sont connus. Si une stat n’est jamais publiée (48 h après le match) ou si le match est reporté, la sélection est remboursée (cote 1,00 dans un combiné).</span></div>`;
   return h+foot()}
 
 /* ---------- formulaires organisateur ---------- */
@@ -1862,7 +1872,7 @@ const HELP=[["Parier",[
   ["1n2","1, N, 2 : ça veut dire quoi ?","<b>1</b> = l’équipe de gauche (à domicile) gagne. <b>N</b> = match nul. <b>2</b> = l’équipe de droite (à l’extérieur) gagne. Au tennis et en NBA, pas de nul : 1 ou 2."],
   ["parier","Comment parier ?","1) Touche une cote : elle va dans ton ticket. 2) Touche <b>Mon ticket</b> en bas. 3) Choisis ta mise. 4) Touche <b>Valider</b>. Touche le match lui-même pour voir tous les paris : buteurs, cartons, corners, essais, aces…"],
   ["combo","Pari simple ou combiné ?","Avec plusieurs pronostics dans ton ticket, tu choisis : <b>Simples</b> = un pari séparé pour chacun (la mise est comptée pour chacun). <b>Combiné</b> = un seul pari, les cotes se multiplient, mais <b>tout</b> doit être bon. Deux paris liés sur le même match ont une cote recalculée."],
-  ["direct","Parier en direct","Certains matchs restent ouverts pendant le jeu : la cote change avec le score. Si elle bouge au moment de valider, l’appli te demande de vérifier."],
+  ["direct","Parier en direct","Sur les <b>vrais matchs de foot et de rugby</b>, les paris restent ouverts pendant le jeu : jusqu’à la <b>85<sup>e</sup> minute</b> au foot et la <b>72<sup>e</sup></b> au rugby. Repère l’étiquette <b>Direct · paris ouverts</b> sur le match. En direct, seuls les paris sur le résultat, les buts ou les points sont proposés, et la cote change avec le score : si elle bouge au moment de valider, l’appli te demande de vérifier. Au tennis et en NBA, tout se ferme au coup d’envoi."],
   ["regle","Quand mon pari est-il réglé ?","Tout seul, dès que le score et la stat du pari sont connus, en général quelques minutes après la fin. Tu reçois une notification si elles sont activées. Si une stat n’est jamais publiée (48 h) ou si le match est reporté, la sélection est <b>remboursée</b> (cote 1,00 dans un combiné)."],
   ["cash","Encaisser un pari","Dans <b>Mes paris</b>, tant que le match n’est pas fini, tu peux souvent encaisser tout de suite : tu sécurises un montant (plus petit que le gain possible) et le pari s’arrête là."]]],
  ["Jetons et classements",[
@@ -2548,16 +2558,17 @@ function viewProno(cur){const j=U.pr.data;if(!j){loadProno();return`<div class="
    Sur iPhone : iOS 16.4 ou plus et l'app installée sur l'écran d'accueil. */
 const VAPID_PUB="BNb9Bfnw4qxD1NTgsPfjQk5ufvrkK7f5ZE2Mid5KNfArGpm1j0NrPXfXb4u8HQQ8jydYMGUVQScISDAq81Z9KIw";
 const pushOK=()=>"serviceWorker"in navigator&&"PushManager"in window&&"Notification"in window;
-function pushState(){if(!pushOK())return"na";if(Notification.permission==="denied")return"denied";return S.push&&Notification.permission==="granted"?"on":"off"}
+let psC=null,psAt=0;function pushState(){const n=Date.now();if(psC&&n-psAt<3000)return psC;psAt=n;return psC=pushState0()}
+function pushState0(){if(!pushOK())return"na";if(Notification.permission==="denied")return"denied";return S.push&&Notification.permission==="granted"?"on":"off"}
 const b64u=s=>{const p="=".repeat((4-s.length%4)%4),r=atob((s+p).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from(r,c=>c.charCodeAt(0))};
 async function pushEnable(){if(!pushOK()){toast(IOS&&!STANDALONE?"Installe d’abord l’app sur l’écran d’accueil.":"Notifications indisponibles sur ce téléphone.","bad");return}
   try{const perm=await Notification.requestPermission();if(perm!=="granted"){toast("Notifications refusées.","bad");render();if(U.open==="notif")layer(viewNotif());return}
     const reg=await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();
     if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID_PUB)});
-    if(!(await ensureSession()))throw new Error("offline");await api("push_sub",{sub:sub.toJSON()});S.push=1;save();render();if(U.open==="notif")layer(viewNotif());toast("🔔 Notifications activées !","win")}
+    if(!(await ensureSession()))throw new Error("offline");await api("push_sub",{sub:sub.toJSON()});psC=null;S.push=1;save();render();if(U.open==="notif")layer(viewNotif());toast("🔔 Notifications activées !","win")}
   catch(e){toast("Impossible d’activer les notifications pour l’instant.","bad")}}
 async function pushDisable(){try{const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();if(sub){api("push_unsub",{endpoint:sub.endpoint}).catch(()=>{});await sub.unsubscribe()}}catch(e){}
-  S.push=0;save();render();if(U.open==="notif")layer(viewNotif());toast("Notifications désactivées.")}
+  psC=null;S.push=0;save();render();if(U.open==="notif")layer(viewNotif());toast("Notifications désactivées.")}
 // le téléphone peut renouveler son abonnement : on le renvoie au serveur à chaque ouverture
 async function pushRefresh(){if(!S.push||!pushOK()||Notification.permission!=="granted")return;try{const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();
   if(sub&&S.tok)api("push_sub",{sub:sub.toJSON()}).catch(()=>{});else if(!sub)pushEnable()}catch(e){}}
@@ -2733,7 +2744,7 @@ function defiGo(id){const goSp=sp=>{U.ev=null;U.sp=sp;U.lv=-1;U.tab="m";render()
   if(id==="rug"){goSp("rugby");return toast("Matchs de rugby : touche une cote.")}
   if(id==="ten"){goSp("tennis");return toast("Matchs de tennis : touche une cote.")}
   if(id==="live"){const L=["foot","rugby","basket","tennis"].flatMap(sp=>matchesFor(sp,-1)).find(m=>status(m)==="live"&&liveOK(m));
-    if(L){U.tab="m";render();openDetail(L.id);return toast("Ce match est en direct : touche une cote.")}goSp("foot");return toast("Aucun match en direct pour l’instant : reviens pendant un match.")}
+    if(L){U.tab="m";render();openDetail(L.id);return toast("Ce match est en direct, les paris sont ouverts : touche une cote.")}goSp("foot");return toast("Aucun match de foot ou de rugby en cours pour l’instant. Reviens pendant un match : les paris restent ouverts jusqu’à la 85e (foot) ou la 72e (rugby).")}
   if(id==="3sp"){goSp(U.sp);return toast("Parie sur 3 sports différents : change de sport avec les cartes en haut.")}
   if(["cb3","wcb"].includes(id)){goSp("foot");return toast("Mets au moins "+(id==="cb3"?"3":"2")+" pronostics dans ton ticket, puis choisis « Combiné ».")}
   goSp(U.sp);toast(id==="o25"?"Choisis une cote de 2,50 ou plus.":"Choisis un match et touche une cote.")}
@@ -2904,7 +2915,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.75";
+const VERSION="1.76";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

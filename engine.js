@@ -137,8 +137,12 @@ function liveSims(m){const key=m.id+"|L|"+m.min+"|"+JSON.stringify(m.st.g||m.st.
 const marketSims=m=>liveOK(m)?liveSims(m):sims(m);
 function markets(m){const lv_=liveOK(m),key=m.id+"|"+m.src+(lv_?"|L"+m.min+JSON.stringify(m.st.g||m.st.pts):"");let L=MKC.get(key);if(L)return L;
   const S_=marketSims(m),av=lv_?[m.sp==="foot"?"g":"pts"]:avail(m);L=[];
-  for(const d of MK[m.sp]){if(d.need.some(k=>!av.includes(k)))continue;
-    const vals=new Float64Array(N);for(let i=0;i<N;i++){const g=k=>[S_[k][0][i],S_[k][1][i]];vals[i]=+d.val(g,m)}
+  for(const d of MK[m.sp]){if(d.need.some(k=>!av.includes(k)))continue;L.push(mkOne(d,S_,m))}
+  MKC.set(key,L);if(MKC.size>3000)MKC.delete(MKC.keys().next().value);return L}
+// un seul type de pari (même calcul, donc mêmes cotes que markets) ; buffers réutilisés : plus rapide, résultats identiques
+function mkOne(d,S_,m){
+    const vals=new Float64Array(N),B={};let i=0;const g=k=>{const a=B[k]||(B[k]=[0,0]),t=S_[k];a[0]=t[0][i];a[1]=t[1][i];return a};
+    for(i=0;i<N;i++)vals[i]=+d.val(g,m);
     let sels=[],line=null;
     if(d.ty==="ou"){const mx=Math.max(...vals);let best=.5,bd=9;for(let k=0;k<=mx;k++){let c=0;for(const v of vals)if(v>k)c++;const p=c/N;if(Math.abs(p-.52)<bd){bd=Math.abs(p-.52);best=k}}
       line=best+.5;let c=0;for(const v of vals)if(v>line)c++;const p=c/N;const ls=fr(line,1);
@@ -147,8 +151,13 @@ function markets(m){const lv_=liveOK(m),key=m.id+"|"+m.src+(lv_?"|L"+m.min+JSON.
     else{const lb=d.ty==="res"?[m.h,"Match nul",m.a]:d.ty==="res2"?[m.h,m.a]:(m.bo===5?["3 sets","4 sets","5 sets"]:["2 sets","3 sets"]);
       const c=lb.map(()=>0);for(const v of vals)c[v]++;sels=lb.map((l,k)=>({l,p:c[k]/N}))}
     // pour les paris oui/non, "Oui" = val vraie → index 0 ; pour plus/moins, "Plus" → index 0
-    L.push({d,id:d.id,line,title:mt(d,m),sels:sels.map(s=>({...s,o:odd(s.p)}))})}
-  MKC.set(key,L);return L}
+    return{d,id:d.id,line,title:mt(d,m),sels:sels.map(s=>({...s,o:odd(s.p)}))}}
+// pour les cartes de match : seulement le résultat (1N2) et le nombre de paris, sans calculer tous les marchés
+const RKC=new Map();
+function resMarket(m){const lv_=liveOK(m),key=m.id+"|"+m.src+(lv_?"|L"+m.min+JSON.stringify(m.st.g||m.st.pts):"");const L=MKC.get(key);if(L)return L.find(x=>x.id==="res")||null;
+  if(RKC.has(key))return RKC.get(key);const d=MK[m.sp].find(x=>x.id==="res"),av=lv_?[m.sp==="foot"?"g":"pts"]:avail(m);
+  const r=d&&!d.need.some(k=>!av.includes(k))?mkOne(d,marketSims(m),m):null;RKC.set(key,r);if(RKC.size>3000)RKC.delete(RKC.keys().next().value);return r}
+function marketInfo(m){const lv_=liveOK(m),av=lv_?[m.sp==="foot"?"g":"pts"]:avail(m);return MK[m.sp].filter(d=>!d.need.some(k=>!av.includes(k)))}
 function outcome(d,m,st,line){ // index de la sélection gagnante, null si stats manquantes
   if(!st||d.need.some(k=>!Array.isArray(st[k])||st[k].some(v=>v==null||isNaN(v))))return null;
   const g=k=>st[k],v=d.val(g,m);
@@ -165,7 +174,9 @@ const amer=o=>{const v=parseFloat(o);return isNaN(v)?null:v>0?1+v/100:1+100/-v};
 function bookDiff(c){try{const ml=c.odds&&c.odds[0]&&c.odds[0].moneyline;if(!ml)return null;
     const g=x=>x&&amer((x.close&&x.close.odds)||(x.open&&x.open.odds)),oh=g(ml.home),oa=g(ml.away),od=g(ml.draw);if(!oh||!oa||!od)return null;
     const t=1/oh+1/oa+1/od,ph=1/oh/t,pa=1/oa/t;let best=0,be=9;
-    for(let d=-3;d<=3.001;d+=.05){const[h,,a]=footProbs(d,0);const e=(h-ph)**2+(a-pa)**2;if(e<be){be=e;best=d}}return best}catch(e){return null}}
+    for(const[d,h,a]of bdTable()){const e=(h-ph)**2+(a-pa)**2;if(e<be){be=e;best=d}}return best}catch(e){return null}}
+// table calculée une seule fois (mêmes valeurs qu'avant, mêmes pas de 0,05) : bien plus rapide au chargement
+let BDT=null;function bdTable(){if(BDT)return BDT;BDT=[];for(let d=-3;d<=3.001;d+=.05){const[h,,a]=footProbs(d,0);BDT.push([d,h,a])}return BDT}
 function footProbs(d,a){const l1=(1.3+.6*a)*Math.exp(.33*d+.12),l2=(1.3+.6*a)*Math.exp(-.33*d-.12),P=(l,k)=>{let p=Math.exp(-l);for(let i=1;i<=k;i++)p*=l/i;return p};
   let h=0,x=0,w=0;for(let i=0;i<12;i++)for(let j=0;j<12;j++){const p=P(l1,i)*P(l2,j);if(i>j)h+=p;else if(i===j)x+=p;else w+=p}return[h,x,w]}
 // noms d'équipes en français (même liste que api/_teams.js)
@@ -278,7 +289,7 @@ const DEFIS=[
   [{id:"p5",ic:"ticket",t:"Place 5 paris",g:5,r:80,f:P=>P.length},
    {id:"cb3",ic:"chart",t:"Fais un combiné d’au moins 3 sélections",g:1,r:70,f:P=>P.filter(b=>b.legs.length>=3).length},
    {id:"bb",ic:"target",t:"Fais un combiné sur un même match",g:1,r:70,f:P=>P.filter(b=>new Set(b.legs.map(l=>l.mid)).size<b.legs.length).length},
-   {id:"live",ic:"fire",t:"Fais un pari en direct",g:1,r:80,f:P=>legsOf(P).filter(l=>l.live).length},
+   {id:"live",ic:"fire",t:"Fais un pari en direct (foot ou rugby, pendant le match)",g:1,r:80,f:P=>legsOf(P).filter(l=>l.live).length},
    {id:"3sp",ic:"trophy",t:"Parie sur les 3 sports",g:3,r:100,f:P=>new Set(legsOf(P).map(l=>l.sp)).size},
    {id:"w1",ic:"trophy",t:"Gagne un pari",g:1,r:60,f:(P,W)=>W.length}],
   [{id:"w2",ic:"trophy",t:"Gagne 2 paris",g:2,r:100,f:(P,W)=>W.length},
@@ -296,5 +307,5 @@ function weekendOf(day){const t=Date.UTC(+day.slice(0,4),+day.slice(4,6)-1,+day.
   const k=["combo","roue","defis"][Math.floor((t+3)/7)%3];return{k,...WEEKENDS[k],on:dow===6||dow===0,soon:dow===5,last:dow===0}}
 function defisFor(day){const r=rng(hash("defis|"+day));return DEFIS.map(L=>L[Math.floor(r()*L.length)])}
 
-if(typeof globalThis!=="undefined")globalThis.ENGINE={WEEKENDS,COMBO_BOOST,weekendOf,fr,strength,SP,SIM,MK,N,ALLSTATS,STATL,ESPN,MCC,MKC,ONE,cl,hash,rng,pois,binom,H,DAY,lvA,sims,simOne,tot,cmp3,avail,odd,mt,liveOK,canBet,liveSims,marketSims,markets,outcome,
+if(typeof globalThis!=="undefined")globalThis.ENGINE={resMarket,marketInfo,mkOne,WEEKENDS,COMBO_BOOST,weekendOf,fr,strength,SP,SIM,MK,N,ALLSTATS,STATL,ESPN,MCC,MKC,ONE,cl,hash,rng,pois,binom,H,DAY,lvA,sims,simOne,tot,cmp3,avail,odd,mt,liveOK,canBet,liveSims,marketSims,markets,outcome,
   SOCSTAT,recStrength,amer,bookDiff,footProbs,TEAM_FR,frTeam,parseTeamEvent,parseTennis,status,realStats,PMK,legIdx,jointP,comboCalc,readLineup,applySummary,playerLegResult,legResultM,betResult,cashValueM,WHEEL,WP,JACKPOT,JACK_ODDS,EXTRA_DAY,DEFIS,DEFI_BONUS,defisFor,legsOf};
