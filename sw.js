@@ -1,11 +1,15 @@
 // Service worker : réseau d'abord (toujours revérifié auprès du serveur), cache en secours hors ligne.
-const C="dap-v25",SHELL=["./","index.html","manifest.webmanifest","icon-192.png","icon-180.png","icon-512.png","logo-tribune.png","engine.js"];
+const C="dap-v26",SHELL=["./","index.html","manifest.webmanifest","icon-192.png","icon-180.png","icon-512.png","logo-tribune.png","engine.js"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
 self.addEventListener("fetch",e=>{const u=new URL(e.request.url);if(e.request.method!=="GET"||u.origin!==location.origin||u.pathname.includes("/api/"))return;
   const fresh=e.request.mode==="navigate"||/\.(html|txt|webmanifest)$/.test(u.pathname)||u.pathname.endsWith("/");
-  e.respondWith(fetch(e.request,fresh?{cache:"no-cache"}:undefined).then(r=>{if(r.ok&&!u.pathname.endsWith("version.txt")){const cp=r.clone();caches.open(C).then(c=>c.put(e.request,cp))}return r})
-    .catch(()=>caches.match(e.request).then(r=>r||caches.match("index.html"))))});
+  const net=fetch(e.request,fresh?{cache:"no-cache"}:undefined).then(r=>{if(r.ok&&!u.pathname.endsWith("version.txt")){const cp=r.clone();caches.open(C).then(c=>c.put(e.request,cp))}return r});
+  // ouverture de l'appli : si le réseau traîne plus de 2,5 s, on affiche la version déjà sur le téléphone
+  if(e.request.mode==="navigate"){e.respondWith(new Promise(res=>{let done=false;const fin=r=>{if(!done&&r){done=true;res(r)}};
+    const t=setTimeout(()=>caches.match(e.request).then(c=>c&&fin(c)),2500);
+    net.then(r=>{clearTimeout(t);fin(r)}).catch(()=>caches.match(e.request).then(c=>c||caches.match("index.html")).then(c=>fin(c||Response.error())))}));return}
+  e.respondWith(net.catch(()=>caches.match(e.request).then(r=>r||caches.match("index.html"))))});
 
 // Notifications : affichage, et ouverture du bon écran quand on touche la notification
 self.addEventListener("push",e=>{let d={};try{d=e.data?e.data.json():{}}catch(x){d={title:"Tribune",body:e.data&&e.data.text()}}

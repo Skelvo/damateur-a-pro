@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" style="background:#0a110f">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
@@ -16,7 +16,8 @@
 <link rel="apple-touch-icon" href="icon-180.png?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preload" as="image" href="logo-tribune.png?v=2">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
 :root{
   --bg:#0a110f;--bg2:#0e1714;--card:#121c19;--card2:#18251f;--card3:#1e2e27;
@@ -700,7 +701,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 </style>
 </head>
 <body data-sp="foot">
-<div id="splash"><img src="logo-tribune.png?v=1" alt="Tribune"><div class="spbar"><i></i></div><small id="spt">Chargement des matchs…</small></div>
+<div id="splash"><img src="logo-tribune.png?v=2" alt="Tribune"><div class="spbar"><i></i></div><small id="spt">Chargement des matchs…</small></div>
 <script>/* filet de sécurité : l'écran de chargement ne reste jamais bloqué */setTimeout(function(){var s=document.getElementById("splash");if(s)s.remove()},10000)</script>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -769,7 +770,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.77"></script>
+<script src="engine.js?v=1.78"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -1211,8 +1212,7 @@ function viewCareer(){const di=divOf(S.peak),nx=DIVS[di+1],pr=nx?cl((S.peak-DIVS
     <div class="seg" style="width:100%;margin:0">${[["2","2 / jour"],["1","1 / jour"],["0","Aucun"]].map(([v,l])=>`<button data-act="remind" data-v="${v}" aria-pressed="${String(S.remind??2)===v}">${l}</button>`).join("")}</div></div>`:""}
   <div class="row"><div><b>Pseudo</b><small>${esc(S.name)}</small></div><button class="link" data-act="rename">Modifier</button></div>
   ${STANDALONE?"":`<div class="row"><div><b>Installer l’app</b><small>Sur l’écran d’accueil de ton téléphone</small></div><button class="link" data-act="install">Comment ?</button></div>`}
-  <div class="row"><div><b>Transférer mon compte</b><small>Vers l’app installée ou un autre téléphone</small></div><button class="link" data-act="xmake2">Créer un code</button></div>
-  <div class="row"><div><b>J’ai un code de transfert</b><small>Récupérer un compte sur cet appareil</small></div><button class="link" data-act="xfer">Entrer</button></div>
+  <div class="row"><div><b>Récupérer un compte</b><small>Avec un code de compte, sur cet appareil</small></div><button class="link" data-act="xfer">Entrer un code</button></div>
   <div class="row"><div><b>Règles et confidentialité</b><small>Le jeu, tes données, la modération</small></div><button class="link" data-act="legal">Lire</button></div>
   <div class="row"><div><b>Nous écrire</b><small>Question, bug, idée, signalement</small></div><button class="link" data-act="contact">Écrire</button></div>
   ${(S.blocked||[]).length?`<div class="row"><div><b>Joueurs bloqués</b><small>${S.blocked.length} joueur${S.blocked.length>1?"s":""}</small></div><button class="link" data-act="blocked">Gérer</button></div>`:""}
@@ -1699,7 +1699,7 @@ async function ticketImage(b){
   c.save();c.globalAlpha=.07;c.fillStyle="#fff";for(const [x0,dir] of [[60,1],[W-60,-1]]){c.beginPath();c.moveTo(x0,-10);c.lineTo(x0+dir*620,H);c.lineTo(x0+dir*320,H);c.closePath();c.fill()}c.restore();
   c.save();c.strokeStyle="rgba(255,255,255,.05)";c.lineWidth=4;c.beginPath();c.arc(W/2,H-40,230,0,Math.PI*2);c.stroke();c.beginPath();c.moveTo(0,H-40);c.lineTo(W,H-40);c.stroke();c.restore();
   // en-tête : logo + joueur
-  const logo=await loadImg("logo-tribune.png?v=1");if(logo){const lw=300,lh=lw*logo.height/logo.width;c.drawImage(logo,(W-lw)/2,56,lw,lh)}
+  const logo=await loadImg("logo-tribune.png?v=2");if(logo){const lw=300,lh=lw*logo.height/logo.width;c.drawImage(logo,(W-lw)/2,56,lw,lh)}
   c.font='700 32px Barlow';const who=`${S.name||"Joueur"}  ·  ${new Date(b.at).toLocaleDateString("fr-FR",{day:"numeric",month:"long"})}`,ww=c.measureText(who).width+110;
   c.fillStyle="rgba(255,255,255,.08)";c.beginPath();c.roundRect((W-ww)/2,250,ww,64,32);c.fill();
   c.fillStyle=avc(S.name||"?");c.beginPath();c.arc((W-ww)/2+40,282,22,0,Math.PI*2);c.fill();c.fillStyle="#04130b";c.font='800 26px Barlow';c.textAlign="center";c.fillText((S.name||"?")[0].toUpperCase(),(W-ww)/2+40,291);
@@ -2828,14 +2828,14 @@ async function spin(){if(spinning||!wheelAvail()||U.wheelOk===false)return;spinn
 /* ---------- accueil ---------- */
 function viewWelcome(rename,msg){return`<div class="welcome">${rename?`<div class="grab"><h3>Ton pseudo</h3><button class="x" data-act="close">${ic("x")}</button></div>${msg?`<p class="warn" style="text-align:left">${msg}</p>`:""}`:`
   
-  <img src="logo-tribune.png?v=1" alt="Tribune" class="wlogo"><p class="note" style="font-size:15px">Parie gratuitement sur les vrais matchs de foot, de rugby, de tennis et de NBA, en direct. Fais monter ta carrière de la Départementale 4 à la Ligue des champions.</p>
+  <img src="logo-tribune.png?v=2" alt="Tribune" class="wlogo"><p class="note" style="font-size:15px">Parie gratuitement sur les vrais matchs de foot, de rugby, de tennis et de NBA, en direct. Fais monter ta carrière de la Départementale 4 à la Ligue des champions.</p>
   <div class="feat"><div>${ic("card","yc")}Cartons, corners, hors-jeux</div><div>${ic("posts")}Essais, pénalités ratées</div><div>${ic("broken")}Doubles fautes, raquettes cassées</div></div>`}
   <div class="form" style="text-align:left"><label>Ton pseudo<input id="w-name" maxlength="18" value="${esc(S.name)}" placeholder="ex. Le Pronostiqueur" autocomplete="nickname"></label>
   <p class="warn" id="w-err" hidden></p>
   ${rename?"":`<label class="agechk"><input type="checkbox" id="w-age"><span>J’ai <b>18 ans ou plus</b> et j’accepte les <button class="link" data-act="wlegal" style="padding:0">règles du jeu et la politique de confidentialité</button>.</span></label><div id="w-legal" hidden></div>`}
   <button class="btn gold wide" data-act="wgo">${rename?"Enregistrer":"C’est parti !"}</button></div>
   ${rename?"":STANDALONE?`<div class="info" style="text-align:left;margin-top:14px">${ic("info")}<span><b style="color:var(--ink)">Tu as déjà un compte ?</b> Nouveau téléphone, appli réinstallée… entre ton code de compte et tu retrouves tout.<br><button class="btn ghost" data-act="xfer" style="margin-top:8px">Entrer mon code</button></span></div>`
-    :`<button class="link" data-act="xfer" style="margin-top:10px">J’ai déjà un compte (code de transfert)</button>`}
+    :`<button class="link" data-act="xfer" style="margin-top:10px">J’ai déjà un compte (code de compte)</button>`}
   ${rename?"":`<p class="note" style="margin-top:12px">Jetons fictifs, aucun argent réel. Jeu réservé au divertissement.</p>`}</div>`}
 async function welcomeGo(){const inp=$("#w-name"),n=(inp.value||"").replace(/\s+/g," ").trim().slice(0,18),err=$("#w-err"),b=$("[data-act=wgo]");
   if(!n){inp.focus();return}const first=!S.name;
@@ -2867,8 +2867,8 @@ function viewInstall(gate){const head=gate?"":`<div class="grab"><h3>Installer l
     `<p class="note">Tu as ouvert le lien depuis une autre appli (Messages, WhatsApp, Instagram…) ? Touche d’abord <b>Ouvrir dans Safari</b> (ou la boussole), puis :</p>
     <ol class="steps"><li><span class="n">1</span><div>Dans Safari, touche le bouton <b>Partager</b> ${SHARE_IOS}<small>Selon ta version d’iOS : dans la barre du bas, à côté de l’adresse, ou dans le menu <b>•••</b>.</small></div></li>
       <li><span class="n">2</span><div>Fais défiler et choisis <b>Sur l’écran d’accueil</b> ${ADD_IOS}, puis <b>Ajouter</b>.<small>Si l’option « Ouvrir comme app web » apparaît, laisse-la activée.</small></div></li>
-      <li><span class="n">3</span><div>Ouvre <b>Tribune</b> depuis ton écran d’accueil et entre ton <b>code de transfert</b> : tu retrouves tes jetons, tes paris et tes guildes.<small>Sur iPhone, l’app installée ne voit pas ce que tu as fait dans Safari : le code fait le lien.</small></div></li></ol>
-    <div class="xbox" id="xbox">${S.name?`<button class="btn gold wide" data-act="xmake">${ic("ticket")} Créer mon code de transfert</button>`:gate?`<p class="note">Nouveau joueur ? Pas besoin de code : tu choisiras ton pseudo dans l’app.</p>`:`<p class="note">Choisis d’abord un pseudo pour avoir un code.</p>`}</div>
+      <li><span class="n">3</span><div>Ouvre <b>Tribune</b> depuis ton écran d’accueil et touche « J’ai déjà un compte » avec ton <b>code de compte</b> : tu retrouves tes jetons, tes paris et tes guildes.<small>Sur iPhone, l’app installée ne voit pas ce que tu as fait dans Safari : le code fait le lien.</small></div></li></ol>
+    <div class="xbox" id="xbox">${S.name?(S.rcode?`<div class="xcode"><small>Ton code de compte (il ne change jamais)</small><b>${esc(S.rcode)}</b></div><button class="btn ghost wide" data-act="copycode" data-code="${esc(S.rcode)}">Copier mon code</button>`:`<button class="btn gold wide" data-act="xmake">${ic("ticket")} Créer un code pour l’app</button>`):gate?`<p class="note">Nouveau joueur ? Pas besoin de code : tu choisiras ton pseudo dans l’app.</p>`:`<p class="note">Choisis d’abord un pseudo pour avoir un code.</p>`}</div>
 `}
   if(ANDROID&&INAPP&&!installEvt)return head+`<p class="note" style="font-size:15px">Ce lien s’est ouvert dans le navigateur d’une autre appli (WhatsApp, Messenger, Google…), qui ne permet pas d’installer. Ouvre-le dans <b>Chrome</b> :</p>
       <a class="btn gold wide" href="intent://${location.host}${location.pathname}#Intent;scheme=https;package=com.android.chrome;end">${ic("share")} Ouvrir dans Chrome</a>
@@ -2887,7 +2887,7 @@ async function installPrompt(){if(!installEvt)return;installEvt.prompt();const r
 const GATE=!STANDALONE&&!matchMedia("(display-mode: fullscreen), (display-mode: minimal-ui)").matches&&(IOS||ANDROID);
 function renderGate(){const lg=new URLSearchParams(location.search).get("guilde");
   document.body.classList.add("gated");
-  $("#main")._html=null;$("#main").innerHTML=`<div class="gate"><h1 class="glogo"><img src="logo-tribune.png?v=1" alt="Tribune"></h1><small style="color:var(--mute2)">v${VERSION}</small><p class="gsub">Le jeu se joue <b>uniquement depuis l’app</b> sur ton écran d’accueil. C’est gratuit, sans store, et ça prend 10 secondes.</p>
+  $("#main")._html=null;$("#main").innerHTML=`<div class="gate"><h1 class="glogo"><img src="logo-tribune.png?v=2" alt="Tribune"></h1><small style="color:var(--mute2)">v${VERSION}</small><p class="gsub">Le jeu se joue <b>uniquement depuis l’app</b> sur ton écran d’accueil. C’est gratuit, sans store, et ça prend 10 secondes.</p>
     ${lg?`<div class="xcode" style="margin-bottom:12px"><small>Invitation à une guilde : une fois dans l’app, va dans Guildes › Rejoindre et entre ce code</small><b>${esc(lg.toUpperCase().slice(0,8))}</b></div>`:""}
     ${viewInstall(true)}</div>`}
 // Code de transfert : on envoie tout l'état du jeu (sauf le jeton) au serveur, valable 48 h
@@ -2900,7 +2900,7 @@ async function transferOut(){const box=$("#xbox");if(box)box.innerHTML=`<div cla
     if($("#xbox"))$("#xbox").innerHTML=html}
   catch(e){if($("#xbox"))$("#xbox").innerHTML=`<p class="warn">Pas de connexion au serveur, réessaie dans un instant.</p><button class="btn gold wide" data-act="xmake">Réessayer</button>`}}
 function viewTransferIn(){return`<div class="grab"><h3>Récupérer mon compte</h3><button class="x" data-act="${S.name?"close":"xback"}" aria-label="Retour">${ic("x")}</button></div>
-  <div class="form"><label>Ton code de compte (ou de transfert)<input id="x-code" maxlength="14" placeholder="ex. K7RZ-P3QA-M8XW" autocapitalize="characters" autocomplete="off" style="text-transform:uppercase;letter-spacing:4px;font-weight:800;text-align:center;font-size:22px"></label>
+  <div class="form"><label>Ton code de compte<input id="x-code" maxlength="14" placeholder="ex. K7RZ-P3QA-M8XW" autocapitalize="characters" autocomplete="off" style="text-transform:uppercase;letter-spacing:4px;font-weight:800;text-align:center;font-size:22px"></label>
   <p class="warn" id="x-err" hidden></p><button class="btn gold wide" data-act="xferok">Récupérer mon compte</button>
   <p class="note">Ton code de compte est dans Carrière › « Mon code de compte » (12 caractères, il ne change jamais).${S.name?" Attention : ce que tu as sur cet appareil sera remplacé.":""}</p></div>`}
 async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x-err"),b=$("[data-act=xferok]");if(code.replace(/[^a-z0-9]/gi,"").length<8){$("#x-code").focus();return}
@@ -2922,7 +2922,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.77";
+const VERSION="1.78";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
