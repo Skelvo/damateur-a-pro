@@ -4,7 +4,7 @@ import { db, hashToken, newToken, ipKey, overLimit } from "./_db.js";
 import { timingSafeEqual } from "node:crypto";
 import { buildWeek, refreshResults, points, todayMatches, bestOfDay } from "./_prono.js";
 import { notify, members } from "./_push.js";
-import { checkBet } from "./_bets.js";
+import { checkBet, settleOpen, cashValueServer } from "./_bets.js";
 
 const ORIGINS = [
   "https://skelvo.fr", "https://www.skelvo.fr", "https://skelvo.github.io",
@@ -358,9 +358,11 @@ async function espnJSON(u) { const c = new AbortController(), t = setTimeout(() 
 const sentOnce = async (s, key) => !!(await s.query(`insert into sent_notes (key) values ($1) on conflict do nothing returning key`, [key]))[0];
 async function tick(s) {
   if (await overLimit("tick:global", 1, 240)) return { skipped: "trop tôt" };
+  let settled = 0;
+  try { settled = (await settleOpen(s, { budget: 25e3 })).length; } catch (e) { console.error("settle", e); }
   await s.query(`delete from sent_notes where at < now() - interval '30 days'`);
   const ppl = await s.query(`select p.id, p.bets from players p where p.bets is not null and exists (select 1 from push_subs x where x.player = p.id)`);
-  const now = Date.now(), out = { ko: 0, end: 0, fetched: 0 };
+  const now = Date.now(), out = { ko: 0, end: 0, fetched: 0, settled };
   const open = [];
   for (const p of ppl) for (const b of (p.bets.list || [])) if (b.st === "open" && b.id && Array.isArray(b.legs) && b.legs.length && b.legs.every((L) => L.e && L.p && L.t)) open.push({ pid: p.id, b });
   // 1) coup d'envoi imminent (une fois par joueur et par match)
@@ -472,6 +474,18 @@ const ACTIONS = {
     if (Array.isArray(b.badges)) await s.query(`update players set badges = $2::jsonb where id = $1`,
       [p.id, JSON.stringify([...new Set(b.badges.map((x) => cleanName(x, 20)).filter(Boolean))].slice(0, 60))]);
     if (Array.isArray(b.bets)) {
+      const fin = b.bets.filter((x) => x && x.id && ["won", "lost", "void"].includes(x.st)).slice(0, 40);
+      if (fin.length) {
+        const srv = await s.query(`select cid, status, pay::float8 as pay from bets where player = $1 and cid = any($2::text[]) and status in ('won','lost','void')`, [p.id, fin.map((x) => String(x.id))]);
+        for (const r of srv) {
+          const c = fin.find((x) => String(x.id) === r.cid);
+          if (c && (c.st !== r.status || (r.status === "won" && Math.abs((Number(c.pay) || 0) - r.pay) > 1)))
+            await s.query(`insert into settle_diff (player, cid, server, client, spay, cpay) values ($1, $2, $3, $4, $5, $6) on conflict do nothing`,
+              [p.id, r.cid, r.status, String(c.st), r.pay, Number(c.pay) || 0]);
+        }
+      }
+    }
+    if (Array.isArray(b.bets)) {
       const json = JSON.stringify({ list: b.bets.slice(0, 40), best: b.best && typeof b.best === "object" ? b.best : null });
       if (json.length <= 150000) await s.query(`update players set bets = $2::jsonb where id = $1`, [p.id, json]);
     }
@@ -535,6 +549,23 @@ const ACTIONS = {
       out.push({ cid, id: row ? row.id : null, odds: r.odds });
     }
     return { ok: true, bets: out };
+  },
+
+  async cash_out(s, b) {
+    const p = await me(s, b.token);
+    const row = (await s.query(`select id, stake, odds, legs from bets where player = $1 and cid = $2 and status = 'open'`, [p.id, cleanName(b.cid, 40)]))[0];
+    if (!row) return { error: "unknown" };
+    const v = await cashValueServer(row);
+    if (!v) return { error: "closed" };
+    const u = await s.query(`update bets set status = 'cashed', pay = $2, settled_at = now() where id = $1 and status = 'open' returning id`, [row.id, v]);
+    return u[0] ? { ok: true, pay: v } : { error: "closed" };
+  },
+  async admin_settle_report(s, b) {
+    admin(b);
+    const open = (await s.query(`select count(*)::int as n from bets where status = 'open'`))[0].n;
+    const done = await s.query(`select status, count(*)::int as n from bets where status <> 'open' group by status`);
+    const diffs = await s.query(`select d.*, pl.name from settle_diff d join players pl on pl.id = d.player order by d.at desc limit 50`);
+    return { open, done, diffs };
   },
 
   async recovery_make(s, b) {

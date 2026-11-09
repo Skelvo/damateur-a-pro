@@ -226,5 +226,41 @@ function comboCalc(sel,getM){const by={};sel.forEach(s=>(by[s.mid]=by[s.mid]||[]
     linked++;const p=jointP(getM(mid),L);if(p<.004){bad=true;continue}const o=Math.round(cl(.9/p,1.01,500)*100)/100;groups[mid]=o;odds*=o}
   return{odds:Math.round(odds*100)/100,groups,bad,linked}}
 
+/* ---------- règlement (mêmes règles pour l'appli et le serveur) ---------- */
+// Compositions : [équipe domicile, extérieur] → joueurs {id, name, pos, starter, played}
+function readLineup(m,j){const R=j&&j.rosters;if(!Array.isArray(R)||!R.some(t=>(t.roster||[]).length))return;const L=[[],[]];
+  for(const t of R){const p=t.team&&String(t.team.id)===String(m.aid)?1:t.team&&String(t.team.id)===String(m.hid)?0:(t.homeAway==="away"?1:0);
+    for(const x of t.roster||[])if(x.athlete)L[p].push({id:String(x.athlete.id),name:x.athlete.displayName||x.athlete.shortName||"?",pos:(x.position&&x.position.abbreviation)||"",starter:!!x.starter,played:!!(x.starter||x.subbedIn)})}
+  m.lineup=L;m.lineupAt=Date.now()}
+// résumé ESPN d'un match de foot : compositions + statistiques complètes (cartons, corners…)
+function applySummary(m,j){const teams=(j&&j.boxscore&&j.boxscore.teams)||[];readLineup(m,j);
+  teams.forEach(t=>{const p=t.team&&t.team.id===m.aid?1:t.team&&t.team.id===m.hid?0:(t.homeAway==="away"?1:0);
+    (t.statistics||[]).forEach(s=>{const k=SOCSTAT[s.name];if(k){m.st=m.st||{};(m.st[k]||(m.st[k]=[null,null]))[p]=parseFloat(s.displayValue)}})})}
+function playerLegResult(L,m){if(!m.lineup||!m.ev){const late=Date.now()-L.t>SP.foot.dur*6e4+48*H;return late?"v":null}
+  const pl=m.lineup[0].concat(m.lineup[1]).find(x=>x.id===String(L.k));if(!pl||!pl.played)return"v";
+  const n=m.ev.filter(e=>e.id===String(L.k)&&(L.mk==="pyc"?(e.ty==="yc"||e.ty==="rc"):e.ty==="g")).length;
+  return(L.mk==="p2"?n>=2:n>=1)?"w":"l"}
+// résultat d'une sélection : "w" gagné, "l" perdu, "v" remboursé, null pas encore connu
+function legResultM(L,m){const age=Date.now()-L.t;
+  if(!m)return age>7*DAY?"v":null;
+  const st=status(m);if(st==="cancel")return"v";if(st!=="post")return((m.src==="org"||m.src==="am")&&age>14*DAY)?"v":null;
+  if(PMK[L.mk])return playerLegResult(L,m);
+  const d=MK[m.sp].find(x=>x.id===L.mk);if(!d)return"v";
+  const w=outcome(d,m,realStats(m),L.line);
+  if(w==null)return age>SP[m.sp].dur*6e4+48*H?"v":null;
+  return w===L.k?"w":"l"}
+// gain d'un pari dont toutes les sélections sont réglées et aucune perdue (sélections remboursées retirées)
+function betResult(b){const live=b.legs.filter(L=>L.r==="w");if(!live.length)return{st:"void",odds:1,pay:b.stake};
+  const G=b.groups||{};let o=1;const by={};live.forEach(L=>(by[L.mid]=by[L.mid]||[]).push(L));
+  for(const mid in by){const all=b.legs.filter(L=>L.mid===mid);o*=G[mid]&&all.every(L=>L.r==="w")?G[mid]:by[mid].reduce((a,L)=>a*L.o,1)}
+  const odds=Math.round(o*100)/100;return{st:"won",odds,pay:Math.round(b.stake*odds)}}
+// Encaisser avant la fin : valeur = gain possible × probabilité actuelle que le pari passe × 0,9.
+function cashValueM(b,getM){if(b.st!=="open"||b.legs.some(L=>L.r==="l"||L.r==="v"))return 0;const by={};
+  for(const L of b.legs.filter(L=>!L.r)){if(PMK[L.mk])return 0;const m=getM(L.mid);if(!m)return 0;const st=status(m);if(st!=="pre"&&!liveOK(m))return 0;
+    const d=MK[m.sp].find(x=>x.id===L.mk);if(!d)return 0;if(liveOK(m)&&d.need.some(k=>k!==(m.sp==="foot"?"g":"pts")))return 0;
+    (by[L.mid]=by[L.mid]||[]).push(L)}
+  if(!Object.keys(by).length)return 0;let p=1;for(const mid in by)p*=jointP(getM(mid),by[mid]);
+  const full=Math.floor(b.stake*b.odds);return cl(Math.floor(full*p*.9),1,full-1)}
+
 if(typeof globalThis!=="undefined")globalThis.ENGINE={fr,strength,SP,SIM,MK,N,ALLSTATS,STATL,ESPN,MCC,MKC,ONE,cl,hash,rng,pois,binom,H,DAY,lvA,sims,simOne,tot,cmp3,avail,odd,mt,liveOK,canBet,liveSims,marketSims,markets,outcome,
-  SOCSTAT,recStrength,amer,bookDiff,footProbs,TEAM_FR,frTeam,parseTeamEvent,parseTennis,status,realStats,PMK,legIdx,jointP,comboCalc};
+  SOCSTAT,recStrength,amer,bookDiff,footProbs,TEAM_FR,frTeam,parseTeamEvent,parseTennis,status,realStats,PMK,legIdx,jointP,comboCalc,readLineup,applySummary,playerLegResult,legResultM,betResult,cashValueM};

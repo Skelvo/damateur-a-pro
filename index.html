@@ -685,7 +685,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.61"></script>
+<script src="engine.js?v=1.62"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -765,15 +765,8 @@ async function loadSport(sp){const jobs=Object.keys(SP[sp].feeds).filter(l=>!FEE
 async function loadFeeds(){await loadSport(U.sp);for(const sp in SP)if(sp!==U.sp)await loadSport(sp)}
 async function espnStats(m){ // complète les stats foot (cartons, corners…) et les compositions via le résumé du match
   if(m.sp!=="foot"||m.src!=="espn"||m._sum===m.state)return;m._sum=m.state;
-  try{const j=await getJSON(`${ESPN}${m.path}/summary?event=${m.eid}`);const teams=(j.boxscore&&j.boxscore.teams)||[];readLineup(m,j);
-    teams.forEach(t=>{const p=t.team&&t.team.id===m.aid?1:t.team&&t.team.id===m.hid?0:(t.homeAway==="away"?1:0);
-      (t.statistics||[]).forEach(s=>{const k=SOCSTAT[s.name];if(k){m.st=m.st||{};(m.st[k]||(m.st[k]=[null,null]))[p]=parseFloat(s.displayValue)}})})}
+  try{applySummary(m,await getJSON(`${ESPN}${m.path}/summary?event=${m.eid}`))}
   catch(e){m._sum=0}}
-// Compositions : [équipe domicile, extérieur] → joueurs {id, name, pos, starter, played}
-function readLineup(m,j){const R=j&&j.rosters;if(!Array.isArray(R)||!R.some(t=>(t.roster||[]).length))return;const L=[[],[]];
-  for(const t of R){const p=t.team&&String(t.team.id)===String(m.aid)?1:t.team&&String(t.team.id)===String(m.hid)?0:(t.homeAway==="away"?1:0);
-    for(const x of t.roster||[])if(x.athlete)L[p].push({id:String(x.athlete.id),name:x.athlete.displayName||x.athlete.shortName||"?",pos:(x.position&&x.position.abbreviation)||"",starter:!!x.starter,played:!!(x.starter||x.subbedIn)})}
-  m.lineup=L;m.lineupAt=Date.now()}
 async function loadLineup(m){if(m.sp!=="foot"||m.src!=="espn"||status(m)!=="pre"||m.t-Date.now()>100*6e4||(m.lineupAt&&Date.now()-m.lineupAt<4*6e4)||m._luBusy)return;
   m._luBusy=1;try{const j=await getJSON(`${ESPN}${m.path}/summary?event=${m.eid}`);readLineup(m,j);if(!m.lineup)m.lineupAt=Date.now()}catch(e){}finally{m._luBusy=0}}
 
@@ -827,10 +820,6 @@ function pickPlayer(mid,mk,pid,name){const m=findMatch(mid);if(!m||status(m)!=="
   U.sel.push({mid,mk,k:pid,line:null,o:x.o[mk],l:x.name+" : "+PMK[mk].t.toLowerCase(),mt:PMK[mk].t+(mk==="psc"?" (n’importe quand)":mk==="p2"?" (au moins 2 buts)":" (jaune ou rouge)"),
     ml:m.h+" – "+m.a,ic:PMK[mk].ic,cls:PMK[mk].cls,sp:m.sp,t:m.t,live:false,pl:x.name,snap:{path:m.path,sp:m.sp,lv:m.lv}});
   if(navigator.vibrate)try{navigator.vibrate(8)}catch(e){}}
-function playerLegResult(L,m){if(!m.lineup||!m.ev){const late=Date.now()-L.t>SP.foot.dur*6e4+48*H;return late?"v":null}
-  const pl=m.lineup[0].concat(m.lineup[1]).find(x=>x.id===String(L.k));if(!pl||!pl.played)return"v";
-  const n=m.ev.filter(e=>e.id===String(L.k)&&(L.mk==="pyc"?(e.ty==="yc"||e.ty==="rc"):e.ty==="g")).length;
-  return(L.mk==="p2"?n>=2:n>=1)?"w":"l"}
 async function espnRefetch(snap){ // match hors fenêtre : on va le rechercher à sa date
   try{const j=await getJSON(`${ESPN}${snap.path}/scoreboard?dates=${ymd(snap.t)}&limit=300`);
     for(const ev of j.events||[]){const ms=snap.sp==="tennis"?parseTennis(ev,snap.lv,snap.path):[parseTeamEvent(ev,snap.sp,snap.lv,snap.path)];
@@ -1051,17 +1040,14 @@ function viewSlip(){const n=U.sel.length;if(!n)return`<div class="grab"><h3>Mon 
   <button class="link" data-act="clear" style="display:block;margin:10px auto 0">Vider le ticket</button>`}
 
 /* ---------- mes paris ---------- */
-// Encaisser avant la fin : valeur = gain possible × probabilité actuelle que le pari passe × 0,9.
-// Probabilité recalculée avec les simulations du match (score et minute pris en compte en direct).
-function cashValue(b){if(b.st!=="open"||b.legs.some(L=>L.r==="l"||L.r==="v"))return 0;const by={};
-  for(const L of b.legs.filter(L=>!L.r)){if(PMK[L.mk])return 0;const m=findMatch(L.mid);if(!m)return 0;const st=status(m);if(st!=="pre"&&!liveOK(m))return 0;
-    const d=MK[m.sp].find(x=>x.id===L.mk);if(!d)return 0;if(liveOK(m)&&d.need.some(k=>k!==(m.sp==="foot"?"g":"pts")))return 0;
-    (by[L.mid]=by[L.mid]||[]).push(L)}
-  if(!Object.keys(by).length)return 0;let p=1;for(const mid in by)p*=jointP(findMatch(mid),by[mid]);
-  const full=Math.floor(b.stake*b.odds);return cl(Math.floor(full*p*.9),1,full-1)}
-function cashOut(id){const b=S.bets.find(x=>x.id===id);const v=b&&cashValue(b);if(!v){toast("Encaissement plus possible pour ce pari.","bad");render();return}
+async function cashOut(id){const b=S.bets.find(x=>x.id===id);const v=b&&cashValue(b);if(!v){toast("Encaissement plus possible pour ce pari.","bad");render();return}
   if(!confirm(`Encaisser ce pari maintenant pour ${tok(v)} jetons ?\n(Gain possible si tu attends : ${tok(b.stake*b.odds)})`))return;
-  const v2=cashValue(b);if(!v2){toast("Le match a bougé : encaissement plus possible.","bad");render();return}
+  let v2;
+  if(b.sid){   // pari enregistré par le serveur : c'est lui qui calcule la valeur et l'arrête
+    try{const j=await api("cash_out",{cid:b.id});if(!j.ok){toast("Le match a bougé : encaissement plus possible.","bad");render();return}v2=j.pay}
+    catch(e){toast("Pas de connexion : encaissement impossible pour l’instant.","bad");return}
+    if(b.st!=="open")return}
+  else{v2=cashValue(b);if(!v2){toast("Le match a bougé : encaissement plus possible.","bad");render();return}}
   b.st="cashed";b.pay=v2;postAct("cash",{pay:v2,stake:b.stake});b.done=Date.now();S.bal+=v2;S.peak=Math.max(S.peak,S.bal);save();render();bump();toast(`${ic("coin")} Encaissé : +${tok(v2)} jetons`,"win")}
 function legStatus(L){return L.r==="w"?`<span class="st w">✓</span>`:L.r==="l"?`<span class="st l">✗</span>`:L.r==="v"?`<span class="st v">↺</span>`:`<span class="st p"></span>`}
 function viewBets(){const B=S.bets.slice().reverse(),op=B.filter(b=>b.st==="open"),cl_=B.filter(b=>b.st!=="open");
@@ -1183,14 +1169,8 @@ function render(){document.body.dataset.sp=U.sp;document.body.classList.toggle("
   renderSlipBar()}
 
 /* ---------- règlement des paris ---------- */
-function legResult(L){const m=findMatch(L.mid);const age=Date.now()-L.t;
-  if(!m)return age>7*DAY?"v":null;
-  const st=status(m);if(st==="cancel")return"v";if(st!=="post")return((m.src==="org"||m.src==="am")&&age>14*DAY)?"v":null;
-  if(PMK[L.mk])return playerLegResult(L,m);
-  const d=MK[m.sp].find(x=>x.id===L.mk);if(!d)return"v";
-  const w=outcome(d,m,realStats(m),L.line);
-  if(w==null)return age>SP[m.sp].dur*6e4+48*H?"v":null;
-  return w===L.k?"w":"l"}
+const legResult=L=>legResultM(L,findMatch(L.mid));
+const cashValue=b=>cashValueM(b,findMatch);
 let settling=false;
 async function settle(){if(settling)return;settling=true;
   try{const pend=S.bets.filter(b=>b.st==="open").flatMap(b=>b.legs.filter(L=>!L.r));
@@ -1208,9 +1188,7 @@ async function settle(){if(settling)return;settling=true;
       if(b.legs.some(L=>L.r==="l")){b.st="lost";b.done=Date.now();lost++}
       else if(b.legs.every(L=>L.r)){const live=b.legs.filter(L=>L.r==="w");b.done=Date.now();
         if(!live.length){b.st="void";b.pay=b.stake;S.bal+=b.stake;voids++}
-        else{const G=b.groups||{};let o=1;const by={};live.forEach(L=>(by[L.mid]=by[L.mid]||[]).push(L));
-          for(const mid in by){const all=b.legs.filter(L=>L.mid===mid);o*=G[mid]&&all.every(L=>L.r==="w")?G[mid]:by[mid].reduce((a,L)=>a*L.o,1)}
-          b.odds=Math.round(o*100)/100;b.pay=Math.round(b.stake*b.odds);b.st="won";S.bal+=b.pay;gain+=b.pay;won++;
+        else{const R=betResult(b);b.odds=R.odds;b.pay=R.pay;b.st="won";S.bal+=b.pay;gain+=b.pay;won++;
           if(won<=3)postAct("won",{pay:b.pay,odds:b.odds,legs:b.legs.slice(0,3).map(L=>L.l)})}}}
     if(won||lost||voids){S.peak=Math.max(S.peak,S.bal);save();render();bump();
       if(won){toast(`${ic("trophy")} ${won} pari${won>1?"s":""} gagné${won>1?"s":""} : +${tok(gain)} jetons !`,"win");confetti()}
@@ -2341,7 +2319,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.61";
+const VERSION="1.62";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "21";
+const SCHEMA_VERSION = "22";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -228,6 +228,13 @@ const STATEMENTS = [
      settled_at timestamptz,
      unique (player, cid))`,
   `create index if not exists bets_open on bets(status) where status = 'open'`,
+  // désaccords entre le règlement du serveur et celui du téléphone (phase de contrôle)
+  `create table if not exists settle_diff (
+     player bigint not null references players(id) on delete cascade,
+     cid text not null,
+     server text, client text, spay numeric, cpay numeric,
+     at timestamptz not null default now(),
+     primary key (player, cid))`,
   `create table if not exists rate_hits (key text not null, win bigint not null, n int not null default 0, primary key (key, win))`,
 ];
 
