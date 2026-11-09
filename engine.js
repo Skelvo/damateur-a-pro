@@ -197,7 +197,10 @@ function parseTeamEvent(ev,sp,lv,path){const c=ev.competitions&&ev.competitions[
       [Hc,Ac].forEach((x,p)=>(x.statistics||[]).forEach(s=>{const k2=BK[s.name];if(k2){(m.st[k2]||(m.st[k2]=[null,null]))[p]=parseFloat(s.displayValue)}}));
       const q=(Hc.linescores||[]).length;if(q>=4)m.st.ot=[q-4,0]}}
   if(sp==="foot"&&Array.isArray(c.details))m.ev=c.details.map(x=>{const a=(x.athletesInvolved||[])[0],t=(x.type&&x.type.text)||"";
-    return{ty:x.scoringPlay?(x.ownGoal?"og":"g"):/red/i.test(t)?"rc":/yellow/i.test(t)?"yc":"",id:a&&String(a.id),min:parseInt((x.clock&&x.clock.displayValue)||"0",10)}}).filter(e=>e.ty&&e.id);
+    // s = équipe (0 domicile, 1 extérieur), n = nom du joueur : pour les animations en direct
+    const hid=String(Hc.id||(Hc.team&&Hc.team.id)||""),tid=String((x.team&&x.team.id)||"");
+    return{ty:x.scoringPlay?(x.ownGoal?"og":"g"):/red/i.test(t)?"rc":/yellow/i.test(t)?"yc":"",id:a&&String(a.id),min:parseInt((x.clock&&x.clock.displayValue)||"0",10),
+      s:tid?(tid===hid?0:1):null,n:a&&(a.shortName||a.displayName)||""}}).filter(e=>e.ty&&e.id);
   return m}
 function parseTennis(ev,lv,path){const out=[];const groups=ev.groupings||[{grouping:{slug:"singles"},competitions:ev.competitions||[]}];
   for(const g of groups){const slug=((g.grouping&&(g.grouping.slug||g.grouping.displayName))||"").toLowerCase();if(slug.includes("double"))continue;
