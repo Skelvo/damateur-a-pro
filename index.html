@@ -3,17 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>D’amateur à pro — Paris sportifs gratuits</title>
-<meta name="description" content="Paris sportifs 100 % gratuits avec des jetons fictifs : football, rugby et tennis, du district aux pros. Cartons, corners, hors-jeux, pénalités, doubles fautes, raquettes cassées…">
+<title>Tribune — Paris sportifs gratuits</title>
+<meta name="description" content="Paris sportifs 100 % gratuits avec des jetons fictifs : football, rugby, tennis et NBA, du district aux pros. Cartons, corners, hors-jeux, pénalités, doubles fautes, raquettes cassées…">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#0a110f">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="D’amateur à pro">
+<meta name="apple-mobile-web-app-title" content="Tribune">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/png" href="icon-180.png?v=2">
-<link rel="apple-touch-icon" href="icon-180.png?v=2">
+<link rel="icon" type="image/png" href="icon-180.png?v=3">
+<link rel="apple-touch-icon" href="icon-180.png?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -57,6 +57,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .brand svg,.brand .blogo{flex:none}.blogo img{display:block;width:40px;height:40px;border-radius:11px;pointer-events:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .blogo{width:40px;height:40px;border-radius:11px;display:block;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .brand b{display:block;font:800 23px/1 "Barlow Condensed",sans-serif;letter-spacing:.2px;text-transform:uppercase;white-space:nowrap}
+.brand b.tbn{font-size:27px;letter-spacing:1.5px;font-style:italic}
+.wlogo{display:block;width:min(260px,72%);margin:4px auto 6px}.glogo img{display:block;width:min(240px,70%);margin:0 auto}.glogo{margin:0 0 4px}
 .brand b em{font-style:italic;color:var(--acc);transition:color .4s}
 .ver{display:inline-block;vertical-align:4px;margin-left:4px;padding:2px 6px;border-radius:6px;background:var(--card2);border:1px solid var(--line2);color:var(--mute);font:700 11px/1.2 Barlow,sans-serif;letter-spacing:.3px;font-style:normal;text-transform:none}
 .ver{-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
@@ -655,8 +657,8 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <header class="top">
   <div class="wrap">
     <div class="brand">
-      <span class="blogo"><img src="icon-180.png?v=2" width="40" height="40" alt="D’amateur à pro" draggable="false"></span>
-      <div><b>D’amateur <em>à&nbsp;pro</em></b><small><span id="hello">Paris gratuits · du district aux pros</span><span class="ver" id="ver"></span></small></div>
+      <span class="blogo"><img src="icon-180.png?v=3" width="40" height="40" alt="Tribune" draggable="false"></span>
+      <div><b class="tbn">TRIBUNE</b><small><span id="hello">Paris gratuits · du district aux pros</span><span class="ver" id="ver"></span></small></div>
     </div>
     <div class="hright"><button class="bell" id="bell" data-act="notif" aria-label="Notifications"><svg class="i"><use href="#i-bell"/></svg><span class="dot" id="belldot" hidden></span></button>
     <button class="bank" id="bank" data-act="tab" data-tab="c" aria-label="Mes jetons">
@@ -678,12 +680,12 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 </nav>
 <div id="layer"></div>
 <div class="toasts" id="toasts" aria-live="polite"></div>
-<div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>D’amateur à pro se joue à la verticale.</small></div>
+<div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
 <script>
 "use strict";
 /* =====================================================================
-   D'amateur à pro — paris sportifs gratuits (jetons fictifs)
+   Tribune — paris sportifs gratuits (jetons fictifs)
    - Pro : matchs, scores et stats récupérés automatiquement (flux ESPN public)
    - Amateur : matchs ajoutés par un organisateur, ou matchs simulés
    - Cotes calculées par simulation Monte-Carlo de chaque match
@@ -2196,7 +2198,7 @@ function viewNotif(){const st=pushState();
     ${list}<button class="btn ghost wide" data-act="pushtest">Envoyer une notification de test</button>
     <p class="note" style="text-align:center"><button class="link" data-act="pushoff" style="color:var(--loss)">Couper les notifications</button></p>`;
   if(st==="denied")return head+`<div class="nfhero"><div class="big">${ic("bell")}</div><h2>Bloquées</h2><p>Tu as refusé les notifications : il faut les réautoriser dans les réglages du téléphone.</p></div>
-    <ol class="steps">${IOS?`<li><span class="n">1</span><div>Ouvre <b>Réglages</b> › <b>Notifications</b>.</div></li><li><span class="n">2</span><div>Choisis <b>D’amateur à pro</b> et active <b>Autoriser les notifications</b>.</div></li>`
+    <ol class="steps">${IOS?`<li><span class="n">1</span><div>Ouvre <b>Réglages</b> › <b>Notifications</b>.</div></li><li><span class="n">2</span><div>Choisis <b>Tribune</b> et active <b>Autoriser les notifications</b>.</div></li>`
       :`<li><span class="n">1</span><div>Appuie longtemps sur l’icône de l’app › <b>Infos sur l’appli</b> (ⓘ).</div></li><li><span class="n">2</span><div><b>Notifications</b> › active-les.</div></li>`}
     <li><span class="n">3</span><div>Reviens ici et touche <b>Activer</b>.</div></li></ol><button class="btn gold wide" data-act="pushon">${ic("bell")} Activer</button>`;
   if(st==="na")return head+`<div class="nfhero"><div class="big">${ic("bell")}</div><h2>Pas disponible ici</h2><p>${IOS&&!STANDALONE?"Installe d’abord l’app sur ton écran d’accueil, puis ouvre-la depuis l’icône.":IOS?"Il faut iOS 16.4 ou plus récent : mets ton iPhone à jour (Réglages › Général › Mise à jour logicielle).":"Ton navigateur ne gère pas les notifications. Utilise Chrome."}</p></div>${list}`;
@@ -2315,8 +2317,8 @@ async function lgSubmit(kind){const v=($("#lg-in").value||"").trim();if(!v){$("#
     toast(kind==="new"?`${ic("trophy")} Ligue créée ! Code : <b>${esc(j.code)}</b>`:j.already?"Tu es déjà dans cette ligue.":`${ic("group")} Bienvenue dans « ${esc(j.name)} » !`,"win");if(kind==="new")lgInvite()}
   catch(e){b.disabled=false;toast(LGERR[e.code]||"Pas de connexion au serveur.","bad")}}
 async function lgInvite(){const d=U.lg.data,cur=d&&d.leagues.find(l=>l.code===U.lg.code);if(!cur)return;
-  const url=location.origin+location.pathname+"?ligue="+cur.code,txt=`Rejoins ma ligue « ${cur.name} » sur D’amateur à pro (paris gratuits, jetons fictifs) ! Code : ${cur.code}`;
-  try{if(navigator.share){await navigator.share({title:"D’amateur à pro",text:txt,url});return}}catch(e){if(e&&e.name==="AbortError")return}
+  const url=location.origin+location.pathname+"?ligue="+cur.code,txt=`Rejoins ma ligue « ${cur.name} » sur Tribune (paris gratuits, jetons fictifs) ! Code : ${cur.code}`;
+  try{if(navigator.share){await navigator.share({title:"Tribune",text:txt,url});return}}catch(e){if(e&&e.name==="AbortError")return}
   try{await navigator.clipboard.writeText(txt+" "+url);toast("Invitation copiée : colle-la dans ta conversation.","win")}catch(e){prompt("Copie ce lien :",url)}}
 async function lgLeave(){const d=U.lg.data,cur=d&&d.leagues.find(l=>l.code===U.lg.code);if(!cur||!confirm(`Quitter « ${cur.name} » ?`))return;
   try{await api("leave_league",{code:cur.code});U.lg.code="";await loadBoards();toast("Tu as quitté la ligue.")}catch(e){toast("Pas de connexion au serveur.","bad")}}
@@ -2425,8 +2427,8 @@ function spin(){if(spinning||!wheelAvail())return;spinning=true;const isExtra=ex
 
 /* ---------- accueil ---------- */
 function viewWelcome(rename,msg){return`<div class="welcome">${rename?`<div class="grab"><h3>Ton pseudo</h3><button class="x" data-act="close">${ic("x")}</button></div>${msg?`<p class="warn" style="text-align:left">${msg}</p>`:""}`:`
-  <img src="icon-180.png?v=2" width="76" height="76" alt="" style="border-radius:18px;display:block;margin:0 auto">
-  <div class="big">D’amateur<br><em>à pro</em></div><p class="note" style="font-size:15px">Parie gratuitement sur les vrais matchs de foot, de rugby et de tennis, en direct. Fais monter ta carrière de la Départementale 4 à la Ligue des champions.</p>
+  
+  <img src="logo-tribune.png?v=1" alt="Tribune" class="wlogo"><p class="note" style="font-size:15px">Parie gratuitement sur les vrais matchs de foot, de rugby, de tennis et de NBA, en direct. Fais monter ta carrière de la Départementale 4 à la Ligue des champions.</p>
   <div class="feat"><div>${ic("card","yc")}Cartons, corners, hors-jeux</div><div>${ic("posts")}Essais, pénalités ratées</div><div>${ic("broken")}Doubles fautes, raquettes cassées</div></div>`}
   <div class="form" style="text-align:left"><label>Ton pseudo<input id="w-name" maxlength="18" value="${esc(S.name)}" placeholder="ex. Le Pronostiqueur" autocomplete="nickname"></label>
   <p class="warn" id="w-err" hidden></p>
@@ -2461,7 +2463,7 @@ function viewInstall(gate){const head=gate?"":`<div class="grab"><h3>Installer l
     `<p class="note">Tu as ouvert le lien depuis une autre appli (Messages, WhatsApp, Instagram…) ? Touche d’abord <b>Ouvrir dans Safari</b> (ou la boussole), puis :</p>
     <ol class="steps"><li><span class="n">1</span><div>Dans Safari, touche le bouton <b>Partager</b> ${SHARE_IOS}<small>Selon ta version d’iOS : dans la barre du bas, à côté de l’adresse, ou dans le menu <b>•••</b>.</small></div></li>
       <li><span class="n">2</span><div>Fais défiler et choisis <b>Sur l’écran d’accueil</b> ${ADD_IOS}, puis <b>Ajouter</b>.<small>Si l’option « Ouvrir comme app web » apparaît, laisse-la activée.</small></div></li>
-      <li><span class="n">3</span><div>Ouvre <b>D’amateur à pro</b> depuis ton écran d’accueil et entre ton <b>code de transfert</b> : tu retrouves tes jetons, tes paris et tes ligues.<small>Sur iPhone, l’app installée ne voit pas ce que tu as fait dans Safari : le code fait le lien.</small></div></li></ol>
+      <li><span class="n">3</span><div>Ouvre <b>Tribune</b> depuis ton écran d’accueil et entre ton <b>code de transfert</b> : tu retrouves tes jetons, tes paris et tes ligues.<small>Sur iPhone, l’app installée ne voit pas ce que tu as fait dans Safari : le code fait le lien.</small></div></li></ol>
     <div class="xbox" id="xbox">${S.name?`<button class="btn gold wide" data-act="xmake">${ic("ticket")} Créer mon code de transfert</button>`:gate?`<p class="note">Nouveau joueur ? Pas besoin de code : tu choisiras ton pseudo dans l’app.</p>`:`<p class="note">Choisis d’abord un pseudo pour avoir un code.</p>`}</div>
 `}
   if(ANDROID&&INAPP&&!installEvt)return head+`<p class="note" style="font-size:15px">Ce lien s’est ouvert dans le navigateur d’une autre appli (WhatsApp, Messenger, Google…), qui ne permet pas d’installer. Ouvre-le dans <b>Chrome</b> :</p>
@@ -2470,7 +2472,7 @@ function viewInstall(gate){const head=gate?"":`<div class="grab"><h3>Installer l
   if(ANDROID)return head+(installEvt?`<p class="note" style="font-size:15px">Un appui suffit : l’app s’ajoute à ton écran d’accueil, avec ton compte.</p><button class="btn gold wide" data-act="instgo">${ic("plus")} Installer l’app</button>`
     :`<ol class="steps"><li><span class="n">1</span><div>Dans Chrome, touche le menu <b>⋮</b> en haut à droite.</div></li>
       <li><span class="n">2</span><div>Choisis <b>Installer l’application</b> (ou <b>Ajouter à l’écran d’accueil</b>), puis confirme.</div></li>
-      <li><span class="n">3</span><div>Ouvre <b>D’amateur à pro</b> depuis ton écran d’accueil : ton compte est déjà là.</div></li></ol>
+      <li><span class="n">3</span><div>Ouvre <b>Tribune</b> depuis ton écran d’accueil : ton compte est déjà là.</div></li></ol>
       <p class="note">Pas d’option « Installer » ? Vérifie que tu es bien dans <b>Chrome</b> (pas dans WhatsApp, Messenger ou une autre appli). Sur Samsung Internet : menu <b>≡</b> › <b>Ajouter page à</b> › <b>Écran d’accueil</b>.</p>`);
   return head+`<p class="note">Ouvre ce site sur ton téléphone pour l’installer sur l’écran d’accueil.</p>`}
 async function installPrompt(){if(!installEvt)return;installEvt.prompt();const r=await installEvt.userChoice.catch(()=>null);installEvt=null;
@@ -2481,8 +2483,7 @@ async function installPrompt(){if(!installEvt)return;installEvt.prompt();const r
 const GATE=!STANDALONE&&!matchMedia("(display-mode: fullscreen), (display-mode: minimal-ui)").matches&&(IOS||ANDROID);
 function renderGate(){const lg=new URLSearchParams(location.search).get("ligue");
   document.body.classList.add("gated");
-  $("#main")._html=null;$("#main").innerHTML=`<div class="gate"><img src="icon-180.png" alt="" class="gicon">
-    <h1>D’amateur <em>à pro</em></h1><small style="color:var(--mute2)">v${VERSION}</small><p class="gsub">Le jeu se joue <b>uniquement depuis l’app</b> sur ton écran d’accueil. C’est gratuit, sans store, et ça prend 10 secondes.</p>
+  $("#main")._html=null;$("#main").innerHTML=`<div class="gate"><h1 class="glogo"><img src="logo-tribune.png?v=1" alt="Tribune"></h1><small style="color:var(--mute2)">v${VERSION}</small><p class="gsub">Le jeu se joue <b>uniquement depuis l’app</b> sur ton écran d’accueil. C’est gratuit, sans store, et ça prend 10 secondes.</p>
     ${lg?`<div class="xcode" style="margin-bottom:12px"><small>Invitation à une ligue : une fois dans l’app, va dans Ligues › Rejoindre et entre ce code</small><b>${esc(lg.toUpperCase().slice(0,8))}</b></div>`:""}
     ${viewInstall(true)}</div>`}
 // Code de transfert : on envoie tout l'état du jeu (sauf le jeton) au serveur, valable 48 h
@@ -2516,7 +2517,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.54";
+const VERSION="1.55";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

@@ -1,4 +1,4 @@
-// Seule fonction serveur de D'amateur à pro : comptes anonymes, ligues entre amis, classements,
+// Seule fonction serveur de Tribune : comptes anonymes, ligues entre amis, classements,
 // et « ce que parient les autres ». Tout passe par POST /api/game {action, ...}.
 import { db, hashToken, newToken, ipKey, overLimit } from "./_db.js";
 import { timingSafeEqual } from "node:crypto";
@@ -954,7 +954,7 @@ const ACTIONS = {
   async push_test(s, b) {
     const p = await me(s, b.token);
     if (await overLimit("pushtest:" + p.id, 5, 3600)) throw fail(429, "slow_down");
-    await notify(s, [p.id], { title: "D’amateur à pro", body: "Les notifications marchent 🎉", url: "./", tag: "test" });
+    await notify(s, [p.id], { title: "Tribune", body: "Les notifications marchent 🎉", url: "./", tag: "test" });
     return { ok: true };
   },
 
