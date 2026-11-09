@@ -464,6 +464,23 @@ async function addMember(s, code, pid, name) {
   return { code, name: l.name };
 }
 
+// ---- Premiers pas ----
+const GUIDE = ["bet", "wheel", "guild", "push", "fav", "combo"], GUIDE_REWARD = 50, GUIDE_ALL = 100;
+async function guideState(s, pid) {
+  const r = (await s.query(`select
+      exists (select 1 from bets where player = $1) as bet,
+      exists (select 1 from bets where player = $1 and combo) as combo,
+      coalesce(p.wheel->>'b', '') <> '' or coalesce(p.wheel->>'x', '') <> '' as wheel,
+      exists (select 1 from league_members m join leagues l on l.code = m.code and not l.dark where m.player = $1) as guild,
+      exists (select 1 from push_subs x where x.player = $1) as push,
+      p.fav is not null as fav
+    from players p where p.id = $1`, [pid]))[0];
+  const got = new Set((await s.query(`select ref from ledger where player = $1 and kind = 'guide'`, [pid])).map((x) => x.ref));
+  const done = {}, claimed = {};
+  for (const g of GUIDE) { done[g] = !!r[g]; claimed[g] = got.has(g); }
+  return { done, claimed, all: got.has("all"), reward: GUIDE_REWARD, bonus: GUIDE_ALL };
+}
+
 // ---- Modération ----
 // Mots refusés dans les pseudos, noms et devises de guilde, et masqués dans le chat (insultes, propos haineux, sexuels).
 // Comparaison sans accents, sans chiffres « leet » (0→o, 1→i, 3→e…) et sans lettres répétées (« connnnard » = « conard »).
@@ -1018,6 +1035,19 @@ const ACTIONS = {
     admin(b);
     const rows = await s.query(`select r.id, r.kind, r.target, r.text, r.at, pl.name as reporter from reports r left join players pl on pl.id = r.reporter order by r.id desc limit 200`);
     return { reports: rows };
+  },
+  // ---- Premiers pas : petites missions vérifiées par le serveur, 50 jetons chacune (+100 quand tout est fait) ----
+  async guide_status(s, b) {
+    const p = await me(s, b.token);
+    return await guideState(s, p.id);
+  },
+  async guide_claim(s, b) {
+    const p = await me(s, b.token);
+    const st = await guideState(s, p.id), step = String(b.step || "");
+    const ok = step === "all" ? GUIDE.every((g) => st.done[g]) : GUIDE.includes(step) && st.done[step];
+    if (!ok) throw fail(400, "not_done");
+    const amount = step === "all" ? GUIDE_ALL : GUIDE_REWARD;
+    return { ok: true, amount: (await credit(s, p.id, amount, "guide", step)) ? amount : 0 };
   },
   async recovery_make(s, b) {
     const p = await me(s, b.token);
