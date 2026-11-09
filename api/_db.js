@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "27";
+const SCHEMA_VERSION = "28";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -302,6 +302,16 @@ const STATEMENTS = [
   `alter table chat add column if not exists hidden boolean not null default false`,
   `alter table players add column if not exists tos text`,
   `alter table players add column if not exists tos_at timestamptz`,
+  // cadeaux calculés par le serveur et versés à l'ouverture de l'appli (bonus des combinés du week-end…)
+  `create table if not exists gifts (
+     player bigint not null references players(id) on delete cascade,
+     kind text not null,
+     ref text not null,
+     amount int not null,
+     label text,
+     claimed boolean not null default false,
+     at timestamptz not null default now(),
+     primary key (player, kind, ref))`,
   `create table if not exists rate_hits (key text not null, win bigint not null, n int not null default 0, primary key (key, win))`,
 ];
 

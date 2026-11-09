@@ -287,7 +287,14 @@ const DEFIS=[
    {id:"wbt",ic:"goal",t:"Trouve un buteur",g:1,r:120,f:(P,W)=>legsOf(W).filter(l=>l.mk==="psc"&&l.r==="w").length},
    {id:"wcb",ic:"chart",t:"Gagne un combiné",g:1,r:120,f:(P,W)=>W.filter(b=>b.legs.length>1).length}]];
 const DEFI_BONUS=150;
+// Week-ends spéciaux (samedi et dimanche, heure de Paris) : un thème par week-end, à tour de rôle, sans rien à régler.
+const WEEKENDS={roue:{n:"Week-end de la roue",e:"🎡",d:"Tous les gains de la roue sont doublés (×2)."},
+  defis:{n:"Week-end des défis",e:"🎯",d:"Les défis du jour rapportent le double (×2), bonus des 3 défis compris."},
+  combo:{n:"Week-end des combinés",e:"🧾",d:"Combiné gagné de 3 sélections ou plus : +25 % de bonus sur ton bénéfice."}};
+const COMBO_BOOST=.25;
+function weekendOf(day){const t=Date.UTC(+day.slice(0,4),+day.slice(4,6)-1,+day.slice(6,8))/864e5,dow=new Date(t*864e5).getUTCDay();
+  const k=["combo","roue","defis"][Math.floor((t+3)/7)%3];return{k,...WEEKENDS[k],on:dow===6||dow===0,soon:dow===5,last:dow===0}}
 function defisFor(day){const r=rng(hash("defis|"+day));return DEFIS.map(L=>L[Math.floor(r()*L.length)])}
 
-if(typeof globalThis!=="undefined")globalThis.ENGINE={fr,strength,SP,SIM,MK,N,ALLSTATS,STATL,ESPN,MCC,MKC,ONE,cl,hash,rng,pois,binom,H,DAY,lvA,sims,simOne,tot,cmp3,avail,odd,mt,liveOK,canBet,liveSims,marketSims,markets,outcome,
+if(typeof globalThis!=="undefined")globalThis.ENGINE={WEEKENDS,COMBO_BOOST,weekendOf,fr,strength,SP,SIM,MK,N,ALLSTATS,STATL,ESPN,MCC,MKC,ONE,cl,hash,rng,pois,binom,H,DAY,lvA,sims,simOne,tot,cmp3,avail,odd,mt,liveOK,canBet,liveSims,marketSims,markets,outcome,
   SOCSTAT,recStrength,amer,bookDiff,footProbs,TEAM_FR,frTeam,parseTeamEvent,parseTennis,status,realStats,PMK,legIdx,jointP,comboCalc,readLineup,applySummary,playerLegResult,legResultM,betResult,cashValueM,WHEEL,WP,JACKPOT,JACK_ODDS,EXTRA_DAY,DEFIS,DEFI_BONUS,defisFor,legsOf};

@@ -89,7 +89,7 @@ async function summary(m) {   // compositions + stats complètes d'un match de f
 // Règle les paris ouverts dont les matchs sont finis. Renvoie [{id, player, cid, status, pay, legs}] des paris réglés.
 export async function settleOpen(s, { limit = 300, budget = 40e3, player = null } = {}) {
   const t0 = Date.now(), now = Date.now();
-  const rows = await s.query(`select id, player, cid, stake, odds, legs, groups from bets where status = 'open' and ($2::bigint is null or player = $2) order by id limit $1`, [limit, player]);
+  const rows = await s.query(`select id, player, cid, stake, odds, legs, groups, combo, extract(epoch from at) * 1000 as at_ms from bets where status = 'open' and ($2::bigint is null or player = $2) order by id limit $1`, [limit, player]);
   const M = {}, done = [];
   for (const row of rows) {
     if (Date.now() - t0 > budget) break;
@@ -112,6 +112,14 @@ export async function settleOpen(s, { limit = 300, budget = 40e3, player = null 
     if (status !== "open") {
       await s.query(`update bets set status = $2, pay = $3, legs = $4::jsonb, settled_at = now() where id = $1 and status = 'open'`, [row.id, status, pay, JSON.stringify(legs)]);
       done.push({ id: row.id, player: row.player, cid: row.cid, status, pay, legs });
+      // week-end des combinés : bonus sur le bénéfice d'un combiné gagné de 3 sélections ou plus, parié le week-end
+      if (status === "won" && legs.length >= 3) {
+        const day = new Date(Number(row.at_ms)).toLocaleDateString("sv-SE", { timeZone: "Europe/Paris" }).replace(/-/g, "");
+        const we = E.weekendOf(day), bonus = Math.round((pay - row.stake) * E.COMBO_BOOST);
+        if (we.on && we.k === "combo" && bonus > 0)
+          await s.query(`insert into gifts (player, kind, ref, amount, label) values ($1, 'boost', $2, $3, $4) on conflict do nothing`,
+            [row.player, String(row.id), bonus, `Bonus du week-end des combinés (cote ${Number(row.odds).toFixed(2).replace(".", ",")})`]);
+      }
     } else if (changed) await s.query(`update bets set legs = $2::jsonb where id = $1`, [row.id, JSON.stringify(legs)]);
   }
   return done;

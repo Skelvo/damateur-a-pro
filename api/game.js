@@ -200,6 +200,12 @@ async function morning(s) {
   const leagues = await s.query(`select l.code, l.name from leagues l where not l.dark and (select count(*) from league_members m where m.code = l.code) >= 2`);
   const out = { recap: 0, season: 0 };
   try { out.battles = await battlesTick(s); } catch (e) { console.error("battles", e); }
+  const today = await parisDay(s), we = EG.weekendOf(today);
+  if (t.dow === 6 && we.on && await once("we:" + today)) {
+    const to = (await s.query(`select distinct player from push_subs`)).map((x) => x.player);
+    await notify(s, to, { title: `${we.e} ${we.n} !`, body: `${we.d} Jusqu'à dimanche minuit, profites-en !`, url: "./", tag: "weekend" });
+    out.weekend = to.length;
+  }
   if (t.day === 1 && await once("season:" + t.m)) {
     await ensurePrizes(s, t.m);
     const mine = await s.query(`select p.player, p.rank, p.amount, l.name from month_prizes p join leagues l on l.code = p.code where p.month = $1 and not p.claimed`, [t.m]);
@@ -744,12 +750,14 @@ const ACTIONS = {
     const jack = randomInt(EG.JACK_ODDS) === 0;
     let i = -1, v = EG.JACKPOT;
     if (!jack) { const r = randomInt(100); let c = 0; for (i = 0; i < EG.WP.length; i++) { c += EG.WP[i]; if (r < c) break; } v = EG.WHEEL[i]; }
+    const we = EG.weekendOf(day), x2 = !jack && we.on && we.k === "roue";
+    if (x2) v *= 2;
     const nw = extra ? { ...w, x: day } : { ...w, b: day };
     const u = await s.query(`update players set wheel = $2::jsonb where id = $1 and coalesce(wheel->>${extra ? "'x'" : "'b'"}, '') <> $3 returning id`, [p.id, JSON.stringify(nw), day]);
     if (!u[0]) return { error: "done" };
     await credit(s, p.id, v, "wheel", day + (extra ? "x" : ""));
     if (v >= 200) await s.query(`insert into activity (player, kind, data) values ($1, 'wheel', $2::jsonb)`, [p.id, JSON.stringify({ v })]);
-    return { ok: true, i, v, jack, day, extra };
+    return { ok: true, i, v, jack, day, extra, x2 };
   },
   // ---- Défis du jour : vérifiés avec les paris enregistrés par le serveur ----
   async defi_claim(s, b) {
@@ -759,13 +767,14 @@ const ACTIONS = {
     const rows = await s.query(`select legs, odds::float8 as odds, status, to_char(at at time zone 'Europe/Paris', 'YYYYMMDD') as d,
         to_char(settled_at at time zone 'Europe/Paris', 'YYYYMMDD') as sd from bets where player = $1 and (at > now() - interval '2 days' or settled_at > now() - interval '2 days')`, [p.id]);
     const P = rows.filter((r) => r.d === day), W = rows.filter((r) => r.status === "won" && r.sd === day);
-    const D = EG.defisFor(day).map((d) => ({ id: d.id, r: d.r, ok: d.f(P, W) >= d.g }));
+    const we = EG.weekendOf(day), mul = we.on && we.k === "defis" ? 2 : 1;
+    const D = EG.defisFor(day).map((d) => ({ id: d.id, r: d.r * mul, ok: d.f(P, W) >= d.g }));
     if (b.all) {
       const got = (await s.query(`select ref from ledger where player = $1 and kind = 'defi' and ref like $2`, [p.id, day + ":%"])).map((x) => x.ref.split(":")[1]);
       if (D.some((d) => !got.includes(d.id))) return { error: "not_done" };
-      const ok = await credit(s, p.id, EG.DEFI_BONUS, "defis", day);
+      const ok = await credit(s, p.id, EG.DEFI_BONUS * mul, "defis", day);
       if (ok) await s.query(`insert into activity (player, kind, data) values ($1, 'defis', '{}'::jsonb)`, [p.id]);
-      return ok ? { ok: true, v: EG.DEFI_BONUS } : { error: "already" };
+      return ok ? { ok: true, v: EG.DEFI_BONUS * mul } : { error: "already" };
     }
     const d = D.find((x) => x.id === String(b.id || ""));
     if (!d) return { error: "unknown" };
@@ -1048,6 +1057,13 @@ const ACTIONS = {
     if (!ok) throw fail(400, "not_done");
     const amount = step === "all" ? GUIDE_ALL : GUIDE_REWARD;
     return { ok: true, amount: (await credit(s, p.id, amount, "guide", step)) ? amount : 0 };
+  },
+  // cadeaux calculés par le serveur (bonus des combinés du week-end…), versés une seule fois
+  async gifts_claim(s, b) {
+    const p = await me(s, b.token);
+    const r = await s.query(`update gifts set claimed = true where player = $1 and not claimed returning kind, ref, amount, label`, [p.id]);
+    for (const x of r) await credit(s, p.id, x.amount, x.kind, x.ref);
+    return { gifts: r.map((x) => ({ amount: x.amount, label: x.label })) };
   },
   async recovery_make(s, b) {
     const p = await me(s, b.token);

@@ -471,6 +471,10 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 .lmban{border-color:#2a6a45!important}
 .champ.season{background:linear-gradient(135deg,#4a2a05,var(--card) 70%);border-color:#a8670f}
 .sncard{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin:0 0 12px}.sncard .i{width:26px;height:26px;color:#ffb020;flex:none}.sncard b{display:block;font:800 18px "Barlow Condensed"}.sncard small{color:var(--mute);font-size:12.5px}
+.webox{display:flex;gap:12px;align-items:center;background:linear-gradient(135deg,#4a2a06,var(--card) 75%);border:1px solid #a8701a;border-radius:14px;padding:11px 13px;margin-bottom:12px}.webox.soon{background:var(--card);border-style:dashed}.webox.mini{margin:0 0 10px}
+.wee{font-size:34px;line-height:1}.webox small{display:block;color:#ffc56b;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}.webox b{display:block;font:800 21px "Barlow Condensed";text-transform:uppercase}.webox p{margin:2px 0 0;font-size:13.5px;color:#e6dcc9}
+.webadge{background:#4a2a06;border:1px solid #a8701a;border-radius:10px;padding:8px 11px;font-size:13.5px;margin:8px 0}.webadge.dim{background:var(--card);border-color:var(--line);color:var(--mute)}
+.tshare{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;background:none;border:0;border-top:1px solid var(--line);margin-top:10px;padding:10px 0 2px;color:var(--mute);font:600 14px Barlow}.tshare .i{width:16px;height:16px}
 .intro{display:flex;flex-direction:column;min-height:min(78vh,640px)}.ihead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}.idots{display:flex;gap:6px}.idots i{width:8px;height:8px;border-radius:8px;background:var(--line2);transition:width .2s}.idots i.on{width:22px;background:var(--sel)}
 .ibody{flex:1;text-align:center}.ibody h2{font:800 28px "Barlow Condensed";text-transform:uppercase;margin:4px 0 8px}.ibody p{color:#d6e0da;font-size:15px;line-height:1.45;margin:0 0 10px}.iart{font-size:54px;line-height:1;margin-top:6px}
 .ichips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:6px 0 12px}.ichips span{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:6px 11px;font-size:14px}
@@ -739,7 +743,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.68"></script>
+<script src="engine.js?v=1.69"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -981,7 +985,7 @@ function ladder(){const cfg=SP[U.sp],now=Date.now();
     ${cfg.tiers.map(([t,ix])=>[t,ix.filter(l=>cfg.feeds[l])]).filter(([,ix])=>ix.length).map(([t,ix])=>`<div class="tier"><small>${t}</small><div>${ix.map(chip).join("")}</div></div>`).join("")}</div>`}
 function viewMatches(){const cfg=SP[U.sp];let h=installBanner()+`<div class="sports">${Object.entries(SP).map(([k,s])=>`<button class="sport" style="--c:${s.c}" data-act="sp" data-sp="${k}" aria-pressed="${U.sp===k}">${ballArt(k,"ghost")}${ballArt(k,"ball")}<span>${s.n}</span><small>${s.sub}</small></button>`).join("")}</div>`;
   if(U.ev){const e=EVENTS.find(x=>x.id===U.ev);if(e)return h+viewEvent(e)+foot();U.ev=null}
-  h+=guideCard()+pushBanner()+eventStrip()+ladder();
+  h+=weBanner()+guideCard()+pushBanner()+eventStrip()+ladder();
   let list=matchesFor(U.sp,U.lv);
   const isDep=U.lv>=0&&U.lv<cfg.dep;
   if(wheelAvail())h+=`<button class="btn gold wide wheelbtn" data-act="wheel" style="margin-bottom:12px">${wheelMini()} ${extraAvail()?"Tour bonus offert aujourd’hui !":"Roue de la chance du jour"}</button>`;
@@ -1087,6 +1091,7 @@ function viewSlip(){const n=U.sel.length;if(!n)return`<div class="grab"><h3>Mon 
   ${n>1?`<div class="seg"><button data-act="combo" data-v="0" aria-pressed="${!combo}">Simples (${n})</button><button data-act="combo" data-v="1" aria-pressed="${combo}" ${blocked?"disabled":""}>Combiné</button></div>`:""}
   ${blocked&&n>1?`<p class="warn">Combinaison impossible : ces paris ne peuvent pas se réaliser tous ensemble.</p>`:combo&&comboInfo().linked?`<p class="note">${ic("info")} Plusieurs paris sur le même match : la cote est recalculée car ils sont liés.</p>`:""}
   <div>${U.sel.map((s,i)=>`<div class="leg"><span class="ic">${ic(s.ic,s.cls||"")}</span><div><b>${esc(s.l)}</b><small>${esc(s.mt)}</small><small>${esc(s.ml)}</small></div><span class="o">${fr(s.o)}</span><button class="rm" data-act="unpick" data-i="${i}" aria-label="Retirer">${ic("x")}</button></div>`).join("")}</div>
+  ${WE().on&&WE().k==="combo"?(combo&&n>=3?`<p class="webadge">🧾 Week-end des combinés : si ça passe, <b>+25 %</b> de bonus sur ton bénéfice !</p>`:`<p class="webadge dim">🧾 Week-end des combinés : fais un combiné de 3 sélections ou plus pour toucher +25 % de bonus.</p>`):""}
   <div class="chips">${[10,20,50,100,250].map(v=>`<button data-act="stake" data-v="${v}" aria-pressed="${U.stake===v}">${v}</button>`).join("")}<button data-act="stake" data-v="max">Max</button></div>
   <div class="stake"><label for="stk">Mise${combo||n===1?"":" par pari"}</label><input id="stk" type="number" min="1" inputmode="numeric" value="${U.stake}"></div>
   <div class="sum"><div><small>${combo?"Cote totale":"Total misé"}</small><b id="s1">${combo?fr(slipOdds()):tok(cost)}</b></div><div class="g"><small>Gain possible</small><b id="s2">${tok(gain)}</b></div></div>
@@ -1122,7 +1127,8 @@ function viewBets(){const B=S.bets.slice().reverse(),op=B.filter(b=>b.st==="open
     return`<div class="ticket ${b.st}"><div class="th"><b>${b.legs.length>1?"Combiné · "+b.legs.length:"Simple"}</b><span>${new Date(b.at).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})} · ${fTime(b.at)}</span></div>
     <div class="tl">${b.legs.map(L=>`<div class="leg">${legStatus(L)}<div><b>${esc(L.l)} <span style="color:var(--mute);font-weight:500">@ ${fr(L.o)}</span></b><small>${esc(L.mt)}</small><small>${esc(L.ml)}</small></div></div>`).join("")}</div>
     <div class="tf"><div><small>Mise</small><b>${tok(b.stake)}</b></div><div style="text-align:center"><small>Cote</small><b>${fr(b.odds)}</b></div><div style="text-align:right"><small>${b.st==="won"?"Gain":b.st==="cashed"?"Encaissé":"Gain possible"}</small>${b.st==="open"?`<b>${tok(b.stake*b.odds)}</b>`:tag}</div></div>
-    ${cv?`<button class="cashbtn" data-act="cash" data-id="${esc(b.id)}">${ic("coin")} Encaisser maintenant <b>${tok(cv)}</b></button>`:""}</div>`}).join("");
+    ${cv?`<button class="cashbtn" data-act="cash" data-id="${esc(b.id)}">${ic("coin")} Encaisser maintenant <b>${tok(cv)}</b></button>`:""}
+    <button class="tshare" data-act="tshare" data-id="${esc(b.id)}">${ic("share")} Partager le ticket</button></div>`}).join("");
   return h+foot()}
 
 /* ---------- succès (calculés sur le téléphone, envoyés au serveur pour le profil) ---------- */
@@ -1393,6 +1399,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"close":closeLayer();break;
     case"legal":openLegal();break;
     case"help":openHelp();break;
+    case"tshare":shareTicket(d.id);break;
     case"intro":openIntro();break;
     case"coach":startCoach();break;
     case"ixo":U.ix.o=+d.v;layer(viewIntro());break;
@@ -1542,7 +1549,7 @@ const AVC=["#35d07f","#ffd23f","#ff7a45","#5fa8ff","#d7f25a","#c084fc","#ff5a5f"
 const avc=name=>AVC[hash(name)%AVC.length];
 let lgTimer=0;
 async function loadBoards(){if(U.lg.loading||U.dark)return;U.lg.loading=true;if(U.lg.code)loadLm(U.lg.code);
-  try{if(!(await ensureSession()))throw new Error("offline");await syncNow();const j=await api("boards",{code:U.lg.code});U.lg.data=j;U.lg.err=null;if(j.code!==U.lg.code)U.lg.code=j.code;if(j.code)loadBattles(j.code)}
+  try{if(!(await ensureSession()))throw new Error("offline");await syncNow();const j=await api("boards",{code:U.lg.code});U.lg.data=j;U.lg.err=null;if(j.code!==U.lg.code)U.lg.code=j.code;if(j.code)loadBattles(j.code);claimGifts()}
   catch(e){U.lg.err=e.code||"offline"}
   finally{U.lg.loading=false;if(U.tab==="l"&&!U.open)render()}
   clearTimeout(lgTimer);lgTimer=setTimeout(()=>{if(U.tab==="l"&&!document.hidden)loadBoards()},6e4)}
@@ -1596,10 +1603,54 @@ function viewLeagues(){const L=U.lg,d=L.data;
 function lgFooter(cur){return`<button class="btn gold wide" data-act="gdir" style="margin-top:14px">${ic("group")} Trouver une guilde</button><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><button class="btn" data-act="lgnew">${ic("plus")} Créer</button><button class="btn ghost" data-act="lgjoin">Rejoindre avec un code</button></div>
   ${cur?`<p class="note"><button class="link" data-act="lgleave" style="color:var(--loss)">Quitter la guilde</button></p>`:""}`+foot()}
 
+/* ---------- week-ends spéciaux (thème automatique, à tour de rôle) ---------- */
+const WE=()=>weekendOf(today());
+function weBanner(){const w=WE();if(!w.on&&!w.soon)return"";
+  return`<div class="webox${w.on?"":" soon"}"><span class="wee">${w.e}</span><div><small>${w.on?(w.last?"Week-end spécial · dernier jour !":"Week-end spécial · jusqu’à dimanche minuit"):"Demain, week-end spécial"}</small><b>${w.n}</b><p>${w.d}</p></div></div>`}
+let gfAt=0;
+async function claimGifts(){if(!S.tok||Date.now()-gfAt<6e4)return;gfAt=Date.now();try{const j=await api("gifts_claim",{});if(!j.gifts||!j.gifts.length)return;
+  const t=j.gifts.reduce((a,x)=>a+x.amount,0);S.bal+=t;S.peak=Math.max(S.peak,S.bal);save();render();bump();confetti();
+  toast(j.gifts.length===1?`🧾 ${esc(j.gifts[0].label)} : +${tok(t)} jetons !`:`🧾 Bonus du week-end : +${tok(t)} jetons !`,"win")}catch(e){}}
+
+/* ---------- ticket à partager (image) ---------- */
+const imgP={};function loadImg(src){return imgP[src]||(imgP[src]=new Promise(ok=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>ok(null);i.src=src}))}
+function wrapTxt(c,t,max){const w=String(t).split(" "),L=[];let cur="";for(const x of w){const n=cur?cur+" "+x:x;if(c.measureText(n).width>max&&cur){L.push(cur);cur=x}else cur=n}if(cur)L.push(cur);return L}
+async function ticketImage(b){const W=1080,legs=b.legs.slice(0,8),lh=150,H=Math.max(1350,640+legs.length*lh+(b.legs.length>8?60:0));
+  const cv=document.createElement("canvas");cv.width=W;cv.height=H;const c=cv.getContext("2d");
+  try{await document.fonts.load('800 60px "Barlow Condensed"');await document.fonts.load('600 30px Barlow')}catch(e){}
+  const g=c.createLinearGradient(0,0,W,H);g.addColorStop(0,"#0f2a1d");g.addColorStop(.55,"#0b1310");g.addColorStop(1,"#08100c");c.fillStyle=g;c.fillRect(0,0,W,H);
+  const st=b.st,ST={won:["GAGNÉ","#35d07f"],lost:["PERDU","#ff5a5f"],cashed:["ENCAISSÉ","#ffd23f"],void:["REMBOURSÉ","#8ea198"],open:["EN COURS","#5fa8ff"]}[st]||["EN COURS","#5fa8ff"];
+  const logo=await loadImg("logo-tribune.png?v=1");if(logo){const lw=360,lh2=lw*logo.height/logo.width;c.drawImage(logo,(W-lw)/2,60,lw,lh2)}
+  c.textAlign="center";c.fillStyle="#9fb2a8";c.font='600 34px Barlow';c.fillText(`${S.name||"Joueur"} · ${new Date(b.at).toLocaleDateString("fr-FR",{day:"numeric",month:"long"})}`,W/2,300);
+  // carte du ticket
+  const x0=70,y0=350,w0=W-140,h0=H-y0-200;c.fillStyle="#132019";c.strokeStyle=ST[1];c.lineWidth=4;c.beginPath();c.roundRect(x0,y0,w0,h0,36);c.fill();c.stroke();
+  c.textAlign="left";c.fillStyle="#f2f6f3";c.font='800 58px "Barlow Condensed"';c.fillText(b.legs.length>1?`COMBINÉ · ${b.legs.length} SÉLECTIONS`:"PARI SIMPLE",x0+44,y0+90);
+  c.fillStyle=ST[1];c.font='800 46px "Barlow Condensed"';const sw=c.measureText(ST[0]).width+48;c.beginPath();c.roundRect(x0+w0-44-sw,y0+42,sw,64,32);c.fill();c.fillStyle="#04130b";c.textAlign="center";c.fillText(ST[0],x0+w0-44-sw/2,y0+90);
+  let y=y0+150;c.textAlign="left";
+  for(const L of legs){c.fillStyle="#ffffff10";c.fillRect(x0+40,y-10,w0-80,2);
+    const mk=L.r==="w"?["✓","#35d07f"]:L.r==="l"?["✗","#ff5a5f"]:L.r==="v"?["↺","#8ea198"]:["•","#5fa8ff"];c.fillStyle=mk[1];c.font='800 52px Barlow';c.fillText(mk[0],x0+44,y+60);
+    c.fillStyle="#f2f6f3";c.font='700 40px Barlow';const t1=wrapTxt(c,L.l,w0-300)[0];c.fillText(t1,x0+110,y+50);
+    c.fillStyle="#9fb2a8";c.font='500 30px Barlow';c.fillText(wrapTxt(c,L.ml||L.mt||"",w0-300)[0],x0+110,y+96);
+    c.textAlign="right";c.fillStyle="#ffd23f";c.font='800 54px "Barlow Condensed"';c.fillText(fr(L.o),x0+w0-44,y+66);c.textAlign="left";y+=lh}
+  if(b.legs.length>8){c.fillStyle="#9fb2a8";c.font='600 32px Barlow';c.fillText(`+ ${b.legs.length-8} autres sélections`,x0+110,y+20);y+=60}
+  // pied : mise, cote, gain
+  const fy=y0+h0-150;c.fillStyle="#00000040";c.beginPath();c.roundRect(x0+30,fy,w0-60,120,24);c.fill();
+  const col=[["MISE",tok(b.stake),"#f2f6f3"],["COTE",fr(b.odds),"#ffd23f"],[st==="won"?"GAIN":st==="cashed"?"ENCAISSÉ":st==="lost"?"GAIN":"GAIN POSSIBLE",st==="lost"?"0":tok(st==="won"||st==="cashed"?b.pay:b.stake*b.odds),st==="lost"?"#ff5a5f":"#35d07f"]];
+  col.forEach(([k,v,cl],i)=>{const cx=x0+30+(w0-60)*(i+.5)/3;c.textAlign="center";c.fillStyle="#9fb2a8";c.font='700 26px Barlow';c.fillText(k,cx,fy+42);c.fillStyle=cl;c.font='800 58px "Barlow Condensed"';c.fillText(v,cx,fy+100)});
+  c.textAlign="center";c.fillStyle="#9fb2a8";c.font='600 30px Barlow';c.fillText("Paris gratuits entre potes · jetons fictifs",W/2,H-110);
+  c.fillStyle="#35d07f";c.font='700 34px Barlow';c.fillText(location.host+location.pathname.replace(/index\.html$/,""),W/2,H-62);
+  return new Promise(ok=>cv.toBlob(ok,"image/png"))}
+async function shareTicket(id){const b=S.bets.find(x=>x.id===id);if(!b)return;toast("Préparation de l’image…");
+  try{const blob=await ticketImage(b),file=new File([blob],"ticket-tribune.png",{type:"image/png"});
+    const txt=b.st==="won"?`Ticket gagnant sur Tribune : +${tok(b.pay)} jetons à ${fr(b.odds)} 🔥`:b.st==="lost"?"Raté de peu sur Tribune… 😅":`Mon ticket sur Tribune : cote ${fr(b.odds)}, qui me suit ?`;
+    if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],text:txt})}catch(e){}return}
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="ticket-tribune.png";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4e3);toast("Image du ticket enregistrée.","win")}
+  catch(e){toast("Impossible de créer l’image.","bad")}}
+
 /* ---------- guide : présentation en 4 écrans, premier pari accompagné, missions « Premiers pas », aide ---------- */
 // 1) présentation (glisser ou « Suivant »)
 const INTRO_N=4;
-function openIntro(){U.open="intro";U.ii=0;U.ix={o:1,s:20};layer(viewIntro())}
+function openIntro(){if(U.open&&U.open!=="intro"&&U.open!=="help"){setTimeout(()=>{if(S.name&&!S.introSeen)openIntro()},5000);return}U.open="intro";U.ii=0;U.ix={o:1,s:20};layer(viewIntro())}
 function viewIntro(){const i=U.ii,X=U.ix,O=[["PSG",1.65],["Nul",3.8],["Lens",5.2]],o=O[X.o];
   const S1=`<div class="iart">🏟️</div><h2>Parie sur les vrais matchs</h2><p>Foot, rugby, tennis et NBA : les vrais matchs, avec les scores <b>en direct</b>. Tu paries sur qui gagne, mais aussi sur les buteurs, les cartons, les corners, les essais, les aces…</p>
     <div class="ichips"><span>⚽ Foot</span><span>🏉 Rugby</span><span>🎾 Tennis</span><span>🏀 NBA</span></div>
@@ -1622,7 +1673,7 @@ function viewIntro(){const i=U.ii,X=U.ix,O=[["PSG",1.65],["Nul",3.8],["Lens",5.2
   const body=[S1,S2,S3,S4][i];
   return`<div class="intro" id="intro"><div class="ihead"><span class="idots">${Array.from({length:INTRO_N},(_,k)=>`<i class="${k===i?"on":""}"></i>`).join("")}</span><button class="link" data-act="iskip">Passer</button></div>
     <div class="ibody">${body}</div>
-    <div class="ifoot">${i>0?`<button class="btn ghost" data-act="iprev">‹</button>`:""}${i<INTRO_N-1?`<button class="btn gold wide" data-act="inext">Suivant</button>`:`<button class="btn gold wide" data-act="istart">${ic("ticket")} Faire mon premier pari</button>`}</div></div>`}
+    <div class="ifoot">${i>0?`<button class="btn ghost" data-act="iprev">‹</button>`:""}${i<INTRO_N-1?`<button class="btn gold wide" data-act="inext">Suivant</button>`:`<button class="btn gold wide" data-act="istart">${ic("ticket")} ${S.bets.length?"Guide pas à pas":"Faire mon premier pari"}</button>`}</div>${i===INTRO_N-1&&S.bets.length?`<p class="note" style="margin:10px 0 0"><button class="link" data-act="iskip">C’est bon, j’ai compris</button></p>`:""}</div>`}
 function introGo(d){U.ii=Math.max(0,Math.min(INTRO_N-1,U.ii+d));layer(viewIntro());const s=$(".sheet");if(s)s.scrollTop=0}
 let ixT=null;
 document.addEventListener("touchstart",e=>{if(U.open==="intro"&&e.target.closest&&e.target.closest("#intro"))ixT={x:e.touches[0].clientX,y:e.touches[0].clientY}},{passive:true});
@@ -1747,7 +1798,7 @@ function openLegal(){U.open="legal";layer(`<div class="grab"><h3>Règles et conf
 function openTos(){if(U.open&&U.open!=="tos"){setTimeout(()=>{if(S.name&&S.tosV!==TOS_V)openTos()},5000);return}U.open="tos";layer(`<div class="tosh"><h3>Avant de continuer</h3><p class="note" style="text-align:left">Tribune s’ouvre à plus de monde : voici les règles du jeu et ce qu’on fait (et ne fait pas) de tes données. Prends une minute pour les lire.</p></div>`+legalHTML()+
   `<label class="agechk"><input type="checkbox" id="tos-ok"><span>J’ai <b>18 ans ou plus</b> et j’accepte les règles du jeu et la politique de confidentialité.</span></label>
   <button class="btn gold wide" data-act="tosok">Continuer</button><p class="note"><button class="link" data-act="tosno">Je n’ai pas 18 ans</button></p>`)}
-function tosOk(){if(!$("#tos-ok")||!$("#tos-ok").checked){toast("Coche la case pour continuer.","bad");return}S.tosV=TOS_V;save();closeLayer();syncSoon()}
+function tosOk(){if(!$("#tos-ok")||!$("#tos-ok").checked){toast("Coche la case pour continuer.","bad");return}S.tosV=TOS_V;save();closeLayer();syncSoon();if(!S.introSeen)setTimeout(openIntro,400)}
 function tosNo(){U.open="tos";layer(`<div class="tosh"><h3>Désolé</h3></div><div class="empty">${ic("info")}<b>Tribune est réservé aux 18 ans et plus</b>Si tu t’es trompé, reviens en arrière.<br><button class="btn ghost" style="margin-top:12px" data-act="tosback">Revenir</button><br><button class="link" data-act="delacc" style="margin-top:10px;color:var(--loss)">Supprimer mon compte</button></div>`)}
 // signaler / bloquer
 const blocked=id=>(S.blocked||[]).some(x=>String(x.id)===String(id));
@@ -2532,13 +2583,15 @@ async function joinFromLink(){const c=new URLSearchParams(location.search).get("
 function defisToday(){return defisFor(today())}
 function defisState(){if(!S.dch||S.dch.d!==today())S.dch={d:today(),got:[],seen:[],all:false};
   const t=today(),P=S.bets.filter(b=>ymd(b.at)===t),W=S.bets.filter(b=>b.st==="won"&&b.done&&ymd(b.done)===t);
-  return defisToday().map(d=>({...d,n:Math.min(d.g,d.f(P,W)),got:S.dch.got.includes(d.id)}))}
+  const mul=WE().on&&WE().k==="defis"?2:1;
+  return defisToday().map(d=>({...d,r:d.r*mul,n:Math.min(d.g,d.f(P,W)),got:S.dch.got.includes(d.id)}))}
+const defiBonus=()=>DEFI_BONUS*(WE().on&&WE().k==="defis"?2:1);
 function defisCard(){const D=defisState(),done=D.filter(d=>d.got).length;
   if(S.dch.all)return`<div class="dcard done">${ic("trophy")}<span>Défis du jour terminés · reviens demain pour 3 nouveaux défis</span></div>`;
-  return`<div class="dcard"><div class="dh"><b>${ic("target")} Défis du jour</b><span>${done}/3 · tous : +${DEFI_BONUS}</span></div>
+  return`<div class="dcard"><div class="dh"><b>${ic("target")} Défis du jour</b><span>${WE().on&&WE().k==="defis"?"🎯 ×2 · ":""}${done}/3 · tous : +${defiBonus()}</span></div>
   ${D.map(d=>`<div class="drow${d.got?" ok":""}"><span class="dic">${ic(d.ic,d.cls||"")}</span><div><b>${esc(d.t)}</b><div class="dbar"><i style="width:${d.n/d.g*100}%"></i></div></div>
     ${d.got?`<span class="dgot">✓</span>`:d.n>=d.g?`<button class="btn gold" data-act="defi" data-id="${d.id}">+${d.r}</button>`:`<span class="drw">${d.n}/${d.g} · +${d.r}</span>`}</div>`).join("")}
-  ${done===3?`<button class="btn gold wide" data-act="defiall" style="margin-top:8px">${ic("gift")} Bonus des 3 défis : +${DEFI_BONUS}</button>`:""}</div>`}
+  ${done===3?`<button class="btn gold wide" data-act="defiall" style="margin-top:8px">${ic("gift")} Bonus des 3 défis : +${defiBonus()}</button>`:""}</div>`}
 async function claimDefi(id){const D=defisState(),d=D.find(x=>x.id===id);if(!d||d.got||d.n<d.g)return;
   let j;try{j=await api("defi_claim",{id})}catch(e){toast("Pas de connexion : réessaie dans un instant.","bad");return}
   if(j.error==="not_done"){toast("Le serveur n’a pas encore validé ce défi (paris vérifiés toutes les 10 min). Réessaie un peu plus tard.");return}
@@ -2546,7 +2599,7 @@ async function claimDefi(id){const D=defisState(),d=D.find(x=>x.id===id);if(!d||
 async function claimAll(){const D=defisState();if(S.dch.all||D.some(d=>!d.got))return;let j;try{j=await api("defi_claim",{all:true})}catch(e){toast("Pas de connexion : réessaie dans un instant.","bad");return}
   if(j.error==="not_done"){toast("Le serveur n’a pas encore validé tous tes défis. Réessaie un peu plus tard.");return}
   S.dch.all=true;if(!j.ok){save();render();return}S.bal+=j.v;S.peak=Math.max(S.peak,S.bal);save();render();bump();confetti();
-  toast(`${ic("gift")} Les 3 défis du jour : +${DEFI_BONUS} jetons !`,"win")}
+  toast(`${ic("gift")} Les 3 défis du jour : +${tok(j.v)} jetons !`,"win")}
 function checkDefis(){const D=defisState();for(const d of D)if(d.n>=d.g&&!d.got&&!S.dch.seen.includes(d.id)){S.dch.seen.push(d.id);saveLocal();
   toast(`${ic("target")} Défi réussi : « ${esc(d.t)} ». Récupère +${d.r} dans l’onglet Matchs.`,"win")}}
 
@@ -2585,6 +2638,7 @@ const extraAvail=()=>today()===EXTRA_DAY&&S.bonus===today()&&S.extraSpin!==today
 const wheelAvail=()=>S.bonus!==today()||extraAvail();
 function viewWheel(){const done=!wheelAvail();
   return`<div class="grab"><h3>Roue de la chance</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
+  ${WE().on&&WE().k==="roue"?`<div class="webox mini"><span class="wee">🎡</span><div><b>Week-end de la roue</b><p>Ton gain sera doublé (×2) !</p></div></div>`:""}
   <div class="wheelbox"><div class="pointer"></div>${wheelSvg()}</div>
   <div id="wres" class="wres">${done&&S.wheel&&S.wheel.d===today()?`Aujourd’hui : <b>+${tok(S.wheel.v)} jetons</b>`:extraAvail()?"🎁 Tour bonus offert à tout le monde aujourd’hui !":"Un tour gratuit par jour"}</div>
   <button class="btn gold wide" data-act="spin" id="spin" ${done||U.wheelOk===false?"disabled":""}>${done?"Prochain tour dans "+nextReset():U.wheelOk===false?"Un instant…":extraAvail()?"Lancer le tour bonus":"Lancer la roue"}</button>
@@ -2704,7 +2758,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.68";
+const VERSION="1.69";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -2722,7 +2776,7 @@ loadFeeds();
 setTimeout(()=>{if(S.dk&&Object.values(S.dk).some(x=>!x.settled))checkDarkAll()},5000);
 goFrom(location.href);
 setTimeout(loadEvents,1200);
-setTimeout(()=>{pushRefresh();if(S.name&&S.tosV!==TOS_V)openTos();if(S.name){claimPrizes();claimBattles();ensureRcode();loadGuide(true)}if(S.name)loadBoards().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){loadProno();loadLm(U.lg.code||U.lg.data.leagues[0].code);const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},3000);
+setTimeout(()=>{pushRefresh();if(S.name&&S.tosV!==TOS_V)openTos();else if(S.name&&!S.introSeen)openIntro();if(S.name){claimPrizes();claimBattles();claimGifts();ensureRcode();loadGuide(true)}if(S.name)loadBoards().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){loadProno();loadLm(U.lg.code||U.lg.data.leagues[0].code);const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},3000);
 setInterval(()=>{if(!document.hidden&&S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},12e4);
 setInterval(()=>{if(document.hidden)return;
   const anyLive=[...REG.values()].some(m=>m.src==="espn"&&m.state==="in");const stale=Object.values(FEED).some(f=>f.at&&Date.now()-f.at>(anyLive?6e4:5*6e4));
