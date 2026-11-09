@@ -471,6 +471,16 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 .lmban{border-color:#2a6a45!important}
 .champ.season{background:linear-gradient(135deg,#4a2a05,var(--card) 70%);border-color:#a8670f}
 .sncard{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin:0 0 12px}.sncard .i{width:26px;height:26px;color:#ffb020;flex:none}.sncard b{display:block;font:800 18px "Barlow Condensed"}.sncard small{color:var(--mute);font-size:12.5px}
+.btcard{background:linear-gradient(150deg,#3a1018,var(--card) 70%);border:1px solid #6e2533;border-radius:14px;padding:10px 12px;margin-bottom:12px}
+.bthd{display:flex;align-items:center;gap:8px;width:100%;background:none;border:0;padding:0;color:inherit;font:inherit;text-align:left}.bthd small{flex:1;color:var(--mute);font-size:12.5px}.bthd .arr{color:var(--mute);font-size:22px}
+.btdiv{font:800 19px "Barlow Condensed";text-transform:uppercase}.btnote{color:var(--mute);font-size:12.5px;margin:8px 0 2px}
+.btlive{background:#00000030;border-radius:12px;padding:9px 10px;margin-top:9px}.btk{font-size:12px;color:#ffb3bd;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.btvs{display:flex;align-items:center;gap:8px;margin:6px 0}.btvs .side{flex:1;min-width:0;text-align:center}.btvs small{display:block;color:var(--mute);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btsc{display:block;font:800 28px "Barlow Condensed";line-height:1.1}.btx{font:800 15px "Barlow Condensed";color:#ff5a5f}
+.btbar{height:8px;border-radius:8px;background:var(--loss);overflow:hidden}.btbar i{display:block;height:100%;background:var(--win);border-right:2px solid #0b1310}.btsub{display:block;color:var(--mute);font-size:12px;margin-top:6px}
+.btline{display:flex;align-items:center;gap:8px;width:100%;background:#00000030;border:0;border-radius:10px;padding:8px 10px;margin-top:8px;color:inherit;font:inherit;font-size:13.5px;text-align:left}.btline>span:not(.arr){flex:1;min-width:0}.btline .arr{color:var(--mute);font-size:20px}
+.btans{display:flex;gap:6px;flex:none!important}.btans .btn{padding:7px 11px;font-size:13.5px}.btbtns{display:flex;gap:8px;margin-top:10px}.btbtns .btn{flex:1;padding:9px 8px;font-size:14px}
+.gdrow .rk{font:800 16px "Barlow Condensed";color:var(--mute);min-width:18px;text-align:center}
 .recapbtn{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:linear-gradient(135deg,#0d2d4a,var(--card) 75%);border:1px solid #275a85;border-radius:14px;padding:11px 14px;margin-bottom:12px;color:inherit;font:inherit}
 .recapbtn>.i{width:28px;height:28px;color:#5fa8ff;flex:none}.recapbtn>span:nth-child(2){flex:1;min-width:0}.recapbtn b{display:block;font:800 18px "Barlow Condensed";text-transform:uppercase}.recapbtn small{display:block;color:var(--mute);font-size:12.5px}.recapbtn .arr{color:var(--mute);font-size:22px}.recapbtn .pill{background:#5fa8ff;color:#04121f}
 .rchero{text-align:center;padding:4px 0 10px}.rchero small{color:var(--mute);text-transform:uppercase;letter-spacing:1px;font-size:12px;font-weight:700}.rchero b{display:block;font:800 24px/1.1 "Barlow Condensed";text-transform:uppercase;margin:3px 0}.rchero span{color:var(--mute);font-size:13px}
@@ -699,7 +709,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.65"></script>
+<script src="engine.js?v=1.66"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -1329,9 +1339,13 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"gmem":openMembers();break;
     case"gset":openGuildSet();break;
     case"gsave":saveGuild();break;
-    case"gpick":{const f=U.gf;if(d.f==="i")f.i=d.v;else if(d.f==="c")f.c=d.v;else if(d.f==="a")f.a=d.v;keepGuildForm();layer(viewGuildSet());break}
+    case"gpick":{const f=U.gf;if(d.f==="i")f.i=d.v;else if(d.f==="c")f.c=d.v;else if(d.f==="a")f.a=d.v;else if(d.f==="ch")f.ch=d.v;keepGuildForm();layer(viewGuildSet());break}
     case"gdir":openDir();break;
-    case"gdirjoin":dirJoin(d.code);break;
+    case"gwr":openGRank(d.v==="chal");break;
+    case"gchal":btChallenge(d.id,d.n);break;
+    case"gbans":btAnswer(d.id,d.v);break;
+    case"gbt":openBtDetail(d.id);break;
+    case"gdirjoin":dirJoin(d.id);break;
     case"gkick":guildAct("guild_kick",{id:d.id},"Exclure ce membre de la guilde ?");break;
     case"grole":guildAct("guild_role",{id:d.id,role:d.r},d.r==="chef"?"Lui confier la guilde ? Tu deviendras adjoint.":null);break;
     case"gans":guildAct("guild_answer",{id:d.id,accept:d.v==="1"},null);break;
@@ -1464,7 +1478,7 @@ const AVC=["#35d07f","#ffd23f","#ff7a45","#5fa8ff","#d7f25a","#c084fc","#ff5a5f"
 const avc=name=>AVC[hash(name)%AVC.length];
 let lgTimer=0;
 async function loadBoards(){if(U.lg.loading||U.dark)return;U.lg.loading=true;if(U.lg.code)loadLm(U.lg.code);
-  try{if(!(await ensureSession()))throw new Error("offline");await syncNow();const j=await api("boards",{code:U.lg.code});U.lg.data=j;U.lg.err=null;if(j.code!==U.lg.code)U.lg.code=j.code}
+  try{if(!(await ensureSession()))throw new Error("offline");await syncNow();const j=await api("boards",{code:U.lg.code});U.lg.data=j;U.lg.err=null;if(j.code!==U.lg.code)U.lg.code=j.code;if(j.code)loadBattles(j.code)}
   catch(e){U.lg.err=e.code||"offline"}
   finally{U.lg.loading=false;if(U.tab==="l"&&!U.open)render()}
   clearTimeout(lgTimer);lgTimer=setTimeout(()=>{if(U.tab==="l"&&!document.hidden)loadBoards()},6e4)}
@@ -1493,6 +1507,7 @@ function viewLeagues(){const L=U.lg,d=L.data;
   const M=L.mode,SN=d.season;
   if(cur&&d.lastSeason&&(M==="season"||new Date().getDate()<=7))h+=`<div class="champ season">${ic("crown")}<div><small>Champion${d.lastSeason.winners.length>1?"s":""} du mois de ${esc(d.lastSeason.label)}</small><b>${d.lastSeason.winners.map(w=>esc(w.name)+` <span class="pos">+${tok(w.gain)}</span>`).join(" · ")}</b></div></div>`;
   if(cur)h+=viewLm(cur.code);
+  if(cur)h+=viewBattle(cur);
   if(cur)h+=`<button class="recapbtn" data-act="recap">${ic("chart")}<span><b>Le bilan de la semaine</b><small>Podium, plus grosse cote, plus gros flop, roi du prono…</small></span>${(S.recapSeen||{})[cur.code]!==d.week?`<span class="pill">Nouveau</span>`:""}<span class="arr">›</span></button>`;
   h+=`<div class="seg tabs3"><button data-act="lgmode" data-v="season" aria-pressed="${M==="season"}">Mois</button><button data-act="lgmode" data-v="week" aria-pressed="${M==="week"}">Semaine</button><button data-act="lgmode" data-v="total" aria-pressed="${M==="total"}">Jetons</button></div>`;
   if(M==="season"&&SN){const left=Math.max(0,Math.ceil((SN.end-Date.now())/864e5));
@@ -1516,6 +1531,64 @@ function viewLeagues(){const L=U.lg,d=L.data;
   return h+`<p class="note">${note}</p>`+lgFooter(cur)}
 function lgFooter(cur){return`<button class="btn gold wide" data-act="gdir" style="margin-top:14px">${ic("group")} Trouver une guilde</button><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><button class="btn" data-act="lgnew">${ic("plus")} Créer</button><button class="btn ghost" data-act="lgjoin">Rejoindre avec un code</button></div>
   ${cur?`<p class="note"><button class="link" data-act="lgleave" style="color:var(--loss)">Quitter la guilde</button></p>`:""}`+foot()}
+
+/* ---------- combats de guildes : défis et championnat (moyenne des gains en paris de tous les membres) ---------- */
+const sgnT=x=>(x>0?"+":"")+tok(x);
+const BRES={w:["Victoire","won"],d:["Match nul","void"],l:["Défaite","lost"]};
+async function loadBattles(code){if(!code||!S.tok)return;try{const j=await api("battle_list",{code});U.bt=U.bt||{};U.bt[code]=j;
+  if(U.tab==="l"&&!U.open&&U.lg.code===code)render();if(U.open==="gbt")layer(viewBtDetail());
+  if(j.battles.some(b=>b.status==="done"))claimBattles()}catch(e){}}
+let bcAt=0;
+async function claimBattles(){if(!S.tok||Date.now()-bcAt<6e4)return;bcAt=Date.now();try{const j=await api("battle_claim",{});if(!j.rewards||!j.rewards.length)return;
+  const t=j.rewards.reduce((a,x)=>a+x.amount,0);S.bal+=t;S.peak=Math.max(S.peak,S.bal);save();render();bump();if(j.rewards.some(x=>x.result==="w"))confetti();
+  toast(`⚔️ Combats de guildes : +${tok(t)} jetons !`,"win")}catch(e){}}
+function btLeft(b){const ms=b.end-Date.now();if(ms<=0)return"Résultat mardi matin";const d=Math.floor(ms/864e5);return d>=1?`Fin dans ${d} j`:`Fin ce soir à minuit`}
+function btLive(b){const lo=Math.min(b.my,b.their,0),a=b.my-lo+1,c=b.their-lo+1,pct=Math.round(100*a/(a+c)),bet=(b.team||[]).filter(x=>x.gain!=null).length;
+  return`<div class="btlive" data-act="gbt" data-id="${esc(b.id)}"><div class="btk">${b.kind==="league"?"🏟️ Championnat":"⚔️ Défi"} · ${btLeft(b)}</div>
+  <div class="btvs"><div class="side"><b class="btsc ${b.my>b.their?"pos":b.my<b.their?"neg":""}">${sgnT(b.my)}</b><small>Nous</small></div><span class="btx">VS</span>
+  <div class="side"><b class="btsc">${sgnT(b.their)}</b><small>${emb(b.vs)}${esc(b.vs.name)}</small></div></div>
+  <div class="btbar"><i style="width:${pct}%"></i></div><small class="btsub">${bet}/${b.myN} membre${b.myN>1?"s ont":" a"} parié cette semaine · détail ›</small></div>`}
+function viewBattle(cur){const j=(U.bt||{})[cur.code];if(!j)return"";const g=j.guild,boss=j.role!=="membre",B=j.battles;
+  const live=B.filter(b=>b.status==="live"),ready=B.filter(b=>b.status==="ready"),pin=B.filter(b=>b.status==="pending"&&b.incoming),pout=B.filter(b=>b.status==="pending"&&!b.incoming),done=B.filter(b=>b.status==="done");
+  let h=`<div class="btcard"><button class="bthd" data-act="gwr"><span class="btdiv">${g.div.i} ${g.div.n}</span><small>Cote ${g.elo} · ${g.w}V ${g.d}N ${g.l}D · ${g.rank}<sup>e</sup> mondial</small><span class="arr">›</span></button>`;
+  if(!g.ok)h+=`<p class="btnote">Il faut au moins ${j.min} membres pour combattre d’autres guildes. Invite tes potes !</p>`;
+  h+=live.map(btLive).join("");
+  h+=ready.map(b=>`<div class="btline">⚔️ <span>Défi accepté contre ${emb(b.vs)}<b>${esc(b.vs.name)}</b> · commence lundi</span></div>`).join("");
+  h+=pin.map(b=>`<div class="btline">⚔️ <span>${emb(b.vs)}<b>${esc(b.vs.name)}</b> vous défie pour la semaine prochaine${boss?"":" · le chef ou un adjoint répond"}</span>
+    ${boss?`<span class="btans"><button class="btn gold" data-act="gbans" data-id="${esc(b.id)}" data-v="1">Accepter</button><button class="x" data-act="gbans" data-id="${esc(b.id)}" data-v="0" aria-label="Refuser">${ic("x")}</button></span>`:""}</div>`).join("");
+  h+=pout.map(b=>`<div class="btline">⏳ <span>Défi envoyé à ${emb(b.vs)}<b>${esc(b.vs.name)}</b> · en attente</span>${boss?`<button class="link" data-act="gbans" data-id="${esc(b.id)}" data-v="c">Retirer</button>`:""}</div>`).join("");
+  if(!live.length&&g.ok)h+=`<p class="btnote">${g.champ?"Championnat : chaque lundi, un adversaire de votre niveau est tiré automatiquement.":"Championnat en pause (réglage du chef)."}</p>`;
+  const L=done[0];if(L)h+=`<button class="btline" data-act="gbt" data-id="">🏁 <span>Dernier combat : <span class="tag ${BRES[L.res][1]}">${BRES[L.res][0]}</span> contre <b>${esc(L.vs.name)}</b> (${sgnT(L.my)} à ${sgnT(L.their)})</span><span class="arr">›</span></button>`;
+  h+=`<div class="btbtns">${boss&&g.ok?`<button class="btn" data-act="gwr" data-v="chal">⚔️ Défier une guilde</button>`:""}<button class="btn ghost" data-act="gwr">🌍 Classement des guildes</button></div></div>`;
+  return h}
+function openBtDetail(id){U.btSel=id;U.open="gbt";layer(viewBtDetail())}
+function viewBtDetail(){const j=(U.bt||{})[U.lg.code];const head=`<div class="grab"><h3>Combats de guildes</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
+  if(!j)return head+`<div class="skel"></div>`;
+  const b=j.battles.find(x=>String(x.id)===String(U.btSel)&&x.status==="live");let h=head;
+  if(b){h+=btLive(b).replace('data-act="gbt"','')+`<div class="grp">Notre équipe (${b.myN})</div>`+(b.team||[]).map(m=>`<div class="gmrow">${avatar(m.id,m.name,m.av,"av")}<div><b>${esc(m.name)}${String(m.id)===String(j.me)?" (toi)":""}</b><small>${m.gain==null?"Pas encore de pari terminé cette semaine":"Gains en paris cette semaine"}</small></div><b class="${m.gain==null?"":m.gain>=0?"pos":"neg"}">${m.gain==null?"0":sgnT(m.gain)}</b></div>`).join("")}
+  const done=j.battles.filter(x=>x.status==="done");
+  if(done.length)h+=`<div class="grp">Derniers combats</div>`+done.map(x=>`<div class="gmrow">${emb(x.vs,"lg")}<div><b>${esc(x.vs.name)}</b><small>${x.kind==="league"?"Championnat":"Défi"} · semaine du ${new Date(x.week+"T12:00").toLocaleDateString("fr-FR",{day:"numeric",month:"short"})} · ${sgnT(x.my)} à ${sgnT(x.their)}</small></div><span class="tag ${BRES[x.res][1]}">${BRES[x.res][0]}</span><small class="${x.delta>=0?"pos":"neg"}" style="margin-left:6px">${x.delta>0?"+":""}${x.delta}</small></div>`).join("");
+  const R=j.reward;
+  h+=`<div class="grp">Les règles</div><p class="note" style="text-align:left">Le score d’une guilde, c’est la <b>moyenne des gains en paris</b> de la semaine (du lundi au dimanche) de <b>tous</b> ses membres, même ceux qui ne parient pas (ils comptent 0). Les membres sont figés au début du combat. La roue, les défis et les bonus ne comptent pas.<br><br>
+  🏟️ <b>Championnat</b> : chaque lundi, un adversaire de cote proche est tiré automatiquement.<br>⚔️ <b>Défi</b> : le chef ou un adjoint défie une guilde pour la semaine suivante (un défi par semaine).<br><br>
+  🎁 Récompense pour chaque membre qui a parié pendant la semaine : victoire <b>+${R.w}</b>, nul <b>+${R.d}</b>, défaite <b>+${R.l}</b> jetons. Résultat le mardi matin.<br><br>
+  Divisions selon la cote : 🥉 Bronze, 🥈 Argent (1050), 🥇 Or (1100), 💠 Platine (1150), 💎 Diamant (1200).</p>`;
+  return h}
+async function openGRank(chal){U.open="gwr";const head=`<div class="grab"><h3>${chal?"Défier une guilde":"Classement des guildes"}</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
+  layer(head+`<div class="skel"></div><div class="skel"></div>`);
+  try{const j=await api("guild_ranking",{});if(U.open!=="gwr")return;const me=(U.bt||{})[U.lg.code],boss=me&&me.role!=="membre"&&me.guild.ok;
+    layer(head+(chal?`<p class="note" style="text-align:left">Le défi dure une semaine et commence lundi prochain. La guilde défiée doit accepter.</p>`:"")
+      +(j.guilds.length?j.guilds.map((g,i)=>`<div class="gdrow"><span class="rk">${i+1}</span>${emb(g,"lg")}<div><b>${esc(g.name)}</b><small>${g.div.i} ${g.div.n} · cote ${g.elo} · ${g.w}V ${g.d}N ${g.l}D · ${g.n} membres</small></div>
+        ${g.mine?`<span class="tag won">Toi</span>`:boss?`<button class="btn ${chal?"gold":""}" data-act="gchal" data-id="${esc(g.gid)}" data-n="${esc(g.name)}">Défier</button>`:""}</div>`).join("")
+      :`<div class="empty">${ic("trophy")}<b>Pas encore de guilde classée</b>Il faut au moins 3 membres pour entrer au classement.</div>`))}
+  catch(e){if(U.open==="gwr")layer(head+`<div class="empty">${ic("info")}<b>Pas de connexion</b>Réessaie dans un instant.</div>`)}}
+const BERR={already:"Défi déjà envoyé à cette guilde.",busy:"Une des deux guildes a déjà un défi la semaine prochaine.",too_small:"Il faut au moins 3 membres dans chaque guilde.",too_many:"3 défis en attente au maximum.",not_allowed:"Seuls le chef et les adjoints peuvent faire ça."};
+async function btChallenge(gid,name){if(!confirm(`Défier « ${name} » pour la semaine prochaine ?`))return;
+  try{const j=await api("battle_challenge",{code:U.lg.code,gid});if(j.error)throw j;closeLayer();toast("Défi envoyé ! Leur chef doit accepter.","win");loadBattles(U.lg.code)}
+  catch(e){toast(BERR[e.code||e.error]||"Impossible d’envoyer le défi.","bad")}}
+async function btAnswer(id,v){if(v==="c"&&!confirm("Retirer ce défi ?"))return;
+  try{const j=await api("battle_answer",{id,accept:v==="1"});if(j.error)throw j;toast(v==="1"?"Défi accepté : rendez-vous lundi !":v==="0"?"Défi refusé.":"Défi retiré.","win");loadBattles(U.lg.code)}
+  catch(e){toast(BERR[e.code||e.error]||"Action impossible.","bad")}}
 
 /* ---------- fil d'activité de la guilde ---------- */
 const EMOS=["🔥","😂","👏","😱"];
@@ -1643,7 +1716,7 @@ function viewMembers(j){const boss=j.role!=="membre",RL={chef:"👑 Chef",adjoin
   return h}
 async function guildAct(action,args,ask){if(ask&&!confirm(ask))return;try{const j=await api(action,{code:U.lg.code,...args});if(j&&j.error)throw j;toast("C’est fait.","win");await loadBoards();openMembers()}
   catch(e){toast(e&&e.error==="full"?"La guilde est pleine.":e&&e.error==="too_many"?"Ce joueur est déjà dans trop de guildes.":"Action impossible.","bad")}}
-function openGuildSet(){const cur=U.lg.data.leagues.find(l=>l.code===U.lg.code);if(!cur)return;const e=cur.emblem||{};U.gf={i:e.i||"🛡️",c:e.c||"#35d07f",a:cur.access||"private",m:cur.motto||"",n:cur.name,chef:!!cur.mine};U.open="gset";layer(viewGuildSet())}
+function openGuildSet(){const cur=U.lg.data.leagues.find(l=>l.code===U.lg.code);if(!cur)return;const e=cur.emblem||{};U.gf={i:e.i||"🛡️",c:e.c||"#35d07f",a:cur.access||"private",m:cur.motto||"",n:cur.name,chef:!!cur.mine,ch:cur.champ===false?"0":"1"};U.open="gset";layer(viewGuildSet())}
 function keepGuildForm(){const m=$("#g-motto"),n=$("#g-name");if(m)U.gf.m=m.value;if(n)U.gf.n=n.value}
 function viewGuildSet(){const f=U.gf;
   return`<div class="grab"><h3>Gérer la guilde</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
@@ -1652,18 +1725,19 @@ function viewGuildSet(){const f=U.gf;
   <div class="grp">Couleur</div><div class="gpick col">${GCOLORS.map(x=>`<button data-act="gpick" data-f="c" data-v="${x}" aria-pressed="${f.c===x}" style="background:${x}" aria-label="Couleur"></button>`).join("")}</div>
   <div class="form">${f.chef?`<label>Nom<input id="g-name" maxlength="24" value="${esc(f.n)}"></label>`:""}<label>Devise (facultatif)<input id="g-motto" maxlength="60" value="${esc(f.m)}" placeholder="ex. On ne lâche rien"></label></div>
   <div class="grp">Qui peut rejoindre ?</div>${Object.entries(ACCESS).map(([k,[t,d]])=>`<button class="gacc" data-act="gpick" data-f="a" data-v="${k}" aria-pressed="${f.a===k}"><b>${t}</b><small>${d}</small></button>`).join("")}
+  ${f.chef?`<div class="grp">Championnat des guildes</div><button class="gacc" data-act="gpick" data-f="ch" data-v="1" aria-pressed="${f.ch==="1"}"><b>On participe</b><small>Chaque lundi, un adversaire de votre niveau (il faut au moins 3 membres).</small></button><button class="gacc" data-act="gpick" data-f="ch" data-v="0" aria-pressed="${f.ch==="0"}"><b>Pause</b><small>Pas de championnat ; les défis restent possibles.</small></button>`:""}
   <button class="btn gold wide" data-act="gsave" style="margin-top:12px">Enregistrer</button>`}
-async function saveGuild(){keepGuildForm();const f=U.gf;try{const j=await api("guild_update",{code:U.lg.code,emblem:{i:f.i,c:f.c},access:f.a,motto:f.m,name:f.n});if(j.error)throw j;closeLayer();toast("Guilde mise à jour.","win");loadBoards()}catch(e){toast("Impossible d’enregistrer.","bad")}}
+async function saveGuild(){keepGuildForm();const f=U.gf;try{const j=await api("guild_update",{code:U.lg.code,emblem:{i:f.i,c:f.c},access:f.a,motto:f.m,name:f.n,...(f.chef?{champ:f.ch==="1"}:{})});if(j.error)throw j;closeLayer();toast("Guilde mise à jour.","win");loadBoards()}catch(e){toast("Impossible d’enregistrer.","bad")}}
 async function openDir(q){U.open="gdir";const head=`<div class="grab"><h3>Trouver une guilde</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   <div class="form"><input id="g-q" placeholder="Rechercher une guilde…" value="${esc(q||"")}" autocomplete="off"></div>`;
   layer(head+`<div class="skel"></div><div class="skel"></div>`);
   try{const j=await api("guild_dir",{q:q||""});if(U.open!=="gdir")return;
-    layer(head+(j.guilds.length?j.guilds.map(g=>`<div class="gdrow">${emb(g,"lg")}<div><b>${esc(g.name)}</b>${g.motto?`<em class="gmotto">« ${esc(g.motto)} »</em>`:""}<small>${g.n} membre${g.n>1?"s":""} · ${g.active} actif${g.active>1?"s":""} cette semaine · ${ACCESS[g.access][0]}</small></div>
-      ${g.mine?`<span class="tag won">Membre</span>`:g.asked?`<span class="tag void">Demande envoyée</span>`:`<button class="btn ${g.access==="open"?"gold":""}" data-act="gdirjoin" data-code="${esc(g.code)}">${g.access==="open"?"Rejoindre":"Demander"}</button>`}</div>`).join("")
+    layer(head+(j.guilds.length?j.guilds.map(g=>`<div class="gdrow">${emb(g,"lg")}<div><b>${esc(g.name)}</b>${g.motto?`<em class="gmotto">« ${esc(g.motto)} »</em>`:""}<small>${g.div?g.div.i+" ":""}${g.n} membre${g.n>1?"s":""} · ${g.active} actif${g.active>1?"s":""} cette semaine · ${ACCESS[g.access][0]}</small></div>
+      ${g.mine?`<span class="tag won">Membre</span>`:g.asked?`<span class="tag void">Demande envoyée</span>`:`<button class="btn ${g.access==="open"?"gold":""}" data-act="gdirjoin" data-id="${esc(g.gid)}">${g.access==="open"?"Rejoindre":"Demander"}</button>`}</div>`).join("")
       :`<div class="empty">${ic("group")}<b>Aucune guilde trouvée</b>Crée la tienne et rends-la ouverte dans « Gérer » pour qu’on la trouve ici.</div>`));
     const inp=$("#g-q");if(inp){inp.onchange=()=>openDir(inp.value.trim());if(q)inp.focus()}}
   catch(e){if(U.open==="gdir")layer(head+`<div class="empty">${ic("info")}<b>Pas de connexion</b>Réessaie dans un instant.</div>`)}}
-async function dirJoin(code){try{const j=await api("guild_join",{code});
+async function dirJoin(gid){try{const j=await api("guild_join",{gid});
   if(j.joined){closeLayer();U.lg.code=j.code;U.lg.view="rank";toast(`Bienvenue dans « ${esc(j.name)} » !`,"win");await loadBoards()}
   else{toast("Demande envoyée : le chef ou un adjoint va répondre.","win");openDir($("#g-q")&&$("#g-q").value.trim())}}
   catch(e){toast(e.code==="full"?"Cette guilde est pleine.":e.code==="too_many"?"Tu es déjà dans trop de guildes.":"Impossible de rejoindre cette guilde.","bad")}}
@@ -2376,7 +2450,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.65";
+const VERSION="1.66";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -2394,7 +2468,7 @@ loadFeeds();
 setTimeout(()=>{if(S.dk&&Object.values(S.dk).some(x=>!x.settled))checkDarkAll()},5000);
 goFrom(location.href);
 setTimeout(loadEvents,1200);
-setTimeout(()=>{pushRefresh();if(S.name){claimPrizes();ensureRcode()}if(S.name)loadBoards().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){loadProno();loadLm(U.lg.code||U.lg.data.leagues[0].code);const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},3000);
+setTimeout(()=>{pushRefresh();if(S.name){claimPrizes();claimBattles();ensureRcode()}if(S.name)loadBoards().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){loadProno();loadLm(U.lg.code||U.lg.data.leagues[0].code);const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},3000);
 setInterval(()=>{if(!document.hidden&&S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},12e4);
 setInterval(()=>{if(document.hidden)return;
   const anyLive=[...REG.values()].some(m=>m.src==="espn"&&m.state==="in");const stale=Object.values(FEED).some(f=>f.at&&Date.now()-f.at>(anyLive?6e4:5*6e4));

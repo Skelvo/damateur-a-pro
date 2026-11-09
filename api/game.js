@@ -92,7 +92,7 @@ function newCode() {
 
 async function myLeagues(s, pid) {
   const leagues = await s.query(
-    `select l.code, l.name, l.owner = $1 as mine, l.prizes, l.emblem, l.motto, l.access, m.role, (select count(*)::int from requests rq where rq.code = l.code) as nreq, (select count(*)::int from league_members m2 where m2.code = l.code) as n
+    `select l.code, l.name, l.owner = $1 as mine, l.prizes, l.emblem, l.motto, l.access, l.elo, l.champ, m.role, (select count(*)::int from requests rq where rq.code = l.code) as nreq, (select count(*)::int from league_members m2 where m2.code = l.code) as n
        from leagues l join league_members m on m.code = l.code where m.player = $1 and not l.dark order by m.joined_at`, [pid]);
   return leagues;
 }
@@ -199,6 +199,7 @@ async function morning(s) {
   const once = async (key) => !!(await s.query(`insert into meta (key, value) values ($1, '1') on conflict do nothing returning key`, [key]))[0];
   const leagues = await s.query(`select l.code, l.name from leagues l where not l.dark and (select count(*) from league_members m where m.code = l.code) >= 2`);
   const out = { recap: 0, season: 0 };
+  try { out.battles = await battlesTick(s); } catch (e) { console.error("battles", e); }
   if (t.day === 1 && await once("season:" + t.m)) {
     await ensurePrizes(s, t.m);
     const mine = await s.query(`select p.player, p.rank, p.amount, l.name from month_prizes p join leagues l on l.code = p.code where p.month = $1 and not p.claimed`, [t.m]);
@@ -361,8 +362,10 @@ async function tick(s) {
   let settled = 0;
   try { settled = (await settleOpen(s, { budget: 25e3 })).length; } catch (e) { console.error("settle", e); }
   await s.query(`delete from sent_notes where at < now() - interval '30 days'`);
+  let battles = null;
+  try { battles = await battlesTick(s); } catch (e) { console.error("battles", e); }
   const ppl = await s.query(`select p.id, p.bets from players p where p.bets is not null and exists (select 1 from push_subs x where x.player = p.id)`);
-  const now = Date.now(), out = { ko: 0, end: 0, fetched: 0, settled };
+  const now = Date.now(), out = { ko: 0, end: 0, fetched: 0, settled, battles };
   const open = [];
   for (const p of ppl) for (const b of (p.bets.list || [])) if (b.st === "open" && b.id && Array.isArray(b.legs) && b.legs.length && b.legs.every((L) => L.e && L.p && L.t)) open.push({ pid: p.id, b });
   // 1) coup d'envoi imminent (une fois par joueur et par match)
@@ -459,6 +462,95 @@ async function addMember(s, code, pid, name) {
   await s.query(`delete from requests where code = $1 and player = $2`, [code, pid]);
   if (r[0]) await notify(s, await members(s, code), { title: l.name, body: `${name} a rejoint la guilde 👋`, url: go("rank", code), tag: "join-" + code }, pid);
   return { code, name: l.name };
+}
+
+// ---- Combats de guildes ----
+// Score d'une guilde = moyenne des gains EN PARIS de la semaine (table profits) de TOUS les membres engagés,
+// inactifs compris (0). Les membres sont figés au début du combat. Défis : toujours pour la semaine suivante,
+// pour que personne ne lance un défi en sachant déjà le résultat. Championnat : appariement auto le lundi.
+// Résultat le mardi à 6 h (le lundi laisse le temps aux téléphones d'envoyer les paris du dimanche soir).
+const NEXT_WEEK = `to_char(date_trunc('week', now() at time zone 'Europe/Paris') + interval '7 days', 'YYYY-MM-DD')`;
+const BDIV = [[1200, "Diamant", "💎"], [1150, "Platine", "💠"], [1100, "Or", "🥇"], [1050, "Argent", "🥈"], [-1e9, "Bronze", "🥉"]];
+const division = (elo) => { const d = BDIV.find((x) => elo >= x[0]); return { n: d[1], i: d[2] }; };
+const BREWARD = { w: 200, d: 75, l: 25 }, BK = 32, MIN_BATTLE = 3;
+const sgn = (x) => (x > 0 ? "+" : "") + x;
+async function snapshot(s, id, code) {
+  await s.query(`insert into battle_members (battle, code, player) select $1, $2, player from league_members where code = $2 on conflict do nothing`, [id, code]);
+}
+// {"id|code": {n, avg}} pour des combats donnés
+async function battleScores(s, ids) {
+  if (!ids.length) return {};
+  const r = await s.query(`select bm.battle, bm.code, count(*)::int as n, coalesce(sum(pr.gain), 0)::float8 as total
+     from battle_members bm join battles bt on bt.id = bm.battle left join profits pr on pr.player = bm.player and pr.per = bt.week
+     where bm.battle = any($1::bigint[]) group by bm.battle, bm.code`, [ids.map(String)]);
+  const out = {};
+  for (const x of r) out[x.battle + "|" + x.code] = { n: x.n, avg: x.n ? Math.round(x.total / x.n) : 0 };
+  return out;
+}
+async function settleBattle(s, id) {
+  const bt = (await s.query(`select bt.id, bt.kind, bt.week, bt.a, bt.b, la.elo as ea, lb.elo as eb, la.name as na, lb.name as nb
+     from battles bt join leagues la on la.code = bt.a join leagues lb on lb.code = bt.b where bt.id = $1 and bt.status = 'live'`, [id]))[0];
+  if (!bt) return false;
+  const sc = await battleScores(s, [id]);
+  const sa = (sc[id + "|" + bt.a] || { avg: 0 }).avg, sb = (sc[id + "|" + bt.b] || { avg: 0 }).avg;
+  const res = sa > sb ? 1 : sa < sb ? 0 : 0.5;
+  const da = Math.round(BK * (res - 1 / (1 + 10 ** ((bt.eb - bt.ea) / 400))));
+  const winner = res === 1 ? bt.a : res === 0 ? bt.b : null;
+  const ok = (await s.query(`update battles set status = 'done', a_score = $2, b_score = $3, winner = $4, a_delta = $5, b_delta = $6, settled_at = now()
+     where id = $1 and status = 'live' returning id`, [id, sa, sb, winner, da, -da]))[0];
+  if (!ok) return false;
+  const sides = [[bt.a, bt.na, bt.nb, sa, sb, da, res === 1 ? "w" : res === 0 ? "l" : "d"], [bt.b, bt.nb, bt.na, sb, sa, -da, res === 0 ? "w" : res === 1 ? "l" : "d"]];
+  for (const [code, name, opp, my, their, d, r] of sides) {
+    await s.query(`update leagues set elo = greatest(0, elo + $2), bw = bw + $3, bl = bl + $4, bd = bd + $5 where code = $1`, [code, d, +(r === "w"), +(r === "l"), +(r === "d")]);
+    const all = await s.query(`select bm.player, exists (select 1 from profits pr where pr.player = bm.player and pr.per = $3) as bet
+       from battle_members bm where bm.battle = $1 and bm.code = $2`, [id, code, bt.week]);
+    const elo = (await s.query(`select elo from leagues where code = $1`, [code]))[0].elo, dv = division(elo);
+    const head = r === "w" ? `🏆 Victoire de ${name} !` : r === "l" ? `😤 Défaite de ${name}` : `🤝 Match nul pour ${name}`;
+    for (const x of all) {
+      const amt = x.bet ? BREWARD[r] : 0;
+      if (amt) await s.query(`insert into battle_rewards (battle, player, amount, result) values ($1, $2, $3, $4) on conflict do nothing`, [id, x.player, amt, r]);
+      await notify(s, [x.player], { title: head, body: `Contre ${opp} : ${sgn(my)} à ${sgn(their)} de moyenne. ${amt ? `+${amt} jetons pour toi 🎁` : "Tu n'as pas parié cette semaine : pas de récompense."} Cote ${elo} (${dv.i} ${dv.n}).`,
+        url: go("rank", code), tag: "battle-" + id });
+    }
+  }
+  return true;
+}
+async function battlesTick(s) {
+  const t = (await s.query(`select ${WEEK} as w, ${PREV_WEEK} as pw`))[0];
+  const out = { settled: 0, started: 0, paired: 0 };
+  // 1) combats terminés : résultat le mardi à 6 h
+  const due = await s.query(`select id from battles where status = 'live' and week < $1
+     and (now() at time zone 'Europe/Paris') >= week::date + interval '8 days 6 hours' order by id`, [t.w]);
+  for (const x of due) if (await settleBattle(s, x.id)) out.settled++;
+  // 2) défis acceptés qui commencent cette semaine : on fige les membres ; défis sans réponse : expirés
+  for (const x of await s.query(`select id, a, b from battles where status = 'ready' and week <= $1`, [t.w])) {
+    await snapshot(s, x.id, x.a); await snapshot(s, x.id, x.b);
+    if (!(await s.query(`update battles set status = 'live' where id = $1 and status = 'ready' returning id`, [x.id]))[0]) continue;
+    const n = await s.query(`select code, name from leagues where code in ($1, $2)`, [x.a, x.b]), nm = Object.fromEntries(n.map((y) => [y.code, y.name]));
+    for (const [c, o] of [[x.a, x.b], [x.b, x.a]])
+      await notify(s, await members(s, c), { title: `⚔️ Le défi commence · ${nm[c]}`, body: `Cette semaine contre ${nm[o]} : chaque pari compte pour la moyenne de la guilde. À vous de jouer !`, url: go("rank", c), tag: "battle-" + x.id });
+    out.started++;
+  }
+  await s.query(`update battles set status = 'expired' where status = 'pending' and week <= $1`, [t.w]);
+  // 3) championnat de la semaine : une fois, adversaires de cote proche (pas le même que la semaine passée si possible)
+  if ((await s.query(`insert into meta (key, value) values ($1, '1') on conflict do nothing returning key`, ["champ:" + t.w]))[0]) {
+    const G = await s.query(`select l.code, l.name, l.elo from leagues l where not l.dark and l.champ
+       and (select count(*) from league_members m where m.code = l.code) >= $1 order by l.elo desc, l.gid`, [MIN_BATTLE]);
+    const was = new Set((await s.query(`select a, b from battles where kind = 'league' and week = $1`, [t.pw])).flatMap((x) => [x.a + "|" + x.b, x.b + "|" + x.a]));
+    if (G.length % 2) G.splice(randomInt(G.length), 1);   // nombre impair : une guilde au repos, tirée au sort
+    while (G.length >= 2) {
+      const A = G.shift();
+      let j = G.findIndex((B, k) => k < 3 && !was.has(A.code + "|" + B.code));
+      const B = G.splice(j < 0 ? 0 : j, 1)[0];
+      const id = (await s.query(`insert into battles (kind, week, a, b, status) values ('league', $1, $2, $3, 'pending') returning id`, [t.w, A.code, B.code]))[0].id;
+      await snapshot(s, id, A.code); await snapshot(s, id, B.code);
+      await s.query(`update battles set status = 'live' where id = $1`, [id]);
+      for (const [X, Y] of [[A, B], [B, A]]) { const dv = division(Y.elo);
+        await notify(s, await members(s, X.code), { title: `⚔️ Championnat des guildes · ${X.name}`, body: `Cette semaine, vous affrontez ${Y.name} (${dv.i} ${dv.n}). Score = moyenne des gains en paris de tous les membres : chacun compte !`, url: go("rank", X.code), tag: "battle-" + id }); }
+      out.paired++;
+    }
+  }
+  return out;
 }
 
 const ACTIONS = {
@@ -669,6 +761,7 @@ const ACTIONS = {
     const name = cleanName(b.name, 24), motto = cleanName(b.motto, 60);
     await s.query(`update leagues set emblem = $2::jsonb, access = $3, motto = $4, name = case when $5 <> '' and $6 then $5 else name end where code = $1`,
       [code, JSON.stringify(emblem), access, motto || null, name, role === "chef"]);
+    if (role === "chef" && typeof b.champ === "boolean") await s.query(`update leagues set champ = $2 where code = $1`, [code, b.champ]);
     return { ok: true };
   },
   async guild_members(s, b) {
@@ -708,20 +801,22 @@ const ACTIONS = {
   async guild_dir(s, b) {
     const p = await me(s, b.token);
     const q = cleanName(b.q, 30);
-    const rows = await s.query(`select l.code, l.name, l.emblem, l.motto, l.access, count(m.player)::int as n,
+    const rows = await s.query(`select l.code, l.gid, l.name, l.emblem, l.motto, l.access, l.elo, count(m.player)::int as n,
          count(*) filter (where pl.seen_at > now() - interval '7 days')::int as active,
          bool_or(m.player = $1) as mine, exists (select 1 from requests r where r.code = l.code and r.player = $1) as asked
        from leagues l join league_members m on m.code = l.code join players pl on pl.id = m.player
        where not l.dark and l.access in ('open', 'request') and ($2 = '' or l.name ilike '%' || $2 || '%')
        group by l.code order by active desc, n desc limit 50`, [p.id, q]);
-    return { guilds: rows };
+    // le code d'une guilde sert d'invitation : on ne le montre qu'à ses membres
+    return { guilds: rows.map((r) => ({ ...r, gid: String(r.gid), code: r.mine ? r.code : undefined, div: division(r.elo) })) };
   },
   // rejoindre depuis l'annuaire : tout de suite si ouverte, sinon une demande au chef et aux adjoints
   async guild_join(s, b, req) {
     const p = await me(s, b.token);
     if (await overLimit(ipKey(req) + ":join", 40, 3600)) throw fail(429, "slow_down");
-    const code = cleanName(b.code, 8).toUpperCase();
-    const l = (await s.query(`select code, name, access, owner from leagues where code = $1 and not dark`, [code]))[0];
+    const l = (await s.query(b.gid ? `select code, name, access, owner from leagues where gid = $1 and not dark` : `select code, name, access, owner from leagues where code = $1 and not dark`,
+      [b.gid ? String(int(b.gid, 0, 1e15)) : cleanName(b.code, 8).toUpperCase()]))[0];
+    const code = l && l.code;
     if (!l || l.access === "private") throw fail(404, "unknown");
     if (l.access === "open") return { joined: true, ...(await addMember(s, code, p.id, p.name)) };
     await s.query(`insert into requests (code, player) values ($1, $2) on conflict do nothing`, [code, p.id]);
@@ -743,6 +838,102 @@ const ACTIONS = {
     return { ok: true };
   },
 
+  // ---- Combats de guildes ----
+  async battle_list(s, b) {
+    const p = await me(s, b.token);
+    const code = cleanName(b.code, 8).toUpperCase(), role = await guildRole(s, code, p.id);
+    if (!role) throw fail(403, "not_member");
+    const g = (await s.query(`select elo, bw, bl, bd, champ, (select count(*)::int from league_members m where m.code = l.code) as n from leagues l where code = $1`, [code]))[0];
+    const rank = (await s.query(`select count(*)::int + 1 as r from leagues l where not l.dark and l.elo > $1 and (select count(*) from league_members m where m.code = l.code) >= $2`, [g.elo, MIN_BATTLE]))[0].r;
+    const rows = await s.query(`select bt.id, bt.kind, bt.week, bt.a, bt.b, bt.status, bt.a_score::float8 as a_score, bt.b_score::float8 as b_score, bt.winner, bt.a_delta, bt.b_delta,
+         extract(epoch from ((bt.week::date + 7)::timestamp at time zone 'Europe/Paris')) * 1000 as wend
+       from battles bt where (bt.a = $1 or bt.b = $1) and (bt.status in ('live', 'ready', 'pending') or (bt.status = 'done' and bt.settled_at > now() - interval '120 days'))
+       order by bt.week desc, bt.id desc limit 30`, [code]);
+    const opp = [...new Set(rows.map((x) => (x.a === code ? x.b : x.a)))];
+    const L = opp.length ? Object.fromEntries((await s.query(`select l.code, l.gid, l.name, l.emblem, l.elo, (select count(*)::int from league_members m where m.code = l.code) as n
+       from leagues l where l.code = any($1::text[])`, [opp])).map((x) => [x.code, x])) : {};
+    const live = rows.filter((x) => x.status === "live"), sc = await battleScores(s, live.map((x) => x.id));
+    const out = [];
+    for (const x of rows) {
+      const side = x.a === code ? "a" : "b", o = L[side === "a" ? x.b : x.a];
+      if (!o) continue;
+      const B = { id: x.id, kind: x.kind, week: x.week, status: x.status, end: Math.round(Number(x.wend)), incoming: side === "b",
+        vs: { gid: String(o.gid), name: o.name, emblem: o.emblem, elo: o.elo, div: division(o.elo), n: o.n } };
+      if (x.status === "live") {
+        const m = sc[x.id + "|" + code] || { n: 0, avg: 0 }, t = sc[x.id + "|" + (side === "a" ? x.b : x.a)] || { n: 0, avg: 0 };
+        Object.assign(B, { my: m.avg, their: t.avg, myN: m.n, theirN: t.n });
+        B.team = (await s.query(`select pl.id, pl.name, pl.avatar_v, pr.gain::float8 as gain from battle_members bm join players pl on pl.id = bm.player
+           left join profits pr on pr.player = bm.player and pr.per = $3 where bm.battle = $1 and bm.code = $2 order by pr.gain desc nulls last, pl.name`, [x.id, code, x.week]))
+          .map((r) => ({ id: r.id, name: r.name, av: r.avatar_v || 0, gain: r.gain == null ? null : Math.round(r.gain) }));
+      }
+      if (x.status === "done") {
+        Object.assign(B, { my: side === "a" ? x.a_score : x.b_score, their: side === "a" ? x.b_score : x.a_score, delta: side === "a" ? x.a_delta : x.b_delta,
+          res: !x.winner ? "d" : x.winner === code ? "w" : "l" });
+      }
+      out.push(B);
+    }
+    const nw = (await s.query(`select ${NEXT_WEEK} as w`))[0].w;
+    return { me: p.id, role, next: nw, guild: { elo: g.elo, div: division(g.elo), w: g.bw, l: g.bl, d: g.bd, champ: g.champ, n: g.n, rank, ok: g.n >= MIN_BATTLE },
+      battles: out, reward: BREWARD, min: MIN_BATTLE };
+  },
+  // classement mondial des guildes (cote Elo) ; jamais le code d'une guilde (il sert d'invitation)
+  async guild_ranking(s, b) {
+    const p = await me(s, b.token);
+    const rows = await s.query(`select l.gid, l.name, l.emblem, l.elo, l.bw, l.bl, l.bd, count(m.player)::int as n, bool_or(m.player = $1) as mine
+       from leagues l join league_members m on m.code = l.code where not l.dark group by l.code having count(m.player) >= $2
+       order by l.elo desc, l.bw desc, l.gid limit 100`, [p.id, MIN_BATTLE]);
+    return { guilds: rows.map((r) => ({ gid: String(r.gid), name: r.name, emblem: r.emblem, elo: r.elo, div: division(r.elo), w: r.bw, l: r.bl, d: r.bd, n: r.n, mine: !!r.mine })) };
+  },
+  // défi : le chef ou un adjoint défie une autre guilde, pour la semaine prochaine
+  async battle_challenge(s, b) {
+    const p = await me(s, b.token);
+    const code = cleanName(b.code, 8).toUpperCase(), role = await guildRole(s, code, p.id);
+    if (role !== "chef" && role !== "adjoint") throw fail(403, "not_allowed");
+    const T = (await s.query(`select l.code, l.name, l.owner, (select count(*)::int from league_members m where m.code = l.code) as n from leagues l where l.gid = $1 and not l.dark`, [String(int(b.gid, 0, 1e15))]))[0];
+    const M = (await s.query(`select name, (select count(*)::int from league_members m where m.code = l.code) as n from leagues l where code = $1`, [code]))[0];
+    if (!T || T.code === code) throw fail(404, "unknown");
+    if (M.n < MIN_BATTLE || T.n < MIN_BATTLE) throw fail(400, "too_small");
+    const w = (await s.query(`select ${NEXT_WEEK} as w`))[0].w;
+    const busy = await s.query(`select a, b, status from battles where kind = 'challenge' and week = $1 and status in ('pending', 'ready') and (a in ($2, $3) or b in ($2, $3))`, [w, code, T.code]);
+    if (busy.some((x) => (x.a === code && x.b === T.code) || (x.a === T.code && x.b === code))) throw fail(400, "already");
+    if (busy.some((x) => x.status === "ready")) throw fail(400, "busy");
+    if (busy.filter((x) => x.a === code).length >= 3) throw fail(400, "too_many");
+    await s.query(`insert into battles (kind, week, a, b, status, by_player) values ('challenge', $1, $2, $3, 'pending', $4)`, [w, code, T.code, p.id]);
+    const chiefs = (await s.query(`select player from league_members where code = $1 and (role = 'officer' or player = $2)`, [T.code, T.owner])).map((x) => x.player);
+    await notify(s, chiefs, { title: `⚔️ ${M.name} défie ${T.name} !`, body: "Un combat d'une semaine, à partir de lundi. Le chef ou un adjoint peut accepter ou refuser.", url: go("rank", T.code), tag: "chal-" + T.code });
+    return { ok: true, week: w };
+  },
+  // répondre à un défi reçu (chef/adjoint de la guilde défiée) ou retirer un défi envoyé
+  async battle_answer(s, b) {
+    const p = await me(s, b.token);
+    const bt = (await s.query(`select bt.*, la.name as na, lb.name as nb from battles bt join leagues la on la.code = bt.a join leagues lb on lb.code = bt.b
+       where bt.id = $1 and bt.kind = 'challenge' and bt.status = 'pending'`, [String(int(b.id, 0, 1e15))]))[0];
+    if (!bt) throw fail(404, "unknown");
+    const rb = await guildRole(s, bt.b, p.id), ra = await guildRole(s, bt.a, p.id);
+    const boss = (r) => r === "chef" || r === "adjoint";
+    if (!b.accept && boss(ra)) { await s.query(`update battles set status = 'cancel' where id = $1 and status = 'pending'`, [bt.id]); return { ok: true }; }
+    if (!boss(rb)) throw fail(403, "not_allowed");
+    if (!b.accept) {
+      await s.query(`update battles set status = 'refused' where id = $1 and status = 'pending'`, [bt.id]);
+      const chiefs = (await s.query(`select m.player from league_members m join leagues l on l.code = m.code where m.code = $1 and (m.role = 'officer' or m.player = l.owner)`, [bt.a])).map((x) => x.player);
+      await notify(s, chiefs, { title: `⚔️ ${bt.nb} refuse le défi`, body: "Trouve un autre adversaire dans le classement des guildes.", url: go("rank", bt.a), tag: "chal-" + bt.a });
+      return { ok: true };
+    }
+    if ((await s.query(`select 1 from battles where kind = 'challenge' and week = $1 and status = 'ready' and (a in ($2, $3) or b in ($2, $3))`, [bt.week, bt.a, bt.b]))[0]) throw fail(400, "busy");
+    if (!(await s.query(`update battles set status = 'ready' where id = $1 and status = 'pending' returning id`, [bt.id]))[0]) throw fail(404, "unknown");
+    // un seul défi par semaine : les autres défis en attente de ces deux guildes tombent
+    await s.query(`update battles set status = 'expired' where kind = 'challenge' and week = $1 and status = 'pending' and (a in ($2, $3) or b in ($2, $3))`, [bt.week, bt.a, bt.b]);
+    for (const [c, o] of [[bt.a, bt.nb], [bt.b, bt.na]])
+      await notify(s, await members(s, c), { title: `⚔️ Défi accepté contre ${o}`, body: "Ça commence lundi, pour une semaine : la moyenne des gains en paris de tous les membres compte. Préparez-vous !", url: go("rank", c), tag: "battle-" + bt.id });
+    return { ok: true };
+  },
+  // récompenses de combats, créditées par le téléphone (et notées au registre)
+  async battle_claim(s, b) {
+    const p = await me(s, b.token);
+    const r = await s.query(`update battle_rewards r set claimed = true from battles bt where bt.id = r.battle and r.player = $1 and not r.claimed returning r.battle, r.amount, r.result`, [p.id]);
+    for (const x of r) await credit(s, p.id, x.amount, "battle", x.battle);
+    return { rewards: r.map((x) => ({ amount: x.amount, result: x.result })) };
+  },
   async recovery_make(s, b) {
     const p = await me(s, b.token);
     const cur = (await s.query(`select recovery_hash from players where id = $1`, [p.id]))[0];

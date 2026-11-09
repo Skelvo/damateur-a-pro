@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "25";
+const SCHEMA_VERSION = "26";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -255,6 +255,40 @@ const STATEMENTS = [
      player bigint not null references players(id) on delete cascade,
      at timestamptz not null default now(),
      primary key (code, player))`,
+  // combats de guildes : défis directs et championnat du lundi (cote Elo, divisions Bronze → Diamant)
+  `alter table leagues add column if not exists gid bigserial`,
+  `alter table leagues add column if not exists elo int not null default 1000`,
+  `alter table leagues add column if not exists bw int not null default 0`,
+  `alter table leagues add column if not exists bl int not null default 0`,
+  `alter table leagues add column if not exists bd int not null default 0`,
+  `alter table leagues add column if not exists champ boolean not null default true`,
+  `create table if not exists battles (
+     id bigserial primary key,
+     kind text not null,
+     week text not null,
+     a text not null references leagues(code) on delete cascade,
+     b text not null references leagues(code) on delete cascade,
+     status text not null,
+     by_player bigint,
+     a_score numeric, b_score numeric, winner text,
+     a_delta int, b_delta int,
+     created_at timestamptz not null default now(),
+     settled_at timestamptz)`,
+  `create index if not exists battles_a on battles(a, week)`,
+  `create index if not exists battles_b on battles(b, week)`,
+  `create index if not exists battles_status on battles(status)`,
+  `create table if not exists battle_members (
+     battle bigint not null references battles(id) on delete cascade,
+     code text not null,
+     player bigint not null references players(id) on delete cascade,
+     primary key (battle, code, player))`,
+  `create table if not exists battle_rewards (
+     battle bigint not null references battles(id) on delete cascade,
+     player bigint not null references players(id) on delete cascade,
+     amount int not null,
+     result text not null,
+     claimed boolean not null default false,
+     primary key (battle, player))`,
   `create table if not exists rate_hits (key text not null, win bigint not null, n int not null default 0, primary key (key, win))`,
 ];
 
