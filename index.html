@@ -834,9 +834,9 @@ function parseTennis(ev,lv,path){const out=[];const groups=ev.groupings||[{group
       if(m.t)out.push(m)}}
   return out}
 async function loadFeed(sp,lv){const paths=SP[sp].feeds[lv],key=sp+lv,now=Date.now();FEED[key]=FEED[key]||{ok:null,list:[]};
-  const qs=sp==="tennis"?[`${ymd(now-4*DAY)}-${ymd(now+8*DAY)}`]:[...new Set([ymd(now-4*DAY).slice(0,6),ymd(now+8*DAY).slice(0,6)])];
+  const qs=sp==="tennis"?[`${ymd(now-4*DAY)}-${ymd(now+8*DAY)}`]:[...new Set([ymd(now-4*DAY).slice(0,6),ymd(now+8*DAY).slice(0,6),ymd(now+22*DAY).slice(0,6)])];
   try{const res=await Promise.all(paths.flatMap(p=>qs.map(q=>getJSON(`${ESPN}${p}/scoreboard?dates=${q}&limit=500`).then(j=>[p,j]))));
-    const list=[],seen=new Set();for(const[p,j]of res)for(const ev of j.events||[]){if(seen.has(p+ev.id))continue;seen.add(p+ev.id);if(sp==="tennis")list.push(...parseTennis(ev,lv,p));else{const m=parseTeamEvent(ev,sp,lv,p);if(m&&m.t>now-5*DAY&&m.t<now+9*DAY)list.push(m)}}
+    const list=[],seen=new Set();for(const[p,j]of res)for(const ev of j.events||[]){if(seen.has(p+ev.id))continue;seen.add(p+ev.id);if(sp==="tennis")list.push(...parseTennis(ev,lv,p));else{const m=parseTeamEvent(ev,sp,lv,p);if(m&&m.t>now-5*DAY&&m.t<now+22*DAY)list.push(m)}}
     FEED[key]={ok:true,list,at:now};list.forEach(m=>{const old=REG.get(m.id);if(old&&old.st&&m.st)for(const k in old.st)if(!(k in m.st))m.st[k]=old.st[k];REG.set(m.id,m)})}
   catch(e){FEED[key]={ok:false,list:[],at:now}}}
 async function loadSport(sp){const jobs=Object.keys(SP[sp].feeds).filter(l=>!FEED[sp+l]).map(l=>loadFeed(sp,+l));if(!jobs.length)return;await Promise.all(jobs);if(!U.open||U.open==="slip")render();settle()}
@@ -1014,7 +1014,10 @@ function viewMatches(){const cfg=SP[U.sp];let h=installBanner()+`<div class="spo
   const now=Date.now();
   let up=list.filter(m=>["pre","live","wait"].includes(status(m)));
   const done=list.filter(m=>status(m)==="post").sort((a,b)=>b.t-a.t);
-  if(U.lv<0){const soon=up.filter(m=>m.t<now+3*DAY||status(m)==="live"),real=soon.filter(m=>m.src!=="sim"),sim=soon.filter(m=>m.src==="sim");
+  if(U.lv<0){let soon=up.filter(m=>m.t<now+3*DAY||status(m)==="live");
+    // trêve ou creux de calendrier : on montre quand même les prochains matchs, même dans plus de 3 jours
+    if(soon.filter(m=>m.src!=="sim").length<6)soon=soon.concat(up.filter(m=>m.src!=="sim"&&!soon.includes(m)).sort((a,b)=>a.t-b.t).slice(0,12-soon.length));
+    const real=soon.filter(m=>m.src!=="sim"),sim=soon.filter(m=>m.src==="sim");
     up=real.slice(0,30).concat(sim.slice(0,real.length>=12?4:24-real.length)).sort((a,b)=>a.t-b.t)}
   const showLv=U.lv<0;
   if(!up.length&&loadingPro(U.sp,U.lv)&&U.lv>=0&&cfg.feeds[U.lv])h+=`<div class="skel"></div><div class="skel"></div>`;
@@ -1991,7 +1994,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.28";
+const VERSION="1.29";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
