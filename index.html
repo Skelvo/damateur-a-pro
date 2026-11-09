@@ -1555,7 +1555,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"stake":{const n=U.sel.length,combo=U.combo&&n>1&&!comboBlocked();U.stake=d.v==="max"?Math.max(1,Math.floor(S.bal/(combo?1:n))):+d.v;refreshLayer();break}
     case"place":place();break;
     case"clear":U.sel=[];closeLayer();break;
-    case"wheel":U.open="wheel";layer(viewWheel());break;
+    case"wheel":{U.wheelOk=false;U.open="wheel";layer(viewWheel());const ok=()=>{if(U.wheelOk)return;U.wheelOk=true;if(U.open==="wheel"&&!spinning)layer(viewWheel())};syncNow().finally(ok);setTimeout(ok,4000);break}
     case"spin":spin();break;
     case"defi":claimDefi(d.id);break;
     case"defiall":claimAll();break;
@@ -1620,6 +1620,7 @@ async function api(action,data={}){const c=new AbortController(),t=setTimeout(()
     if(r.status===401&&action!=="session"&&S.tok){S.tok="";saveLocal()}   // compte inconnu du serveur : on en recrée un
     if(!r.ok)throw Object.assign(new Error(j.error||r.status),{code:j.error||String(r.status)});return j}
   finally{clearTimeout(t)}}
+function wheelSync(j){const w=j&&j.wheel;if(!w)return;let ch=false;if(w.b&&w.b>(S.bonus||"")){S.bonus=w.b;ch=true}if(w.x&&w.x>(S.extraSpin||"")){S.extraSpin=w.x;ch=true}if(ch){saveLocal();if(!U.open)render()}}
 const myStats=()=>{const d=S.bets.filter(b=>b.st==="won"||b.st==="lost");return{won:d.filter(b=>b.st==="won").length,lost:d.filter(b=>b.st==="lost").length}};
 let sessP=null;
 function ensureSession(){if(S.tok)return Promise.resolve(true);if(!S.name)return Promise.resolve(false);
@@ -1630,8 +1631,8 @@ let askedName=false;
 function askNewName(){if(askedName||U.open==="welcome")return;askedName=true;U.open="welcome";layer(viewWelcome(true,`Le pseudo « ${esc(S.name)} » est déjà pris par un autre joueur. Choisis-en un autre pour apparaître dans les classements.`))}
 let syncT=0;
 function syncSoon(){if(!S.name)return;clearTimeout(syncT);syncT=setTimeout(async()=>{if(!(await ensureSession()))return;
-  try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,...myStats(),...betsPayload()});if(j.name_taken)askNewName();backupSoon()}catch(e){if(e.code==="no_session"&&await ensureSession())syncSoon()}},2000)}
-async function syncNow(){clearTimeout(syncT);if(!(await ensureSession()))return false;try{await api("sync",{name:S.name,bal:S.bal,peak:S.peak,...myStats(),...betsPayload()});return true}catch(e){return false}}
+  try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,wb:S.bonus,wx:S.extraSpin,...myStats(),...betsPayload()});wheelSync(j);if(j.name_taken)askNewName();backupSoon()}catch(e){if(e.code==="no_session"&&await ensureSession())syncSoon()}},2000)}
+async function syncNow(){clearTimeout(syncT);if(!(await ensureSession()))return false;try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,wb:S.bonus,wx:S.extraSpin,...myStats(),...betsPayload()});wheelSync(j);return true}catch(e){return false}}
 const pickKey=s=>s.mk+(s.line!=null?s.line:"");
 function sendPicks(sel){const picks=sel.filter(s=>!PMK[s.mk]).map(s=>({mid:s.mid,mk:pickKey(s),k:s.k}));if(!picks.length)return;ensureSession().then(ok=>ok&&api("picks",{picks}).catch(()=>{}));
   for(const p of picks){const c=CROWD[p.mid];if(c&&c.data){const m=((c.data[p.mk]??={}));m[p.k]=(m[p.k]||0)+1}}}
@@ -2432,10 +2433,10 @@ function viewWheel(){const done=!wheelAvail();
   return`<div class="grab"><h3>Roue de la chance</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   <div class="wheelbox"><div class="pointer"></div>${wheelSvg()}</div>
   <div id="wres" class="wres">${done&&S.wheel&&S.wheel.d===today()?`Aujourd’hui : <b>+${tok(S.wheel.v)} jetons</b>`:extraAvail()?"🎁 Tour bonus offert à tout le monde aujourd’hui !":"Un tour gratuit par jour"}</div>
-  <button class="btn gold wide" data-act="spin" id="spin" ${done?"disabled":""}>${done?"Prochain tour dans "+nextReset():extraAvail()?"Lancer le tour bonus":"Lancer la roue"}</button>
+  <button class="btn gold wide" data-act="spin" id="spin" ${done||U.wheelOk===false?"disabled":""}>${done?"Prochain tour dans "+nextReset():U.wheelOk===false?"Un instant…":extraAvail()?"Lancer le tour bonus":"Lancer la roue"}</button>
   <div class="info">${ic("info")}<span><b style="color:var(--ink)">100 % hasard.</b> Plus le gain est gros, plus il est rare : ${WHEEL.map((v,i)=>`<b style="color:var(--ink)">${v}</b> ${WP[i]} %`).join(" · ")}. Les cases rapetissent avec le gain ; la vraie chance est écrite sur chacune. Les jetons de la roue <b style="color:var(--ink)">ne comptent pas</b> dans les classements. La fine case dorée <b style="color:var(--sel)">JACKPOT 1 000 000</b> est tirée à part : <b style="color:var(--ink)">1 chance sur 10 millions</b> à chaque tour. Le tirage utilise le générateur aléatoire sécurisé du téléphone, sans aucun réglage caché.</span></div>`}
 let spinning=false;
-function spin(){if(spinning||!wheelAvail())return;spinning=true;const isExtra=extraAvail();
+function spin(){if(spinning||!wheelAvail()||U.wheelOk===false)return;spinning=true;const isExtra=extraAvail();
   const jack=fairIndex(JACK_ODDS)===0,i=jack?-1:wheelPick(),v=jack?JACKPOT:WHEEL[i];
   // le gain est enregistré tout de suite (recharger la page ne permet pas de relancer)
   if(isExtra)S.extraSpin=today();S.bonus=today();S.wheel={d:today(),v};S.bal+=v;S.peak=Math.max(S.peak,S.bal);if(jack)S.jackpot=(S.jackpot||0)+1;save();if(v>=200)postAct("wheel",{v});
@@ -2542,7 +2543,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.57";
+const VERSION="1.58";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
