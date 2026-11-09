@@ -685,6 +685,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
+<script src="engine.js?v=1.60"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -697,14 +698,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 /* ---------- utilitaires ---------- */
 const $=(s,r=document)=>r.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const fr=(n,d=2)=>n.toFixed(d).replace(".",",");
 const tok=n=>Math.round(n).toLocaleString("fr-FR");
-const cl=(x,a,b)=>Math.max(a,Math.min(b,x));
-const H=36e5,DAY=864e5;
-function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
-function rng(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
-function pois(r,l){if(l<=0)return 0;const L=Math.exp(-l);let k=0,p=r();while(p>L){k++;p*=r()}return k}
-function binom(r,n,p){let k=0;for(let i=0;i<n;i++)if(r()<p)k++;return k}
 const ymd=d=>{const x=new Date(d);return x.getFullYear()+String(x.getMonth()+1).padStart(2,"0")+String(x.getDate()).padStart(2,"0")};
 const today=()=>ymd(Date.now());
 function monday(t){const x=new Date(t);x.setHours(0,0,0,0);x.setDate(x.getDate()-(x.getDay()+6)%7);return x}
@@ -715,26 +709,7 @@ const fShort=t=>{const d=new Date(t);const dd=Math.round((new Date(t).setHours(0
 const ic=(id,cls="")=>`<svg class="i ${cls}"><use href="#i-${id}"/></svg>`;
 
 /* ---------- référentiel sports / niveaux ---------- */
-const SP={
-  foot:{n:"Football",sub:"France · Europe",ic:"ball",c:"#35d07f",dur:115,
-    lv:["Départementale 4","Départementale 3","Départementale 2","Départementale 1","Régional 3","Régional 2","Régional 1","National 3","National 2","National 1","Ligue 2","Ligue 1","Premier League","La Liga","Ligue des champions",
-      "Coupe de France","Serie A","Bundesliga","Europa League","Conference League","Championship","Liga Portugal","Eredivisie","Pro League","Ligue des nations","Coupe du monde","Euro","JO (hommes)","JO (femmes)"],base:15,
-    tiers:[["District",[0,1,2,3]],["Ligue régionale",[4,5,6]],["National",[7,8,9]],["Pro France",[10,11,15]],["Europe",[12,13,16,17,20,21,22,23]],["Coupes d’Europe",[14,18,19]],["Sélections",[24,25,26,27,28]]],dep:4,simMax:11,
-    feeds:{10:["soccer/fra.2"],11:["soccer/fra.1"],12:["soccer/eng.1"],13:["soccer/esp.1"],14:["soccer/uefa.champions"],15:["soccer/fra.coupe_de_france"],16:["soccer/ita.1"],17:["soccer/ger.1"],
-      18:["soccer/uefa.europa"],19:["soccer/uefa.europa.conf"],20:["soccer/eng.2"],21:["soccer/por.1"],22:["soccer/ned.1"],23:["soccer/bel.1"],24:["soccer/uefa.nations"],25:["soccer/fifa.world"],26:["soccer/uefa.euro"],27:["soccer/fifa.olympics"],28:["soccer/fifa.w.olympics"]}},
-  rugby:{n:"Rugby",sub:"Top 14 · Tests",ic:"rugby",c:"#ff7a45",dur:100,
-    lv:["Régionale 3","Régionale 2","Régionale 1","Fédérale 3","Fédérale 2","Fédérale 1","Nationale 2","Nationale","Pro D2","Top 14","Champions Cup","Premiership","URC","Six Nations","Tests internationaux","Coupe du monde"],base:11,
-    tiers:[["Régional",[0,1,2]],["Fédéral",[3,4,5]],["National",[6,7]],["Pro",[8,9,10,11,12]],["International",[13,14,15]]],dep:3,simMax:9,
-    feeds:{9:["rugby/270559"],10:["rugby/271937"],11:["rugby/267979"],12:["rugby/270557"],13:["rugby/180659"],14:["rugby/289234"],15:["rugby/164205"]}},
-  tennis:{n:"Tennis",sub:"ATP · WTA",ic:"tennis",c:"#d7f25a",dur:120,
-    lv:["Tournoi de club","Open départemental","Open régional","Open national","ITF World Tour","Challenger","ATP / WTA Tour"],
-    base:7,tiers:[["Amateur",[0,1,2,3]],["Pro",[4,5,6]]],dep:2,simMax:5,
-    feeds:{6:["tennis/atp","tennis/wta"]}},
-  basket:{n:"Basket",sub:"NBA",ic:"basket",c:"#ff9f1c",dur:150,
-    lv:["Loisir","Départemental","Régional","Nationale","Pro B","Betclic Élite","NBA","JO (hommes)","JO (femmes)"],
-    base:7,tiers:[["Pro",[6]],["Jeux olympiques",[7,8]]],dep:2,simMax:5,
-    feeds:{6:["basketball/nba"],7:["basketball/mens-olympics-basketball"],8:["basketball/womens-olympics-basketball"]}}
-};
+
 const DEPS={"Charente":["Cognac","Angoulême","Jarnac","Ruffec","La Couronne"],"Charente-Maritime":["Saintes","Rochefort","Royan","Jonzac","Aytré"],
   "Corrèze":["Tulle","Ussel","Objat","Malemort"],"Creuse":["Guéret","Aubusson","La Souterraine","Bourganeuf"],
   "Dordogne":["Périgueux","Bergerac","Sarlat","Ribérac","Trélissac"],"Gironde":["Libourne","Mérignac","Pessac","Langon","Blaye","Lormont","Cenon"],
@@ -754,132 +729,7 @@ let S=(()=>{try{const x=JSON.parse(localStorage.getItem(LS));if(x&&x.v===2)retur
 const saveLocal=()=>{try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}};
 const save=()=>{saveLocal();syncSoon()};
 const U={lg:{code:"",data:null,err:null,loading:false,mode:"season",view:"rank"},tab:"m",sp:"foot",lv:-1,dep:"",sel:[],combo:true,stake:20,open:null,dtab:"p",btab:"o"};
-const REG=new Map(),FEED={},MCC=new Map(),MKC=new Map(),ONE=new Map();
-
-/* ---------- simulateurs (un match = un tirage) ---------- */
-const lvA=m=>1-cl(m.lv/(SP[m.sp].base-1),0,1);  // 1 = plus bas niveau amateur
-const SIM={
-  foot(r,m){const a=lvA(m),[x,y]=m.s,o={g:[0,0],sot:[0,0],co:[0,0],of:[0,0],fo:[0,0],yc:[0,0],rc:[0,0],pk:[0,0]};
-    for(const p of [0,1]){const d=p?y-x:x-y,hm=p?-.12:.12,l=(1.3+.6*a)*Math.exp(.33*d+hm),g=pois(r,l);
-      o.g[p]=g;o.sot[p]=g+pois(r,l*2.1);o.co[p]=pois(r,4.7*Math.exp(.2*d+hm/2));o.of[p]=pois(r,1.8+.5*a);
-      o.fo[p]=pois(r,11+2*a-.4*d);o.yc[p]=pois(r,1.75+.8*a-.15*d);o.rc[p]=pois(r,.07+.09*a);o.pk[p]=pois(r,.12+.07*a)}
-    return o},
-  rugby(r,m){const a=lvA(m),[x,y]=m.s,o={pts:[0,0],tr:[0,0],cv:[0,0],pm:[0,0],px:[0,0],dr:[0,0],yc:[0,0],rc:[0,0]};
-    for(const p of [0,1]){const d=(p?y-x:x-y)*.6,hm=p?-.09:.09,tr=pois(r,(2.3+1.3*a)*Math.exp(.38*d+hm)),cv=binom(r,tr,.74-.2*a),
-      pa=pois(r,(3.4+.8*a)*Math.exp(.1*d)),pm=binom(r,pa,.8-.22*a),dr=pois(r,.13);
-      o.tr[p]=tr;o.cv[p]=cv;o.pm[p]=pm;o.px[p]=pa-pm;o.dr[p]=dr;o.yc[p]=pois(r,.6+.45*a);o.rc[p]=pois(r,.04+.06*a);o.pts[p]=5*tr+2*cv+3*(pm+dr)}
-    return o},
-  basket(r,m){const [x,y]=m.s,nrm=()=>{let u=0,v=0;while(!u)u=r();v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
-    const o={pts:[0,0],tp:[0,0],reb:[0,0],ast:[0,0],ot:[0,0]};
-    const pace=7*nrm();   // rythme du match, commun aux deux équipes
-    for(const p of [0,1]){const d=p?y-x:x-y,hm=p?-1.6:1.6;o.pts[p]=Math.round(113+5.5*d+hm+pace+8.2*nrm())}
-    if(Math.abs(o.pts[0]-o.pts[1])<=2&&r()<.3)o.pts[1]=o.pts[0];   // fins de match serrées : égalisation au buzzer
-    while(o.pts[0]===o.pts[1]){o.ot[0]++;for(const p of [0,1])o.pts[p]+=Math.max(2,Math.round(11+3.5*nrm()))}   // prolongation de 5 min
-    for(const p of [0,1]){o.tp[p]=Math.max(2,Math.round(12.8+.11*(o.pts[p]-113)+3.4*nrm()));o.reb[p]=Math.max(25,Math.round(44+5.5*nrm()));o.ast[p]=Math.max(12,Math.round(26+.12*(o.pts[p]-113)+4.5*nrm()))}
-    return o},
-  tennis(r,m){const a=lvA(m),[x,y]=m.s,d=x-y,hold=[cl(.79-.13*a+.06*d,.55,.93),cl(.79-.13*a-.06*d,.55,.93)],
-      ace=[(.5-.38*a)*Math.exp(.2*x),(.5-.38*a)*Math.exp(.2*y)],dfl=.26+.1*a,need=m.bo===5?3:2,
-      sets=[0,0],gm=[0,0],ac=[0,0],df=[0,0],brk=[0,0],rk=[0,0];let tb=0,s1=null,srv=r()<.5?0:1;
-    while(sets[0]<need&&sets[1]<need){const g=[0,0];
-      for(;;){if(g[0]===6&&g[1]===6){tb++;const w=r()<cl(.5+.08*d,.2,.8)?0:1;g[w]++;gm[w]++;ac[0]+=pois(r,ace[0]*1.3);ac[1]+=pois(r,ace[1]*1.3);srv=1-srv;break}
-        ac[srv]+=pois(r,ace[srv]);df[srv]+=pois(r,dfl);const w=r()<hold[srv]?srv:1-srv;if(w!==srv)brk[w]++;g[w]++;gm[w]++;srv=1-srv;
-        if((g[w]>=6&&g[w]-g[1-w]>=2)||g[w]===7)break}
-      const ws=g[0]>g[1]?0:1;sets[ws]++;if(!s1)s1=ws?[0,1]:[1,0];
-      for(const p of [0,1])if(r()<.01+.03*a+(p!==ws?.02:0))rk[p]++}
-    return{sets,gm,ac,df,brk,tb:[tb,0],rk,s1}}
-};
-const N=1500;
-function sims(m){let S_=MCC.get(m.id);if(S_)return S_;S_={};const r=rng(hash(m.id+"|mc"));
-  for(let i=0;i<N;i++){const o=SIM[m.sp](r,m);for(const k in o){const t=S_[k]||(S_[k]=[new Int16Array(N),new Int16Array(N)]);t[0][i]=o[k][0];t[1][i]=o[k][1]}}
-  MCC.set(m.id,S_);return S_}
-function simOne(m){let o=ONE.get(m.id);if(o)return o;const r=rng(hash(m.id+"|real"));o=SIM[m.sp](r,m);
-  if(m.sp==="foot"){const rm=rng(hash(m.id+"|min"));o._min=o.g.map(n=>Array.from({length:n},()=>1+Math.floor(rm()*93)).sort((a,b)=>a-b))}
-  ONE.set(m.id,o);return o}
-
-/* ---------- marchés ---------- */
-const tot=(g,k)=>{const v=g(k);return v[0]+v[1]};
-const cmp3=v=>v[0]>v[1]?0:v[0]===v[1]?1:2;
-const MK={
-  foot:[
-    {id:"res",grp:"Résultat",ic:"ball",t:"Résultat du match",ty:"res",need:["g"],val:g=>cmp3(g("g"))},
-    {id:"gt",grp:"Buts",ic:"goal",t:"Nombre de buts",ty:"ou",need:["g"],val:g=>tot(g,"g")},
-    {id:"bt",grp:"Buts",ic:"goal",t:"Les deux équipes marquent",ty:"yn",need:["g"],val:g=>{const v=g("g");return v[0]>0&&v[1]>0}},
-    {id:"gh",grp:"Buts",ic:"goal",t:m=>"Buts de "+m.h,ty:"ou",need:["g"],val:g=>g("g")[0]},
-    {id:"ga",grp:"Buts",ic:"goal",t:m=>"Buts de "+m.a,ty:"ou",need:["g"],val:g=>g("g")[1]},
-    {id:"yc",grp:"Discipline",ic:"card",cls:"yc",t:"Cartons jaunes",ty:"ou",need:["yc"],val:g=>tot(g,"yc")},
-    {id:"rc",grp:"Discipline",ic:"card",cls:"rc",t:"Au moins un carton rouge",ty:"yn",need:["rc"],val:g=>tot(g,"rc")>0},
-    {id:"pk",grp:"Discipline",ic:"whistle",t:"Penalty sifflé",ty:"yn",need:["pk"],val:g=>tot(g,"pk")>0},
-    {id:"fo",grp:"Discipline",ic:"whistle",t:"Fautes",ty:"ou",need:["fo"],val:g=>tot(g,"fo")},
-    {id:"co",grp:"Jeu",ic:"corner",t:"Corners",ty:"ou",need:["co"],val:g=>tot(g,"co")},
-    {id:"of",grp:"Jeu",ic:"flag",t:"Hors-jeux",ty:"ou",need:["of"],val:g=>tot(g,"of")},
-    {id:"st",grp:"Jeu",ic:"target",t:"Tirs cadrés",ty:"ou",need:["sot"],val:g=>tot(g,"sot")}],
-  rugby:[
-    {id:"res",grp:"Résultat",ic:"rugby",t:"Résultat du match",ty:"res",need:["pts"],val:g=>cmp3(g("pts"))},
-    {id:"pt",grp:"Score",ic:"chart",t:"Total de points",ty:"ou",need:["pts"],val:g=>tot(g,"pts")},
-    {id:"tr",grp:"Score",ic:"rugby",t:"Essais marqués",ty:"ou",need:["tr"],val:g=>tot(g,"tr")},
-    {id:"pm",grp:"Pied",ic:"posts",t:"Pénalités réussies",ty:"ou",need:["pm"],val:g=>tot(g,"pm")},
-    {id:"px",grp:"Pied",ic:"miss",t:"Pénalités ratées",ty:"ou",need:["px"],val:g=>tot(g,"px")},
-    {id:"dr",grp:"Pied",ic:"drop",t:"Au moins un drop réussi",ty:"yn",need:["dr"],val:g=>tot(g,"dr")>0},
-    {id:"yc",grp:"Discipline",ic:"card",cls:"yc",t:"Cartons jaunes",ty:"ou",need:["yc"],val:g=>tot(g,"yc")},
-    {id:"rc",grp:"Discipline",ic:"card",cls:"rc",t:"Au moins un carton rouge",ty:"yn",need:["rc"],val:g=>tot(g,"rc")>0}],
-  tennis:[
-    {id:"res",grp:"Résultat",ic:"tennis",t:"Vainqueur du match",ty:"res2",need:["sets"],val:g=>{const v=g("sets");return v[0]>v[1]?0:1}},
-    {id:"s1",grp:"Résultat",ic:"tennis",t:"Vainqueur du 1er set",ty:"res2",need:["s1"],val:g=>g("s1")[0]?0:1},
-    {id:"ns",grp:"Résultat",ic:"chart",t:"Nombre de sets",ty:"sets",need:["sets"],val:(g,m)=>tot(g,"sets")-(m.bo===5?3:2)},
-    {id:"gm",grp:"Jeux",ic:"chart",t:"Nombre de jeux",ty:"ou",need:["gm"],val:g=>tot(g,"gm")},
-    {id:"tb",grp:"Jeux",ic:"tb",t:"Au moins un tie-break",ty:"yn",need:["tb"],val:g=>tot(g,"tb")>0},
-    {id:"bk",grp:"Jeux",ic:"break",t:"Breaks",ty:"ou",need:["brk"],val:g=>tot(g,"brk")},
-    {id:"ac",grp:"Service",ic:"bolt",t:"Aces",ty:"ou",need:["ac"],val:g=>tot(g,"ac")},
-    {id:"df",grp:"Service",ic:"df",t:"Doubles fautes",ty:"ou",need:["df"],val:g=>tot(g,"df")},
-    {id:"rk",grp:"Nerfs",ic:"broken",t:"Raquette cassée",ty:"yn",need:["rk"],val:g=>tot(g,"rk")>0}],
-  basket:[
-    {id:"res",grp:"Résultat",ic:"basket",t:"Vainqueur (prolongations comprises)",ty:"res2",need:["pts"],val:g=>{const v=g("pts");return v[0]>v[1]?0:1}},
-    {id:"pt",grp:"Points",ic:"chart",t:"Total de points",ty:"ou",need:["pts"],val:g=>tot(g,"pts")},
-    {id:"ph",grp:"Points",ic:"chart",t:m=>"Points de "+m.h,ty:"ou",need:["pts"],val:g=>g("pts")[0]},
-    {id:"pa",grp:"Points",ic:"chart",t:m=>"Points de "+m.a,ty:"ou",need:["pts"],val:g=>g("pts")[1]},
-    {id:"e10",grp:"Points",ic:"target",t:"Victoire de 10 points ou plus",ty:"yn",need:["pts"],val:g=>{const v=g("pts");return Math.abs(v[0]-v[1])>=10}},
-    {id:"ot",grp:"Points",ic:"whistle",t:"Prolongation",ty:"yn",need:["ot"],val:g=>g("ot")[0]>0},
-    {id:"tp",grp:"Jeu",ic:"basket",t:"Paniers à 3 points",ty:"ou",need:["tp"],val:g=>tot(g,"tp")},
-    {id:"rb",grp:"Jeu",ic:"chart",t:"Rebonds",ty:"ou",need:["reb"],val:g=>tot(g,"reb")},
-    {id:"as",grp:"Jeu",ic:"group",t:"Passes décisives",ty:"ou",need:["ast"],val:g=>tot(g,"ast")}]
-};
-const ALLSTATS={foot:["g","sot","co","of","fo","yc","rc","pk"],rugby:["pts","tr","cv","pm","px","dr","yc","rc"],tennis:["sets","gm","ac","df","brk","tb","rk","s1"],basket:["pts","tp","reb","ast","ot"]};
-const STATL={g:["Buts","goal"],sot:["Tirs cadrés","target"],co:["Corners","corner"],of:["Hors-jeux","flag"],fo:["Fautes","whistle"],yc:["Cartons jaunes","card","yc"],rc:["Cartons rouges","card","rc"],pk:["Penalties","whistle"],
-  pts:["Points","chart"],tr:["Essais","rugby"],cv:["Transformations","posts"],pm:["Pénalités réussies","posts"],px:["Pénalités ratées","miss"],dr:["Drops","drop"],
-  tp:["Paniers à 3 points","basket"],reb:["Rebonds","chart"],ast:["Passes décisives","group"],ot:["Prolongations","whistle"],
-  sets:["Sets","tennis"],gm:["Jeux","chart"],ac:["Aces","bolt"],df:["Doubles fautes","df"],brk:["Breaks","break"],tb:["Tie-breaks","tb"],rk:["Raquettes cassées","broken"]};
-// stats que chaque source sait fournir (on ne propose que les paris réglables)
-function avail(m){if(m.src!=="espn")return ALLSTATS[m.sp];
-  return m.sp==="foot"?["g","sot","co","of","fo","yc","rc","pk"]:m.sp==="rugby"?["pts"]:m.sp==="basket"?["pts","tp","reb","ast","ot"]:["sets","gm","tb","s1"]}
-const odd=p=>p<.012?0:Math.round(cl(.93/p,1.01,60)*100)/100;
-const mt=(d,m)=>typeof d.t==="function"?d.t(m):d.t;
-// En direct : on part du score actuel et on simule seulement la fin du match
-// (chaque but / essai / pénalité d'un match complet simulé est conservé avec la probabilité « temps restant »).
-const liveOK=m=>m.src==="espn"&&m.sp!=="tennis"&&m.sp!=="basket"&&m.state==="in"&&m.st&&m.min!=null&&m.min<(m.sp==="foot"?85:72);
-const canBet=m=>status(m)==="pre"||liveOK(m);
-function liveSims(m){const key=m.id+"|L|"+m.min+"|"+JSON.stringify(m.st.g||m.st.pts);let S_=MCC.get(key);if(S_)return S_;
-  const r=rng(hash(key)),full=m.sp==="foot"?90:80,f=cl((full-m.min)/full,0,1),now=m.st.g||m.st.pts,k=m.sp==="foot"?"g":"pts";S_={[k]:[new Int16Array(N),new Int16Array(N)]};
-  for(let i=0;i<N;i++){const o=SIM[m.sp](r,m);for(const p of [0,1]){const add=m.sp==="foot"?binom(r,o.g[p],f):5*binom(r,o.tr[p],f)+2*binom(r,o.cv[p],f)+3*binom(r,o.pm[p]+o.dr[p],f);S_[k][p][i]=now[p]+add}}
-  MCC.set(key,S_);return S_}
-const marketSims=m=>liveOK(m)?liveSims(m):sims(m);
-function markets(m){const lv_=liveOK(m),key=m.id+"|"+m.src+(lv_?"|L"+m.min+JSON.stringify(m.st.g||m.st.pts):"");let L=MKC.get(key);if(L)return L;
-  const S_=marketSims(m),av=lv_?[m.sp==="foot"?"g":"pts"]:avail(m);L=[];
-  for(const d of MK[m.sp]){if(d.need.some(k=>!av.includes(k)))continue;
-    const vals=new Float64Array(N);for(let i=0;i<N;i++){const g=k=>[S_[k][0][i],S_[k][1][i]];vals[i]=+d.val(g,m)}
-    let sels=[],line=null;
-    if(d.ty==="ou"){const mx=Math.max(...vals);let best=.5,bd=9;for(let k=0;k<=mx;k++){let c=0;for(const v of vals)if(v>k)c++;const p=c/N;if(Math.abs(p-.52)<bd){bd=Math.abs(p-.52);best=k}}
-      line=best+.5;let c=0;for(const v of vals)if(v>line)c++;const p=c/N;const ls=fr(line,1);
-      sels=[{l:"Plus de "+ls,p},{l:"Moins de "+ls,p:1-p}]}
-    else if(d.ty==="yn"){let c=0;for(const v of vals)if(v)c++;sels=[{l:"Oui",p:c/N},{l:"Non",p:1-c/N}]}
-    else{const lb=d.ty==="res"?[m.h,"Match nul",m.a]:d.ty==="res2"?[m.h,m.a]:(m.bo===5?["3 sets","4 sets","5 sets"]:["2 sets","3 sets"]);
-      const c=lb.map(()=>0);for(const v of vals)c[v]++;sels=lb.map((l,k)=>({l,p:c[k]/N}))}
-    // pour les paris oui/non, "Oui" = val vraie → index 0 ; pour plus/moins, "Plus" → index 0
-    L.push({d,id:d.id,line,title:mt(d,m),sels:sels.map(s=>({...s,o:odd(s.p)}))})}
-  MKC.set(key,L);return L}
-function outcome(d,m,st,line){ // index de la sélection gagnante, null si stats manquantes
-  if(!st||d.need.some(k=>!Array.isArray(st[k])||st[k].some(v=>v==null||isNaN(v))))return null;
-  const g=k=>st[k],v=d.val(g,m);
-  if(d.ty==="ou")return v>line?0:1;if(d.ty==="yn")return v?0:1;return v}
+const REG=new Map(),FEED={};
 
 /* ---------- fixtures simulées ---------- */
 const strength=(name,sp,lv)=>((hash(name+"|"+sp)%2001)/1000-1)*(lv<3?1.1:.9);
@@ -905,59 +755,7 @@ function simById(id){const p=id.split("-");if(p.length<4)return null;const [sp,l
   const mon=new Date(+d.slice(0,4),+d.slice(4,6)-1,+d.slice(6,8));return simFixtures(sp,lv,mon).find(m=>m.id===id)||null}
 
 /* ---------- flux live (pros) ---------- */
-const ESPN="https://site.api.espn.com/apis/site/v2/sports/";
 async function getJSON(u,ms=9000){const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);try{const r=await fetch(u,{signal:c.signal});if(!r.ok)throw new Error(r.status);return await r.json()}finally{clearTimeout(t)}}
-const SOCSTAT={yellowCards:"yc",redCards:"rc",offsides:"of",wonCorners:"co",foulsCommitted:"fo",shotsOnTarget:"sot",penaltyKickShots:"pk"};
-function recStrength(c,name,sp,lv){const s=c.records&&c.records[0]&&c.records[0].summary;
-  if(s&&/^\d+-\d+-\d+$/.test(s)){const[w,d,l]=s.split("-").map(Number),n=w+d+l;if(n>=3)return cl(((3*w+d)/n-1.4)/.8,-1.4,1.4)}
-  if(sp==="basket"&&s&&/^\d+-\d+$/.test(s)){const[w,l]=s.split("-").map(Number),n=w+l;if(n>=3)return cl((w/n-.5)*2.6,-1.3,1.3)}
-  return strength(name,sp,lv)*.6}
-// cotes américaines du bookmaker (ex. +120 / -150) → écart de niveau entre les deux équipes
-const amer=o=>{const v=parseFloat(o);return isNaN(v)?null:v>0?1+v/100:1+100/-v};
-function bookDiff(c){try{const ml=c.odds&&c.odds[0]&&c.odds[0].moneyline;if(!ml)return null;
-    const g=x=>x&&amer((x.close&&x.close.odds)||(x.open&&x.open.odds)),oh=g(ml.home),oa=g(ml.away),od=g(ml.draw);if(!oh||!oa||!od)return null;
-    const t=1/oh+1/oa+1/od,ph=1/oh/t,pa=1/oa/t;let best=0,be=9;
-    for(let d=-3;d<=3.001;d+=.05){const[h,,a]=footProbs(d,0);const e=(h-ph)**2+(a-pa)**2;if(e<be){be=e;best=d}}return best}catch(e){return null}}
-function footProbs(d,a){const l1=(1.3+.6*a)*Math.exp(.33*d+.12),l2=(1.3+.6*a)*Math.exp(-.33*d-.12),P=(l,k)=>{let p=Math.exp(-l);for(let i=1;i<=k;i++)p*=l/i;return p};
-  let h=0,x=0,w=0;for(let i=0;i<12;i++)for(let j=0;j<12;j++){const p=P(l1,i)*P(l2,j);if(i>j)h+=p;else if(i===j)x+=p;else w+=p}return[h,x,w]}
-// noms d'équipes en français (même liste que api/_teams.js)
-const TEAM_FR={"Albania":"Albanie","Andorra":"Andorre","Armenia":"Arménie","Australia":"Australie","Austria":"Autriche","Azerbaijan":"Azerbaïdjan","Belarus":"Biélorussie","Belgium":"Belgique","Bosnia-Herz":"Bosnie-Herzégovine","Bosnia and Herzegovina":"Bosnie-Herzégovine","Brazil":"Brésil","Bulgaria":"Bulgarie","Croatia":"Croatie","Cyprus":"Chypre","Czechia":"Tchéquie","Czech Republic":"Tchéquie","Denmark":"Danemark","England":"Angleterre","Estonia":"Estonie","Faroe Islands":"Îles Féroé","Fiji":"Fidji","Finland":"Finlande","Georgia":"Géorgie","Germany":"Allemagne","Greece":"Grèce","Hungary":"Hongrie","Iceland":"Islande","Israel":"Israël","Italy":"Italie","Japan":"Japon","Latvia":"Lettonie","Lithuania":"Lituanie","Malta":"Malte","Moldova":"Moldavie","Montenegro":"Monténégro","N Ireland":"Irlande du Nord","Northern Ireland":"Irlande du Nord","Netherlands":"Pays-Bas","New Zealand":"Nouvelle-Zélande","North Macedonia":"Macédoine du Nord","Norway":"Norvège","Poland":"Pologne","Rep Ireland":"Irlande","Republic of Ireland":"Irlande","Ireland":"Irlande","Romania":"Roumanie","San Marino":"Saint-Marin","Scotland":"Écosse","Serbia":"Serbie","Slovakia":"Slovaquie","Slovenia":"Slovénie","Spain":"Espagne","Sweden":"Suède","Switzerland":"Suisse","Türkiye":"Turquie","Turkey":"Turquie","Uzbekistan":"Ouzbékistan","Wales":"Pays de Galles","South Africa":"Afrique du Sud","Argentina":"Argentine","Chile":"Chili","United States":"États-Unis","USA":"États-Unis","Mexico":"Mexique","Morocco":"Maroc","Algeria":"Algérie","Tunisia":"Tunisie","Senegal":"Sénégal","Ivory Coast":"Côte d'Ivoire","Cameroon":"Cameroun","Egypt":"Égypte","Colombia":"Colombie","Ecuador":"Équateur","Peru":"Pérou","Russia":"Russie","South Korea":"Corée du Sud","Korea Republic":"Corée du Sud","Saudi Arabia":"Arabie saoudite","Namibia":"Namibie","Ukraine":"Ukraine","Kazakhstan":"Kazakhstan","Kosovo":"Kosovo","Uruguay":"Uruguay","Canada":"Canada","Portugal":"Portugal","France":"France","Bremen":"Werder Brême","Frankfurt":"Francfort","Hamburg":"Hambourg","Gladbach":"M'gladbach","Spurs":"Tottenham","C Palace":"Crystal Palace","Nottm Forest":"Nottingham Forest","Boro":"Middlesbrough","Man City":"Manchester City","Man Utd":"Manchester United","Sevilla":"Séville","Athletic":"Athletic Bilbao","Atlético":"Atlético Madrid","Rayo":"Rayo Vallecano","S Bratislava":"Slovan Bratislava","AEK Athens":"AEK Athènes","København":"FC Copenhague","Standard Liege":"Standard de Liège","Slavia Prague":"Slavia Prague","Sporting":"Sporting Portugal","Red Star":"Étoile rouge","Bayern":"Bayern Munich","Dortmund":"Dortmund","Leverkusen":"Leverkusen","Inter Milan":"Inter Milan","Milan":"AC Milan","Napoli":"Naples","Celta Vigo":"Celta Vigo","Deportivo":"La Corogne","St. Étienne":"Saint-Étienne","Stade Francais Paris":"Stade Français","Bordeaux Begles":"Bordeaux-Bègles","Montpellier Herault":"Montpellier","LOU Rugby":"Lyon OU","Castres Olympique":"Castres","Chambery":"Chambéry","Angouleme":"Angoulême","Montlucon":"Montluçon","Nimes":"Nîmes","Chalon-sur-Saone":"Chalon-sur-Saône","Frejus":"Fréjus","Epinal":"Épinal","Fecamp":"Fécamp","Trelissac":"Trélissac","Vitre":"Vitré","Le Havre AC":"Le Havre","Clermont Foot":"Clermont","Dijon FCO":"Dijon","Red Star FC":"Red Star","Rodez Aveyron":"Rodez","SC Amiens":"Amiens"},frTeam=n=>TEAM_FR[String(n).trim()]||String(n).trim();
-function parseTeamEvent(ev,sp,lv,path){const c=ev.competitions&&ev.competitions[0];if(!c||!c.competitors||c.competitors.length<2)return null;
-  const Hc=c.competitors.find(x=>x.homeAway==="home")||c.competitors[0],Ac=c.competitors.find(x=>x.homeAway==="away")||c.competitors[1];
-  const ty=(ev.status&&ev.status.type)||{},state=ty.state||"pre";
-  const nm=t=>frTeam((t.team&&(t.team.shortDisplayName||t.team.displayName))||"?");
-  const m={id:"e-"+path.replace(/\W/g,"")+"-"+ev.id,src:"espn",path,eid:ev.id,sp,lv,bo:3,comp:SP[sp].lv[lv],h:nm(Hc),a:nm(Ac),
-    hl:Hc.team&&Hc.team.logo,al:Ac.team&&Ac.team.logo,hid:Hc.team&&Hc.team.id,aid:Ac.team&&Ac.team.id,t:Date.parse(ev.date),
-    state,clock:ty.shortDetail||"",done:!!ty.completed,cancel:state==="post"&&!ty.completed};
-  {const st_=ev.status||{},dc=parseInt(st_.displayClock,10);m.min=/^(HT|MT)/i.test(ty.shortDetail||"")||ty.name==="STATUS_HALFTIME"?(sp==="foot"?45:40):!isNaN(dc)?dc:Math.round((st_.clock||0)/60)}
-  m.s=[recStrength(Hc,m.h,sp,lv),recStrength(Ac,m.a,sp,lv)];
-  if(sp==="foot"){const d=bookDiff(c);if(d!=null)m.s=[d/2,-d/2]}
-  if(state!=="pre"){const k=sp==="foot"?"g":"pts";m.st={[k]:[+Hc.score||0,+Ac.score||0]};
-    if(sp==="foot")[Hc,Ac].forEach((x,p)=>(x.statistics||[]).forEach(s=>{const k2=SOCSTAT[s.name];if(k2){(m.st[k2]||(m.st[k2]=[null,null]))[p]=parseFloat(s.displayValue)}}));
-    if(sp==="basket"){const BK={threePointFieldGoalsMade:"tp",rebounds:"reb",assists:"ast"};
-      [Hc,Ac].forEach((x,p)=>(x.statistics||[]).forEach(s=>{const k2=BK[s.name];if(k2){(m.st[k2]||(m.st[k2]=[null,null]))[p]=parseFloat(s.displayValue)}}));
-      const q=(Hc.linescores||[]).length;if(q>=4)m.st.ot=[q-4,0]}}
-  if(sp==="foot"&&Array.isArray(c.details))m.ev=c.details.map(x=>{const a=(x.athletesInvolved||[])[0],t=(x.type&&x.type.text)||"";
-    return{ty:x.scoringPlay?(x.ownGoal?"og":"g"):/red/i.test(t)?"rc":/yellow/i.test(t)?"yc":"",id:a&&String(a.id),min:parseInt((x.clock&&x.clock.displayValue)||"0",10)}}).filter(e=>e.ty&&e.id);
-  return m}
-function parseTennis(ev,lv,path){const out=[];const groups=ev.groupings||[{grouping:{slug:"singles"},competitions:ev.competitions||[]}];
-  for(const g of groups){const slug=((g.grouping&&(g.grouping.slug||g.grouping.displayName))||"").toLowerCase();if(slug.includes("double"))continue;
-    for(const c of g.competitions||[]){const cs=c.competitors||[];if(cs.length<2)continue;const A=cs[0],B=cs[1];
-      const nm=x=>(x.athlete&&(x.athlete.displayName||x.athlete.shortName))||(x.team&&x.team.displayName)||"?";
-      const ty=(c.status&&c.status.type)||{},state=ty.state||"pre";
-      const gs=/(australian open|roland|french open|wimbledon|us open)/i.test(ev.name||"")&&!/wta|women/i.test(slug+path);
-      const m={id:"e-"+path.replace(/\W/g,"")+"-"+c.id,src:"espn",path,eid:c.id,date:c.date||ev.date,sp:"tennis",lv,bo:gs?5:3,
-        comp:(ev.shortName||ev.name||"Tour")+(path.endsWith("wta")?" · WTA":" · ATP"),h:nm(A),a:nm(B),
-        hf:A.athlete&&A.athlete.flag&&A.athlete.flag.href,af:B.athlete&&B.athlete.flag&&B.athlete.flag.href,
-        t:Date.parse(c.date||ev.date),state,clock:ty.shortDetail||"",done:!!ty.completed,cancel:state==="post"&&!ty.completed};
-      m.s=[strength(m.h,"tennis",lv)*.5,strength(m.a,"tennis",lv)*.5];
-      const la=(A.linescores||[]).map(x=>+x.value),lb=(B.linescores||[]).map(x=>+x.value);
-      if(state!=="pre"&&la.length){const sets=[0,0],gm=[0,0];let tb=0;
-        la.forEach((v,i)=>{const w=lb[i]??0;gm[0]+=v;gm[1]+=w;if(Math.max(v,w)>=6&&v!==w&&(state==="post"||i<la.length-1))sets[v>w?0:1]++;if((v===7&&w===6)||(v===6&&w===7))tb++});
-        if(state==="post"&&A.winner!==undefined&&sets[0]===sets[1])sets[A.winner?0:1]++;
-        m.st={sets,gm,tb:[tb,0],s1:la.length&&lb.length&&la[0]!==lb[0]?(la[0]>lb[0]?[1,0]:[0,1]):undefined};if(!m.st.s1)delete m.st.s1}
-      if(m.t)out.push(m)}}
-  return out}
 async function loadFeed(sp,lv){const paths=SP[sp].feeds[lv],key=sp+lv,now=Date.now();FEED[key]=FEED[key]||{ok:null,list:[]};
   const qs=sp==="tennis"?[`${ymd(now-4*DAY)}-${ymd(now+8*DAY)}`]:[...new Set([ymd(now-4*DAY).slice(0,6),ymd(now+8*DAY).slice(0,6),ymd(now+22*DAY).slice(0,6)])];
   try{const res=await Promise.all(paths.flatMap(p=>qs.map(q=>getJSON(`${ESPN}${p}/scoreboard?dates=${q}&limit=500`).then(j=>[p,j]))));
@@ -1040,11 +838,6 @@ async function espnRefetch(snap){ // match hors fenêtre : on va le rechercher �
     for(const ev of j.events||[]){const ms=snap.sp==="tennis"?parseTennis(ev,snap.lv,snap.path):[parseTeamEvent(ev,snap.sp,snap.lv,snap.path)];
       for(const m of ms)if(m&&!REG.has(m.id))REG.set(m.id,m)}}catch(e){}}
 
-/* ---------- statut d'un match ---------- */
-function status(m){const now=Date.now();
-  if(m.src==="espn")return m.cancel?"cancel":m.state==="in"?"live":m.state==="post"?"post":"pre";
-  if(m.src==="org"||m.src==="am")return m.res?"post":now<m.t?"pre":"wait";
-  return now<m.t?"pre":now<m.t+SP[m.sp].dur*6e4?"live":"post"}
 function liveInfo(m){const el=(Date.now()-m.t)/6e4;
   if(m.src==="espn")return{sc:m.st&&(m.st.g||m.st.pts||m.st.sets),clock:m.clock};
   const o=simOne(m);
@@ -1053,7 +846,6 @@ function liveInfo(m){const el=(Date.now()-m.t)/6e4;
   const f=cl(el/SP[m.sp].dur,0,1);
   if(m.sp==="rugby")return{sc:o.pts.map(v=>Math.round(v*f)),clock:el<42?Math.floor(el)+"’":el<57?"Mi-temps":Math.min(80,Math.floor(el-17))+"’"};
   return{sc:null,clock:"Set "+Math.min((o.sets[0]+o.sets[1]),1+Math.floor(f*(o.sets[0]+o.sets[1])))}}
-function realStats(m){const s=status(m);if(s!=="post")return null;if(m.src==="sim")return simOne(m);if(m.src==="org"||m.src==="am")return m.res;return m.st||null}
 function finalScore(m){const st=realStats(m);if(!st)return null;return st.g||st.pts||st.sets||null}
 
 /* ---------- liste des matchs affichés ---------- */
@@ -2544,7 +2336,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.59";
+const VERSION="1.60";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
