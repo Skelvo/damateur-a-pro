@@ -1926,7 +1926,7 @@ async function welcomeGo(){const inp=$("#w-name"),n=(inp.value||"").replace(/\s+
 
 /* ---------- installer l'app / changer d'appareil ---------- */
 const UA=navigator.userAgent,STANDALONE=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
-const IOS=/iphone|ipad|ipod/i.test(UA)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1),ANDROID=/android/i.test(UA);
+const IOS=/iphone|ipad|ipod/i.test(UA)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1),ANDROID=/android/i.test(UA),INAPP=ANDROID&&/; wv\)|FBAN|FBAV|Instagram|Snapchat|Line\/|MicroMessenger|GSA\//i.test(UA);
 const IOS_SAFARI=IOS&&!/CriOS|FxiOS|EdgiOS|OPiOS|GSA\/|Instagram|FBAN|FBAV|Snapchat/i.test(UA);
 let installEvt=null;
 addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvt=e;if(GATE){renderGate();return}if(U.tab==="m"&&!U.open)render();if(U.open==="install")layer(viewInstall())});
@@ -1945,11 +1945,14 @@ function viewInstall(gate){const head=gate?"":`<div class="grab"><h3>Installer l
       <li><span class="n">3</span><div>Ouvre <b>D’amateur à pro</b> depuis ton écran d’accueil et entre ton <b>code de transfert</b> : tu retrouves tes jetons, tes paris et tes ligues.<small>Sur iPhone, l’app installée ne voit pas ce que tu as fait dans Safari : le code fait le lien.</small></div></li></ol>
     <div class="xbox" id="xbox">${S.name?`<button class="btn gold wide" data-act="xmake">${ic("ticket")} Créer mon code de transfert</button>`:gate?`<p class="note">Nouveau joueur ? Pas besoin de code : tu choisiras ton pseudo dans l’app.</p>`:`<p class="note">Choisis d’abord un pseudo pour avoir un code.</p>`}</div>
 `}
+  if(ANDROID&&INAPP&&!installEvt)return head+`<p class="note" style="font-size:15px">Ce lien s’est ouvert dans le navigateur d’une autre appli (WhatsApp, Messenger, Google…), qui ne permet pas d’installer. Ouvre-le dans <b>Chrome</b> :</p>
+      <a class="btn gold wide" href="intent://${location.host}${location.pathname}#Intent;scheme=https;package=com.android.chrome;end">${ic("share")} Ouvrir dans Chrome</a>
+      <p class="note">Si rien ne se passe : touche le menu <b>⋮</b> (ou <b>…</b>) et choisis <b>Ouvrir dans Chrome</b> ou <b>Ouvrir dans le navigateur</b>.</p>`;
   if(ANDROID)return head+(installEvt?`<p class="note" style="font-size:15px">Un appui suffit : l’app s’ajoute à ton écran d’accueil, avec ton compte.</p><button class="btn gold wide" data-act="instgo">${ic("plus")} Installer l’app</button>`
     :`<ol class="steps"><li><span class="n">1</span><div>Dans Chrome, touche le menu <b>⋮</b> en haut à droite.</div></li>
       <li><span class="n">2</span><div>Choisis <b>Installer l’application</b> (ou <b>Ajouter à l’écran d’accueil</b>), puis confirme.</div></li>
       <li><span class="n">3</span><div>Ouvre <b>D’amateur à pro</b> depuis ton écran d’accueil : ton compte est déjà là.</div></li></ol>
-      <p class="note">Sur un autre navigateur (Samsung Internet, Firefox…), l’option se trouve aussi dans le menu, sous « Ajouter à l’écran d’accueil ».</p>`);
+      <p class="note">Pas d’option « Installer » ? Vérifie que tu es bien dans <b>Chrome</b> (pas dans WhatsApp, Messenger ou une autre appli). Sur Samsung Internet : menu <b>≡</b> › <b>Ajouter page à</b> › <b>Écran d’accueil</b>.</p>`);
   return head+`<p class="note">Ouvre ce site sur ton téléphone pour l’installer sur l’écran d’accueil.</p>`}
 async function installPrompt(){if(!installEvt)return;installEvt.prompt();const r=await installEvt.userChoice.catch(()=>null);installEvt=null;
   if(GATE){renderGate();if(r&&r.outcome==="accepted")toast("App installée ! Ouvre-la depuis ton écran d’accueil.","win");return}
@@ -1994,7 +1997,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.29";
+const VERSION="1.30";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
