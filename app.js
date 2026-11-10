@@ -2563,7 +2563,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.26";
+const VERSION="2.27";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -2583,6 +2583,10 @@ async function boot(){if(GATE||!S.name){hideSplash();setTimeout(afterBoot,300);r
   await Promise.race([Promise.allSettled(jobs),new Promise(r=>setTimeout(r,6500))]);
   clearInterval(mt);U.lg.loading=false;render();hideSplash();setTimeout(afterBoot,400)}
 refFromLink();pariFromLink();
+// coincé dans le navigateur d'Instagram, Facebook… : on tente tout de suite de rouvrir le lien dans Safari ou Chrome (une seule fois)
+(function escapeInApp(){const inIOS=IOS&&!IOS_SAFARI&&INAPP_NAME,inAnd=ANDROID&&INAPP;if(!GATE||!(inIOS||inAnd))return;
+  try{if(sessionStorage.getItem("dap.esc"))return;sessionStorage.setItem("dap.esc","1")}catch(e){}
+  const u=shareableUrl();setTimeout(()=>{location.href=inIOS?"x-safari-"+u:"intent://"+u.replace(/^https?:\/\//,"")+"#Intent;scheme=https;package=com.android.chrome;end"},350)})();
 if(GATE){hideSplash();renderGate()}else{
 render();
 if(!S.name){hideSplash();U.open="welcome";layer(viewWelcome(false));setTimeout(wrefFill,300)}else{syncSoon();joinFromLink()}
