@@ -443,6 +443,7 @@ function viewCareer(){const LV=myLv();
   ${palmares({id:S.pid,pal:U.mePal,best:{odds:W.reduce((a,b)=>Math.max(a,b.odds),0),pay:best}})}
   <button class="cstyle ccard" data-act="mycard"><span class="csw cardsw">🃏</span><span><b>Ma carte de joueur</b><small>Ta note sur 99 et tes 6 stats, à partager</small></span><span class="arr">›</span></button>
   <button class="cstyle" data-act="style"><span class="csw bnr bn-${(S.cos&&S.cos.b)||"b1"}"></span><span><b>🎨 Mon style</b><small>Bannière, couleur du pseudo, titre : débloque-les en jouant</small></span><span class="arr">›</span></button>
+  <button class="cstyle cref" data-act="ref"><span class="csw refsw">🎁</span><span><b>Parrainer un ami</b><small>+500 jetons pour toi, +250 pour lui</small></span><span class="arr">›</span></button>
   <button class="csucc" data-act="succ"><span><b>🏅 Succès</b><small>${SC.length} / ${SUCC.length} débloqués</small></span><span class="csi">${SUCC.filter(s=>SC.includes(s[0])).slice(-5).map(s=>ic(s[1])).join("")}</span><span class="arr">›</span></button>
   <div class="ctiles"><button data-act="stats">📊<b>Mes stats</b><small>Par sport, par pari, par mois</small></button><button data-act="mshare">📤<b>Mon mois</b><small>Bilan en image</small></button>
     <button data-act="prof" data-id="${esc(S.pid||"")}">👤<b>Mon profil</b><small>Ce que voient les autres</small></button><button data-act="help">❓<b>Aide</b><small>Comment ça marche</small></button></div>
@@ -697,6 +698,8 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"mshare":shareMonth();break;
     case"follow":followShared();break;
     case"style":openStyle();break;
+    case"ref":openRef();break;
+    case"refshare":refShare();break;
     case"mycard":openCard({id:S.pid,name:S.name,av:S.avv,me:true,bets:S.bets,xp:S.xp,cos:S.cos,fav:S.fav});break;
     case"pcard":if(U.prof)openCard(U.prof);break;
     case"cardopt":{S.cardOpt={...(S.cardOpt||{}),[d.k]:d.v};S.cos={...(S.cos||{}),k:{...((S.cos&&S.cos.k)||{}),[d.k]:d.v}};saveLocal();refreshCard(d.k,d.v);clearTimeout(U.cardT);U.cardT=setTimeout(()=>api("card_set",{k:S.cos.k}).catch(()=>{}),700);break}
@@ -793,7 +796,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"xferok":transferIn();break;
     case"xmake":transferOut();break;
     case"xmake2":U.open="install";layer(`<div class="grab"><h3>Transférer mon compte</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div><div class="xbox" id="xbox"></div>`);transferOut();break;
-    case"xback":U.open="welcome";layer(viewWelcome(false));break;
+    case"xback":U.open="welcome";layer(viewWelcome(false));setTimeout(wrefFill,100);break;
     case"copycode":navigator.clipboard&&navigator.clipboard.writeText(d.code).then(()=>toast("Code copié.","win")).catch(()=>{});break;
     case"copylink":{const u=location.origin+location.pathname;(navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast("Lien copié : colle-le dans Safari.","win")).catch(()=>prompt("Copie ce lien :",u));break}
     case"install":U.open="install";layer(viewInstall());break;
@@ -827,7 +830,7 @@ function applyCancel(j){if(!j||!Array.isArray(j.cancel))return;let n=0;for(const
 const myStats=()=>{const d=S.bets.filter(b=>b.st==="won"||b.st==="lost");return{won:d.filter(b=>b.st==="won").length,lost:d.filter(b=>b.st==="lost").length}};
 let sessP=null;
 function ensureSession(){if(S.tok)return Promise.resolve(true);if(!S.name)return Promise.resolve(false);
-  return sessP||(sessP=api("session",{name:S.name,bal:S.bal,peak:S.peak,...myStats()}).then(j=>{S.tok=j.token;S.pid=j.id;saveLocal();return true})
+  return sessP||(sessP=api("session",{name:S.name,bal:S.bal,peak:S.peak,ref:refStored(),...myStats()}).then(j=>{S.tok=j.token;S.pid=j.id;saveLocal();refDone(j);return true})
     .catch(e=>{if(e.code==="name_taken")askNewName();if(e.code==="name_bad")askNewName(true);return false}).finally(()=>sessP=null))}
 // Pseudo déjà pris par un autre joueur : on demande d'en choisir un autre (une fois par ouverture)
 let askedName=false;
@@ -1165,6 +1168,23 @@ async function playerCard(p,o){o=o||{};const C=cardStats(p.bets||[],p.xp),T=CARD
     c.globalAlpha=.9;c.drawImage(li,W/2-lw/2,888,lw,lh);c.globalAlpha=1}
   txt(`${C.n} PARI${C.n>1?"S":""}`,W/2,952,'800 22px "Barlow Condensed"');
   return{blob:await new Promise(ok=>cv.toBlob(ok,"image/png")),C,T}}
+function refDone(j){try{localStorage.removeItem("dap.ref")}catch(e){}if(j&&j.parrain){S.refBy=j.parrain;saveLocal();setTimeout(claimGifts,2500)}}
+async function wrefFill(){const b=$("#wref"),rc=refStored();if(!b)return;try{const j=await api("ref_info",rc?{code:rc}:{pending:1});if(j.name&&$("#wref"))$("#wref").innerHTML=`<div class="refban">🎁 <span><b>Invité par ${esc(j.name)}</b><br>+${tok(j.gets)} jetons de bienvenue en plus des 1 000 de départ.</span></div>`}catch(e){}}
+async function openRef(){U.open="ref";const head=`<div class="grab"><h3>Parrainer un ami</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
+  layerLater(head+`<div class="skel" style="height:140px"></div><div class="skel"></div>`);
+  try{if(!(await ensureSession()))throw 0;const j=await api("ref_get",{});if(U.open!=="ref")return;U.ref=j;const ok=j.friends.filter(f=>f.ok).length;
+    layer(head+`<div class="refhero"><div class="refgift">🎁</div><p><b>Invite tes amis sur Tribune</b></p>
+      <div class="refrw"><div><b>+${tok(j.gets)}</b><small>pour ton ami, dès son inscription</small></div><div><b>+${tok(j.give)}</b><small>pour toi, quand il a joué ses ${j.need} premiers paris</small></div></div></div>
+      <div class="xcode"><small>Ton code de parrainage</small><b>${esc(j.code)}</b></div>
+      <button class="btn gold wide" data-act="refshare">${ic("share")} Envoyer mon lien d’invitation</button>
+      <div class="grp">Mes filleuls${j.friends.length?` · ${ok} validé${ok>1?"s":""} · +${tok(j.earned)} gagnés`:""}</div>
+      ${j.friends.length?`<div class="reflist">${j.friends.map(f=>`<div class="refrow">${avatar(f.id,f.name,f.av,"av")}<span><b>${esc(f.name)}</b><small>${f.ok?"✅ Parrainage validé : +"+tok(j.give)+" pour toi":`${f.n} / ${j.need} paris terminés`}</small></span>${f.ok?"":`<i class="refbar"><i style="width:${f.n/j.need*100}%"></i></i>`}</div>`).join("")}</div>`
+        :`<div class="empty">${ic("group")}<b>Pas encore de filleul</b>Envoie ton lien : ton ami l’ouvre, installe l’app et crée son compte, c’est tout.</div>`}
+      <p class="note">Jusqu’à ${j.max} parrainages récompensés. Les jetons restent fictifs. À 3 amis validés, tu débloques le titre « 🤝 Recruteur ».</p>`)}
+  catch(e){if(U.open==="ref")layer(head+`<div class="empty">${ic("info")}<b>Pas de connexion</b>Réessaie dans un instant.</div>`)}}
+async function refShare(){const j=U.ref;if(!j)return;const url=APP_URL+"?parrain="+j.code,text=`Viens jouer avec moi sur Tribune 🏆 Paris sportifs gratuits entre amis (jetons fictifs). Avec mon lien tu reçois +${j.gets} jetons de bienvenue :`;
+  try{if(navigator.share){await navigator.share({title:"Tribune",text,url});return}}catch(e){if(e&&e.name==="AbortError")return}
+  try{await navigator.clipboard.writeText(text+" "+url);toast("Lien copié : colle-le à ton ami !","win")}catch(e){prompt("Copie ce lien :",url)}}
 async function openCard(p){U.open="card";U.cardP=p;const head=`<div class="grab"><h3>Carte de joueur</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
   if(!U.cardSk)layerLater(head+`<div class="skel" style="height:420px"></div>`,200);
   const o=p.me?{d:"rang",bd:S.fav?"fav":"emo",sub:"t",sp:"auto",...(S.cardOpt||{}),...((S.cos&&S.cos.k)||{})}:{d:"rang",bd:"emo",sub:"t",sp:"auto",...((p.cos&&p.cos.k)||{})};
@@ -1283,6 +1303,11 @@ async function shareTicket(id){const b=S.bets.find(x=>x.id===id);if(!b)return;to
     const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="ticket-tribune.png";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4e3)}
   catch(e){toast("Impossible de créer l’image.","bad")}}
 // lien de ticket (…/?pari=CODE) : on ouvre le ticket ; un nouveau joueur le retrouve après son inscription
+// lien de parrainage : on garde le code jusqu'à la création du compte
+function refFromLink(){const c=new URLSearchParams(location.search).get("parrain");if(!c)return;const code=c.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,8);
+  const q=new URLSearchParams(location.search);q.delete("parrain");history.replaceState(null,"",location.pathname+(q.toString()?"?"+q:""));
+  try{localStorage.setItem("dap.ref",code)}catch(e){}}
+const refStored=()=>{try{return localStorage.getItem("dap.ref")||""}catch(e){return""}};
 function pariFromLink(){const c=new URLSearchParams(location.search).get("pari");if(!c)return;history.replaceState(null,"",location.pathname);
   try{localStorage.setItem("dap.pari",c.toUpperCase().slice(0,10))}catch(e){}}
 let ptAt=0;async function pendingTicket(){if(!S.tok||GATE||Date.now()-ptAt<4000||(U.open&&U.open!=="slip"))return;ptAt=Date.now();
@@ -2429,6 +2454,7 @@ function viewWelcome(rename,msg){return`<div class="welcome">${rename?`<div clas
   
   <img src="logo-tribune.png?v=2" alt="Tribune" class="wlogo"><p class="note" style="font-size:15px">Parie gratuitement sur les vrais matchs de foot, de rugby, de tennis et de NBA, en direct. Monte de niveau, de Spectateur à Légende.</p>
   <div class="feat"><div>${ic("card","yc")}Cartons, corners, hors-jeux</div><div>${ic("posts")}Essais, pénalités ratées</div><div>${ic("broken")}Doubles fautes, raquettes cassées</div></div>`}
+  ${!S.name?`<div id="wref"></div>`:""}
   <div class="form" style="text-align:left"><label>Ton pseudo<input id="w-name" maxlength="18" value="${esc(S.name)}" placeholder="ex. Le Pronostiqueur" autocomplete="nickname"></label>
   <p class="warn" id="w-err" hidden></p>
   ${rename?"":`<label class="agechk"><input type="checkbox" id="w-age"><span>J’ai <b>18 ans ou plus</b> et j’accepte les <button class="link" data-act="wlegal" style="padding:0">règles du jeu et la politique de confidentialité</button>.</span></label><div id="w-legal" hidden></div>`}
@@ -2442,7 +2468,7 @@ async function welcomeGo(){const inp=$("#w-name"),n=(inp.value||"").replace(/\s+
   const bad=()=>{err.hidden=false;err.textContent=`« ${n} » n’est pas accepté. Choisis un pseudo correct.`;b.disabled=false;inp.focus();inp.select()};
   const taken=()=>{err.hidden=false;err.textContent=`« ${n} » est déjà pris. Choisis un autre pseudo.`;b.disabled=false;inp.focus();inp.select()};
   if(first&&!S.tok&&!S.bets.length&&S.starter!=="done"){S.bal=0;S.peak=Math.max(0,S.peak);S.starter="pending"}
-  try{if(first||!S.tok){const j=await api("session",{name:n,bal:S.bal,peak:S.peak,...myStats()});S.tok=j.token;S.pid=j.id}
+  try{if(first||!S.tok){const j=await api("session",{name:n,bal:S.bal,peak:S.peak,ref:refStored(),...myStats()});S.tok=j.token;S.pid=j.id;refDone(j)}
     else{const j=await api("sync",{name:n,bal:S.bal,peak:S.peak,...myStats()});if(j.name_taken){taken();return}if(j.name_bad){bad();return}}}
   catch(e){if(e.code==="name_taken"){taken();return}if(e.code==="name_bad"){bad();return}}   // hors connexion : on accepte, la vérification se fera plus tard
   if(first)S.tosV=TOS_V;S.name=n;askedName=false;save();U.open=null;layer("");render();
@@ -2484,14 +2510,15 @@ async function installPrompt(){if(!installEvt)return;installEvt.prompt();const r
 // Sur téléphone, le jeu ne s'utilise que depuis l'app installée (écran d'accueil) : dans un navigateur,
 // on n'affiche que la marche à suivre (et le code de transfert pour ceux qui jouaient déjà ici).
 const GATE=!STANDALONE&&!matchMedia("(display-mode: fullscreen), (display-mode: minimal-ui)").matches&&(IOS||ANDROID);
-function renderGate(){const lg=new URLSearchParams(location.search).get("guilde");let pc=null;try{pc=localStorage.getItem("dap.pari")}catch(e){}
+function renderGate(){const lg=new URLSearchParams(location.search).get("guilde");let pc=null;try{pc=localStorage.getItem("dap.pari")}catch(e){}const rc=refStored();
+  if(rc)setTimeout(async()=>{try{const j=await api("ref_info",{code:rc,mark:1});const box=$("#gref");if(box&&j.name)box.innerHTML=`<div class="refban">🎁 <span><b>${esc(j.name)} t’invite sur Tribune !</b><br>Installe l’app ci-dessous et crée ton compte : <b>+${tok(j.gets)} jetons de bienvenue</b> en plus des 1 000 de départ.</span></div>`}catch(e){}},30);
   if(pc)setTimeout(async()=>{try{const j=await api("shared_bet",{code:pc,mark:1});const box=$("#gpari");if(box)box.innerHTML=`<div class="gptk"><b>🎟️ Ticket de ${esc(j.name)}</b><small>${j.legs.length>1?"Combiné de "+j.legs.length:"Pari simple"} · cote ${fr(j.odds)}</small>
     ${j.legs.map(L=>`<div class="gpl"><span>${esc(L.l)}</span><b>${fr(L.o)}</b></div>`).join("")}</div>
     <div class="gpgo">📲 <b>Tu as déjà l’app ?</b> Ouvre maintenant <b>Tribune</b> depuis ton écran d’accueil : <b>le ticket s’ouvrira tout seul</b> (dans les 20 minutes), avec le bouton « Je suis ce pari ».</div>
     <p class="note">Pas encore l’app ? Installe-la ci-dessous : le ticket t’attendra.</p>`}catch(e){}},50);
   document.body.classList.add("gated");
   $("#main")._html=null;$("#main").innerHTML=`<div class="gate"><h1 class="glogo"><img src="logo-tribune.png?v=2" alt="Tribune"></h1><small style="color:var(--mute2)">v${VERSION}</small><p class="gsub">Le jeu se joue <b>uniquement depuis l’app</b> sur ton écran d’accueil. C’est gratuit, sans store, et ça prend 10 secondes.</p>
-    ${pc?`<div id="gpari"><div class="skel" style="height:120px"></div></div>`:""}
+    <div id="gref"></div>${pc?`<div id="gpari"><div class="skel" style="height:120px"></div></div>`:""}
     ${lg?`<div class="xcode" style="margin-bottom:12px"><small>Invitation à une guilde : une fois dans l’app, va dans Guildes › Rejoindre et entre ce code</small><b>${esc(lg.toUpperCase().slice(0,8))}</b></div>`:""}
     ${viewInstall(true)}</div>`}
 // Code de transfert : on envoie tout l'état du jeu (sauf le jeton) au serveur, valable 48 h
@@ -2526,7 +2553,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.22";
+const VERSION="2.23";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -2545,10 +2572,10 @@ async function boot(){if(GATE||!S.name){hideSplash();setTimeout(afterBoot,300);r
       if(L0)await Promise.allSettled([loadProno(),loadLm(U.lg.code||L0.code)])})()])})()];
   await Promise.race([Promise.allSettled(jobs),new Promise(r=>setTimeout(r,6500))]);
   clearInterval(mt);U.lg.loading=false;render();hideSplash();setTimeout(afterBoot,400)}
-pariFromLink();
+refFromLink();pariFromLink();
 if(GATE){hideSplash();renderGate()}else{
 render();
-if(!S.name){hideSplash();U.open="welcome";layer(viewWelcome(false))}else{syncSoon();joinFromLink()}
+if(!S.name){hideSplash();U.open="welcome";layer(viewWelcome(false));setTimeout(wrefFill,300)}else{syncSoon();joinFromLink()}
 loadFeeds();boot();
 setTimeout(()=>{if(S.dk&&Object.values(S.dk).some(x=>!x.settled))checkDarkAll()},5000);
 goFrom(location.href);

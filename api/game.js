@@ -514,6 +514,35 @@ async function mailContact(p, text) {
     clearTimeout(t);
   } catch (e) { /* le message reste enregistré sur le serveur */ }
 }
+// ---- Parrainage : +250 pour le filleul à l'inscription, +500 pour le parrain quand le filleul a 3 paris terminés ----
+const REF_NEW = 250, REF_GIVE = 500, REF_BETS = 3, REF_MAX = 20;
+const REF_ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+async function refCode(s, pid) {
+  const r = (await s.query(`select ref_code from players where id = $1`, [pid]))[0];
+  if (r && r.ref_code) return r.ref_code;
+  for (let i = 0; i < 8; i++) {
+    let c = ""; for (let k = 0; k < 6; k++) c += REF_ABC[randomInt(REF_ABC.length)];
+    try { const u = await s.query(`update players set ref_code = $2 where id = $1 and ref_code is null returning ref_code`, [pid, c]); if (u[0]) return u[0].ref_code; return (await s.query(`select ref_code from players where id = $1`, [pid]))[0].ref_code; }
+    catch (e) { if (!isTaken(e)) throw e; }
+  }
+  throw fail(500, "code");
+}
+const cleanRef = (v) => String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+// filleuls qui ont joué leurs 3 paris : cadeau pour le parrain (une seule fois chacun, 20 au plus)
+async function refCheck(s, parrain) {
+  const rows = await s.query(`select f.id, f.name from players f where f.ref_by = $1
+      and (select count(*) from bets x where x.player = f.id and x.status in ('won', 'lost', 'cashed')) >= $2
+      and not exists (select 1 from gifts g where g.player = $1 and g.kind = 'parrain' and g.ref = f.id::text)`, [parrain, REF_BETS]);
+  if (!rows.length) return 0;
+  let done = (await s.query(`select count(*)::int as n from gifts where player = $1 and kind = 'parrain'`, [parrain]))[0].n, n = 0;
+  for (const f of rows) {
+    if (done >= REF_MAX) break;
+    const ins = await s.query(`insert into gifts (player, kind, ref, amount, label) values ($1, 'parrain', $2, $3, $4) on conflict do nothing returning player`,
+      [parrain, String(f.id), REF_GIVE, `Parrainage : ${f.name} a joué ses ${REF_BETS} premiers paris`]);
+    if (ins[0]) { done++; n++; await notify(s, [parrain], { title: "🎁 Parrainage validé !", body: `${f.name} a joué ses ${REF_BETS} premiers paris : +${REF_GIVE} jetons pour toi.`, url: "./", tag: "ref-" + f.id }); }
+  }
+  return n;
+}
 const GIMG = /^g\/[a-z0-9-]{1,40}\.(webp|png)$/;
 const EMBLEMS = ["🦁","🐺","🦅","🐉","🦈","🐻","🦊","🐯","🔥","⚡","👑","🏆","⚽","🏉","🎾","🏀","💎","🚀","🎯","🛡️","⚔️","🌟","🍀","🐐"];
 const GCOLORS = ["#35d07f","#ffd23f","#ff7a45","#5fa8ff","#c084fc","#ff5a5f","#2ec4b6","#f8fafc","#ff9f1c","#8ac926"];
@@ -572,13 +601,14 @@ async function cosFlags(s, pid) {
       (select count(*)::int from ledger where player = p.id and kind = 'lm') as lm,
       (select count(*)::int from bal_hist where player = p.id) as days,
       exists (select 1 from bets x where x.player = p.id and ((extract(month from x.at at time zone 'Europe/Paris') = 12 and extract(day from x.at at time zone 'Europe/Paris') >= 15)
-        or (extract(month from x.at at time zone 'Europe/Paris') = 1 and extract(day from x.at at time zone 'Europe/Paris') <= 5))) as noel
+        or (extract(month from x.at at time zone 'Europe/Paris') = 1 and extract(day from x.at at time zone 'Europe/Paris') <= 5))) as noel,
+      (select count(*)::int from gifts where player = p.id and kind = 'parrain') as refs
     from players p where p.id = $1`, [pid]))[0];
   if (!r) return {};
   const badges = Array.isArray(r.badges) ? r.badges : [], grants = Object.fromEntries((Array.isArray(r.cos_grant) ? r.cos_grant : []).map((k) => [k, true]));
   return { ...grants, all: !!r.cos_all, lvl: EG.levelOf(r.xp).lvl, months: r.months || [], podium: r.podium, battles3: r.battles >= 3, odds10: r.odds10, wheel500: r.wheel500, jackpot: r.jackpot,
     duels5: r.duels >= 5, rugby10: r.rugby >= 10, tennis10: r.tennis >= 10, nba10: r.nba >= 10, pioneer: r.pioneer, streak5: badges.includes("s5"), draws5: r.draws >= 5,
-    combo4: r.combo4, chief: r.chief, prono20: r.prono >= 200, lm10: r.lm >= 10, days30: r.days >= 30, noel: r.noel, month1: (r.months || []).length > 0 };
+    combo4: r.combo4, chief: r.chief, prono20: r.prono >= 200, lm10: r.lm >= 10, days30: r.days >= 30, noel: r.noel, ref3: r.refs >= 3, month1: (r.months || []).length > 0 };
 }
 
 // ---- Modération ----
@@ -707,7 +737,18 @@ const ACTIONS = {
       throw e;
     }
     await s.query(`insert into audit_base (player, bal) values ($1, $2::numeric) on conflict do nothing`, [r[0].id, bal]);
-    return { token, id: r[0].id, name };
+    let parrain = null;
+    try {
+      let code = cleanRef(b.ref);
+      if (!code && req) { const h = (await s.query(`select code from link_hits where ip = $1 and code like 'R:%' and at > now() - interval '2 hours' order by at desc limit 1`, [ipKey(req)]))[0]; if (h) code = h.code.slice(2); }
+      const pr = code ? (await s.query(`select id, name from players where ref_code = $1`, [code]))[0] : null;
+      if (pr && String(pr.id) !== String(r[0].id)) {
+        await s.query(`update players set ref_by = $2 where id = $1`, [r[0].id, pr.id]);
+        await s.query(`insert into gifts (player, kind, ref, amount, label) values ($1, 'filleul', $2, $3, $4) on conflict do nothing`, [r[0].id, String(pr.id), REF_NEW, `Bienvenue de la part de ${pr.name}`]);
+        parrain = pr.name;
+      }
+    } catch (e) { console.error(e); }
+    return { token, id: r[0].id, name, parrain };
   },
 
   // Le pseudo est-il libre ? (pas déjà pris par un autre joueur, sans tenir compte des majuscules)
@@ -1170,6 +1211,7 @@ const ACTIONS = {
   // cadeaux calculés par le serveur (bonus des combinés du week-end…), versés une seule fois
   async gifts_claim(s, b) {
     const p = await me(s, b.token);
+    try { await refCheck(s, p.id); } catch (e) { console.error(e); }
     const r = await s.query(`update gifts set claimed = true where player = $1 and not claimed returning kind, ref, amount, label`, [p.id]);
     for (const x of r) await credit(s, p.id, x.amount, x.kind, x.ref);
     return { gifts: r.map((x) => ({ amount: x.amount, label: x.label })) };
@@ -1205,6 +1247,31 @@ const ACTIONS = {
     const r = await s.query(`select code from link_hits where ip = $1 and at > now() - interval '20 minutes' order by at desc limit 3`, [ipKey(req)]);
     for (const x of r) if (await credit(s, p.id, 0, "pend", x.code)) return { code: x.code };
     return { code: null };
+  },
+  // parrainage : mon lien, mes filleuls
+  async ref_get(s, b) {
+    const p = await me(s, b.token);
+    const code = await refCode(s, p.id);
+    try { await refCheck(s, p.id); } catch (e) { console.error(e); }
+    const fl = await s.query(`select f.id, f.name, f.avatar_v, (select count(*)::int from bets x where x.player = f.id and x.status in ('won', 'lost', 'cashed')) as n,
+        exists (select 1 from gifts g where g.player = $1 and g.kind = 'parrain' and g.ref = f.id::text) as ok
+        from players f where f.ref_by = $1 order by f.created_at desc limit 50`, [p.id]);
+    const earned = (await s.query(`select coalesce(sum(amount), 0)::int as t from gifts where player = $1 and kind = 'parrain'`, [p.id]))[0].t;
+    return { code, earned, give: REF_GIVE, gets: REF_NEW, need: REF_BETS, max: REF_MAX,
+      friends: fl.map((f) => ({ id: f.id, name: f.name, av: f.avatar_v || 0, n: Math.min(f.n, REF_BETS), ok: f.ok })) };
+  },
+  // qui m'invite ? (sans compte) ; mark = lien ouvert dans Safari avant d'installer l'appli
+  async ref_info(s, b, req) {
+    let code = cleanRef(b.code);
+    // appli installée sur iPhone (stockage séparé de Safari) : le lien a-t-il été ouvert sur cette connexion ?
+    if (!code && b.pending && req) { const h = (await s.query(`select code from link_hits where ip = $1 and code like 'R:%' and at > now() - interval '2 hours' order by at desc limit 1`, [ipKey(req)]))[0]; if (h) code = h.code.slice(2); }
+    const r = code ? (await s.query(`select name from players where ref_code = $1`, [code]))[0] : null;
+    if (!r) return { name: null };
+    if (b.mark && req) {
+      await s.query(`delete from link_hits where at < now() - interval '3 hours'`);
+      await s.query(`insert into link_hits (ip, code) values ($1, $2) on conflict (ip, code) do update set at = now()`, [ipKey(req), "R:" + code]);
+    }
+    return { name: r.name, gets: REF_NEW };
   },
   // mon style : ce que j'ai débloqué et ce que j'affiche
   async cos_get(s, b) {

@@ -864,3 +864,11 @@ html.cv .mc,html.cv .res-row,html.cv .prow,html.cv .ticket{content-visibility:au
 .stsw.bn-b21,.csw.bn-b21{background:url("teckel-cadre.webp?v=2") center/92% auto no-repeat,#3a1f0e!important}
 .gemb.img{background-color:#fff;background-repeat:no-repeat;background-position:center;background-size:86% auto;width:50px;height:22px}.gemb.img.lg{width:106px;height:46px}.gemb.img.xl{width:190px;height:84px}
 .glogo{display:flex;gap:8px;flex-wrap:wrap}.glogo .btn{flex:1}
+.refban{display:flex;gap:10px;align-items:flex-start;text-align:left;background:linear-gradient(135deg,#ffd23f22,#35d07f1a);border:1px solid #ffd23f66;border-radius:14px;padding:11px 13px;margin:0 0 12px;font-size:14px;line-height:1.4}.refban>span:first-child,.refban{font-size:14px}
+.refsw{display:grid;place-items:center;font-size:24px;background:linear-gradient(135deg,#ffd23f,#ff9f1a)}
+.refhero{text-align:center;margin:4px 0 12px}.refgift{font-size:44px;line-height:1;margin-bottom:4px}.refhero p{margin:4px 0 10px}
+.refrw{display:grid;grid-template-columns:1fr 1fr;gap:8px}.refrw>div{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:10px}.refrw b{display:block;font:800 30px/1 "Barlow Condensed";color:var(--sel)}.refrw small{color:var(--mute);font-size:12px}
+.reflist{display:grid;gap:8px}.refrow{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 11px}
+.refrow .av{width:36px;height:36px;border-radius:11px;grid-row:span 2}.refrow small{display:block;color:var(--mute);font-size:12px}
+.refbar{grid-column:2;display:block;height:6px;border-radius:4px;background:#ffffff1a;overflow:hidden}.refbar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--sel))}
+.refhero+.xcode+.btn,.xcode+[data-act=refshare]{margin-top:10px}
