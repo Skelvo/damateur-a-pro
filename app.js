@@ -2513,8 +2513,8 @@ function viewInstall(gate){const head=gate?"":`<div class="grab"><h3>Installer l
   if(ANDROID&&INAPP&&!installEvt){const u=shareableUrl().replace(/^https:\/\//,"");return head+pick+`<div class="inappw"><b>⚠️ Tu es dans ${esc(INAPP_NAME||"une autre appli")}</b><p>Ici, l’installation ne marche pas : ouvre le lien dans <b>Chrome</b>.</p>
       <a class="btn gold wide" href="intent://${esc(u)}#Intent;scheme=https;package=com.android.chrome;end">${ic("share")} Ouvrir dans Chrome</a>
       <p class="small">Si rien ne se passe : touche le menu <b>⋮</b> (ou <b>•••</b>) et choisis <b>Ouvrir dans Chrome</b> ou <b>Ouvrir dans le navigateur externe</b>.</p><button class="btn ghost wide" data-act="copylink">📋 Copier le lien</button></div>`}
-  if(P==="android")return head+pick+(!ANDROID?`<p class="note" style="text-align:left">Sur Android, ouvre <b>${esc(shareableUrl().replace(/^https:\/\//,""))}</b> dans <b>Chrome</b>, puis :</p>`:"")+(installEvt&&ANDROID?`<p class="note" style="font-size:15px">Un appui suffit : l’app s’ajoute à ton écran d’accueil, avec ton compte.</p><button class="btn gold wide" data-act="instgo">${ic("plus")} Installer l’app</button>`
-    :`<ol class="steps"><li><span class="n">1</span><div>Dans Chrome, touche le menu <b>⋮</b> en haut à droite.</div></li>
+  if(P==="android")return head+pick+(!ANDROID?`<p class="note" style="text-align:left">Sur Android, ouvre <b>${esc(shareableUrl().replace(/^https:\/\//,""))}</b> dans <b>Chrome</b>, puis :</p>`:"")+(installEvt&&ANDROID?`<p class="note" style="font-size:15px">Un appui suffit : l’app s’ajoute à ton écran d’accueil, avec ton compte.</p><button class="btn gold wide" data-act="instgo">${ic("plus")} Installer l’app</button><div class="instvid"><video src="media/install-android.mp4?v=1" poster="media/install-android.jpg?v=1" controls playsinline muted preload="none"></video><small>▶️ Sinon, la démo en 15 secondes</small></div>`
+    :`<div class="instvid"><video src="media/install-android.mp4?v=1" poster="media/install-android.jpg?v=1" controls playsinline muted preload="none"></video><small>▶️ La démo en 15 secondes</small></div><ol class="steps"><li><span class="n">1</span><div>Dans Chrome, touche le menu <b>⋮</b> en haut à droite.</div></li>
       <li><span class="n">2</span><div>Choisis <b>Installer l’application</b> (ou <b>Ajouter à l’écran d’accueil</b>), puis confirme.</div></li>
       <li><span class="n">3</span><div>Ouvre <b>Tribune</b> depuis ton écran d’accueil : ton compte est déjà là.</div></li></ol>
       <p class="note">Pas d’option « Installer » ? Vérifie que tu es bien dans <b>Chrome</b> (pas dans WhatsApp, Messenger ou une autre appli). Sur Samsung Internet : menu <b>≡</b> › <b>Ajouter page à</b> › <b>Écran d’accueil</b>.</p>`);
@@ -2568,7 +2568,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.31";
+const VERSION="2.32";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
