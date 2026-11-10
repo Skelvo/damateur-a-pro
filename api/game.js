@@ -532,7 +532,7 @@ const cardOpts = (k) => { const o = {}, ok = { d: ["rang", "bn"], bd: ["fav", "e
   for (const [x, vals] of Object.entries(ok)) if (k && vals.includes(k[x])) o[x] = k[x]; return o; };
 // copie des messages « Nous écrire » dans la boîte de contact (si une clé Resend est configurée sur Vercel)
 const CONTACT_MAIL = "contact.tribuneps@gmail.com";
-async function mailContact(p, text) {
+async function mailContact(p, text, why) {
   const key = process.env.RESEND_API_KEY;
   if (!key) return;
   try {
@@ -540,7 +540,7 @@ async function mailContact(p, text) {
     await fetch("https://api.resend.com/emails", { method: "POST", signal: ctl.signal,
       headers: { Authorization: "Bearer " + key, "Content-Type": "application/json" },
       body: JSON.stringify({ from: process.env.RESEND_FROM || "Tribune <onboarding@resend.dev>", to: [process.env.CONTACT_MAIL || CONTACT_MAIL],
-        subject: `Tribune · message de ${String(p.name || "un joueur").slice(0, 40)}`, text: `${text}\n\n— ${p.name} (joueur n° ${p.id})` }) });
+        subject: `Tribune · ${why ? why + " · " : ""}${String(p.name || "un joueur").slice(0, 40)}`, text: `${why ? "Raison : " + why + "\n\n" : ""}${text}\n\n— ${p.name} (joueur n° ${p.id})` }) });
     clearTimeout(t);
   } catch (e) { /* le message reste enregistré sur le serveur */ }
 }
@@ -1207,8 +1207,9 @@ const ACTIONS = {
     if (await overLimit("contact:" + p.id, 5, 3600)) throw fail(429, "slow_down");
     const text = String(b.text ?? "").replace(/[\u0000-\u0008\u000b-\u001f]/g, "").trim().slice(0, 1500);
     if (text.length < 3) throw fail(400, "empty");
-    await s.query(`insert into reports (reporter, kind, target, text) values ($1, 'contact', '', $2)`, [p.id, text]);
-    await mailContact(p, text);
+    const why = String(b.why ?? "").replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, 40);
+    await s.query(`insert into reports (reporter, kind, target, text) values ($1, 'contact', $3, $2)`, [p.id, text, why]);
+    await mailContact(p, text, why);
     return { ok: true };
   },
   // supprimer son compte : tout ce qui est lié au joueur part avec lui ; ses guildes passent à un autre membre

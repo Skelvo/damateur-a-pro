@@ -943,7 +943,7 @@ function todayItems(){const T=[],we=WE();
   if(S.name){const D=defisState(),got=D.filter(d=>d.got).length;
     if(!S.dch.all)T.push({k:"defis",e:"🎯",l:`Défis ${got}/3`,dot:D.some(d=>d.n>=d.g&&!d.got)||got===3,act:"td",v:"defis"})}
   const g=U.gs;if(g&&!S.guideHide&&!g.all){const n=GSTEPS.filter(([k])=>g.done[k]).length,r=GSTEPS.some(([k])=>g.done[k]&&!g.claimed[k])||GSTEPS.every(([k])=>g.claimed[k]);
-    T.push({k:"guide",e:"🚀",l:`Missions ${n}/6`,dot:r,act:"td",v:"guide"})}
+    T.push({k:"guide",e:"🚀",l:`Missions ${n}/${GSTEPS.length}`,dot:r,act:"td",v:"guide"})}
   if(lmBanner())T.push({k:"lm",e:"🛡️",l:"Match guilde",dot:true,act:"lmgo"});
   if(pronoBanner()){const j=U.pr.data,todo=j.matches.some(m=>m.t>Date.now()&&!m.my);T.push({k:"prono",e:"🔮",l:"Prono",dot:todo,act:"prgo"})}
   for(const e of EVENTS.filter(evActive))T.push({k:"ev"+e.id,e:e.em,l:e.n,dot:evMatches(e).some(m=>status(m)==="live"),act:"ev",id:e.id,live:true});
@@ -1450,7 +1450,7 @@ const GSTEPS=[["bet","🎟️","Faire ton premier pari","Touche une cote, choisi
   ["guild","🛡️","Rejoindre ou créer une guilde","Pour jouer avec tes potes ou tes collègues."],["push","🔔","Activer les notifications","Coup d’envoi, résultats, rappels."],
   ["fav","❤️","Choisir ton équipe de cœur","Ses matchs remontent en premier."],["combo","🧾","Tenter un combiné","Au moins 2 pronostics sur un même ticket."],["insta","📸","Suivre Tribune sur Instagram","Nouveautés, pronos du week-end : @tribune.pronos"]];
 let gAt=0;
-async function loadGuide(force){if(!S.tok||S.guideHide||(!force&&Date.now()-gAt<2e4))return;gAt=Date.now();try{U.gs=await api("guide_status",{});if(U.tab==="m"&&!U.open)render()}catch(e){}}
+async function loadGuide(force){if(!S.tok||S.guideHide||(!force&&Date.now()-gAt<2e4))return;gAt=Date.now();try{U.gs=await api("guide_status",{});if(U.tab==="m"&&(!U.open||U.open.startsWith("td:")))render()}catch(e){}}
 function guideLocal(){return{bet:S.bets.some(b=>b.sid),wheel:!!S.wheel,guild:!!(U.lg.data&&U.lg.data.leagues.length),push:pushState()==="on",fav:!!S.fav,combo:S.bets.some(b=>b.sid&&b.legs.length>1),insta:!!S.igDone}}
 let gLocAt=0;
 function guideCard(){const g=U.gs;if(!g||S.guideHide||g.all)return"";
@@ -1463,12 +1463,12 @@ function guideCard(){const g=U.gs;if(!g||S.guideHide||g.all)return"";
     h+=`<div class="gft"><button class="link" data-act="help">Comment ça marche ?</button><button class="link" data-act="ghide">Masquer</button></div>`}
   return h+`</div>`}
 // Instagram : ouvre le compte et le note (mission « Premiers pas »)
-function openInsta(){try{window.open(IG_URL,"_blank","noopener")}catch(e){location.href=IG_URL}S.igDone=1;saveLocal();api("insta_click",{}).catch(()=>{})}
+function openInsta(){const l=document.createElement("a");l.href=IG_URL;l.target="_blank";l.rel="noopener";document.body.appendChild(l);l.click();l.remove();S.igDone=1;saveLocal();api("insta_click",{}).catch(()=>{})}
 function igPopup(){if(window.__gate||!S.name||S.igNever||S.igDone)return;S.launches=(S.launches||0)+1;saveLocal();if(S.launches%10)return;
   setTimeout(()=>{if(U.open)return;U.open="igpop";layer(`<div class="grab"><h3>On est sur Instagram !</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
     <div class="igpop">${IG_ICON}<p><b>@tribune.pronos</b>Nouveautés de l’appli, pronos du week-end, défis entre guildes… Abonne-toi pour ne rien rater !</p></div>
     <button class="btn wide igbtn" data-act="igpop">📸 Suivre sur Instagram</button><div class="ifoot" style="justify-content:center"><button class="link" data-act="close">Plus tard</button><button class="link" data-act="ignever">Ne plus demander</button></div>`)},5000)}
-async function guideClaim(k){try{const j=await api("guide_claim",{step:k});if(j.error)throw j;if(j.amount){S.bal+=j.amount;S.peak=Math.max(S.peak,S.bal);save();bump();if(k==="all")confetti();toast(`🎁 +${j.amount} jetons !`,"win")}await loadGuide(true)}
+async function guideClaim(k){try{const j=await api("guide_claim",{step:k});if(j.error)throw j;if(j.amount){S.bal+=j.amount;S.peak=Math.max(S.peak,S.bal);save();bump();if(k==="all")confetti();toast(`🎁 +${j.amount} jetons !`,"win");$("#main")._html=null;render()}await loadGuide(true)}
   catch(e){toast("Pas encore validé : réessaie dans un instant.","bad");loadGuide(true)}}
 function guideGo(k){if(k==="bet"){U.tab="m";render();const o=[...document.querySelectorAll("#main .mc")].find(x=>x.offsetParent);if(o)o.scrollIntoView({block:"center",behavior:"smooth"});toast("Choisis un vrai match et touche une cote : ton pronostic va dans ton ticket.");return}if(k==="wheel"){const wb=$("[data-act=wheel]");if(wheelAvail()&&wb)wb.click();else toast("Tu as déjà tourné la roue aujourd’hui : reviens demain !");return}
   if(k==="guild"){U.tab="l";render();window.scrollTo({top:0});loadBoards();toast("Crée ta guilde, rejoins-en une avec un code, ou trouve-en une dans l’annuaire.");return}
@@ -1567,10 +1567,11 @@ function openBlocked(){U.open="blocked";const L=S.blocked||[];layer(`<div class=
   (L.length?L.map(x=>`<div class="gmrow"><div><b>${esc(x.name)}</b><small>Ses messages sont cachés</small></div><button class="btn ghost" data-act="block" data-id="${esc(x.id)}" data-n="${esc(x.name)}">Débloquer</button></div>`).join(""):`<div class="empty">Personne n’est bloqué.</div>`))}
 function openContact(){U.open="contact";layer(`<div class="grab"><h3>Nous écrire</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   <p class="note" style="text-align:left">Une question, un bug, une idée, un problème avec un joueur, une demande sur tes données ? Écris ici : le message arrive directement aux organisateurs.</p>
-  <div class="form"><textarea id="ct-in" rows="5" maxlength="1500" placeholder="Ton message…"></textarea><button class="btn gold wide" data-act="ctsend">Envoyer</button></div>
+  <div class="form"><label>Raison<select id="ct-why">${CT_WHY.map(x=>`<option>${x}</option>`).join("")}</select></label><textarea id="ct-in" rows="5" maxlength="1500" placeholder="Ton message…"></textarea><button class="btn gold wide" data-act="ctsend">Envoyer</button></div>
   <p class="note">Tu préfères l’e-mail ? <a href="mailto:contact.tribuneps@gmail.com?subject=Tribune" style="color:var(--acc)">contact.tribuneps@gmail.com</a></p>`);setTimeout(()=>$("#ct-in")&&$("#ct-in").focus(),60)}
-async function contactSend(){const t=($("#ct-in").value||"").trim();if(t.length<3){$("#ct-in").focus();return}
-  try{if(!(await ensureSession()))throw 0;const j=await api("contact",{text:t});if(j.error)throw j;closeLayer();toast("Message envoyé, merci !","win")}catch(e){toast("Pas de connexion : réessaie plus tard.","bad")}}
+const CT_WHY=["❓ Question","🐞 Bug / problème","💡 Idée / suggestion","🚩 Signaler un joueur ou une guilde","🪙 Jetons / paris","🔒 Mon compte / mes données","🤝 Partenariat","✏️ Autre"];
+async function contactSend(){const t=($("#ct-in").value||"").trim(),w=$("#ct-why")?$("#ct-why").value:"";if(t.length<3){$("#ct-in").focus();return}
+  try{if(!(await ensureSession()))throw 0;const j=await api("contact",{text:t,why:w});if(j.error)throw j;closeLayer();toast("Message envoyé, merci !","win")}catch(e){toast("Pas de connexion : réessaie plus tard.","bad")}}
 function openDelAcc(){U.open="delacc";layer(`<div class="grab"><h3>Supprimer mon compte</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   <div class="warn" style="text-align:left">C’est <b>définitif</b> : tes jetons, tes paris, ta photo, tes messages, tes statistiques et ton code de compte sont effacés du serveur et de ce téléphone. Si tu es chef d’une guilde, un autre membre prend la main ; une guilde où tu es seul disparaît.</div>
   <div class="form"><label><span>Écris <b>SUPPRIMER</b> pour confirmer</span><input id="del-in" autocomplete="off" autocapitalize="characters" placeholder="SUPPRIMER"></label>
@@ -2584,7 +2585,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.38";
+const VERSION="2.39";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
