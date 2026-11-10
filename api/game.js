@@ -1321,6 +1321,15 @@ const ACTIONS = {
     const r = await s.query(`update bets set status = 'void', pay = stake, cancelled = true, settled_at = now() where id = $1 and status = 'open' returning id, cid, stake`, [String(int(b.id, 0, 1e15))]);
     return r[0] ? { ok: true, ...r[0] } : { error: "not_open" };
   },
+  // paris encore ouverts sur les téléphones (copie envoyée à chaque synchro) : pour comprendre un pari bloqué
+  async admin_open_client(s, b) {
+    admin(b);
+    const rows = await s.query(`select id, name, seen_at, bets from players where bets is not null`);
+    const out = [];
+    for (const r of rows) for (const x of (r.bets.list || [])) if (x.st === "open") out.push({ player: r.name, seen: r.seen_at, id: x.id, sid: x.sid || null, at: x.at, stake: x.stake, odds: x.odds,
+      legs: (x.legs || []).map((L) => ({ l: L.l, ml: L.ml, mid: L.mid, sp: L.sp, t: L.t, r: L.r || null, path: L.snap && L.snap.path })) });
+    return { open: out };
+  },
   async admin_players(s, b) {
     admin(b);
     const rows = await s.query(
