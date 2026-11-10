@@ -496,7 +496,7 @@ async function pronoCredit(s, pid, week) {
 }
 
 // ---- Guildes : emblème, devise, accès (ouverte / sur demande / privée), rôles (chef, adjoints, membres) ----
-const GIMG = /^g\/[a-z0-9-]{1,40}\.webp$/;
+const GIMG = /^g\/[a-z0-9-]{1,40}\.(webp|png)$/;
 const EMBLEMS = ["🦁","🐺","🦅","🐉","🦈","🐻","🦊","🐯","🔥","⚡","👑","🏆","⚽","🏉","🎾","🏀","💎","🚀","🎯","🛡️","⚔️","🌟","🍀","🐐"];
 const GCOLORS = ["#35d07f","#ffd23f","#ff7a45","#5fa8ff","#c084fc","#ff5a5f","#2ec4b6","#f8fafc","#ff9f1c","#8ac926"];
 async function guildRole(s, code, pid) {
