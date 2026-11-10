@@ -445,6 +445,7 @@ function viewCareer(){const LV=myLv();
   <button class="cstyle" data-act="style"><span class="csw bnr bn-${(S.cos&&S.cos.b)||"b1"}"></span><span><b>🎨 Mon style</b><small>Bannière, couleur du pseudo, titre : débloque-les en jouant</small></span><span class="arr">›</span></button>
   <button class="cstyle cref" data-act="ref"><span class="csw refsw">🎁</span><span><b>Parrainer un ami</b><small>+500 jetons pour toi, +250 pour lui</small></span><span class="arr">›</span></button>
   <button class="csucc" data-act="succ"><span><b>🏅 Succès</b><small>${SC.length} / ${SUCC.length} débloqués</small></span><span class="csi">${SUCC.filter(s=>SC.includes(s[0])).slice(-5).map(s=>ic(s[1])).join("")}</span><span class="arr">›</span></button>
+  <a class="igban" href="${IG_URL}" target="_blank" rel="noopener">${IG_ICON}<span><b>Suis Tribune sur Instagram</b><small>@tribune.pronos · nouveautés et pronos</small></span><span class="arr">›</span></a>
   <div class="ctiles"><button data-act="stats">📊<b>Mes stats</b><small>Par sport, par pari, par mois</small></button><button data-act="mshare">📤<b>Mon mois</b><small>Bilan en image</small></button>
     <button data-act="prof" data-id="${esc(S.pid||"")}">👤<b>Mon profil</b><small>Ce que voient les autres</small></button><button data-act="help">❓<b>Aide</b><small>Comment ça marche</small></button></div>
   <details class="csec"><summary>⚙️ Réglages</summary>
@@ -1293,7 +1294,8 @@ async function ticketImage(b,link){
   c.fillStyle="#35d07f";c.font='700 32px Barlow';c.fillText((link||APP_URL).replace(/^https?:\/\//,"").replace(/\/$/,""),W/2,fy+52);
   c.fillStyle="#6b7a72";c.font='500 26px Barlow';c.fillText("Paris gratuits entre potes · jetons fictifs",W/2,fy+92);
   return new Promise(ok=>cv.toBlob(ok,"image/png"))}
-const APP_URL="https://damateur-a-pro.vercel.app/";
+const APP_URL="https://damateur-a-pro.vercel.app/",IG_URL="https://www.instagram.com/tribune.pronos/";
+const IG_ICON=`<svg class="igic" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.3" cy="6.7" r="1.2" fill="currentColor"/></svg>`;
 async function shareTicket(id){const b=S.bets.find(x=>x.id===id);if(!b)return;toast("Préparation du ticket…");
   try{let link=APP_URL;if(b.sid){try{const j=await api("share_bet",{cid:b.id});if(j.code)link=APP_URL+"?pari="+j.code}catch(e){}}
     const blob=await ticketImage(b,link),file=new File([blob],"ticket-tribune.png",{type:"image/png"});
@@ -1493,7 +1495,7 @@ function openHelp(focus){U.open="help";layer(`<div class="grab"><h3>Comment ça 
   <div class="hbtns"><button class="btn ghost" data-act="intro">▶️ Revoir la présentation</button><button class="btn ghost" data-act="coach">🎟️ Match d’entraînement</button></div>
   <div class="grp">Les animations du direct</div><div class="hbtns h4"><button class="btn ghost" data-act="fxdemo" data-v="g">⚽ But</button><button class="btn ghost" data-act="fxdemo" data-v="yc">🟨 Jaune</button><button class="btn ghost" data-act="fxdemo" data-v="rc">🟥 Rouge</button><button class="btn ghost" data-act="fxdemo" data-v="try">🏉 Essai</button></div>
   ${HELP.map(([g,L])=>`<div class="grp">${g}</div>`+L.map(([k,q,a])=>`<details class="hq" id="hq-${k}"${k===focus?" open":""}><summary>${q}</summary><p>${a}</p></details>`).join("")).join("")}
-  <p class="note">Pas trouvé ? <button class="link" data-act="contact" style="padding:0">Écris-nous</button>.</p>`);
+  <p class="note">Pas trouvé ? <button class="link" data-act="contact" style="padding:0">Écris-nous</button>, ou retrouve-nous sur <a href="${IG_URL}" target="_blank" rel="noopener" style="color:var(--acc)">Instagram @tribune.pronos</a>.</p>`);
   if(focus)setTimeout(()=>{const e=$("#hq-"+focus);if(e)e.scrollIntoView({block:"center"})},80)}
 
 /* ---------- règles du jeu, confidentialité, modération, suppression du compte ---------- */
@@ -2539,7 +2541,8 @@ function renderGate(){const lg=new URLSearchParams(location.search).get("guilde"
   $("#main")._html=null;$("#main").innerHTML=`<div class="gate"><h1 class="glogo"><img src="logo-tribune.png?v=2" alt="Tribune"></h1><small style="color:var(--mute2)">v${VERSION}</small><p class="gsub">Le jeu se joue <b>uniquement depuis l’app</b> sur ton écran d’accueil. C’est gratuit, sans store, et ça prend 10 secondes.</p>
     <div id="gref"></div>${pc?`<div id="gpari"><div class="skel" style="height:120px"></div></div>`:""}
     ${lg?`<div class="xcode" style="margin-bottom:12px"><small>Invitation à une guilde : une fois dans l’app, va dans Guildes › Rejoindre et entre ce code</small><b>${esc(lg.toUpperCase().slice(0,8))}</b></div>`:""}
-    <div id="ginst">${viewInstall(true)}</div></div>`}
+    <div id="ginst">${viewInstall(true)}</div>
+    <a class="igban gig" href="${IG_URL}" target="_blank" rel="noopener">${IG_ICON}<span><b>@tribune.pronos</b><small>Suis-nous sur Instagram</small></span><span class="arr">›</span></a></div>`}
 // Code de transfert : on envoie tout l'état du jeu (sauf le jeton) au serveur, valable 48 h
 async function transferOut(){const box=$("#xbox");if(box)box.innerHTML=`<div class="skel" style="height:70px"></div>`;
   try{if(!(await ensureSession()))throw{code:"offline"};await syncNow();const st={...S};delete st.tok;delete st.pid;
@@ -2572,7 +2575,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.36";
+const VERSION="2.37";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

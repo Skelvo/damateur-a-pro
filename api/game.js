@@ -250,6 +250,36 @@ async function morning(s) {
 // ---- Rappels pour parier (Vercel Cron : midi et 18 h, heure de Paris) ----
 // Seulement pour ceux qui ont les notifications, pas ouvert l'app depuis 1 h 30, et avec un vrai contenu.
 const hhmm = (t) => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" }).replace(":", "h");
+// ---- Récap du dimanche soir : la semaine de chaque joueur (paris réglés par le serveur) et sa place dans sa guilde ----
+async function weeklyRecap(s) {
+  const t = (await s.query(`select to_char(date_trunc('week', now() at time zone 'Europe/Paris'), 'YYYY-MM-DD') as per, extract(isodow from now() at time zone 'Europe/Paris')::int as dow`))[0];
+  if (t.dow !== 7 && !globalThis.__dapAnyDay) return { skipped: "pas dimanche" };   // __dapAnyDay : tests en local
+  const ppl = await s.query(`select p.id, p.name,
+      count(b.id) filter (where b.status in ('won','lost','cashed'))::int as n,
+      count(b.id) filter (where b.status in ('won','cashed'))::int as w,
+      coalesce(sum(case when b.status = 'lost' then -b.stake when b.status in ('won','cashed') then coalesce(b.pay,0) - b.stake else 0 end), 0)::float8 as g,
+      max(b.odds) filter (where b.status = 'won')::float8 as best
+    from players p join bets b on b.player = p.id and b.settled_at >= date_trunc('week', now() at time zone 'Europe/Paris') at time zone 'Europe/Paris'
+    where exists (select 1 from push_subs x where x.player = p.id)
+    group by p.id, p.name having count(b.id) filter (where b.status in ('won','lost','cashed')) > 0`);
+  let sent = 0;
+  for (const p of ppl) {
+    if (!(await sentOnce(s, `recap:${t.per}:${p.id}`))) continue;
+    const r = (await s.query(`with my as (select m.code, l.name, (select count(*) from league_members x where x.code = m.code) as n
+          from league_members m join leagues l on l.code = m.code where m.player = $1 and not l.dark order by n desc limit 1),
+        b as (select m.player, coalesce((select gain from sprofits sp where sp.player = m.player and sp.per = $2), 0) as g from league_members m join my on my.code = m.code)
+      select my.code, my.name, my.n, (select count(*) from b where b.g > (select g from b where player = $1)) + 1 as rk from my`, [p.id, t.per]))[0];
+    const fr = (v) => String(Math.round(v * 100) / 100).replace(".", ","), g = Math.round(p.g);
+    let body = `${p.n} pari${p.n > 1 ? "s" : ""} réglé${p.n > 1 ? "s" : ""} · ${p.w} gagné${p.w > 1 ? "s" : ""} · ${g > 0 ? "+" : ""}${g} jeton${Math.abs(g) > 1 ? "s" : ""}.`;
+    if (r && Number(r.n) >= 2) body += ` ${Number(r.rk) === 1 ? "🥇 1er" : Number(r.rk) + "e"} sur ${r.n} dans « ${r.name} ».`;
+    if (p.best) body += ` Meilleur coup : cote ${fr(p.best)} 🔥`;
+    await notify(s, [p.id], { title: g > 0 ? "📊 Belle semaine sur Tribune !" : "📊 Ta semaine sur Tribune", body: body + " Nouvelle semaine demain : à toi de jouer !",
+      url: r ? go("rank", r.code) : "./", tag: "recap" });
+    sent++;
+  }
+  return { sent, players: ppl.length };
+}
+
 async function reminders(s, slot) {
   const t = (await s.query(`select to_char(now() at time zone 'Europe/Paris', 'YYYYMMDD') as ymd, extract(isodow from now() at time zone 'Europe/Paris')::int as dow,
       extract(epoch from ((date_trunc('day', now() at time zone 'Europe/Paris') + interval '1 day') at time zone 'Europe/Paris')) * 1000 as eod`))[0];
@@ -2272,7 +2302,7 @@ export default async function handler(req, res) {
     if (q.cron) {
       const want = process.env.CRON_SECRET || "", got = String(req.headers.authorization || "");
       if (want.length < 16 || got !== "Bearer " + want) return res.status(401).json({ error: "forbidden" });
-      try { const s = await db(); return res.status(200).json(q.slot === "midi" || q.slot === "soir" ? await reminders(s, q.slot) : await morning(s)); } catch (e) { console.error(e); return res.status(500).json({ error: "server" }); }
+      try { const s = await db(); return res.status(200).json(q.slot === "recap" ? await weeklyRecap(s) : q.slot === "midi" || q.slot === "soir" ? await reminders(s, q.slot) : await morning(s)); } catch (e) { console.error(e); return res.status(500).json({ error: "server" }); }
     }
     return res.status(200).json({ ok: true, service: "damateur-a-pro" });
   }
