@@ -800,7 +800,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"copycode":navigator.clipboard&&navigator.clipboard.writeText(d.code).then(()=>toast("Code copié.","win")).catch(()=>{});break;
     case"copylink":{const u=shareableUrl();(navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast("Lien copié : colle-le dans Safari.","win")).catch(()=>prompt("Copie ce lien :",u));break}
     case"install":U.open="install";layer(viewInstall());break;
-    case"plat":U.plat=d.v;if(GATE)renderGate();else if(U.open==="install")layer(viewInstall());break;
+    case"plat":{if(U.plat===d.v)break;U.plat=d.v;const gi=$("#ginst");if(gi)gi.innerHTML=viewInstall(true);else if(U.open==="install"){const sh=$(".sheet"),sc=sh?sh.scrollTop:0;layer(viewInstall());const s2=$(".sheet");if(s2)s2.scrollTop=sc}break}
     case"instx":try{localStorage.setItem("dap.inst",String(Date.now()))}catch(e){}render();break;
     case"instgo":installPrompt();break;
   }});
@@ -2534,7 +2534,7 @@ function renderGate(){const lg=new URLSearchParams(location.search).get("guilde"
   $("#main")._html=null;$("#main").innerHTML=`<div class="gate"><h1 class="glogo"><img src="logo-tribune.png?v=2" alt="Tribune"></h1><small style="color:var(--mute2)">v${VERSION}</small><p class="gsub">Le jeu se joue <b>uniquement depuis l’app</b> sur ton écran d’accueil. C’est gratuit, sans store, et ça prend 10 secondes.</p>
     <div id="gref"></div>${pc?`<div id="gpari"><div class="skel" style="height:120px"></div></div>`:""}
     ${lg?`<div class="xcode" style="margin-bottom:12px"><small>Invitation à une guilde : une fois dans l’app, va dans Guildes › Rejoindre et entre ce code</small><b>${esc(lg.toUpperCase().slice(0,8))}</b></div>`:""}
-    ${viewInstall(true)}</div>`}
+    <div id="ginst">${viewInstall(true)}</div></div>`}
 // Code de transfert : on envoie tout l'état du jeu (sauf le jeton) au serveur, valable 48 h
 async function transferOut(){const box=$("#xbox");if(box)box.innerHTML=`<div class="skel" style="height:70px"></div>`;
   try{if(!(await ensureSession()))throw{code:"offline"};await syncNow();const st={...S};delete st.tok;delete st.pid;
@@ -2567,7 +2567,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.29";
+const VERSION="2.30";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
