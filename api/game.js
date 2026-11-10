@@ -1335,6 +1335,14 @@ const ACTIONS = {
   async admin_espn_leagues(s, b) {
     admin(b);
     const sport = ["rugby", "soccer", "tennis", "basketball"].includes(b.sport) ? b.sport : "rugby";
+    const get0 = async (u) => { const c = new AbortController(), t = setTimeout(() => c.abort(), 6000); try { const r = await fetch(u, { signal: c.signal }); return r.ok ? r.json() : null; } catch (e) { return null; } finally { clearTimeout(t); } };
+    // essai d'un fil de matchs : ?test=rugby/24400 (+ dates)
+    if (b.test) { const path = String(b.test).replace(/[^a-z0-9./_-]/gi, ""), d = String(b.dates || "").replace(/[^0-9-]/g, "");
+      const j = await get0(`https://site.api.espn.com/apis/site/v2/sports/${path}/scoreboard?limit=200${d ? "&dates=" + d : ""}`);
+      if (!j) return { ok: false };
+      return { ok: true, league: j.leagues && j.leagues[0] && { id: j.leagues[0].id, uid: j.leagues[0].uid, name: j.leagues[0].name, slug: j.leagues[0].slug },
+        events: (j.events || []).slice(0, 40).map((e) => [e.date, e.name]) }; }
+    if (b.raw) return { raw: await get0(`https://sports.core.api.espn.com/v2/sports/${sport}/leagues/${String(b.raw).replace(/[^0-9]/g, "")}`) };
     const get = async (u) => { const c = new AbortController(), t = setTimeout(() => c.abort(), 6000); try { const r = await fetch(u, { signal: c.signal }); return r.ok ? r.json() : null; } catch (e) { return null; } finally { clearTimeout(t); } };
     const list = await get(`https://sports.core.api.espn.com/v2/sports/${sport}/leagues?limit=400`);
     const refs = ((list && list.items) || []).map((x) => x.$ref).filter(Boolean);
