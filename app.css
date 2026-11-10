@@ -908,3 +908,7 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 }
 @media (max-width:370px){.brand{gap:7px}.brand b{font-size:19px}.blogo img{width:34px;height:34px}}
 @media (max-width:370px){.brand b.tbn{font-size:21px;letter-spacing:.8px}.bell,.hright .bell{width:40px;height:40px}.bank{padding-left:8px;padding-right:12px}}
+.leg.conf{box-shadow:inset 3px 0 0 #ffb020;background:linear-gradient(90deg,#ffb02014,transparent 60%)}
+.leg.conf.flash{animation:cflash .45s ease-in-out 3}@keyframes cflash{50%{background:#ffb02040}}
+.cfbox{display:block;width:100%;text-align:left;margin:4px 0 10px;padding:11px 13px;border-radius:14px;border:1px solid #ffb02088;background:#ffb02012;color:var(--ink);font:500 14px/1.4 Barlow,sans-serif;cursor:pointer}
+.cfbox b{display:block;color:#ffc24d;font-size:15px;margin-bottom:3px}.cfbox span{display:block}.cfbox small{display:block;margin-top:6px;color:var(--mute);font-size:12.5px}

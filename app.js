@@ -336,6 +336,23 @@ let CIK="",CIV=null;
 function comboInfo(sel=U.sel){const key=sel.map(s=>s.mid+s.mk+s.k+s.o).join("|");if(key===CIK&&CIV)return CIV;CIK=key;CIV=comboCalc(sel,findMatch);return CIV}
 function slipOdds(){return comboInfo().odds}
 const comboBlocked=()=>comboInfo().bad;
+// quels paris se contredisent, et pourquoi (mêmes tirages que le calcul du combiné)
+let CFK="",CFV=null;
+function comboConflict(sel=U.sel){const key=sel.map(s=>s.mid+s.mk+s.k+s.line).join("|");if(key===CFK)return CFV;CFK=key;CFV=null;
+  try{const by={};sel.forEach((s,i)=>{if(!PMK[s.mk])(by[s.mid]=by[s.mid]||[]).push(i)});
+    for(const mid in by){const I=by[mid];if(I.length<2)continue;const m=findMatch(mid);if(!m)continue;const legs=I.map(i=>sel[i]);if(jointP(m,legs)>=.004)continue;
+      // plus petit groupe de paris impossible ensemble
+      let sub=null;const subsets=k=>{const r=[];const go=(st,acc)=>{if(acc.length===k){r.push(acc.slice());return}for(let j=st;j<I.length;j++){acc.push(I[j]);go(j+1,acc);acc.pop()}};go(0,[]);return r};
+      for(let k=2;k<=I.length&&!sub;k++)for(const c of subsets(k))if(jointP(m,c.map(i=>sel[i]))<.004){sub=c;break}
+      sub=sub||I;const nm=i=>{const s=sel[i];if(s.mk==="res")return`« ${s.k===1?"Match nul":s.l+" gagne"} »`;return`« ${s.l} (${s.mt.toLowerCase()}) »`};const un=(u,v)=>v<=1?u.replace(/s$/,""):u;
+      let why=`${sub.map(nm).join(" + ")} ne peuvent pas arriver dans le même match.`;
+      const ou=sub.find(i=>{const d=MK[m.sp].find(x=>x.id===sel[i].mk);return d&&d.ty==="ou"});
+      if(ou!=null&&sub.length>1){const d=MK[m.sp].find(x=>x.id===sel[ou].mk),oth=sub.filter(i=>i!==ou),S_=marketSims(m),defs=oth.map(i=>MK[m.sp].find(x=>x.id===sel[i].mk));let lo=1e9,hi=-1e9;
+        for(let n=0;n<N;n++){const g=k=>[S_[k][0][n],S_[k][1][n]];if(oth.every((i,j)=>legIdx(defs[j],m,g,sel[i])===sel[i].k)){const v=d.val(g,m);if(v<lo)lo=v;if(v>hi)hi=v}}
+        const unit=/^Nombre de /i.test(d.t)?d.t.replace(/^Nombre de /i,""):"("+d.t.toLowerCase()+")";
+        if(lo<1e9)why=sel[ou].k===1?`${oth.map(nm).join(" + ")} = au moins ${lo} ${un(unit,lo)} dans le match, donc ${nm(ou)} ne peut pas passer.`:`${oth.map(nm).join(" + ")} = au plus ${hi} ${un(unit,hi)} dans le match, donc ${nm(ou)} ne peut pas passer.`}
+      CFV={idx:new Set(sub),why};return CFV}}catch(e){}
+  return CFV}
 function renderSlipBar(){const el=$("#slipbar");if(!U.sel.length||U.open==="slip"){el.innerHTML="";return}
   const n=U.sel.length,combo=U.combo&&n>1&&!comboBlocked();
   const cost=combo?U.stake:U.stake*n,gain=combo?U.stake*slipOdds():U.sel.reduce((a,s)=>a+U.stake*s.o,0);
@@ -353,8 +370,8 @@ function viewSlip(){const n=U.sel.length;if(!n)return`<div class="grab"><h3>Mon 
   const blocked=comboBlocked(),combo=U.combo&&n>1&&!blocked,cost=combo?U.stake:U.stake*n,gain=combo?U.stake*slipOdds():U.sel.reduce((a,s)=>a+U.stake*s.o,0);
   return`<div class="grab"><h3>Mon ticket</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   ${n>1?`<div class="seg"><button data-act="combo" data-v="0" aria-pressed="${!combo}">Simples (${n})</button><button data-act="combo" data-v="1" aria-pressed="${combo}" ${blocked?"disabled":""}>Combiné</button></div>`:""}
-  ${blocked&&n>1?(combo?`<p class="warn">Combiné impossible : ces paris ne peuvent pas être gagnants tous ensemble (par exemple « Victoire + les deux équipes marquent » fait au moins 3 buts, donc pas « moins de 2,5 »). Retire un des paris ou joue-les en Simples.</p>`:`<p class="note" style="text-align:left">${ic("info")} En simples, chaque pari compte à part. Attention : ils ne peuvent pas tous passer ensemble, au moins un sera perdant. C’est pour ça que le combiné n’est pas possible.</p>`):combo&&comboInfo().linked?`<p class="note">${ic("info")} Plusieurs paris sur le même match : la cote est recalculée car ils sont liés.</p>`:""}
-  <div>${U.sel.map((s,i)=>`<div class="leg"><span class="ic">${ic(s.ic,s.cls||"")}</span><div><b>${esc(s.l)}</b><small>${esc(s.mt)}</small><small>${esc(s.ml)}</small></div><span class="o">${fr(s.o)}</span><button class="rm" data-act="unpick" data-i="${i}" aria-label="Retirer">${ic("x")}</button></div>`).join("")}</div>
+  ${blocked&&n>1?(()=>{const cf=comboConflict();return`<button class="cfbox" data-act="cflash"><b>⚠️ Combiné impossible</b><span>${esc(cf?cf.why:"Ces paris ne peuvent pas être gagnants tous ensemble.")}</span><small>En simples, chaque pari compte à part, mais au moins un sera perdant. Touche ici pour voir les paris en cause.</small></button>`})():combo&&comboInfo().linked?`<p class="note">${ic("info")} Plusieurs paris sur le même match : la cote est recalculée car ils sont liés.</p>`:""}
+  <div>${U.sel.map((s,i)=>`<div class="leg${(comboConflict()||{idx:new Set()}).idx.has(i)?" conf":""}"><span class="ic">${ic(s.ic,s.cls||"")}</span><div><b>${esc(s.l)}</b><small>${esc(s.mt)}</small><small>${esc(s.ml)}</small></div><span class="o">${fr(s.o)}</span><button class="rm" data-act="unpick" data-i="${i}" aria-label="Retirer">${ic("x")}</button></div>`).join("")}</div>
   ${WE().on&&WE().k==="combo"?(combo&&n>=3?`<p class="webadge">🧾 Week-end des combinés : si ça passe, <b>+25 %</b> de bonus sur ton bénéfice !</p>`:`<p class="webadge dim">🧾 Week-end des combinés : fais un combiné de 3 sélections ou plus pour toucher +25 % de bonus.</p>`):""}
   <div class="chips">${[10,20,50,100,250].map(v=>`<button data-act="stake" data-v="${v}" aria-pressed="${U.stake===v}">${v}</button>`).join("")}<button data-act="stake" data-v="max">Max</button></div>
   <div class="stake"><label for="stk">Mise${combo||n===1?"":" par pari"}</label><input id="stk" type="number" min="1" inputmode="numeric" value="${U.stake}"></div>
@@ -620,6 +637,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"igo":openInsta();break;
     case"igpop":closeLayer();openInsta();break;
     case"ignever":S.igNever=1;saveLocal();closeLayer();break;
+    case"cflash":{document.querySelectorAll(".leg.conf").forEach(x=>{x.classList.remove("flash");void x.offsetWidth;x.classList.add("flash")});const f=document.querySelector(".leg.conf");if(f)f.scrollIntoView({block:"center",behavior:"smooth"});break}
     case"ev":{const e=EVENTS.find(x=>x.id===d.id);U.evBack=U.sp;U.ev=d.id;if(e&&e.sp!==U.sp){U.sp=e.sp;U.lv=-1;U.dep="";loadSport(e.sp)}render();window.scrollTo({top:0});break}
     case"evx":{const bk=U.evBack;U.ev=null;U.evBack=null;if(bk&&bk!==U.sp){U.sp=bk;U.lv=-1;U.dep="";loadSport(bk)}render();window.scrollTo({top:0});break}
     case"stats":U.open="stats";layer(viewStats());break;
@@ -2585,7 +2603,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.42";
+const VERSION="2.43";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
