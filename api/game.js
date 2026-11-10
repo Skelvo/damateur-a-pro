@@ -594,7 +594,7 @@ async function addMember(s, code, pid, name) {
 }
 
 // ---- Premiers pas ----
-const GUIDE = ["bet", "wheel", "guild", "push", "fav", "combo"], GUIDE_REWARD = 50, GUIDE_ALL = 100;
+const GUIDE = ["bet", "wheel", "guild", "push", "fav", "combo", "insta"], GUIDE_REWARD = 50, GUIDE_ALL = 100;
 async function guideState(s, pid) {
   const r = (await s.query(`select
       exists (select 1 from bets where player = $1) as bet,
@@ -602,7 +602,8 @@ async function guideState(s, pid) {
       coalesce(p.wheel->>'b', '') <> '' or coalesce(p.wheel->>'x', '') <> '' as wheel,
       exists (select 1 from league_members m join leagues l on l.code = m.code and not l.dark where m.player = $1) as guild,
       exists (select 1 from push_subs x where x.player = $1) as push,
-      p.fav is not null as fav
+      p.fav is not null as fav,
+      exists (select 1 from ledger where player = $1 and kind = 'insta') as insta
     from players p where p.id = $1`, [pid]))[0];
   const got = new Set((await s.query(`select ref from ledger where player = $1 and kind = 'guide'`, [pid])).map((x) => x.ref));
   const done = {}, claimed = {};
@@ -1229,6 +1230,12 @@ const ACTIONS = {
   async guide_status(s, b) {
     const p = await me(s, b.token);
     return await guideState(s, p.id);
+  },
+  // le joueur a ouvert le compte Instagram (mission « Suivre Tribune sur Instagram »)
+  async insta_click(s, b) {
+    const p = await me(s, b.token);
+    await credit(s, p.id, 0, "insta", "click");
+    return { ok: true };
   },
   async guide_claim(s, b) {
     const p = await me(s, b.token);

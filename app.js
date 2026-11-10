@@ -445,7 +445,6 @@ function viewCareer(){const LV=myLv();
   <button class="cstyle" data-act="style"><span class="csw bnr bn-${(S.cos&&S.cos.b)||"b1"}"></span><span><b>🎨 Mon style</b><small>Bannière, couleur du pseudo, titre : débloque-les en jouant</small></span><span class="arr">›</span></button>
   <button class="cstyle cref" data-act="ref"><span class="csw refsw">🎁</span><span><b>Parrainer un ami</b><small>+500 jetons pour toi, +250 pour lui</small></span><span class="arr">›</span></button>
   <button class="csucc" data-act="succ"><span><b>🏅 Succès</b><small>${SC.length} / ${SUCC.length} débloqués</small></span><span class="csi">${SUCC.filter(s=>SC.includes(s[0])).slice(-5).map(s=>ic(s[1])).join("")}</span><span class="arr">›</span></button>
-  <a class="igban" href="${IG_URL}" target="_blank" rel="noopener">${IG_ICON}<span><b>Suis Tribune sur Instagram</b><small>@tribune.pronos · nouveautés et pronos</small></span><span class="arr">›</span></a>
   <div class="ctiles"><button data-act="stats">📊<b>Mes stats</b><small>Par sport, par pari, par mois</small></button><button data-act="mshare">📤<b>Mon mois</b><small>Bilan en image</small></button>
     <button data-act="prof" data-id="${esc(S.pid||"")}">👤<b>Mon profil</b><small>Ce que voient les autres</small></button><button data-act="help">❓<b>Aide</b><small>Comment ça marche</small></button></div>
   <details class="csec"><summary>⚙️ Réglages</summary>
@@ -468,6 +467,7 @@ function viewCareer(){const LV=myLv();
     <div class="row"><div><b>Comment ça marche ?</b><small>Cotes, combinés, guildes, combats, animations…</small></div><button class="link" data-act="help">Ouvrir</button></div>
     <div class="row"><div><b>Règles et confidentialité</b><small>Le jeu, tes données, la modération</small></div><button class="link" data-act="legal">Lire</button></div>
     <div class="row"><div><b>Nous écrire</b><small>Question, bug, idée, signalement</small></div><button class="link" data-act="contact">Écrire</button></div>
+    <div class="row"><div><b>Instagram</b><small>@tribune.pronos · nouveautés et pronos</small></div><button class="link" data-act="igo">Suivre</button></div>
     ${(S.blocked||[]).length?`<div class="row"><div><b>Joueurs bloqués</b><small>${S.blocked.length} joueur${S.blocked.length>1?"s":""}</small></div><button class="link" data-act="blocked">Gérer</button></div>`:""}
   </details>`;
   return h+foot()}
@@ -617,8 +617,11 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"recap":openRecap(U.lg.code);break;
     case"rcrenew":renewRcode();break;
     case"rctype":typeRcode();break;
-    case"ev":U.ev=d.id;render();window.scrollTo({top:0});break;
-    case"evx":U.ev=null;render();window.scrollTo({top:0});break;
+    case"igo":openInsta();break;
+    case"igpop":closeLayer();openInsta();break;
+    case"ignever":S.igNever=1;saveLocal();closeLayer();break;
+    case"ev":{const e=EVENTS.find(x=>x.id===d.id);U.evBack=U.sp;U.ev=d.id;if(e&&e.sp!==U.sp){U.sp=e.sp;U.lv=-1;U.dep="";loadSport(e.sp)}render();window.scrollTo({top:0});break}
+    case"evx":{const bk=U.evBack;U.ev=null;U.evBack=null;if(bk&&bk!==U.sp){U.sp=bk;U.lv=-1;U.dep="";loadSport(bk)}render();window.scrollTo({top:0});break}
     case"stats":U.open="stats";layer(viewStats());break;
     case"fav":openFav();break;
     case"favl":{U.favL=+d.i;if(FAVT[FAVL[U.favL][1]]==="err")FAVT[FAVL[U.favL][1]]=null;const sc=$(".sheet")?$(".sheet").scrollTop:0;layer(viewFav());if($(".sheet"))$(".sheet").scrollTop=sc;loadFavTeams();break}
@@ -1445,10 +1448,10 @@ function coachNext(){const C=U.coach;if(!C||C.end<0)return;if(C.end>=COACH_END.l
 // 3) missions « Premiers pas » (vérifiées par le serveur)
 const GSTEPS=[["bet","🎟️","Faire ton premier pari","Touche une cote, choisis ta mise, valide."],["wheel","🎡","Tourner la roue de la chance","Un tour gratuit chaque jour."],
   ["guild","🛡️","Rejoindre ou créer une guilde","Pour jouer avec tes potes ou tes collègues."],["push","🔔","Activer les notifications","Coup d’envoi, résultats, rappels."],
-  ["fav","❤️","Choisir ton équipe de cœur","Ses matchs remontent en premier."],["combo","🧾","Tenter un combiné","Au moins 2 pronostics sur un même ticket."]];
+  ["fav","❤️","Choisir ton équipe de cœur","Ses matchs remontent en premier."],["combo","🧾","Tenter un combiné","Au moins 2 pronostics sur un même ticket."],["insta","📸","Suivre Tribune sur Instagram","Nouveautés, pronos du week-end : @tribune.pronos"]];
 let gAt=0;
 async function loadGuide(force){if(!S.tok||S.guideHide||(!force&&Date.now()-gAt<2e4))return;gAt=Date.now();try{U.gs=await api("guide_status",{});if(U.tab==="m"&&!U.open)render()}catch(e){}}
-function guideLocal(){return{bet:S.bets.some(b=>b.sid),wheel:!!S.wheel,guild:!!(U.lg.data&&U.lg.data.leagues.length),push:pushState()==="on",fav:!!S.fav,combo:S.bets.some(b=>b.sid&&b.legs.length>1)}}
+function guideLocal(){return{bet:S.bets.some(b=>b.sid),wheel:!!S.wheel,guild:!!(U.lg.data&&U.lg.data.leagues.length),push:pushState()==="on",fav:!!S.fav,combo:S.bets.some(b=>b.sid&&b.legs.length>1),insta:!!S.igDone}}
 let gLocAt=0;
 function guideCard(){const g=U.gs;if(!g||S.guideHide||g.all)return"";
   {const L=guideLocal();if(GSTEPS.some(([k])=>L[k]&&!g.done[k])&&Date.now()-gLocAt>8e3&&(U.gTries=(U.gTries||0)+1)<=4){gLocAt=Date.now();if(L.fav&&!g.done.fav&&S.favOk!==S.fav.id)favPush();else setTimeout(()=>loadGuide(true),1500)}}const n=GSTEPS.filter(([k])=>g.done[k]).length,ready=GSTEPS.filter(([k])=>g.done[k]&&!g.claimed[k]).length,open=U.gOpen??(S.bets.length<3||ready>0);
@@ -1459,11 +1462,17 @@ function guideCard(){const g=U.gs;if(!g||S.guideHide||g.all)return"";
     if(GSTEPS.every(([k])=>g.claimed[k]))h+=`<button class="btn gold wide" data-act="gclaim" data-k="all" style="margin-top:8px">🎉 Bonus final : +${g.bonus} jetons</button>`;
     h+=`<div class="gft"><button class="link" data-act="help">Comment ça marche ?</button><button class="link" data-act="ghide">Masquer</button></div>`}
   return h+`</div>`}
+// Instagram : ouvre le compte et le note (mission « Premiers pas »)
+function openInsta(){try{window.open(IG_URL,"_blank","noopener")}catch(e){location.href=IG_URL}S.igDone=1;saveLocal();api("insta_click",{}).catch(()=>{})}
+function igPopup(){if(window.__gate||!S.name||S.igNever||S.igDone)return;S.launches=(S.launches||0)+1;saveLocal();if(S.launches%10)return;
+  setTimeout(()=>{if(U.open)return;U.open="igpop";layer(`<div class="grab"><h3>On est sur Instagram !</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
+    <div class="igpop">${IG_ICON}<p><b>@tribune.pronos</b>Nouveautés de l’appli, pronos du week-end, défis entre guildes… Abonne-toi pour ne rien rater !</p></div>
+    <button class="btn wide igbtn" data-act="igpop">📸 Suivre sur Instagram</button><div class="ifoot" style="justify-content:center"><button class="link" data-act="close">Plus tard</button><button class="link" data-act="ignever">Ne plus demander</button></div>`)},5000)}
 async function guideClaim(k){try{const j=await api("guide_claim",{step:k});if(j.error)throw j;if(j.amount){S.bal+=j.amount;S.peak=Math.max(S.peak,S.bal);save();bump();if(k==="all")confetti();toast(`🎁 +${j.amount} jetons !`,"win")}await loadGuide(true)}
   catch(e){toast("Pas encore validé : réessaie dans un instant.","bad");loadGuide(true)}}
 function guideGo(k){if(k==="bet"){U.tab="m";render();const o=[...document.querySelectorAll("#main .mc")].find(x=>x.offsetParent);if(o)o.scrollIntoView({block:"center",behavior:"smooth"});toast("Choisis un vrai match et touche une cote : ton pronostic va dans ton ticket.");return}if(k==="wheel"){const wb=$("[data-act=wheel]");if(wheelAvail()&&wb)wb.click();else toast("Tu as déjà tourné la roue aujourd’hui : reviens demain !");return}
   if(k==="guild"){U.tab="l";render();window.scrollTo({top:0});loadBoards();toast("Crée ta guilde, rejoins-en une avec un code, ou trouve-en une dans l’annuaire.");return}
-  if(k==="push"){pushEnable();return}if(k==="fav"){openFav();return}
+  if(k==="push"){pushEnable();return}if(k==="fav"){openFav();return}if(k==="insta"){openInsta();setTimeout(()=>loadGuide(true),1500);return}
   if(k==="combo"){openHelp("combo");return}}
 
 // 4) aide « Comment ça marche ? »
@@ -2575,7 +2584,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.37";
+const VERSION="2.38";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -2594,7 +2603,7 @@ async function boot(){if(GATE||!S.name){hideSplash();setTimeout(afterBoot,300);r
       if(L0)await Promise.allSettled([loadProno(),loadLm(U.lg.code||L0.code)])})()])})()];
   await Promise.race([Promise.allSettled(jobs),new Promise(r=>setTimeout(r,6500))]);
   clearInterval(mt);U.lg.loading=false;render();hideSplash();setTimeout(afterBoot,400)}
-refFromLink();pariFromLink();getTmp("dap.pari",30);getTmp("dap.ref",24*60);
+refFromLink();pariFromLink();setTimeout(igPopup,0);getTmp("dap.pari",30);getTmp("dap.ref",24*60);
 // coincé dans le navigateur d'Instagram, Facebook… : on tente tout de suite de rouvrir le lien dans Safari ou Chrome (une seule fois)
 // flèche vers le menu ••• d'Instagram / Facebook (seul moyen fiable de sortir sur iPhone)
 function inAppArrow(){if(!GATE||!INAPP_NAME||document.querySelector(".iaarrow"))return;if(!(IOS&&!IOS_SAFARI)&&!(ANDROID&&INAPP))return;

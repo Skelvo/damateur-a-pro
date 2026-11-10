@@ -890,3 +890,7 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 .igban{display:flex;align-items:center;gap:12px;margin:0 0 12px;padding:12px 14px;border-radius:16px;text-decoration:none;color:#fff;background:linear-gradient(120deg,#5b2bd6,#c9208a 45%,#ff7a2a 85%,#ffc23a);box-shadow:0 8px 24px #c9208a33}
 .igban .igic{width:30px;height:30px;flex:none}.igban span:nth-child(2){flex:1}.igban b{display:block;font-size:15.5px}.igban small{display:block;font-size:12.5px;opacity:.9}.igban .arr{font-size:22px;opacity:.9}
 .igban.gig{margin:16px 0 4px;text-align:left}
+.igpop{display:flex;gap:14px;align-items:center;background:linear-gradient(120deg,#5b2bd622,#c9208a22,#ff7a2a22);border:1px solid #c9208a55;border-radius:16px;padding:14px;margin:4px 0 14px}
+.igpop .igic{width:44px;height:44px;flex:none;color:#ff5aa5}.igpop p{margin:0;font-size:14px;line-height:1.4}.igpop b{display:block;font-size:17px;margin-bottom:2px}
+.igbtn{background:linear-gradient(120deg,#5b2bd6,#c9208a 45%,#ff7a2a 85%,#ffc23a)!important;color:#fff!important;border:0!important}
+.ifoot .link{margin:8px 10px 0}
