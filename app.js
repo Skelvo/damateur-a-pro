@@ -1705,7 +1705,7 @@ function viewEvent(e){const M=evMatches(e),live=M.filter(m=>status(m)==="live"),
 const EMBLEMS=["🦁","🐺","🦅","🐉","🦈","🐻","🦊","🐯","🔥","⚡","👑","🏆","⚽","🏉","🎾","🏀","💎","🚀","🎯","🛡️","⚔️","🌟","🍀","🐐"];
 const GCOLORS=["#35d07f","#ffd23f","#ff7a45","#5fa8ff","#c084fc","#ff5a5f","#2ec4b6","#f8fafc","#ff9f1c","#8ac926"];
 const ACCESS={open:["Ouverte","Tout le monde peut la rejoindre depuis l’annuaire."],request:["Sur demande","Visible dans l’annuaire ; le chef ou un adjoint accepte chaque demande."],private:["Privée","Invisible dans l’annuaire : on la rejoint seulement avec son code."]};
-const emb=(l,sz)=>{const e=(l&&l.emblem)||{};return`<span class="gemb ${sz||""}" style="--gc:${esc(e.c||"#35d07f")}">${esc(e.i||"🛡️")}</span>`};
+const emb=(l,sz)=>{const e=(l&&l.emblem)||{};if(typeof e.img==="string"&&/^g\/[a-z0-9-]{1,40}\.webp$/.test(e.img))return`<span class="gemb img ${sz||""}" style="--gc:${esc(e.c||"#35d07f")}"><img src="${e.img}?v=1" alt="" decoding="async"></span>`;return`<span class="gemb ${sz||""}" style="--gc:${esc(e.c||"#35d07f")}">${esc(e.i||"🛡️")}</span>`};
 const seenTxt=t=>{const h=(Date.now()-t)/H;return h<1?"en ligne récemment":h<24?`vu il y a ${Math.round(h)} h`:`vu il y a ${Math.round(h/24)} j`};
 async function openMembers(){U.open="gmem";const head=`<div class="grab"><h3>Membres</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
   layerLater(head+`<div class="skel"></div><div class="skel"></div>`);
@@ -2495,7 +2495,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.14";
+const VERSION="2.15";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

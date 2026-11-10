@@ -496,6 +496,7 @@ async function pronoCredit(s, pid, week) {
 }
 
 // ---- Guildes : emblème, devise, accès (ouverte / sur demande / privée), rôles (chef, adjoints, membres) ----
+const GIMG = /^g\/[a-z0-9-]{1,40}\.webp$/;
 const EMBLEMS = ["🦁","🐺","🦅","🐉","🦈","🐻","🦊","🐯","🔥","⚡","👑","🏆","⚽","🏉","🎾","🏀","💎","🚀","🎯","🛡️","⚔️","🌟","🍀","🐐"];
 const GCOLORS = ["#35d07f","#ffd23f","#ff7a45","#5fa8ff","#c084fc","#ff5a5f","#2ec4b6","#f8fafc","#ff9f1c","#8ac926"];
 async function guildRole(s, code, pid) {
@@ -890,6 +891,9 @@ const ACTIONS = {
     const code = cleanName(b.code, 8).toUpperCase(), role = await guildRole(s, code, p.id);
     if (role !== "chef" && role !== "adjoint") throw fail(403, "not_allowed");
     const e = b.emblem || {}, emblem = { i: EMBLEMS.includes(e.i) ? e.i : "🛡️", c: GCOLORS.includes(e.c) ? e.c : "#35d07f" };
+    // un logo image posé par les organisateurs est conservé quand la guilde change son emblème
+    const prevE = ((await s.query(`select emblem from leagues where code = $1`, [code]))[0] || {}).emblem;
+    if (prevE && typeof prevE.img === "string" && GIMG.test(prevE.img)) emblem.img = prevE.img;
     const access = ["open", "request", "private"].includes(b.access) ? b.access : "private";
     const name = cleanName(b.name, 24), motto = cleanName(b.motto, 60);
     if ((name && await badName(s, name)) || isBad(motto)) throw fail(400, "name_bad");
@@ -1205,6 +1209,15 @@ const ACTIONS = {
     return { ok: !!r[0], players: r };
   },
   // mode testeur : tout le style débloqué pour un joueur (organisateurs seulement)
+  async admin_guild_img(s, b) {
+    admin(b);
+    const img = String(b.img || "");
+    if (img && !GIMG.test(img)) throw fail(400, "bad_img");
+    const r = await s.query(`update leagues set emblem = case when $2 = '' then coalesce(emblem, '{}'::jsonb) - 'img' else coalesce(emblem, '{}'::jsonb) || jsonb_build_object('img', $2::text) end
+       where lower(name) = lower($1) returning code, name, emblem`, [String(b.name || ""), img]);
+    if (!r[0]) return { ok: false, guilds: (await s.query(`select code, name from leagues order by name`)).map((x) => x.name) };
+    return { ok: true, guilds: r };
+  },
   async admin_cos_all(s, b) {
     admin(b);
     const r = await s.query(`update players set cos_all = $2 where lower(name) = lower($1) returning id, name`, [String(b.name || ""), b.on !== false]);
