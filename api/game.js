@@ -1189,7 +1189,7 @@ const ACTIONS = {
   async cos_set(s, b) {
     const p = await me(s, b.token);
     const un = new Set(EG.cosUnlocked(await cosFlags(s, p.id))), pick = (v, ty) => (typeof v === "string" && un.has(v) && (v.startsWith("tm:") ? ty === "t" : v[0] === ty) ? v : null);
-    const cos = { b: pick(b.b, "b"), c: pick(b.c, "c"), t: pick(b.t, "t") };
+    const cos = { b: pick(b.b, "b"), c: pick(b.c, "c"), t: pick(b.t, "t"), f: pick(b.f, "f"), e: pick(b.e, "e"), v: pick(b.v, "v") };
     await s.query(`update players set cos = $2::jsonb where id = $1`, [p.id, JSON.stringify(cos)]);
     return { ok: true, cos };
   },

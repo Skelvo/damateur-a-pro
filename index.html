@@ -503,6 +503,22 @@ html.cv .mc,html.cv .res-row,html.cv .prow,html.cv .ticket{content-visibility:au
 .gptk{background:var(--card);border:1px solid #7a610f;border-radius:14px;padding:12px;margin-bottom:10px;text-align:left}.gptk b{display:block;font:800 19px "Barlow Condensed";text-transform:uppercase}.gptk small{color:var(--mute)}.gpl{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding:7px 0;margin-top:6px;font-size:14px}.gpl b{color:var(--sel)}
 .gpgo{background:linear-gradient(135deg,#123526,var(--card));border:1px solid #2a6b4b;border-radius:14px;padding:12px;text-align:left;font-size:14.5px;line-height:1.45;margin-bottom:8px}
 .shwho{display:flex;align-items:center;gap:10px;margin-bottom:10px}.shwho .av{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font:800 20px "Barlow Condensed";color:#0b1310;flex:none;overflow:hidden}.shwho>div{flex:1}.shwho b{display:block}.shwho small{color:var(--mute);font-size:12.5px}
+.nemo{margin-left:4px;font-size:.9em;-webkit-text-fill-color:initial}
+.fr-f1{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #35d07f}.fr-f2{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #6cc4ff}.fr-f3{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #c9d3dc,0 0 10px #c9d3dc88}
+.fr-f4{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #ffd23f,0 0 14px #ffd23faa}.fr-f5{animation:frfire 1.2s ease-in-out infinite}@keyframes frfire{0%,100%{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #ff7a1a,0 0 12px #ff3b1a}50%{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #ffd23f,0 0 20px #ff7a1a}}
+.fr-f6{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #ff2bd6,0 0 16px #ff2bd6aa}.fr-f7{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #bfefff,0 0 14px #7fd6ffaa}
+.fr-f8{animation:frzap 1.6s steps(2) infinite}@keyframes frzap{0%{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #ffe14a,0 0 10px #ffe14a}50%{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #b38cff,0 0 18px #b38cff}}
+.fr-f9{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #e8fbff,0 0 0 6px #6cc4ff,0 0 18px #6cc4ffaa}
+.fr-f10{animation:frrb 3s linear infinite}@keyframes frrb{0%{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #ff5a5f}25%{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #ffd23f}50%{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #35d07f}75%{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #5fa8ff}100%{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #ff5a5f}}
+.fr-f11{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #35d07f,0 0 0 6px #ffd23f}.fr-f12{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #ffd23f,0 0 0 7px #35d07f,0 0 20px #ffd23f}
+.sttabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -16px 10px;padding:0 16px}.sttabs::-webkit-scrollbar{display:none}
+.sttabs button{flex:none;display:flex;flex-direction:column;align-items:center;gap:1px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px;color:var(--mute);font:700 14px Barlow}
+.sttabs button small{font-size:11px;font-weight:600}.sttabs button[aria-pressed=true]{color:var(--ink);border-color:var(--sel);background:#ffd23f14}
+.stgrid.f,.stgrid.e,.stgrid.v{grid-template-columns:repeat(3,1fr)}.sti .stav{width:44px;height:44px;border-radius:50%;margin:6px 0 2px;display:grid;place-items:center;font:800 20px "Barlow Condensed";color:#0b1310;overflow:hidden}
+.ste{font-size:30px;line-height:1.2}
+.erain{position:fixed;inset:0;pointer-events:none;z-index:70;overflow:hidden}.erain i{position:absolute;top:-60px;font-style:normal;animation:erfall linear forwards}.erain i.up{top:auto;bottom:-60px;animation-name:erup}
+.erain.flash{animation:erflash .9s 2}@keyframes erflash{0%,100%{background:transparent}10%{background:#ffffff40}}
+@keyframes erfall{to{transform:translateY(115vh) rotate(260deg)}}@keyframes erup{to{transform:translateY(-120vh) rotate(-20deg)}}
 .ttl{display:block;width:max-content;max-width:100%;font:700 12px Barlow;color:var(--sel);background:#ffd23f1a;border:1px solid #ffd23f40;border-radius:20px;padding:1px 8px;margin:3px 0 2px;text-transform:none;letter-spacing:0}
 .nc-c1{color:#35d07f}.nc-c2{color:#6cc4ff}.nc-c3{color:#ff9a3c}.nc-c4{color:#ff6fb1}.nc-c5{color:#b38cff}.nc-c10{color:#c6ff4a;text-shadow:0 0 8px #c6ff4a99}
 .nc-c6,.nc-c7,.nc-c8,.nc-c9,.nc-c11,.nc-c12{-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -839,7 +855,7 @@ html.cv .mc,html.cv .res-row,html.cv .prow,html.cv .ticket{content-visibility:au
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.92"></script>
+<script src="engine.js?v=1.93"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -1277,7 +1293,7 @@ function viewCareer(){const LV=myLv();
   if(S.pid&&!U.mePal&&!U.mePalLoad){U.mePalLoad=1;api("profile",{id:S.pid}).then(r=>{U.mePal=r.pal||{};if(U.tab==="c"&&!U.open)render()}).catch(()=>{U.mePalLoad=0})}
   const pushTxt=pushState()==="on"?"Activées sur ce téléphone · <button class='link' data-act='pushtest' style='padding:0'>tester</button>":pushState()==="denied"?"Refusées : autorise-les dans les réglages du téléphone":pushState()==="na"?(IOS&&!STANDALONE?"Installe d’abord l’app sur l’écran d’accueil":"Pas disponibles sur ce téléphone"):"Désactivées";
   if(S.tok&&!U.cosD&&!U.cosLoad){U.cosLoad=1;loadCos().then(()=>{if(U.tab==="c"&&!U.open){$("#main")._html=null;render()}})}
-  let h=`<div class="pcard chero${bnC(S.cos)}"><span class="bgnum">${LV.lvl}</span><div class="who"><button class="avbtn" data-act="photo" aria-label="Changer ma photo">${avatar(S.pid||"me",S.name||"?",S.avv,"av",true)}<span class="cam">${ic("plus")}</span></button>
+  let h=`<div class="pcard chero${bnC(S.cos)}"><span class="bgnum">${LV.lvl}</span><div class="who"><button class="avbtn" data-act="photo" aria-label="Changer ma photo">${avatar(S.pid||"me",S.name||"?",S.avv,"av"+frC(S.cos),true)}<span class="cam">${ic("plus")}</span></button>
     <div><h2>${nameH(S.name||"Joueur",S.cos)}${S.fav?` <span class="cfav">${S.fav.logo?`<img src="${esc(S.fav.logo)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:"❤️"}</span>`:""}</h2>${ttlH(S.cos)}<button class="div" data-act="divs">${LV.ic} ${esc(LV.tier)} · niveau ${LV.lvl} ›</button></div></div>
     <div class="prog"><div class="l"><span>${tok(LV.cur)} / ${tok(LV.need)} XP</span><span>${LV.next?esc(LV.next[2]+" "+LV.next[0])+" au niveau "+LV.next[1]:"Niveau "+(LV.lvl+1)}</span></div><div class="t"><i style="width:${LV.pct*100}%"></i></div></div></div>
   <div class="ckpi"><div><small>Jetons</small><b>${tok(S.bal)}</b></div><div><small>Réussite</small><b>${rate} %</b></div><div><small>Série</small><b>${streak}${streak>=3?" 🔥":""}</b></div><div><small>Plus gros gain</small><b class="pos">${best?"+"+tok(Math.round(best)):"—"}</b></div></div>
@@ -1388,7 +1404,7 @@ async function settle(){if(settling)return;settling=true;
         else{const R=betResult(b);b.odds=R.odds;b.pay=R.pay;b.st="won";S.bal+=b.pay;gain+=b.pay;won++;
           if(won<=3)postAct("won",{pay:b.pay,odds:b.odds,legs:b.legs.slice(0,3).map(L=>L.l)})}}}
     if(won||lost||voids){S.peak=Math.max(S.peak,S.bal);save();render();bump();
-      if(won){toast(`${ic("trophy")} ${won} pari${won>1?"s":""} gagné${won>1?"s":""} : +${tok(gain)} jetons !`,"win");confetti()}
+      if(won){toast(`${ic("trophy")} ${won} pari${won>1?"s":""} gagné${won>1?"s":""} : +${tok(gain)} jetons !`,"win");winFx()}
       if(lost)toast(`${lost} pari${lost>1?"s":""} perdu${lost>1?"s":""}. La revanche ?`);
       setTimeout(checkDefis,1200);
       if(voids)toast(`${voids} pari${voids>1?"s":""} remboursé${voids>1?"s":""}.`)}}
@@ -1536,7 +1552,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"follow":followShared();break;
     case"style":openStyle();break;
     case"sttab":U.cosTab=d.v;layer(viewStyle());break;
-    case"stpick":{const x=d.v,ty=x.startsWith("tm:")?"t":x[0];if(!U.cosD.unlocked.includes(x)){const c=COS.find(y=>y[0]===x);toast("🔒 "+(c?c[4]:"Pas encore débloqué"));break}U.cosEdit[ty]=x;const sc=$(".sheet").scrollTop;layer(viewStyle());$(".sheet").scrollTop=sc;break}
+    case"stpick":{const x=d.v,ty=x.startsWith("tm:")?"t":x[0];if(!U.cosD.unlocked.includes(x)){const c=COS.find(y=>y[0]===x);toast("🔒 "+(c?c[4]:"Pas encore débloqué"));break}U.cosEdit[ty]=x;const sc=$(".sheet").scrollTop;layer(viewStyle());$(".sheet").scrollTop=sc;if(ty==="v")winFx(x);break}
     case"stsave":saveStyle();break;
     case"shopen":openShared(d.c);break;
     case"divs":openDivs();break;
@@ -1747,9 +1763,9 @@ function viewLeagues(){const L=U.lg,d=L.data;
   const val=r=>gainMode?(r[key]>0?"+":"")+tok(r[key]):tok(r.bal),cls=r=>gainMode?(r[key]>=0?"pos":"neg"):"";
   if(!rows.length)h+=`<div class="empty">Personne pour l’instant.</div>`;
   if(rows.length>=3){const P=[rows[1],rows[0],rows[2]],H=[64,90,48];
-    h+=`<div class="podium">${P.map((r,i)=>`<div class="pod" data-act="prof" data-id="${esc(r.id)}">${avatar(r.id,r.name,r.av,"av")}<b>${nameH(r.name,r.cos)}${r.id===d.me?" (toi)":""}</b><span class="${cls(r)}">${val(r)}</span>
+    h+=`<div class="podium">${P.map((r,i)=>`<div class="pod" data-act="prof" data-id="${esc(r.id)}">${avatar(r.id,r.name,r.av,"av"+frC(r.cos))}<b>${nameH(r.name,r.cos)}${r.id===d.me?" (toi)":""}</b><span class="${cls(r)}">${val(r)}</span>
       <div class="blk" style="height:${H[i]}px;background:${["#c9d3dc","#ffd23f","#e0975a"][i]}">${[2,1,3][i]}</div></div>`).join("")}</div>`}
-  h+=rows.map((r,i)=>i<3&&rows.length>=3?"":`<div class="prow${r.id===d.me?" me":""}" data-act="prof" data-id="${esc(r.id)}"><span class="rk">${i+1}</span>${avatar(r.id,r.name,r.av,"av")}
+  h+=rows.map((r,i)=>i<3&&rows.length>=3?"":`<div class="prow${r.id===d.me?" me":""}" data-act="prof" data-id="${esc(r.id)}"><span class="rk">${i+1}</span>${avatar(r.id,r.name,r.av,"av"+frC(r.cos))}
     <div><b>${nameH(r.name,r.cos)}${favCrest(r.fav)}${r.id===d.me?" (toi)":""}${r.sc?` <span class="trs crw">${ic("crown")}${r.sc>1?r.sc:""}</span>`:""}${r.tr?` <span class="trs">${ic("trophy")}${r.tr>1?r.tr:""}</span>`:""}</b><small>${r.cos&&r.cos.t&&cosTitle(r.cos.t)?esc(cosTitle(r.cos.t))+" · ":""}${levelOf(r.xp||0).ic} niv. ${levelOf(r.xp||0).lvl} · ${r.won} gagné${r.won>1?"s":""} · ${r.lost} perdu${r.lost>1?"s":""}</small></div>
     <span class="v ${cls(r)}">${val(r)}</span></div>`).join("");
   if(!cur&&d.rank&&!rows.some(r=>r.id===d.me))h+=`<div class="note" style="text-align:center">…</div>`;
@@ -1865,25 +1881,34 @@ function fxNext(){if(fxOn||!FXQ.length||document.hidden)return;const e=FXQ.shift
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(fxNext,600)});
 
 /* ---------- mon style : bannière, couleur du pseudo, titre (débloqués en jouant, vérifiés par le serveur) ---------- */
-const nameH=(name,cos)=>`<span class="${cos&&cos.c&&cos.c!=="c0"?"nc-"+cos.c:""}">${esc(name)}</span>`;
+const nameH=(name,cos)=>{const e=cos&&cos.e&&cosEmoji(cos.e);return`<span class="${cos&&cos.c&&cos.c!=="c0"?"nc-"+cos.c:""}">${esc(name)}</span>${e?`<span class="nemo">${e}</span>`:""}`};
+const frC=cos=>cos&&cos.f&&cos.f!=="f0"?" fr-"+cos.f:"";
+// effet quand un de mes paris passe
+const WFX={v1:["⚽"],v2:["🎈","🎈","🎉"],v3:["🎆","🎇","✨"],v4:["🪙","🪙","💰"],v5:["⚡","⚡","🌩️"],v6:["👑","✨"],v7:["💸","💵","💶"],v8:["🔥","🔥","💥"],v9:["🌱","🌸","🌼"]};
+function winFx(v){v=v||(S.cos&&S.cos.v);if(!v||v==="v0"||!WFX[v]){confetti();return}if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+  const c=document.createElement("div");c.className="erain";const E=WFX[v],up=v==="v2";
+  for(let i=0;i<38;i++){const p=document.createElement("i");p.textContent=E[i%E.length];p.style.left=Math.random()*100+"%";p.style.fontSize=(22+Math.random()*22)+"px";
+    p.style.animationDelay=(Math.random()*.9)+"s";p.style.animationDuration=(1.6+Math.random()*1.4)+"s";if(up)p.classList.add("up");c.appendChild(p)}
+  if(v==="v5"){c.classList.add("flash")}document.body.appendChild(c);setTimeout(()=>c.remove(),4000)}
 const ttlH=cos=>{const t=cos&&cos.t&&cosTitle(cos.t);return t?`<span class="ttl">${esc(t)}</span>`:""};
 const bnC=cos=>cos&&cos.b&&cos.b!=="b0"?" bnr bn-"+cos.b:"";
 async function loadCos(){if(!S.tok)return null;try{const j=await api("cos_get",{});U.cosD=j;S.cos=j.cos||{};saveLocal();return j}catch(e){return null}}
 async function openStyle(){U.open="style";U.cosTab=U.cosTab||"b";const head=`<div class="grab"><h3>Mon style</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
   layerLater(head+`<div class="skel" style="height:160px"></div><div class="skel"></div>`);const j=await loadCos();if(U.open!=="style")return;
   if(!j){layer(head+`<div class="empty">${ic("info")}<b>Pas de connexion</b>Réessaie dans un instant.</div>`);return}
-  U.cosEdit={b:"b0",c:"c0",t:"t0",...(j.cos||{})};layer(viewStyle())}
+  U.cosEdit={b:"b0",c:"c0",t:"t0",f:"f0",e:"e0",v:"v0",...Object.fromEntries(Object.entries(j.cos||{}).filter(([,v])=>v))};layer(viewStyle())}
 function viewStyle(){const j=U.cosD,E=U.cosEdit,un=new Set(j.unlocked),T=U.cosTab,LV=myLv();
   const items=COS.filter(x=>x[1]===T).map(x=>({id:x[0],n:x[2],d:x[4],ok:un.has(x[0])}));
   if(T==="t")for(const id of j.unlocked)if(id.startsWith("tm:"))items.splice(1,0,{id,n:cosTitle(id),d:"",ok:true});
   const tm=ty=>ty==="t"?j.unlocked.filter(x=>x.startsWith("tm:")).length:0,cnt=ty=>`${COS.filter(x=>x[1]===ty&&un.has(x[0])).length+tm(ty)}/${COS.filter(x=>x[1]===ty).length+tm(ty)}`;
-  const prev={b:E.b,c:E.c,t:E.t};
+  const prev={b:E.b,c:E.c,t:E.t,f:E.f,e:E.e,v:E.v};
   return`<div class="grab"><h3>Mon style</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   ${j.flags.all?`<p class="testr">🧪 Mode testeur : tout est débloqué pour toi.</p>`:""}
-  <div class="pcard chero stprev${bnC(prev)}"><div class="who">${avatar(S.pid||"me",S.name||"?",S.avv,"av",true)}<div><h2>${nameH(S.name||"Joueur",prev)}</h2>${ttlH(prev)}<span class="div">${LV.ic} ${esc(LV.tier)} · niveau ${LV.lvl}</span></div></div></div>
-  <div class="seg"><button data-act="sttab" data-v="b" aria-pressed="${T==="b"}">Bannières ${cnt("b")}</button><button data-act="sttab" data-v="c" aria-pressed="${T==="c"}">Couleurs ${cnt("c")}</button><button data-act="sttab" data-v="t" aria-pressed="${T==="t"}">Titres ${cnt("t")}</button></div>
+  <div class="pcard chero stprev${bnC(prev)}"><div class="who">${avatar(S.pid||"me",S.name||"?",S.avv,"av"+frC(prev),true)}<div><h2>${nameH(S.name||"Joueur",prev)}</h2>${ttlH(prev)}<span class="div">${LV.ic} ${esc(LV.tier)} · niveau ${LV.lvl}</span></div></div></div>
+  <div class="sttabs">${[["b","🖼️ Bannières"],["c","🎨 Couleurs"],["t","🏷️ Titres"],["f","⭕ Cadres"],["e","😎 Emojis"],["v","🎉 Victoire"]].map(([k,n])=>`<button data-act="sttab" data-v="${k}" aria-pressed="${T===k}">${n}<small>${cnt(k)}</small></button>`).join("")}</div>
+  ${T==="v"?`<p class="note" style="text-align:left">L’animation qui se lance quand un de tes paris passe. Touche un effet débloqué pour le voir.</p>`:""}
   <div class="stgrid ${T}">${items.map(x=>`<button class="sti${x.ok?"":" lock"}${E[T]===x.id?" on":""}" data-act="stpick" data-v="${esc(x.id)}" ${x.ok?"":"aria-disabled=\"true\""}>
-    ${T==="b"?`<span class="stsw bnr bn-${x.id}"></span>`:T==="c"?`<span class="stc nc-${x.id}">Aa</span>`:""}<b>${esc(x.n)}</b>${x.ok?"":`<small>🔒 ${esc(x.d)}</small>`}</button>`).join("")}</div>
+    ${T==="b"?`<span class="stsw bnr bn-${x.id}"></span>`:T==="c"?`<span class="stc nc-${x.id}">Aa</span>`:T==="f"?avatar(S.pid||"me",S.name||"?",S.avv,"av stav"+(x.id!=="f0"?" fr-"+x.id:""),true):T==="e"?`<span class="ste">${x.id==="e0"?"∅":esc(x.n.split(" ")[0])}</span>`:T==="v"?`<span class="ste">${x.id==="v0"?"🎊":esc(x.n.split(" ")[0])}</span>`:""}<b>${esc(T==="e"&&x.id!=="e0"?x.n.split(" ").slice(1).join(" "):T==="v"&&x.id!=="v0"?x.n.split(" ").slice(1).join(" "):x.n)}</b>${x.ok?"":`<small>🔒 ${esc(x.d)}</small>`}</button>`).join("")}</div>
   <button class="btn gold wide" data-act="stsave" style="margin-top:12px">Enregistrer mon style</button>
   <p class="note">Ton style se voit sur ton profil, dans les classements et dans le chat. Tout se débloque en jouant : rien ne s’achète.</p>`}
 async function saveStyle(){try{const j=await api("cos_set",{...U.cosEdit});if(j.error)throw j;S.cos=j.cos;saveLocal();closeLayer();confetti();toast("🎨 Style enregistré !","win");$("#main")._html=null;render();if(U.lg.data)loadBoards()}
@@ -2339,7 +2364,7 @@ function viewProfile(p){const done=p.won+p.lost,rate=done?Math.round(p.won/done*
       ${b.legs.map(L=>`<div class="pleg">${L.r==="w"?`<span class="st w">✓</span>`:L.r==="l"?`<span class="st l">✗</span>`:L.r==="v"?`<span class="st v">↺</span>`:`<span class="st p"></span>`}<div><b>${esc(L.l)}</b><small>${esc(L.ml)}</small></div></div>`).join("")}
       <small class="pbf">Mise ${tok(b.stake)} · cote ${fr(+b.odds||1)} · ${new Date(b.at).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})}</small></div>`};
   return`<div class="grab"><h3>Profil</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
-  <div class="phero${bnC(p.me?S.cos:p.cos)}">${avatar(p.id,p.name,p.av,"av big",p.me)}<div><h2>${nameH(p.name,p.me?S.cos:p.cos)}</h2>${ttlH(p.me?S.cos:p.cos)}<span class="div">${levelOf(p.xp||0).ic} ${esc(levelOf(p.xp||0).tier)} · niv. ${levelOf(p.xp||0).lvl}${sc?` · ${sc} mois gagné${sc>1?"s":""}`:""}${tr?` · ${tr} semaine${tr>1?"s":""} gagnée${tr>1?"s":""}`:""}</span>
+  <div class="phero${bnC(p.me?S.cos:p.cos)}">${avatar(p.id,p.name,p.av,"av big"+frC(p.me?S.cos:p.cos),p.me)}<div><h2>${nameH(p.name,p.me?S.cos:p.cos)}</h2>${ttlH(p.me?S.cos:p.cos)}<span class="div">${levelOf(p.xp||0).ic} ${esc(levelOf(p.xp||0).tier)} · niv. ${levelOf(p.xp||0).lvl}${sc?` · ${sc} mois gagné${sc>1?"s":""}`:""}${tr?` · ${tr} semaine${tr>1?"s":""} gagnée${tr>1?"s":""}`:""}</span>
     ${p.fav?`<span class="pfav">${p.fav.logo?`<img src="${esc(p.fav.logo)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:"❤️"} ${esc(p.fav.name)}</span>`:""}
     ${p.me?`<button class="link" data-act="photo">Changer ma photo</button>`:""}</div></div>
   <div class="pstats"><div><small>Jetons</small><b>${tok(p.bal)}</b></div><div><small>Record</small><b>${tok(p.peak)}</b></div><div><small>Réussite</small><b>${rate} %</b></div>
@@ -2397,7 +2422,7 @@ async function openMembers(){U.open="gmem";const head=`<div class="grab"><h3>Mem
   layerLater(head+`<div class="skel"></div><div class="skel"></div>`);
   try{const j=await api("guild_members",{code:U.lg.code});if(U.open==="gmem")layer(head+viewMembers(j))}catch(e){if(U.open==="gmem")layer(head+`<div class="empty">${ic("info")}<b>Pas de connexion</b>Réessaie dans un instant.</div>`)}}
 function viewMembers(j){const boss=j.role!=="membre",RL={chef:"👑 Chef",adjoint:"⭐ Adjoint",membre:"Membre"};
-  let h=j.requests.length?`<div class="grp">Demandes (${j.requests.length})</div>`+j.requests.map(r=>`<div class="gmrow">${avatar(r.id,r.name,r.av,"av")}<div><b>${esc(r.name)}</b><small>demande à rejoindre</small></div>
+  let h=j.requests.length?`<div class="grp">Demandes (${j.requests.length})</div>`+j.requests.map(r=>`<div class="gmrow">${avatar(r.id,r.name,r.av,"av"+frC(r.cos))}<div><b>${esc(r.name)}</b><small>demande à rejoindre</small></div>
     <button class="btn" data-act="gans" data-id="${esc(r.id)}" data-v="1">Accepter</button><button class="x" data-act="gans" data-id="${esc(r.id)}" data-v="0" aria-label="Refuser">${ic("x")}</button></div>`).join(""):"";
   h+=`<div class="grp">${j.members.length} membre${j.members.length>1?"s":""}</div>`+j.members.map(m=>{const me=String(m.id)===String(j.me);
     const acts=me||!boss||m.role==="chef"||(j.role==="adjoint"&&m.role!=="membre")?"":`<div class="gmact">${j.role==="chef"?(m.role==="adjoint"?`<button class="link" data-act="grole" data-id="${esc(m.id)}" data-r="membre">Retirer adjoint</button>`:`<button class="link" data-act="grole" data-id="${esc(m.id)}" data-r="adjoint">Nommer adjoint</button>`)+`<button class="link" data-act="grole" data-id="${esc(m.id)}" data-r="chef">Faire chef</button>`:""}<button class="link" data-act="gkick" data-id="${esc(m.id)}" style="color:var(--loss)">Exclure</button></div>`;
@@ -2806,7 +2831,7 @@ function viewProno(cur){const j=U.pr.data;if(!j){loadProno();return`<div class="
       ${oth&&oth.length?`<div class="proth">${oth.map(o=>`<span>${esc(o.name)} <b>${o.sh}–${o.sa}</b>${o.joker?" ⚡":""}${o.pts!=null?` <i class="${o.pts?"pos":""}">${o.pts}</i>`:""}</span>`).join("")}</div>`:""}</div>`}
   if(j.board){const t=U.pr.tab,key=t==="week"?"week":"season",rows=j.board.rows.slice().sort((a,b)=>b[key]-a[key]||b.exact-a.exact);
     h+=`<div class="h2"><h2>Classement du prono</h2></div><div class="seg"><button data-act="prtab" data-v="week" aria-pressed="${t==="week"}">Ce week-end</button><button data-act="prtab" data-v="season" aria-pressed="${t==="season"}">Saison</button></div>`+
-    rows.map((r,i)=>`<div class="prow${String(r.id)===String(j.me)?" me":""}" data-act="prof" data-id="${esc(r.id)}"><span class="rk">${i+1}</span>${avatar(r.id,r.name,r.av,"av")}<div><b>${esc(r.name)}${String(r.id)===String(j.me)?" (toi)":""}${r.gold?` <span class="trs">${ic("target")}${r.gold>1?r.gold:""}</span>`:""}</b><small>${t==="week"?`${r.n}/${j.matches.length} pronos · ${r.exact} score${r.exact>1?"s":""} exact${r.exact>1?"s":""}`:`${r.season} points au total`}</small></div><span class="v">${r[key]} pts</span></div>`).join("")}
+    rows.map((r,i)=>`<div class="prow${String(r.id)===String(j.me)?" me":""}" data-act="prof" data-id="${esc(r.id)}"><span class="rk">${i+1}</span>${avatar(r.id,r.name,r.av,"av"+frC(r.cos))}<div><b>${esc(r.name)}${String(r.id)===String(j.me)?" (toi)":""}${r.gold?` <span class="trs">${ic("target")}${r.gold>1?r.gold:""}</span>`:""}</b><small>${t==="week"?`${r.n}/${j.matches.length} pronos · ${r.exact} score${r.exact>1?"s":""} exact${r.exact>1?"s":""}`:`${r.season} points au total`}</small></div><span class="v">${r[key]} pts</span></div>`).join("")}
   return h}
 
 /* ---------- notifications ----------
@@ -2874,7 +2899,7 @@ function viewChat(cur){const c=CH[cur.code];clearTimeout(chT);chT=setTimeout(()=
   let h=`<div class="chbox" id="chbox">`,day="";
   if(!c.msgs.length)h+=`<div class="empty" style="border:0">${ic("group")}<b>Le chat de « ${esc(cur.name)} »</b>Chambre tes collègues, prépare tes duels, commente les matchs…</div>`;
   for(const m of c.msgs){if(blocked(m.who))continue;const d=fDay(m.at);if(d!==day){h+=`<div class="chday">${d}</div>`;day=d}const mine=String(m.who)===String(c.me);
-    h+=`<div class="chm${mine?" me":""}">${mine?"":`<span data-act="prof" data-id="${esc(m.who)}">${avatar(m.who,m.name,m.av,"av")}</span>`}<div class="chb">${mine?"":`<b>${nameH(m.name,m.cos)}</b>`}<p>${esc(m.text).replace(/\n/g,"<br>")}</p><small>${fTime(m.at)}${mine?` · <button class="link" data-act="chdel" data-id="${esc(m.id)}">supprimer</button>`:` · <button class="link" data-act="chmenu" data-id="${esc(m.id)}" aria-label="Signaler ou bloquer">•••</button>`}</small></div></div>`}
+    h+=`<div class="chm${mine?" me":""}">${mine?"":`<span data-act="prof" data-id="${esc(m.who)}">${avatar(m.who,m.name,m.av,"av"+frC(m.cos))}</span>`}<div class="chb">${mine?"":`<b>${nameH(m.name,m.cos)}</b>`}<p>${esc(m.text).replace(/\n/g,"<br>")}</p><small>${fTime(m.at)}${mine?` · <button class="link" data-act="chdel" data-id="${esc(m.id)}">supprimer</button>`:` · <button class="link" data-act="chmenu" data-id="${esc(m.id)}" aria-label="Signaler ou bloquer">•••</button>`}</small></div></div>`}
   h+=`</div><div class="chq">${QUICK.map(q=>`<button data-act="chq" data-t="${esc(q)}">${esc(q)}</button>`).join("")}</div>
   <div class="chin"><textarea id="chin" rows="1" maxlength="400" placeholder="Écris à la guilde…"></textarea><button class="btn" data-act="chsend" aria-label="Envoyer">${ic("share")}</button></div>`;
   setTimeout(()=>{const b=$("#chbox");if(b&&!b._s){b._s=1;b.scrollTop=b.scrollHeight}},0);
@@ -3181,7 +3206,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.92";
+const VERSION="1.93";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

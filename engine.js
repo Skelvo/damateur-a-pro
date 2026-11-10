@@ -333,7 +333,23 @@ const COS=[
   ["t9","t","👁️ Voyant","lm10","Voir juste 10 fois au match de la guilde"],["t10","t","🍀 Chanceux","wheel500","Gagner 500 ou plus à la roue"],["t11","t","💰 Millionnaire","jackpot","Toucher le jackpot de la roue"],
   ["t12","t","📅 Fidèle","days30","Jouer 30 jours différents"],["t13","t","🔥 Ultra","lv20","Atteindre le niveau 20"],["t14","t","👑 Légende","lv100","Atteindre le niveau 100"],
   ["t15","t","🥉 Podium","podium","Finir sur le podium du mois"],["t16","t","🏉 Ovalie","rugby10","Gagner 10 paris de rugby"],["t17","t","🎾 Roi de la terre battue","tennis10","Gagner 10 paris de tennis"],
-  ["t18","t","🏀 Mister NBA","nba10","Gagner 10 paris NBA"],["t19","t","🔥 Inarrêtable","streak5","Gagner 5 paris d’affilée"]];
+  ["t18","t","🏀 Mister NBA","nba10","Gagner 10 paris NBA"],["t19","t","🔥 Inarrêtable","streak5","Gagner 5 paris d’affilée"],
+  // f = cadre de la photo
+  ["f0","f","Sans cadre","",""],["f1","f","Vert Tribune","lv5","Atteindre le niveau 5"],["f2","f","Bleu ciel","lv10","Atteindre le niveau 10"],["f3","f","Argent","podium","Finir sur le podium du mois"],
+  ["f4","f","Or","month1","Finir 1er du mois dans une guilde"],["f5","f","Flammes","streak5","Gagner 5 paris d’affilée"],["f6","f","Néon","lv34","Atteindre le niveau 34"],
+  ["f7","f","Glace","odds10","Gagner un pari à une cote de 10 ou plus"],["f8","f","Électrique","battles3","Gagner 3 combats de guildes"],["f9","f","Diamant","lv61","Atteindre le niveau 61"],
+  ["f10","f","Arc-en-ciel","lv100","Atteindre le niveau 100"],["f11","f","Pionnier","pioneer","Jouer depuis la première heure"],["f12","f","Jackpot","jackpot","Toucher le jackpot de la roue"],
+  // e = emoji à côté du pseudo
+  ["e0","e","Aucun","",""],["e1","e","⚽ Ballon","lv5","Atteindre le niveau 5"],["e2","e","🔥 Flamme","streak5","Gagner 5 paris d’affilée"],["e3","e","🐐 Chèvre","month1","Finir 1er du mois dans une guilde"],
+  ["e4","e","🦁 Lion","battles3","Gagner 3 combats de guildes"],["e5","e","🎯 Cible","odds10","Gagner un pari à une cote de 10 ou plus"],["e6","e","🍀 Trèfle","wheel500","Gagner 500 ou plus à la roue"],
+  ["e7","e","💎 Diamant","lv42","Atteindre le niveau 42"],["e8","e","👑 Couronne","lv100","Atteindre le niveau 100"],["e9","e","🌱 Pousse","pioneer","Jouer depuis la première heure"],
+  ["e10","e","🏉 Ovale","rugby10","Gagner 10 paris de rugby"],["e11","e","🎾 Balle jaune","tennis10","Gagner 10 paris de tennis"],["e12","e","🏀 Panier","nba10","Gagner 10 paris NBA"],
+  ["e13","e","🤺 Épée","duels5","Gagner 5 duels"],["e14","e","🔮 Boule","prono20","Marquer 20 points au prono"],["e15","e","🥶 Glaçon","lv15","Atteindre le niveau 15"],["e16","e","😈 Diablotin","lv27","Atteindre le niveau 27"],
+  // v = effet quand un de tes paris passe
+  ["v0","v","Confettis","",""],["v1","v","⚽ Pluie de ballons","lv5","Atteindre le niveau 5"],["v2","v","🎈 Ballons","lv10","Atteindre le niveau 10"],["v3","v","🎆 Feu d’artifice","lv20","Atteindre le niveau 20"],
+  ["v4","v","🪙 Pluie de pièces","wheel500","Gagner 500 ou plus à la roue"],["v5","v","⚡ Orage","battles3","Gagner 3 combats de guildes"],["v6","v","👑 Couronnes","month1","Finir 1er du mois dans une guilde"],
+  ["v7","v","💸 Billets","jackpot","Toucher le jackpot de la roue"],["v8","v","🔥 Feu","streak5","Gagner 5 paris d’affilée"],["v9","v","🌱 Printemps","pioneer","Jouer depuis la première heure"]];
+const cosEmoji=id=>{const x=COS.find(c=>c[0]===id&&c[1]==="e");return x&&id!=="e0"?x[2].split(" ")[0]:""};
 const MONTHS_FR=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 // objets débloqués à partir des drapeaux du serveur : {lvl, months:["2026-11",…], podium, battles, odds10, …, all}
 function cosUnlocked(f){f=f||{};const ok=r=>!r||f.all||(r.startsWith("lv")?(f.lvl||1)>=+r.slice(2):!!f[r]);
@@ -341,5 +357,5 @@ function cosUnlocked(f){f=f||{};const ok=r=>!r||f.all||(r.startsWith("lv")?(f.lv
 function cosTitle(id){if(!id)return"";if(id.startsWith("tm:")){const m=id.slice(3);return"👑 Champion de "+(MONTHS_FR[+m.slice(5,7)-1]||m)+" "+m.slice(0,4)}const x=COS.find(c=>c[0]===id&&c[1]==="t");return x&&id!=="t0"?x[2]:""}
 function defisFor(day){const r=rng(hash("defis|"+day));return DEFIS.map(L=>L[Math.floor(r()*L.length)])}
 
-if(typeof globalThis!=="undefined")globalThis.ENGINE={COS,cosUnlocked,cosTitle,TIERS,xpFor,levelOf,resMarket,marketInfo,mkOne,WEEKENDS,COMBO_BOOST,weekendOf,fr,strength,SP,SIM,MK,N,ALLSTATS,STATL,ESPN,MCC,MKC,ONE,cl,hash,rng,pois,binom,H,DAY,lvA,sims,simOne,tot,cmp3,avail,odd,mt,liveOK,canBet,liveSims,marketSims,markets,outcome,
+if(typeof globalThis!=="undefined")globalThis.ENGINE={COS,cosUnlocked,cosTitle,cosEmoji,TIERS,xpFor,levelOf,resMarket,marketInfo,mkOne,WEEKENDS,COMBO_BOOST,weekendOf,fr,strength,SP,SIM,MK,N,ALLSTATS,STATL,ESPN,MCC,MKC,ONE,cl,hash,rng,pois,binom,H,DAY,lvA,sims,simOne,tot,cmp3,avail,odd,mt,liveOK,canBet,liveSims,marketSims,markets,outcome,
   SOCSTAT,recStrength,amer,bookDiff,footProbs,TEAM_FR,frTeam,parseTeamEvent,parseTennis,status,realStats,PMK,legIdx,jointP,comboCalc,readLineup,applySummary,playerLegResult,legResultM,betResult,cashValueM,WHEEL,WP,JACKPOT,JACK_ODDS,EXTRA_DAY,DEFIS,DEFI_BONUS,defisFor,legsOf};
