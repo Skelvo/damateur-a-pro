@@ -1488,7 +1488,7 @@ function legalHTML(){return`<div class="legal">
 <p><b>Pourquoi</b> : faire fonctionner le jeu (base légale : l’exécution du service que tu utilises) et le protéger des abus (intérêt légitime).</p>
 <p><b>Qui les voit</b> : les joueurs voient ton pseudo, ta photo et tes résultats dans les classements ; les membres de tes guildes voient aussi tes paris, ton profil et tes messages. Les données sont hébergées par des prestataires techniques : Vercel (site et serveur) et Neon (base de données), qui peuvent se trouver hors de l’Union européenne avec les garanties prévues par le RGPD. Les notifications passent par le service de ton téléphone (Apple, Google ou Mozilla).</p>
 <p><b>Combien de temps</b> : tant que ton compte existe. Quand tu le supprimes, tout est effacé tout de suite (paris, messages, photo, guildes dont tu étais le seul membre…) ; seuls les signalements et messages envoyés aux organisateurs sont gardés au plus un an, sans lien avec ton compte.</p>
-<p><b>Tes droits</b> : accès, rectification (change ton pseudo), effacement (supprime ton compte), opposition et limitation. Pour toute demande : Carrière › Nous écrire. Tu peux aussi saisir la CNIL (cnil.fr).</p>
+<p><b>Tes droits</b> : accès, rectification (change ton pseudo), effacement (supprime ton compte), opposition et limitation. Pour toute demande : Carrière › Nous écrire, ou par e-mail à <a href="mailto:contact.tribuneps@gmail.com" style="color:var(--acc)">contact.tribuneps@gmail.com</a>. Tu peux aussi saisir la CNIL (cnil.fr).</p>
 <h4>7. Jeu responsable</h4>
 <p>Même sans argent, si les paris prennent trop de place pour toi ou un proche : <a href="https://www.joueurs-info-service.fr" target="_blank" rel="noopener">Joueurs Info Service</a>, 09 74 75 13 13 (appel non surtaxé).</p>
 <h4>8. Divers</h4>
@@ -1518,7 +1518,8 @@ function openBlocked(){U.open="blocked";const L=S.blocked||[];layer(`<div class=
   (L.length?L.map(x=>`<div class="gmrow"><div><b>${esc(x.name)}</b><small>Ses messages sont cachés</small></div><button class="btn ghost" data-act="block" data-id="${esc(x.id)}" data-n="${esc(x.name)}">Débloquer</button></div>`).join(""):`<div class="empty">Personne n’est bloqué.</div>`))}
 function openContact(){U.open="contact";layer(`<div class="grab"><h3>Nous écrire</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   <p class="note" style="text-align:left">Une question, un bug, une idée, un problème avec un joueur, une demande sur tes données ? Écris ici : le message arrive directement aux organisateurs.</p>
-  <div class="form"><textarea id="ct-in" rows="5" maxlength="1500" placeholder="Ton message…"></textarea><button class="btn gold wide" data-act="ctsend">Envoyer</button></div>`);setTimeout(()=>$("#ct-in")&&$("#ct-in").focus(),60)}
+  <div class="form"><textarea id="ct-in" rows="5" maxlength="1500" placeholder="Ton message…"></textarea><button class="btn gold wide" data-act="ctsend">Envoyer</button></div>
+  <p class="note">Tu préfères l’e-mail ? <a href="mailto:contact.tribuneps@gmail.com?subject=Tribune" style="color:var(--acc)">contact.tribuneps@gmail.com</a></p>`);setTimeout(()=>$("#ct-in")&&$("#ct-in").focus(),60)}
 async function contactSend(){const t=($("#ct-in").value||"").trim();if(t.length<3){$("#ct-in").focus();return}
   try{if(!(await ensureSession()))throw 0;const j=await api("contact",{text:t});if(j.error)throw j;closeLayer();toast("Message envoyé, merci !","win")}catch(e){toast("Pas de connexion : réessaie plus tard.","bad")}}
 function openDelAcc(){U.open="delacc";layer(`<div class="grab"><h3>Supprimer mon compte</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
@@ -2515,7 +2516,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.19";
+const VERSION="2.20";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
