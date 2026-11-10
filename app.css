@@ -886,3 +886,4 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 .dots{display:inline-block;background:#fff2;border-radius:6px;padding:0 6px;letter-spacing:1px}
 .gate{padding-top:72px}
 .instvid{display:flex;flex-direction:column;align-items:center;gap:6px;margin:4px 0 14px}.instvid video{width:min(62%,240px);aspect-ratio:886/1920;border-radius:22px;background:#000;border:3px solid #22342d;box-shadow:0 12px 30px #000a}.instvid small{color:var(--mute);font-size:12.5px}
+.steps li.stimp{border-color:#ffd23f99;background:linear-gradient(135deg,#ffd23f1a,transparent 70%)}.iostg{display:inline-block;width:30px;height:18px;border-radius:10px;background:#30d158;position:relative;vertical-align:-3px;margin:0 2px}.iostg::after{content:"";position:absolute;right:2px;top:2px;width:14px;height:14px;border-radius:50%;background:#fff}
