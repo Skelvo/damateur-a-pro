@@ -517,7 +517,8 @@ function refreshLayer(){if(!U.open)return;const sc=$(".sheet")?$(".sheet").scrol
   if($(".sheet"))$(".sheet").scrollTop=sc}
 
 /* ---------- rendu global ---------- */
-function render(){if(U.tab==="m"&&S.name&&!U.open)loadGuide();if(U.open&&U.open.startsWith("td:")){const v=U.open.slice(3),h=viewToday(v);if(h)layer(h)}document.body.dataset.sp=U.sp;document.body.classList.toggle("darkside",U.tab==="l"&&!!U.dark);$("#bal").textContent=tok(S.bal);{const st=pushState(),bd=$("#belldot"),bl=$("#bell");if(bd)bd.hidden=st==="on"||st==="na"&&!(IOS&&!STANDALONE);if(bl)bl.classList.toggle("on",st==="on")}
+function render(){if(window.__gate)return;   // page d'installation : on ne dessine jamais le jeu dans le navigateur
+  if(U.tab==="m"&&S.name&&!U.open)loadGuide();if(U.open&&U.open.startsWith("td:")){const v=U.open.slice(3),h=viewToday(v);if(h)layer(h)}document.body.dataset.sp=U.sp;document.body.classList.toggle("darkside",U.tab==="l"&&!!U.dark);$("#bal").textContent=tok(S.bal);{const st=pushState(),bd=$("#belldot"),bl=$("#bell");if(bd)bd.hidden=st==="on"||st==="na"&&!(IOS&&!STANDALONE);if(bl)bl.classList.toggle("on",st==="on")}
   $("#hello").innerHTML=S.name?`<span class="hi">Salut </span>${esc(S.name)}<span class="dv"> · ${esc(myLv().tier)} niv. ${myLv().lvl}</span>`:"Paris gratuits · du district aux pros";
   document.querySelectorAll(".nav button").forEach(b=>b.dataset.tab===U.tab?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
   const op=S.bets.filter(b=>b.st==="open").length,nb=$("#nb");nb.hidden=!op;nb.textContent=op;
@@ -794,7 +795,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"wlegal":{const x=$("#w-legal");if(x){x.hidden=!x.hidden;if(!x.hidden&&!x.innerHTML)x.innerHTML=legalHTML()}break}
     case"xfer":U.open="welcome";layer(viewTransferIn());setTimeout(()=>$("#x-code")&&$("#x-code").focus(),60);break;
     case"xferok":transferIn();break;
-    case"xmake":transferOut();break;
+    case"xmake":if(GATE&&!S.tok){toast("Pas de compte à transférer depuis ce navigateur : crée ton compte dans l’app.");break}transferOut();break;
     case"xmake2":U.open="install";layer(`<div class="grab"><h3>Transférer mon compte</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div><div class="xbox" id="xbox"></div>`);transferOut();break;
     case"xback":U.open="welcome";layer(viewWelcome(false));setTimeout(wrefFill,100);break;
     case"copycode":navigator.clipboard&&navigator.clipboard.writeText(d.code).then(()=>toast("Code copié.","win")).catch(()=>{});break;
@@ -835,7 +836,7 @@ function ensureSession(){if(S.tok)return Promise.resolve(true);if(!S.name)return
     .catch(e=>{if(e.code==="name_taken")askNewName();if(e.code==="name_bad")askNewName(true);return false}).finally(()=>sessP=null))}
 // Pseudo déjà pris par un autre joueur : on demande d'en choisir un autre (une fois par ouverture)
 let askedName=false;
-function askNewName(bad){if(askedName||U.open==="welcome"||U.open==="tos")return;askedName=true;U.open="welcome";layer(viewWelcome(true,bad?`Le pseudo « ${esc(S.name)} » n’est pas accepté (mot interdit ou signalé par plusieurs joueurs). Choisis-en un autre.`:`Le pseudo « ${esc(S.name)} » est déjà pris par un autre joueur. Choisis-en un autre pour apparaître dans les classements.`))}
+function askNewName(bad){if(GATE||askedName||U.open==="welcome"||U.open==="tos")return;askedName=true;U.open="welcome";layer(viewWelcome(true,bad?`Le pseudo « ${esc(S.name)} » n’est pas accepté (mot interdit ou signalé par plusieurs joueurs). Choisis-en un autre.`:`Le pseudo « ${esc(S.name)} » est déjà pris par un autre joueur. Choisis-en un autre pour apparaître dans les classements.`))}
 let syncT=0;
 function syncSoon(){if(!S.name)return;clearTimeout(syncT);syncT=setTimeout(async()=>{if(!(await ensureSession()))return;
   try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,wb:S.bonus,wx:S.extraSpin,tos:S.tosV||"",...myStats(),...betsPayload()});wheelSync(j);applyCancel(j);xpUpdate(j.xp);if(j.name_taken)askNewName();if(j.name_bad)askNewName(true);backupSoon()}catch(e){if(e.code==="no_session"&&await ensureSession())syncSoon()}},2000)}
@@ -2508,7 +2509,7 @@ function viewInstall(gate){const head=gate?"":`<div class="grab"><h3>Installer l
     <ol class="steps"><li><span class="n">1</span><div>Dans Safari, touche le bouton <b>Partager</b> ${SHARE_IOS}<small>Selon ta version d’iOS : dans la barre du bas, à côté de l’adresse, ou dans le menu <b>•••</b>.</small></div></li>
       <li><span class="n">2</span><div>Fais défiler et choisis <b>Sur l’écran d’accueil</b> ${ADD_IOS}, puis <b>Ajouter</b>.<small>Si l’option « Ouvrir comme app web » apparaît, laisse-la activée.</small></div></li>
       <li><span class="n">3</span><div>Ouvre <b>Tribune</b> depuis ton écran d’accueil et choisis ton pseudo : <b>1 000 jetons</b> t’attendent.<small>Tu avais déjà un compte ? Touche « J’ai déjà un compte » et entre ton <b>code de compte</b> pour tout retrouver.</small></div></li></ol>
-    <div class="xbox" id="xbox">${S.name?(S.rcode?`<div class="xcode"><small>Ton code de compte (il ne change jamais)</small><b>${esc(S.rcode)}</b></div><button class="btn ghost wide" data-act="copycode" data-code="${esc(S.rcode)}">Copier mon code</button>`:`<button class="btn gold wide" data-act="xmake">${ic("ticket")} Créer un code pour l’app</button>`):gate?`<p class="note">Nouveau joueur ? Pas besoin de code : tu choisiras ton pseudo dans l’app.</p>`:`<p class="note">Choisis d’abord un pseudo pour avoir un code.</p>`}</div>
+    <div class="xbox" id="xbox">${S.name&&S.tok?(S.rcode?`<div class="xcode"><small>Ton code de compte (il ne change jamais)</small><b>${esc(S.rcode)}</b></div><button class="btn ghost wide" data-act="copycode" data-code="${esc(S.rcode)}">Copier mon code</button>`:`<button class="btn gold wide" data-act="xmake">${ic("ticket")} Créer un code pour l’app</button>`):gate?`<p class="note">Nouveau joueur ? Pas besoin de code : tu choisiras ton pseudo dans l’app.</p>`:`<p class="note">Choisis d’abord un pseudo pour avoir un code.</p>`}</div>
 `}
   if(ANDROID&&INAPP&&!installEvt){const u=shareableUrl().replace(/^https:\/\//,"");return head+pick+`<div class="inappw"><b>⚠️ Tu es dans ${esc(INAPP_NAME||"une autre appli")}</b><p>Ici, l’installation ne marche pas : ouvre le lien dans <b>Chrome</b>.</p>
       <a class="btn gold wide" href="intent://${esc(u)}#Intent;scheme=https;package=com.android.chrome;end">${ic("share")} Ouvrir dans Chrome</a>
@@ -2524,7 +2525,7 @@ async function installPrompt(){if(!installEvt)return;installEvt.prompt();const r
   if(r&&r.outcome==="accepted"){closeLayer();toast("App installée ! Retrouve-la sur ton écran d’accueil.","win")}else layer(viewInstall())}
 // Sur téléphone, le jeu ne s'utilise que depuis l'app installée (écran d'accueil) : dans un navigateur,
 // on n'affiche que la marche à suivre (et le code de transfert pour ceux qui jouaient déjà ici).
-const GATE=!STANDALONE&&!matchMedia("(display-mode: fullscreen), (display-mode: minimal-ui)").matches&&(IOS||ANDROID);
+const GATE=!STANDALONE&&!matchMedia("(display-mode: fullscreen), (display-mode: minimal-ui)").matches&&(IOS||ANDROID);window.__gate=GATE;
 function renderGate(){const lg=new URLSearchParams(location.search).get("guilde");const pc=U.pariNow?getTmp("dap.pari",30):"";const rc=refStored();
   if(rc)setTimeout(async()=>{try{const j=await api("ref_info",{code:rc,mark:1});const box=$("#gref");if(box&&j.name)box.innerHTML=`<div class="refban">🎁 <span><b>${esc(j.name)} t’invite sur Tribune !</b><br>Installe l’app ci-dessous et crée ton compte : <b>+${tok(j.gets)} jetons de bienvenue</b> en plus des 1 000 de départ.</span></div>`}catch(e){}},30);
   if(pc)setTimeout(async()=>{try{const j=await api("shared_bet",{code:pc,mark:1});const box=$("#gpari");if(box)box.innerHTML=`<div class="gptk"><b>🎟️ Ticket de ${esc(j.name)}</b><small>${j.legs.length>1?"Combiné de "+j.legs.length:"Pari simple"} · cote ${fr(j.odds)}</small>
@@ -2568,7 +2569,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.33";
+const VERSION="2.34";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

@@ -1331,6 +1331,21 @@ const ACTIONS = {
     if (!r[0]) return { ok: false, guilds: (await s.query(`select code, name from leagues order by name`)).map((x) => x.name) };
     return { ok: true, guilds: r };
   },
+  // liste des compétitions d'un sport chez ESPN (pour en ajouter) : organisateurs seulement
+  async admin_espn_leagues(s, b) {
+    admin(b);
+    const sport = ["rugby", "soccer", "tennis", "basketball"].includes(b.sport) ? b.sport : "rugby";
+    const get = async (u) => { const c = new AbortController(), t = setTimeout(() => c.abort(), 6000); try { const r = await fetch(u, { signal: c.signal }); return r.ok ? r.json() : null; } catch (e) { return null; } finally { clearTimeout(t); } };
+    const list = await get(`https://sports.core.api.espn.com/v2/sports/${sport}/leagues?limit=400`);
+    const refs = ((list && list.items) || []).map((x) => x.$ref).filter(Boolean);
+    const q = String(b.q || "").toLowerCase(), out = [];
+    for (let i = 0; i < refs.length; i += 40) {
+      const part = await Promise.all(refs.slice(i, i + 40).map(get));
+      for (const L of part) if (L && (!q || String(L.name || "").toLowerCase().includes(q) || String(L.abbreviation || "").toLowerCase().includes(q)))
+        out.push({ id: L.id, name: L.name, abbr: L.abbreviation, season: L.season && L.season.year });
+    }
+    return { count: refs.length, leagues: out };
+  },
   async admin_cos_all(s, b) {
     admin(b);
     const r = await s.query(`update players set cos_all = $2 where lower(name) = lower($1) returning id, name`, [String(b.name || ""), b.on !== false]);
