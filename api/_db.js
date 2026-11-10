@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "31";
+const SCHEMA_VERSION = "32";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -337,6 +337,8 @@ const STATEMENTS = [
      follows int not null default 0,
      at timestamptz not null default now(),
      unique (bet))`,
+  // lien de ticket ouvert dans Safari (iPhone) : empreinte brouillée de la connexion, gardée 20 min, pour que l'app installée ouvre le ticket
+  `create table if not exists link_hits (ip text not null, code text not null, at timestamptz not null default now(), primary key (ip, code))`,
   `create table if not exists rate_hits (key text not null, win bigint not null, n int not null default 0, primary key (key, win))`,
 ];
 

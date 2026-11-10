@@ -498,6 +498,9 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 .csec>.row,.csec>.rcard{margin:0 12px 8px}.csec>.row:last-child{margin-bottom:12px}
 .palm{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.palm>div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 4px;text-align:center;opacity:.55}.palm>div.on{opacity:1;border-color:#7a610f;background:linear-gradient(160deg,#3d3006,var(--card) 75%)}
 .palm span{font-size:22px;display:block}.palm b{display:block;font:800 24px "Barlow Condensed"}.palm small{display:block;font-size:11px;color:var(--mute);line-height:1.15}
+.shbtn{padding:5px 10px!important;font-size:13px!important;margin-left:4px;vertical-align:middle}
+.gptk{background:var(--card);border:1px solid #7a610f;border-radius:14px;padding:12px;margin-bottom:10px;text-align:left}.gptk b{display:block;font:800 19px "Barlow Condensed";text-transform:uppercase}.gptk small{color:var(--mute)}.gpl{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding:7px 0;margin-top:6px;font-size:14px}.gpl b{color:var(--sel)}
+.gpgo{background:linear-gradient(135deg,#123526,var(--card));border:1px solid #2a6b4b;border-radius:14px;padding:12px;text-align:left;font-size:14.5px;line-height:1.45;margin-bottom:8px}
 .shwho{display:flex;align-items:center;gap:10px;margin-bottom:10px}.shwho .av{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font:800 20px "Barlow Condensed";color:#0b1310;flex:none;overflow:hidden}.shwho>div{flex:1}.shwho b{display:block}.shwho small{color:var(--mute);font-size:12.5px}
 .palm0{background:var(--card);border:1px dashed var(--line2);border-radius:12px;padding:11px 12px;font-size:13.5px;color:var(--mute)}
 .palm2{display:grid;gap:6px;margin-top:6px}.palm2>div{display:flex;justify-content:space-between;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px}.palm2 b{font:800 18px "Barlow Condensed"}
@@ -797,7 +800,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.86"></script>
+<script src="engine.js?v=1.87"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -1477,6 +1480,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"tshare":shareTicket(d.id);break;
     case"mshare":shareMonth();break;
     case"follow":followShared();break;
+    case"shopen":openShared(d.c);break;
     case"divs":openDivs();break;
     case"succ":openSucc();break;
     case"fxdemo":{const k=d.v,ru=k==="try";FXQ.push({k,team:ru?"Toulouse":k==="g"?"Rennes":"Lille",who:ru?"":k==="g"?"B. Dia":k==="yc"?"C. Verdonk":"M. Kjaergaard",min:67,m:ru?{h:"Toulouse",a:"Toulon",sc:[17,10]}:{h:"Rennes",a:"Lille",sc:k==="g"?[2,1]:[1,1]}});fxNext();break}
@@ -1882,6 +1886,9 @@ async function shareTicket(id){const b=S.bets.find(x=>x.id===id);if(!b)return;to
 // lien de ticket (…/?pari=CODE) : on ouvre le ticket ; un nouveau joueur le retrouve après son inscription
 function pariFromLink(){const c=new URLSearchParams(location.search).get("pari");if(!c)return;history.replaceState(null,"",location.pathname);
   try{localStorage.setItem("dap.pari",c.toUpperCase().slice(0,10))}catch(e){}}
+let ptAt=0;async function pendingTicket(){if(!S.tok||GATE||Date.now()-ptAt<4000||(U.open&&U.open!=="slip"))return;ptAt=Date.now();
+  try{const j=await api("pending_ticket",{});if(j.code)openShared(j.code)}catch(e){}}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&S.name)setTimeout(pendingTicket,700)});
 function pariPending(){let c=null;try{c=localStorage.getItem("dap.pari")}catch(e){}if(!c||!S.name)return;try{localStorage.removeItem("dap.pari")}catch(e){}openShared(c)}
 async function openShared(code){U.open="shared";U.shared=null;const head=`<div class="grab"><h3>Ticket partagé</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
   layerLater(head+`<div class="skel" style="height:220px"></div>`);
@@ -2202,6 +2209,7 @@ function actText(a){const d=a.data||{};const legs=(d.legs||[]).map(esc).join(" +
       return`lance un duel : <b>${esc(d.pick||"")}</b> sur ${esc(d.mlabel||"")} <span class="mut">(${tok(d.stake||0)} jetons)</span>`;
     case"duelwin":return`remporte son duel${d.opp?` contre ${esc(d.opp)}`:""} : <b class="pos">+${tok(d.pay||0)}</b>`;
     case"join":return`a rejoint la guilde`;
+    case"share":return`partage son ticket : ${d.n>1?`combiné de ${d.n} · cote <b>${fr(+d.odds||1)}</b>`:`${esc(d.l||"")} @ <b>${fr(+d.odds||1)}</b>`} <button class="btn gold shbtn" data-act="shopen" data-c="${esc(d.code)}">🎟️ Voir / suivre</button>`;
   }return""}
 function viewFeed(){const F=U.lg.feed;if(!F){loadActFeed();return`<div class="skel" style="height:80px"></div><div class="skel" style="height:80px"></div>`}
   if(Date.now()-(U.lg.feedAt||0)>3e4)setTimeout(loadActFeed,0);
@@ -3042,9 +3050,14 @@ async function installPrompt(){if(!installEvt)return;installEvt.prompt();const r
 // Sur téléphone, le jeu ne s'utilise que depuis l'app installée (écran d'accueil) : dans un navigateur,
 // on n'affiche que la marche à suivre (et le code de transfert pour ceux qui jouaient déjà ici).
 const GATE=!STANDALONE&&!matchMedia("(display-mode: fullscreen), (display-mode: minimal-ui)").matches&&(IOS||ANDROID);
-function renderGate(){const lg=new URLSearchParams(location.search).get("guilde");
+function renderGate(){const lg=new URLSearchParams(location.search).get("guilde");let pc=null;try{pc=localStorage.getItem("dap.pari")}catch(e){}
+  if(pc)setTimeout(async()=>{try{const j=await api("shared_bet",{code:pc,mark:1});const box=$("#gpari");if(box)box.innerHTML=`<div class="gptk"><b>🎟️ Ticket de ${esc(j.name)}</b><small>${j.legs.length>1?"Combiné de "+j.legs.length:"Pari simple"} · cote ${fr(j.odds)}</small>
+    ${j.legs.map(L=>`<div class="gpl"><span>${esc(L.l)}</span><b>${fr(L.o)}</b></div>`).join("")}</div>
+    <div class="gpgo">📲 <b>Tu as déjà l’app ?</b> Ouvre maintenant <b>Tribune</b> depuis ton écran d’accueil : <b>le ticket s’ouvrira tout seul</b> (dans les 20 minutes), avec le bouton « Je suis ce pari ».</div>
+    <p class="note">Pas encore l’app ? Installe-la ci-dessous : le ticket t’attendra.</p>`}catch(e){}},50);
   document.body.classList.add("gated");
   $("#main")._html=null;$("#main").innerHTML=`<div class="gate"><h1 class="glogo"><img src="logo-tribune.png?v=2" alt="Tribune"></h1><small style="color:var(--mute2)">v${VERSION}</small><p class="gsub">Le jeu se joue <b>uniquement depuis l’app</b> sur ton écran d’accueil. C’est gratuit, sans store, et ça prend 10 secondes.</p>
+    ${pc?`<div id="gpari"><div class="skel" style="height:120px"></div></div>`:""}
     ${lg?`<div class="xcode" style="margin-bottom:12px"><small>Invitation à une guilde : une fois dans l’app, va dans Guildes › Rejoindre et entre ce code</small><b>${esc(lg.toUpperCase().slice(0,8))}</b></div>`:""}
     ${viewInstall(true)}</div>`}
 // Code de transfert : on envoie tout l'état du jeu (sauf le jeton) au serveur, valable 48 h
@@ -3079,7 +3092,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.86";
+const VERSION="1.87";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -3099,13 +3112,13 @@ async function boot(){if(GATE||!S.name){hideSplash();setTimeout(afterBoot,300);r
   await Promise.race([Promise.allSettled(jobs),new Promise(r=>setTimeout(r,6500))]);
   clearInterval(mt);U.lg.loading=false;render();hideSplash();setTimeout(afterBoot,400)}
 pariFromLink();
-if(GATE)renderGate();else{
+if(GATE){hideSplash();renderGate()}else{
 render();
 if(!S.name){hideSplash();U.open="welcome";layer(viewWelcome(false))}else{syncSoon();joinFromLink()}
 loadFeeds();boot();
 setTimeout(()=>{if(S.dk&&Object.values(S.dk).some(x=>!x.settled))checkDarkAll()},5000);
 goFrom(location.href);
-var afterBoot=function(){pushRefresh();if(S.introSeen===INTRO_V&&S.tosV===TOS_V)setTimeout(pariPending,600);if(S.name&&S.starter==="pending"&&S.introSeen===INTRO_V&&!U.coach)grantStarter(false);if(S.name&&S.tosV!==TOS_V)openTos();else if(S.name&&S.introSeen!==INTRO_V)openIntro();if(S.name){claimPrizes();claimBattles();claimGifts();ensureRcode()}if(S.name)Promise.resolve().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()};
+var afterBoot=function(){pushRefresh();if(S.introSeen===INTRO_V&&S.tosV===TOS_V){setTimeout(pariPending,600);setTimeout(pendingTicket,900)}if(S.name&&S.starter==="pending"&&S.introSeen===INTRO_V&&!U.coach)grantStarter(false);if(S.name&&S.tosV!==TOS_V)openTos();else if(S.name&&S.introSeen!==INTRO_V)openIntro();if(S.name){claimPrizes();claimBattles();claimGifts();ensureRcode()}if(S.name)Promise.resolve().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()};
 setInterval(()=>{if(!document.hidden&&S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},12e4);
 // matchs en direct qui te concernent (regardé, parié, équipe de cœur) : leur compétition est rafraîchie toutes les 20 s pour les animations
 setInterval(()=>{if(document.hidden)return;const hot=new Set([...REG.values()].filter(m=>m.src==="espn"&&m.state==="in"&&(m.sp==="foot"||m.sp==="rugby")&&fxMine(m)).map(m=>m.sp+"|"+m.lv));

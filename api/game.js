@@ -1138,6 +1138,13 @@ const ACTIONS = {
       bigWin: bg ? { ...who(bg), gain: Math.round(bg.pay - bg.stake), odds: bg.odds } : null };
   },
   // partager un pari : code court (le même à chaque partage du même pari)
+  // l'app installée vient de s'ouvrir : un ticket a-t-il été ouvert dans Safari sur cette connexion il y a moins de 20 min ?
+  async pending_ticket(s, b, req) {
+    const p = await me(s, b.token);
+    const r = await s.query(`select code from link_hits where ip = $1 and at > now() - interval '20 minutes' order by at desc limit 3`, [ipKey(req)]);
+    for (const x of r) if (await credit(s, p.id, 0, "pend", x.code)) return { code: x.code };
+    return { code: null };
+  },
   async share_bet(s, b) {
     const p = await me(s, b.token);
     const bt = (await s.query(`select id from bets where player = $1 and cid = $2`, [p.id, cleanName(b.cid, 40)]))[0];
@@ -1148,13 +1155,21 @@ const ACTIONS = {
       let code = "";
       for (let k = 0; k < 7; k++) code += CODE_CHARS[randomInt(CODE_CHARS.length)];
       const r = await s.query(`insert into shared_bets (code, bet) values ($1, $2) on conflict do nothing returning code`, [code, bt.id]);
-      if (r[0]) return { code };
+      if (r[0]) {
+        const x = (await s.query(`select stake, odds::float8 as odds, legs from bets where id = $1`, [bt.id]))[0];
+        await s.query(`insert into activity (player, kind, data) values ($1, 'share', $2::jsonb)`, [p.id, JSON.stringify({ code, odds: x.odds, stake: x.stake, n: x.legs.length, l: (x.legs[0] || {}).l || "" })]);
+        return { code };
+      }
     }
     throw fail(500, "code");
   },
   // voir un ticket partagé (sans compte) ; follow = « je suis ce pari » (compté une fois par joueur)
-  async shared_bet(s, b) {
+  async shared_bet(s, b, req) {
     const code = cleanName(b.code, 10).toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (b.mark && req) {
+      await s.query(`delete from link_hits where at < now() - interval '1 hour'`);
+      await s.query(`insert into link_hits (ip, code) values ($1, $2) on conflict (ip, code) do update set at = now()`, [ipKey(req), code]);
+    }
     const r = (await s.query(`select sb.code, sb.follows, x.player, pl.name, pl.avatar_v, x.stake, x.odds::float8 as odds, x.status, x.pay::float8 as pay, x.combo, x.legs,
          extract(epoch from x.at) * 1000 as at from shared_bets sb join bets x on x.id = sb.bet join players pl on pl.id = x.player where sb.code = $1`, [code]))[0];
     if (!r) throw fail(404, "unknown");
