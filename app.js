@@ -697,7 +697,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"style":openStyle();break;
     case"mycard":openCard({id:S.pid,name:S.name,av:S.avv,me:true,bets:S.bets,xp:S.xp,cos:S.cos,fav:S.fav});break;
     case"pcard":if(U.prof)openCard(U.prof);break;
-    case"cardopt":{S.cardOpt={...(S.cardOpt||{}),[d.k]:d.v};saveLocal();const sh=$(".sheet"),sc=sh?sh.scrollTop:0;U.cardSk=1;openCard(U.cardP).then(()=>{const s2=$(".sheet");if(s2)s2.scrollTop=sc});break}
+    case"cardopt":{S.cardOpt={...(S.cardOpt||{}),[d.k]:d.v};saveLocal();refreshCard(d.k,d.v);break}
     case"cardshare":shareCard();break;
     case"sttab":U.cosTab=d.v;styleRender(true);break;
     case"stpick":{const x=d.v,ty=x.startsWith("tm:")?"t":x[0];if(!U.cosD.unlocked.includes(x)){const c=COS.find(y=>y[0]===x);toast("🔒 "+(c?c[4]:"Pas encore débloqué"));break}U.cosEdit[ty]=x;styleRender();if(ty==="v")winFx(x);break}
@@ -1171,6 +1171,12 @@ async function openCard(p){U.open="card";U.cardP=p;const head=`<div class="grab"
     <p class="note">Note <b>${C.note}</b> (${T[1].toLowerCase()}) : précision, flair, audace, gestion, régularité et expérience, calculés sur les vrais paris.${p.me?" Ta bannière et ton style se changent dans « Mon style ».":""}</p>
     <button class="btn gold wide" data-act="cardshare">${ic("share")} Partager la carte</button>`);U.cardSk=0}
   catch(e){U.cardSk=0;if(U.open==="card")layer(head+`<div class="empty">${ic("info")}<b>Impossible de créer la carte</b>Réessaie dans un instant.</div>`)}}
+// change un réglage de la carte sans rouvrir la fenêtre : seuls les boutons et l'image se mettent à jour
+async function refreshCard(k,v){const p=U.cardP;if(!p)return;document.querySelectorAll(`[data-act=cardopt][data-k="${k}"]`).forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===v));
+  const im=$(".pcardimg img");if(im)im.classList.add("cdbusy");const n=(U.cardN=(U.cardN||0)+1);
+  try{const o={d:"rang",bd:S.fav?"fav":"emo",sub:"t",...(S.cardOpt||{})},{blob}=await playerCard(p,o);if(n!==U.cardN||U.open!=="card")return;U.cardBlob=blob;
+    const url=URL.createObjectURL(blob),im2=$(".pcardimg img");if(im2){const old=im2.src;im2.onload=()=>{im2.classList.remove("cdbusy");if(old.startsWith("blob:"))URL.revokeObjectURL(old)};im2.src=url}}
+  catch(e){const im3=$(".pcardimg img");if(im3)im3.classList.remove("cdbusy")}}
 async function shareCard(){const b=U.cardBlob;if(!b)return;const file=new File([b],"carte-tribune.png",{type:"image/png"}),txt=`Ma carte de joueur sur Tribune 🃏 ${APP_URL}`;
   if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],text:txt})}catch(e){}return}
   const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="carte-tribune.png";document.body.appendChild(a);a.click();a.remove();toast("Carte enregistrée.","win")}
@@ -2485,7 +2491,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.01";
+const VERSION="2.02";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

@@ -818,3 +818,4 @@ html.cv .mc,html.cv .res-row,html.cv .prow,html.cv .ticket{content-visibility:au
 .cdopt{display:grid;gap:6px;margin:14px 0 4px}.cdopt>b{font-size:12px;color:var(--mut,#8aa39a);text-transform:uppercase;letter-spacing:.04em;margin-top:4px}
 .cdopt>div{display:flex;gap:6px;flex-wrap:wrap}.cdopt button{font:600 13px Barlow,sans-serif;color:inherit;background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:7px 12px}
 .cdopt button[aria-pressed=true]{background:#ffd23f;color:#1b1400;border-color:#ffd23f}
+.pcardimg img{transition:opacity .2s,filter .2s}.pcardimg img.cdbusy{opacity:.55;filter:drop-shadow(0 14px 30px #000b) blur(1px)}
