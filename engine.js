@@ -353,7 +353,12 @@ const COS=[
   ["y0","y","Classique","",""],["y1","y","Vert","lv5","Atteindre le niveau 5"],["y2","y","Argent","podium","Finir sur le podium du mois"],["y3","y","Or brillant","month1","Finir 1er du mois dans une guilde"],
   ["y4","y","Feu","streak5","Gagner 5 paris d’affilée"],["y5","y","Glace","odds10","Gagner un pari à une cote de 10 ou plus"],["y6","y","Néon","lv34","Atteindre le niveau 34"],
   ["y7","y","Électrique","battles3","Gagner 3 combats de guildes"],["y8","y","Galaxie","lv61","Atteindre le niveau 61"],["y9","y","Arc-en-ciel","lv100","Atteindre le niveau 100"],
-  ["y10","y","Pionnier","pioneer","Jouer depuis la première heure"],["y11","y","Jackpot","jackpot","Toucher le jackpot de la roue"]];
+  ["y10","y","Pionnier","pioneer","Jouer depuis la première heure"],["y11","y","Jackpot","jackpot","Toucher le jackpot de la roue"],
+  // pack exclusif « Corbeau » (offert par les organisateurs, invisible pour les autres tant qu'il n'est pas débloqué)
+  ["b18","b","Nuit du Corbeau","corbeau","Style exclusif"],["c13","c","Plumage","corbeau","Style exclusif"],["t20","t","🪶 Le Corbeau","corbeau","Style exclusif"],
+  ["t21","t","🔒 Message chiffré","corbeau","Style exclusif"],["y12","y","Corbeau","corbeau","Style exclusif"],["f13","f","Corbeau","corbeau","Style exclusif"],
+  ["e17","e","🐦‍⬛ Corbeau","corbeau","Style exclusif"],["e18","e","🪶 Plume","corbeau","Style exclusif"],["v10","v","🐦‍⬛ Nuée de corbeaux","corbeau","Style exclusif"]];
+const COS_SECRET=["corbeau"];   // conditions « offertes » : les objets restent cachés tant qu'on ne les a pas
 const cosEmoji=id=>{const x=COS.find(c=>c[0]===id&&c[1]==="e");return x&&id!=="e0"?x[2].split(" ")[0]:""};
 const MONTHS_FR=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 // objets débloqués à partir des drapeaux du serveur : {lvl, months:["2026-11",…], podium, battles, odds10, …, all}
@@ -362,5 +367,5 @@ function cosUnlocked(f){f=f||{};const ok=r=>!r||f.all||(r.startsWith("lv")?(f.lv
 function cosTitle(id){if(!id)return"";if(id.startsWith("tm:")){const m=id.slice(3);return"👑 Champion de "+(MONTHS_FR[+m.slice(5,7)-1]||m)+" "+m.slice(0,4)}const x=COS.find(c=>c[0]===id&&c[1]==="t");return x&&id!=="t0"?x[2]:""}
 function defisFor(day){const r=rng(hash("defis|"+day));return DEFIS.map(L=>L[Math.floor(r()*L.length)])}
 
-if(typeof globalThis!=="undefined")globalThis.ENGINE={COS,cosUnlocked,cosTitle,cosEmoji,TIERS,xpFor,levelOf,resMarket,marketInfo,mkOne,WEEKENDS,COMBO_BOOST,weekendOf,fr,strength,SP,SIM,MK,N,ALLSTATS,STATL,ESPN,MCC,MKC,ONE,cl,hash,rng,pois,binom,H,DAY,lvA,sims,simOne,tot,cmp3,avail,odd,mt,liveOK,canBet,liveSims,marketSims,markets,outcome,
+if(typeof globalThis!=="undefined")globalThis.ENGINE={COS,COS_SECRET,cosUnlocked,cosTitle,cosEmoji,TIERS,xpFor,levelOf,resMarket,marketInfo,mkOne,WEEKENDS,COMBO_BOOST,weekendOf,fr,strength,SP,SIM,MK,N,ALLSTATS,STATL,ESPN,MCC,MKC,ONE,cl,hash,rng,pois,binom,H,DAY,lvA,sims,simOne,tot,cmp3,avail,odd,mt,liveOK,canBet,liveSims,marketSims,markets,outcome,
   SOCSTAT,recStrength,amer,bookDiff,footProbs,TEAM_FR,frTeam,parseTeamEvent,parseTennis,status,realStats,PMK,legIdx,jointP,comboCalc,readLineup,applySummary,playerLegResult,legResultM,betResult,cashValueM,WHEEL,WP,JACKPOT,JACK_ODDS,EXTRA_DAY,DEFIS,DEFI_BONUS,defisFor,legsOf};

@@ -517,6 +517,16 @@ html.cv .mc,html.cv .res-row,html.cv .prow,html.cv .ticket{content-visibility:au
 .ttl.ty-y11{color:#1b1400;background:repeating-linear-gradient(45deg,#ffd23f 0 8px,#ffe680 8px 16px);background-size:200% 100%;border-color:#fff;animation:tyshine 1.6s linear infinite}
 @keyframes tyshine{to{background-position:250% 0}}@keyframes tyneon{50%{box-shadow:0 0 14px #ff2bd6,0 0 4px #ff2bd6;color:#fff}}@keyframes tyzap{50%{background:#b38cff;color:#fff}}
 .stgrid.y{grid-template-columns:1fr 1fr}.stgrid.y .ttl{margin:6px auto 2px}
+.stsec{font-size:10.5px;font-weight:700;color:#c8b6ff;background:#2a1a4a;border:1px solid #6b4fd6;border-radius:20px;padding:1px 7px}
+.bn-b18{background:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 80'%3E%3Cg fill='%23050308'%3E%3Cpath d='M20 30 q8-10 16 0 q8-10 16 0 q-8-4-16 6 q-8-10-16-6z'/%3E%3Cpath d='M70 18 q6-8 12 0 q6-8 12 0 q-6-3-12 5 q-6-8-12-5z'/%3E%3Cpath d='M100 42 q10-12 20 0 q10-12 20 0 q-10-5-20 8 q-10-13-20-8z'/%3E%3Cpath d='M48 56 q5-6 10 0 q5-6 10 0 q-5-2-10 4 q-5-6-10-4z'/%3E%3Cpath d='M150 24 q7-9 14 0 q7-9 14 0 q-7-3-14 6 q-7-9-14-6z'/%3E%3C/g%3E%3C/svg%3E") right 10px top 6px/62% auto no-repeat,radial-gradient(circle at 86% 18%,#e8e2ff 0 7%,#b9adff55 8%,transparent 22%),linear-gradient(180deg,#0000,#0008),linear-gradient(160deg,#1a1033,#0b0716 55%,#050308)!important;animation:bnmist 8s ease-in-out infinite}
+@keyframes bnmist{50%{filter:brightness(1.15) hue-rotate(-12deg)}}
+.nc-c13{-webkit-background-clip:text;background-clip:text;color:transparent;background-image:linear-gradient(100deg,#c9c2ff,#7a6cf0 30%,#f3f0ff 50%,#7a6cf0 70%,#c9c2ff);background-size:250% 100%;animation:tyshine 3.5s linear infinite;filter:drop-shadow(0 0 3px #7b6cff88)}
+.ttl.ty-y12{color:#d9d2ff;background:linear-gradient(110deg,#07050d,#07050d 40%,#3b2d7a 50%,#07050d 60%,#07050d);background-size:250% 100%;border-color:#6b4fd6;box-shadow:0 0 10px #6b4fd688;animation:tyshine 3s linear infinite}
+.fr-f13{animation:frraven 2.4s ease-in-out infinite}@keyframes frraven{0%,100%{box-shadow:0 0 0 2px #000,0 0 0 4px #2b2350,0 0 10px #6b4fd6}50%{box-shadow:0 0 0 2px #000,0 0 0 4px #8f86ff,0 0 20px #8f86ff}}
+.erain.raven{background:radial-gradient(ellipse at 50% 40%,transparent 40%,#0b071699);animation:rvdark 3.6s ease-in-out}@keyframes rvdark{0%,100%{background-color:transparent}20%,80%{background-color:#0b071640}}
+.erain.raven i,.erain.raven b,.nemo.e-e17,.nemo.e-e18,.sti .ste.raven{filter:brightness(.16) saturate(0) drop-shadow(0 0 5px #8f86ff)}
+.erain.raven b{position:absolute;left:-80px;font-weight:400;animation:rvfly 2.4s ease-in forwards}@keyframes rvfly{0%{transform:translateX(0) translateY(0) scaleX(-1)}100%{transform:translateX(125vw) translateY(-12vh) scaleX(-1)}}
+.bnr{position:relative}
 .nemo{margin-left:4px;font-size:.9em;-webkit-text-fill-color:initial}
 .fr-f1{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #35d07f}.fr-f2{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #6cc4ff}.fr-f3{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #c9d3dc,0 0 10px #c9d3dc88}
 .fr-f4{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #ffd23f,0 0 14px #ffd23faa}.fr-f5{animation:frfire 1.2s ease-in-out infinite}@keyframes frfire{0%,100%{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #ff7a1a,0 0 12px #ff3b1a}50%{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #ffd23f,0 0 20px #ff7a1a}}
@@ -869,7 +879,7 @@ html.cv .mc,html.cv .res-row,html.cv .prow,html.cv .ticket{content-visibility:au
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.94"></script>
+<script src="engine.js?v=1.95"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -1895,15 +1905,17 @@ function fxNext(){if(fxOn||!FXQ.length||document.hidden)return;const e=FXQ.shift
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(fxNext,600)});
 
 /* ---------- mon style : bannière, couleur du pseudo, titre (débloqués en jouant, vérifiés par le serveur) ---------- */
-const nameH=(name,cos)=>{const e=cos&&cos.e&&cosEmoji(cos.e);return`<span class="${cos&&cos.c&&cos.c!=="c0"?"nc-"+cos.c:""}">${esc(name)}</span>${e?`<span class="nemo">${e}</span>`:""}`};
+const nameH=(name,cos)=>{const e=cos&&cos.e&&cosEmoji(cos.e);return`<span class="${cos&&cos.c&&cos.c!=="c0"?"nc-"+cos.c:""}">${esc(name)}</span>${e?`<span class="nemo e-${cos.e}">${e}</span>`:""}`};
 const frC=cos=>cos&&cos.f&&cos.f!=="f0"?" fr-"+cos.f:"";
 // effet quand un de mes paris passe
-const WFX={v1:["⚽"],v2:["🎈","🎈","🎉"],v3:["🎆","🎇","✨"],v4:["🪙","🪙","💰"],v5:["⚡","⚡","🌩️"],v6:["👑","✨"],v7:["💸","💵","💶"],v8:["🔥","🔥","💥"],v9:["🌱","🌸","🌼"]};
+const WFX={v10:["🪶","🪶","🪶"],v1:["⚽"],v2:["🎈","🎈","🎉"],v3:["🎆","🎇","✨"],v4:["🪙","🪙","💰"],v5:["⚡","⚡","🌩️"],v6:["👑","✨"],v7:["💸","💵","💶"],v8:["🔥","🔥","💥"],v9:["🌱","🌸","🌼"]};
 function winFx(v){v=v||(S.cos&&S.cos.v);if(!v||v==="v0"||!WFX[v]){confetti();return}if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;
   const c=document.createElement("div");c.className="erain";const E=WFX[v],up=v==="v2";
   for(let i=0;i<38;i++){const p=document.createElement("i");p.textContent=E[i%E.length];p.style.left=Math.random()*100+"%";p.style.fontSize=(22+Math.random()*22)+"px";
     p.style.animationDelay=(Math.random()*.9)+"s";p.style.animationDuration=(1.6+Math.random()*1.4)+"s";if(up)p.classList.add("up");c.appendChild(p)}
-  if(v==="v5"){c.classList.add("flash")}document.body.appendChild(c);setTimeout(()=>c.remove(),4000)}
+  if(v==="v5"){c.classList.add("flash")}
+  if(v==="v10"){c.classList.add("raven");for(let i=0;i<9;i++){const r=document.createElement("b");r.textContent="🐦‍⬛";r.style.top=(8+Math.random()*70)+"%";r.style.fontSize=(30+Math.random()*30)+"px";r.style.animationDelay=(Math.random()*1.2)+"s";c.appendChild(r)}}
+  document.body.appendChild(c);setTimeout(()=>c.remove(),4000)}
 const ttlH=cos=>{const t=cos&&cos.t&&cosTitle(cos.t);return t?`<span class="ttl${cos.y&&cos.y!=="y0"?" ty-"+cos.y:""}">${esc(t)}</span>`:""};
 const bnC=cos=>cos&&cos.b&&cos.b!=="b0"?" bnr bn-"+cos.b:"";
 async function loadCos(){if(!S.tok)return null;try{const j=await api("cos_get",{});U.cosD=j;S.cos=j.cos||{};saveLocal();return j}catch(e){return null}}
@@ -1912,9 +1924,10 @@ async function openStyle(){U.open="style";U.cosTab=U.cosTab||"b";const head=`<di
   if(!j){layer(head+`<div class="empty">${ic("info")}<b>Pas de connexion</b>Réessaie dans un instant.</div>`);return}
   U.cosEdit={b:"b0",c:"c0",t:"t0",f:"f0",e:"e0",v:"v0",y:"y0",...Object.fromEntries(Object.entries(j.cos||{}).filter(([,v])=>v))};layer(viewStyle())}
 function viewStyle(){const j=U.cosD,E=U.cosEdit,un=new Set(j.unlocked),T=U.cosTab,LV=myLv();
-  const items=COS.filter(x=>x[1]===T).map(x=>({id:x[0],n:x[2],d:x[4],ok:un.has(x[0])}));
+  const vis=x=>!(COS_SECRET.includes(x[3])&&!un.has(x[0]));
+  const items=COS.filter(x=>x[1]===T&&vis(x)).map(x=>({id:x[0],n:x[2],d:x[4],ok:un.has(x[0]),sec:COS_SECRET.includes(x[3])}));
   if(T==="t")for(const id of j.unlocked)if(id.startsWith("tm:"))items.splice(1,0,{id,n:cosTitle(id),d:"",ok:true});
-  const tm=ty=>ty==="t"?j.unlocked.filter(x=>x.startsWith("tm:")).length:0,cnt=ty=>`${COS.filter(x=>x[1]===ty&&un.has(x[0])).length+tm(ty)}/${COS.filter(x=>x[1]===ty).length+tm(ty)}`;
+  const tm=ty=>ty==="t"?j.unlocked.filter(x=>x.startsWith("tm:")).length:0,cnt=ty=>`${COS.filter(x=>x[1]===ty&&un.has(x[0])).length+tm(ty)}/${COS.filter(x=>x[1]===ty&&vis(x)).length+tm(ty)}`;
   const prev={b:E.b,c:E.c,t:T==="y"&&(!E.t||E.t==="t0")?"t2":E.t,f:E.f,e:E.e,v:E.v,y:E.y};
   return`<div class="grab"><h3>Mon style</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   ${j.flags.all?`<p class="testr">🧪 Mode testeur : tout est débloqué pour toi.</p>`:""}
@@ -1922,7 +1935,7 @@ function viewStyle(){const j=U.cosD,E=U.cosEdit,un=new Set(j.unlocked),T=U.cosTa
   <div class="sttabs">${[["b","🖼️ Bannières"],["c","🎨 Couleurs"],["t","🏷️ Titres"],["y","✨ Style du titre"],["f","⭕ Cadres"],["e","😎 Emojis"],["v","🎉 Victoire"]].map(([k,n])=>`<button data-act="sttab" data-v="${k}" aria-pressed="${T===k}">${n}<small>${cnt(k)}</small></button>`).join("")}</div>
   ${T==="v"?`<p class="note" style="text-align:left">L’animation qui se lance quand un de tes paris passe. Touche un effet débloqué pour le voir.</p>`:T==="y"?`<p class="note" style="text-align:left">La couleur de ton titre (choisis aussi un titre dans 🏷️ Titres).</p>`:""}
   <div class="stgrid ${T}">${items.map(x=>`<button class="sti${x.ok?"":" lock"}${E[T]===x.id?" on":""}" data-act="stpick" data-v="${esc(x.id)}" ${x.ok?"":"aria-disabled=\"true\""}>
-    ${T==="b"?`<span class="stsw bnr bn-${x.id}"></span>`:T==="c"?`<span class="stc nc-${x.id}">Aa</span>`:T==="f"?avatar(S.pid||"me",S.name||"?",S.avv,"av stav"+(x.id!=="f0"?" fr-"+x.id:""),true):T==="e"?`<span class="ste">${x.id==="e0"?"∅":esc(x.n.split(" ")[0])}</span>`:T==="v"?`<span class="ste">${x.id==="v0"?"🎊":esc(x.n.split(" ")[0])}</span>`:T==="y"?`<span class="ttl${x.id!=="y0"?" ty-"+x.id:""}">${esc(cosTitle(E.t&&E.t!=="t0"?E.t:"t2"))}</span>`:""}<b>${esc(T==="e"&&x.id!=="e0"?x.n.split(" ").slice(1).join(" "):T==="v"&&x.id!=="v0"?x.n.split(" ").slice(1).join(" "):x.n)}</b>${x.ok?"":`<small>🔒 ${esc(x.d)}</small>`}</button>`).join("")}</div>
+    ${T==="b"?`<span class="stsw bnr bn-${x.id}"></span>`:T==="c"?`<span class="stc nc-${x.id}">Aa</span>`:T==="f"?avatar(S.pid||"me",S.name||"?",S.avv,"av stav"+(x.id!=="f0"?" fr-"+x.id:""),true):T==="e"?`<span class="ste${x.sec?" raven":""}">${x.id==="e0"?"∅":esc(x.n.split(" ")[0])}</span>`:T==="v"?`<span class="ste${x.sec?" raven":""}">${x.id==="v0"?"🎊":esc(x.n.split(" ")[0])}</span>`:T==="y"?`<span class="ttl${x.id!=="y0"?" ty-"+x.id:""}">${esc(cosTitle(E.t&&E.t!=="t0"?E.t:"t2"))}</span>`:""}${x.sec?`<span class="stsec">🐦‍⬛ Exclusif</span>`:""}<b>${esc(T==="e"&&x.id!=="e0"?x.n.split(" ").slice(1).join(" "):T==="v"&&x.id!=="v0"?x.n.split(" ").slice(1).join(" "):x.n)}</b>${x.ok?"":`<small>🔒 ${esc(x.d)}</small>`}</button>`).join("")}</div>
   <button class="btn gold wide" data-act="stsave" style="margin-top:12px">Enregistrer mon style</button>
   <p class="note">Ton style se voit sur ton profil, dans les classements et dans le chat. Tout se débloque en jouant : rien ne s’achète.</p>`}
 // réaffiche l'éditeur sans perdre la position des onglets ni de la liste
@@ -3224,7 +3237,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.94";
+const VERSION="1.95";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

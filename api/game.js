@@ -534,7 +534,7 @@ async function guideState(s, pid) {
 
 // ---- Style du joueur : ce qu'il a débloqué (tout est vérifié ici, rien ne s'achète) ----
 async function cosFlags(s, pid) {
-  const r = (await s.query(`select p.cos_all, p.badges, p.created_at < '2026-12-01' as pioneer,
+  const r = (await s.query(`select p.cos_all, p.cos_grant, p.badges, p.created_at < '2026-12-01' as pioneer,
       coalesce((select xp from pxp where player = p.id), 0) as xp,
       (select coalesce(json_agg(month order by month), '[]') from month_prizes where player = p.id and rank = 1) as months,
       exists (select 1 from month_prizes where player = p.id and rank <= 3) as podium,
@@ -554,8 +554,8 @@ async function cosFlags(s, pid) {
       (select count(*)::int from bal_hist where player = p.id) as days
     from players p where p.id = $1`, [pid]))[0];
   if (!r) return {};
-  const badges = Array.isArray(r.badges) ? r.badges : [];
-  return { all: !!r.cos_all, lvl: EG.levelOf(r.xp).lvl, months: r.months || [], podium: r.podium, battles3: r.battles >= 3, odds10: r.odds10, wheel500: r.wheel500, jackpot: r.jackpot,
+  const badges = Array.isArray(r.badges) ? r.badges : [], grants = Object.fromEntries((Array.isArray(r.cos_grant) ? r.cos_grant : []).map((k) => [k, true]));
+  return { ...grants, all: !!r.cos_all, lvl: EG.levelOf(r.xp).lvl, months: r.months || [], podium: r.podium, battles3: r.battles >= 3, odds10: r.odds10, wheel500: r.wheel500, jackpot: r.jackpot,
     duels5: r.duels >= 5, rugby10: r.rugby >= 10, tennis10: r.tennis >= 10, nba10: r.nba >= 10, pioneer: r.pioneer, streak5: badges.includes("s5"), draws5: r.draws >= 5,
     combo4: r.combo4, chief: r.chief, prono20: r.prono >= 200, lm10: r.lm >= 10, days30: r.days >= 30, month1: (r.months || []).length > 0 };
 }
@@ -1192,6 +1192,15 @@ const ACTIONS = {
     const cos = { b: pick(b.b, "b"), c: pick(b.c, "c"), t: pick(b.t, "t"), f: pick(b.f, "f"), e: pick(b.e, "e"), v: pick(b.v, "v"), y: pick(b.y, "y") };
     await s.query(`update players set cos = $2::jsonb where id = $1`, [p.id, JSON.stringify(cos)]);
     return { ok: true, cos };
+  },
+  // style offert à un joueur (pack exclusif) : organisateurs seulement
+  async admin_cos_grant(s, b) {
+    admin(b);
+    const key = String(b.req || "").replace(/[^a-z0-9]/g, "").slice(0, 20);
+    if (!EG.COS_SECRET.includes(key)) throw fail(400, "unknown");
+    const r = await s.query(`update players set cos_grant = (select coalesce(jsonb_agg(distinct x), '[]'::jsonb) from jsonb_array_elements_text(coalesce(cos_grant, '[]'::jsonb) || $2::jsonb) x)
+       where lower(name) = lower($1) returning id, name, cos_grant`, [String(b.name || ""), JSON.stringify([key])]);
+    return { ok: !!r[0], players: r };
   },
   // mode testeur : tout le style débloqué pour un joueur (organisateurs seulement)
   async admin_cos_all(s, b) {
