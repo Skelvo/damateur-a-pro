@@ -1100,7 +1100,7 @@ const CARD_P={"BRONZE":{bg:["#4a2710","#a8682f","#e6a868","#7a4520"],ink:"#2a140
   "LÉGENDE":{bg:["#14042e","#5b1fb0","#2a0a5c","#0b0219"],ink:"#ffe9a0",trim:["#fff6c8","#c7952a","#ffd23f"],holo:2}};
 async function playerCard(p,o){o=o||{};const C=cardStats(p.bets||[],p.xp),T=CARD_T.find(x=>C.note>=x[0]),BNK=o.d==="bn"&&p.cos&&p.cos.b&&p.cos.b!=="b0"?p.cos.b:"",BC=BNK&&BN_COL[BNK];
   const P=BC?{bg:[BC[0],BC[1],BC[0],BC[1]],ink:"#fff8ec",trim:["#ffffff","#9a9a9a","#f0f0f0"],holo:1,glow:[BC[2],BC[3]]}:CARD_P[T[1]];
-  const W=720,H=1000,cv=document.createElement("canvas");cv.width=W;cv.height=H;const c=cv.getContext("2d"),ink=P.ink;
+  const W=720,H=1000,K=o.scale||1,cv=document.createElement("canvas");cv.width=W*K;cv.height=H*K;const c=cv.getContext("2d"),ink=P.ink;c.scale(K,K);
   try{await Promise.all([document.fonts.load('800 80px "Barlow Condensed"'),document.fonts.load('700 30px Barlow'),document.fonts.load('600 30px Barlow')])}catch(e){}
   let sd=0;for(const ch of String(p.name||"x"))sd=(sd*31+ch.charCodeAt(0))>>>0;const rnd=()=>(sd=(sd*1664525+1013904223)>>>0)/4294967296;
   // silhouette façon carte de foot : épaules découpées, pointe en bas
@@ -1160,13 +1160,13 @@ async function playerCard(p,o){o=o||{};const C=cardStats(p.bets||[],p.xp),T=CARD
   c.fillStyle=ink;c.globalAlpha=.75;c.fillRect(130,614,205,2.5);c.fillRect(W-335,614,205,2.5);c.beginPath();c.moveTo(W/2,603);c.lineTo(W/2+12,615);c.lineTo(W/2,627);c.lineTo(W/2-12,615);c.closePath();c.fill();c.globalAlpha=1;
   const tt=o.sub!=="lvl"&&p.cos&&p.cos.t&&cosTitle(p.cos.t);txt(tt?tt:`${C.tier} · niveau ${C.lvl}`,W/2,664,'600 29px Barlow');
   // statistiques
-  const ks=Object.keys(C.stats);ks.forEach((k,i)=>{const col=i<3?0:1,row=i%3,x=col?W/2+58:178,y=738+row*66;
+  const ks=Object.keys(C.stats);ks.forEach((k,i)=>{const col=i<3?0:1,row=i%3,x=col?W/2+58:178,y=730+row*62;
     txt(String(C.stats[k]),x+30,y,'800 60px "Barlow Condensed"',ink,"right");c.globalAlpha=.85;txt(k,x+44,y,'700 34px "Barlow Condensed"',ink,"left");c.globalAlpha=1});
-  c.fillStyle=ink;c.globalAlpha=.45;c.fillRect(W/2-1.5,690,3,190);c.globalAlpha=1;
+  c.fillStyle=ink;c.globalAlpha=.45;c.fillRect(W/2-1.5,688,3,170);c.globalAlpha=1;
   // pied : logo et nombre de paris
-  const logo=await loadImg("logo-tribune.png?v=2");if(logo){const lw=86,lh=lw*logo.height/logo.width;let li=logo;if(!["#ffd23f","#ffe9a0","#fff8ec"].includes(ink)){const o3=document.createElement("canvas");o3.width=logo.width;o3.height=logo.height;const oc=o3.getContext("2d");oc.drawImage(logo,0,0);oc.globalCompositeOperation="source-in";oc.fillStyle=ink;oc.fillRect(0,0,o3.width,o3.height);li=o3}
-    c.globalAlpha=.9;c.drawImage(li,W/2-lw/2,888,lw,lh);c.globalAlpha=1}
-  txt(`${C.n} PARI${C.n>1?"S":""}`,W/2,952,'800 22px "Barlow Condensed"');
+  const logo=await loadImg("logo-tribune.png?v=2");if(logo){const lw=66,lh=lw*logo.height/logo.width;let li=logo;if(!["#ffd23f","#ffe9a0","#fff8ec"].includes(ink)){const o3=document.createElement("canvas");o3.width=logo.width;o3.height=logo.height;const oc=o3.getContext("2d");oc.drawImage(logo,0,0);oc.globalCompositeOperation="source-in";oc.fillStyle=ink;oc.fillRect(0,0,o3.width,o3.height);li=o3}
+    c.globalAlpha=.9;c.drawImage(li,W/2-lw/2,868,lw,lh);c.globalAlpha=1}
+  txt(`${C.n} PARI${C.n>1?"S":""}`,W/2,944,'800 20px "Barlow Condensed"');
   return{blob:await new Promise(ok=>cv.toBlob(ok,"image/png")),C,T}}
 function refDone(j){try{localStorage.removeItem("dap.ref")}catch(e){}if(j&&j.parrain){S.refBy=j.parrain;saveLocal();setTimeout(claimGifts,2500)}}
 async function wrefFill(){const b=$("#wref"),rc=refStored();if(!b)return;try{const j=await api("ref_info",rc?{code:rc}:{pending:1});if(j.name&&j.code&&$("#w-ref")&&!$("#w-ref").value)$("#w-ref").value=j.code;if(j.name&&$("#wref"))$("#wref").innerHTML=`<div class="refban">🎁 <span><b>Invité par ${esc(j.name)}</b><br>+${tok(j.gets)} jetons de bienvenue en plus des 1 000 de départ.</span></div>`}catch(e){}}
@@ -2553,7 +2553,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.24";
+const VERSION="2.25";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
