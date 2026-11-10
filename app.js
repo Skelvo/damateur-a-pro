@@ -353,7 +353,7 @@ function viewSlip(){const n=U.sel.length;if(!n)return`<div class="grab"><h3>Mon 
   const blocked=comboBlocked(),combo=U.combo&&n>1&&!blocked,cost=combo?U.stake:U.stake*n,gain=combo?U.stake*slipOdds():U.sel.reduce((a,s)=>a+U.stake*s.o,0);
   return`<div class="grab"><h3>Mon ticket</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   ${n>1?`<div class="seg"><button data-act="combo" data-v="0" aria-pressed="${!combo}">Simples (${n})</button><button data-act="combo" data-v="1" aria-pressed="${combo}" ${blocked?"disabled":""}>Combiné</button></div>`:""}
-  ${blocked&&n>1?`<p class="warn">Combinaison impossible : ces paris ne peuvent pas se réaliser tous ensemble.</p>`:combo&&comboInfo().linked?`<p class="note">${ic("info")} Plusieurs paris sur le même match : la cote est recalculée car ils sont liés.</p>`:""}
+  ${blocked&&n>1?(combo?`<p class="warn">Combiné impossible : ces paris ne peuvent pas être gagnants tous ensemble (par exemple « Victoire + les deux équipes marquent » fait au moins 3 buts, donc pas « moins de 2,5 »). Retire un des paris ou joue-les en Simples.</p>`:`<p class="note" style="text-align:left">${ic("info")} En simples, chaque pari compte à part. Attention : ils ne peuvent pas tous passer ensemble, au moins un sera perdant. C’est pour ça que le combiné n’est pas possible.</p>`):combo&&comboInfo().linked?`<p class="note">${ic("info")} Plusieurs paris sur le même match : la cote est recalculée car ils sont liés.</p>`:""}
   <div>${U.sel.map((s,i)=>`<div class="leg"><span class="ic">${ic(s.ic,s.cls||"")}</span><div><b>${esc(s.l)}</b><small>${esc(s.mt)}</small><small>${esc(s.ml)}</small></div><span class="o">${fr(s.o)}</span><button class="rm" data-act="unpick" data-i="${i}" aria-label="Retirer">${ic("x")}</button></div>`).join("")}</div>
   ${WE().on&&WE().k==="combo"?(combo&&n>=3?`<p class="webadge">🧾 Week-end des combinés : si ça passe, <b>+25 %</b> de bonus sur ton bénéfice !</p>`:`<p class="webadge dim">🧾 Week-end des combinés : fais un combiné de 3 sélections ou plus pour toucher +25 % de bonus.</p>`):""}
   <div class="chips">${[10,20,50,100,250].map(v=>`<button data-act="stake" data-v="${v}" aria-pressed="${U.stake===v}">${v}</button>`).join("")}<button data-act="stake" data-v="max">Max</button></div>
@@ -2585,7 +2585,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.41";
+const VERSION="2.42";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
