@@ -1719,6 +1719,8 @@ const GCOLORS=["#35d07f","#ffd23f","#ff7a45","#5fa8ff","#c084fc","#ff5a5f","#2ec
 const ACCESS={open:["Ouverte","Tout le monde peut la rejoindre depuis l’annuaire."],request:["Sur demande","Visible dans l’annuaire ; le chef ou un adjoint accepte chaque demande."],private:["Privée","Invisible dans l’annuaire : on la rejoint seulement avec son code."]};
 // logo image d'une guilde (envoyé par le chef, ou posé par les organisateurs) ; gardé en mémoire pour ne pas clignoter
 const LOGO_KEEP={};
+// images utilisées par les styles (cadre fourrure, Teckel géant) : chargées une fois en arrière-plan puis gardées en mémoire
+setTimeout(()=>{for(const u of["fur-teckel.webp?v=3","teckel-cadre.webp?v=2"]){if(!LOGO_KEEP[u]){const im=new Image();im.src=u;LOGO_KEEP[u]=im}}},2500);
 function gLogoUrl(e){if(!e)return"";if(typeof e.lg==="string"&&/^\d{1,15}\.\d{1,6}$/.test(e.lg)){const[g,v]=e.lg.split(".");return`/api/game?glogo=${g}&v=${v}`}
   if(typeof e.img==="string"&&/^g\/[a-z0-9-]{1,40}\.(webp|png)$/.test(e.img))return"/"+e.img.replace(/\.webp$/,".png")+"?v=2";return""}
 const emb=(l,sz)=>{const e=(l&&l.emblem)||{},u=gLogoUrl(e);if(u){if(!LOGO_KEEP[u]){const im=new Image();im.src=u;LOGO_KEEP[u]=im}
@@ -2524,7 +2526,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.21";
+const VERSION="2.22";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
