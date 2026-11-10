@@ -369,7 +369,7 @@ COS.push(
   ["b20","b","Le Teckel","teckel","Style exclusif"],["c15","c","Poil de feu","teckel","Style exclusif"],["t23","t","🌭 Saucisse officielle","teckel","Style exclusif"],
   ["t24","t","🐾 Teckel en chef","teckel","Style exclusif"],["y14","y","Teckel","teckel","Style exclusif"],["f15","f","Teckel","teckel","Style exclusif"],
   ["e21","e","🐕 Teckel","teckel","Style exclusif"],["e22","e","🦴 Os","teckel","Style exclusif"],["e23","e","🌭 Saucisse","teckel","Style exclusif"],
-  ["v12","v","🐕 Course de teckels","teckel","Style exclusif"],["f16","f","Hot-dog","teckel","Style exclusif"]);
+  ["v12","v","🐕 Course de teckels","teckel","Style exclusif"],["f16","f","Hot-dog","teckel","Style exclusif"],["f17","f","Teckel enroulé","teckel","Style exclusif"]);
 const COS_SECRET=["corbeau","teckel"],COS_SEASON={noel:"🎄 Saisonnier"};   // conditions « offertes » : les objets restent cachés tant qu'on ne les a pas
 const cosEmoji=id=>{const x=COS.find(c=>c[0]===id&&c[1]==="e");return x&&id!=="e0"?x[2].split(" ")[0]:""};
 const MONTHS_FR=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
