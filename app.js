@@ -1107,8 +1107,8 @@ async function playerCard(p){const C=cardStats(p.bets||[],p.xp),T=CARD_T.find(x=
   const ks=Object.keys(C.stats);ks.forEach((k,i)=>{const col=i<3?0:1,row=i%3,x=col?W/2+60:150,y=650+row*78;c.textAlign="left";c.font='800 64px "Barlow Condensed"';c.fillText(String(C.stats[k]),x,y);c.font='700 36px "Barlow Condensed"';c.fillText(k,x+86,y)});
   c.fillRect(W/2-2,600,4,200);
   // bas : logo Tribune
-  const logo=await loadImg("logo-tribune.png?v=2");if(logo){const lw=120,lh=lw*logo.height/logo.width;c.globalAlpha=dark?1:.85;if(!dark){c.filter="brightness(0)"}c.drawImage(logo,W/2-lw/2,838,lw,lh);c.filter="none";c.globalAlpha=1}
-  c.textAlign="center";c.font='700 22px Barlow';c.fillText(C.n<5?"CARTE PROVISOIRE":`${C.n} PARIS`,W/2,940);
+  const logo=await loadImg("logo-tribune.png?v=2");if(logo){const lw=100,lh=lw*logo.height/logo.width;let li=logo;if(!dark){const o=document.createElement("canvas");o.width=logo.width;o.height=logo.height;const oc=o.getContext("2d");oc.drawImage(logo,0,0);oc.globalCompositeOperation="source-in";oc.fillStyle=ink;oc.fillRect(0,0,o.width,o.height);li=o}c.globalAlpha=dark?1:.85;c.drawImage(li,W/2-lw/2,822,lw,lh);c.globalAlpha=1}
+  c.textAlign="center";c.font='800 26px "Barlow Condensed"';c.fillText(`${C.n} PARI${C.n>1?"S":""}`,W/2,912);
   return{blob:await new Promise(ok=>cv.toBlob(ok,"image/png")),C,T}}
 async function openCard(p){U.open="card";const head=`<div class="grab"><h3>Carte de joueur</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
   layerLater(head+`<div class="skel" style="height:420px"></div>`,200);
@@ -2427,7 +2427,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.97";
+const VERSION="1.98";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
