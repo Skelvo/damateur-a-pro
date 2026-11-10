@@ -473,7 +473,8 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 .champ.season{background:linear-gradient(135deg,#4a2a05,var(--card) 70%);border-color:#a8670f}
 .sncard{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin:0 0 12px}.sncard .i{width:26px;height:26px;color:#ffb020;flex:none}.sncard b{display:block;font:800 18px "Barlow Condensed"}.sncard small{color:var(--mute);font-size:12.5px}
 .drow[data-act=defigo]{cursor:pointer}.drow[data-act=defigo]:active{opacity:.7}
-.mc,.res-row,.prow,.ticket{content-visibility:auto;contain-intrinsic-size:auto 180px}.res-row,.prow{contain-intrinsic-size:auto 58px}
+/* cartes hors écran non dessinées : seulement sur Chrome/Android (Safari iPhone les laisse vides après une rotation) */
+html.cv .mc,html.cv .res-row,html.cv .prow,html.cv .ticket{content-visibility:auto;contain-intrinsic-size:auto 180px}html.cv .res-row,html.cv .prow{contain-intrinsic-size:auto 58px}
 .fx{position:fixed;inset:0;z-index:85;display:grid;place-items:center;pointer-events:auto;animation:fxin .25s ease-out}.fx.out{animation:fxout .4s ease-in forwards}
 .fxbg{position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,color-mix(in srgb,var(--fc) 45%,transparent),#000c 70%);background:radial-gradient(circle at 50% 45%,rgba(0,0,0,.6),rgba(0,0,0,.88) 70%)}
 .fx-g .fxbg,.fx-try .fxbg,.fx-try7 .fxbg{box-shadow:inset 0 0 160px var(--fc)}
@@ -732,6 +733,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 </head>
 <body data-sp="foot">
 <div id="splash"><img src="logo-tribune.png?v=2" alt="Tribune"><div class="spbar"><i></i></div><small id="spt">Chargement des matchs…</small></div>
+<script>(function(u){if(/Chrome\//.test(u)&&!/iPhone|iPad|iPod|CriOS|EdgiOS/.test(u))document.documentElement.classList.add("cv")})(navigator.userAgent);</script>
 <script>/* filet de sécurité : l'écran de chargement ne reste jamais bloqué */setTimeout(function(){var s=document.getElementById("splash");if(s)s.remove()},10000)</script>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -800,7 +802,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.87"></script>
+<script src="engine.js?v=1.88"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -3092,7 +3094,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.87";
+const VERSION="1.88";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
