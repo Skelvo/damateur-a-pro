@@ -2496,8 +2496,9 @@ function viewInstall(gate){const head=gate?"":`<div class="grab"><h3>Installer l
   const pick=`<div class="platpick"><small>Ton téléphone</small><div><button data-act="plat" data-v="ios" aria-pressed="${P==="ios"}">🍏 iPhone</button><button data-act="plat" data-v="android" aria-pressed="${P==="android"}">🤖 Android</button></div></div>`;
   if(P==="ios"){const url=shareableUrl(),inApp=IOS&&!IOS_SAFARI,app=INAPP_NAME||"une autre appli";
     return head+pick+(inApp?`<div class="inappw"><b>⚠️ Tu es dans ${esc(app)}</b><p>Ici, l’installation ne marche pas : l’app s’installe <b>uniquement depuis Safari</b>.</p>
-      <a class="btn gold wide" href="x-safari-${esc(url)}">🧭 Ouvrir dans Safari</a>
-      <p class="small">Rien ne se passe ? ${INAPP_NAME==="Instagram"?"Touche les <b>•••</b> en haut à droite, puis <b>Ouvrir dans le navigateur externe</b>.":INAPP_NAME==="Facebook"?"Touche les <b>•••</b> en haut à droite, puis <b>Ouvrir dans le navigateur externe</b>.":INAPP_NAME==="Snapchat"||INAPP_NAME==="TikTok"?"Touche les <b>•••</b> (ou la flèche de partage), puis <b>Ouvrir dans le navigateur</b>.":"Cherche le menu <b>•••</b> ou la boussole 🧭, puis <b>Ouvrir dans Safari</b>."}<br>Ou copie le lien et colle-le dans Safari :</p>
+      ${INAPP_NAME==="Instagram"||INAPP_NAME==="Facebook"?`<ol class="iasteps"><li><span>1</span><div>Touche les <b class="dots">•••</b> tout en haut à droite</div></li><li><span>2</span><div>Choisis <b>Ouvrir dans le navigateur externe</b></div></li></ol>`:""}
+      <a class="btn ghost wide" href="x-safari-${esc(url)}">🧭 Essayer d’ouvrir dans Safari</a>
+      <p class="small">${INAPP_NAME==="Instagram"||INAPP_NAME==="Facebook"?"Ça ne marche pas ? Copie le lien et colle-le dans Safari :":`Rien ne se passe ? `+INAPP_NAME==="Instagram"?"Touche les <b>•••</b> en haut à droite, puis <b>Ouvrir dans le navigateur externe</b>.":INAPP_NAME==="Facebook"?"Touche les <b>•••</b> en haut à droite, puis <b>Ouvrir dans le navigateur externe</b>.":INAPP_NAME==="Snapchat"||INAPP_NAME==="TikTok"?"Touche les <b>•••</b> (ou la flèche de partage), puis <b>Ouvrir dans le navigateur</b>.":"Cherche le menu <b>•••</b> ou la boussole 🧭, puis <b>Ouvrir dans Safari</b>."+"<br>Ou copie le lien et colle-le dans Safari :"}</p>
       <button class="btn ghost wide" data-act="copylink">📋 Copier le lien</button></div><div class="grp">Ensuite, dans Safari</div>`
       :!IOS?`<p class="note" style="text-align:left">Sur iPhone, ouvre <b>${esc(url.replace(/^https:\/\//,""))}</b> dans <b>Safari</b> (pas dans Instagram, WhatsApp ou Chrome), puis :</p>`:"")+`
     <ol class="steps"><li><span class="n">1</span><div>Dans Safari, touche le bouton <b>Partager</b> ${SHARE_IOS}<small>Selon ta version d’iOS : dans la barre du bas, à côté de l’adresse, ou dans le menu <b>•••</b>.</small></div></li>
@@ -2563,7 +2564,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.27";
+const VERSION="2.28";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -2584,10 +2585,13 @@ async function boot(){if(GATE||!S.name){hideSplash();setTimeout(afterBoot,300);r
   clearInterval(mt);U.lg.loading=false;render();hideSplash();setTimeout(afterBoot,400)}
 refFromLink();pariFromLink();
 // coincé dans le navigateur d'Instagram, Facebook… : on tente tout de suite de rouvrir le lien dans Safari ou Chrome (une seule fois)
+// flèche vers le menu ••• d'Instagram / Facebook (seul moyen fiable de sortir sur iPhone)
+function inAppArrow(){if(!GATE||!INAPP_NAME||document.querySelector(".iaarrow"))return;if(!(IOS&&!IOS_SAFARI)&&!(ANDROID&&INAPP))return;
+  const d=document.createElement("div");d.className="iaarrow";d.innerHTML=`<svg viewBox="0 0 60 70" width="54" height="64"><path d="M10 64 C14 34 30 18 48 10" stroke="#ffd23f" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M34 6 L50 9 L45 25" stroke="#ffd23f" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><div>Touche <b>•••</b><br>puis <b>Ouvrir dans le navigateur externe</b></div>`;document.body.appendChild(d)}
 (function escapeInApp(){const inIOS=IOS&&!IOS_SAFARI&&INAPP_NAME,inAnd=ANDROID&&INAPP;if(!GATE||!(inIOS||inAnd))return;
   try{if(sessionStorage.getItem("dap.esc"))return;sessionStorage.setItem("dap.esc","1")}catch(e){}
   const u=shareableUrl();setTimeout(()=>{location.href=inIOS?"x-safari-"+u:"intent://"+u.replace(/^https?:\/\//,"")+"#Intent;scheme=https;package=com.android.chrome;end"},350)})();
-if(GATE){hideSplash();renderGate()}else{
+if(GATE){hideSplash();renderGate();inAppArrow()}else{
 render();
 if(!S.name){hideSplash();U.open="welcome";layer(viewWelcome(false));setTimeout(wrefFill,300)}else{syncSoon();joinFromLink()}
 loadFeeds();boot();

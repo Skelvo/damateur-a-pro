@@ -878,3 +878,10 @@ html.cv .mc,html.cv .res-row,html.cv .prow,html.cv .ticket{content-visibility:au
 .platpick button[aria-pressed=true]{background:#35d07f1f;border-color:var(--acc);color:#fff}
 .inappw{text-align:left;background:#ff5a5f14;border:1.5px solid #ff5a5f88;border-radius:16px;padding:13px 14px;margin-bottom:14px}.inappw>b{font-size:16px}.inappw p{margin:6px 0 10px;font-size:14px;line-height:1.4}.inappw .small{font-size:13px;color:var(--mute);margin-top:10px}.inappw .btn+.btn,.inappw .small+.btn{margin-top:6px}
 a.btn{text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px}
+.iaarrow{position:fixed;top:calc(env(safe-area-inset-top,0px) + 4px);right:10px;z-index:2147483000;display:flex;flex-direction:column;align-items:flex-end;pointer-events:none;animation:iabob 1.2s ease-in-out infinite}
+.iaarrow div{background:#ffd23f;color:#1b1400;font:700 14px/1.25 Barlow,sans-serif;padding:8px 11px;border-radius:12px;max-width:190px;text-align:right;box-shadow:0 8px 24px #000a;margin-top:-4px}
+@keyframes iabob{50%{transform:translate(4px,-6px)}}
+.iasteps{list-style:none;padding:0;margin:4px 0 12px;display:grid;gap:8px}.iasteps li{display:flex;gap:10px;align-items:center;background:#0006;border-radius:12px;padding:10px 12px;font-size:15px}
+.iasteps li span{flex:none;width:26px;height:26px;border-radius:9px;background:#ffd23f;color:#1b1400;font:800 16px "Barlow Condensed";display:grid;place-items:center}
+.dots{display:inline-block;background:#fff2;border-radius:6px;padding:0 6px;letter-spacing:1px}
+.gate{padding-top:72px}
