@@ -673,6 +673,8 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"gmem":openMembers();break;
     case"gset":openGuildSet();break;
     case"gsave":saveGuild();break;
+    case"glogo":pickGuildLogo();break;
+    case"glogodel":setGuildLogo(null);break;
     case"gpick":{const f=U.gf;if(d.f==="i")f.i=d.v;else if(d.f==="c")f.c=d.v;else if(d.f==="a")f.a=d.v;else if(d.f==="ch")f.ch=d.v;keepGuildForm();layer(viewGuildSet());break}
     case"gdir":openDir();break;
     case"gwr":openGRank(d.v==="chal");break;
@@ -1705,7 +1707,13 @@ function viewEvent(e){const M=evMatches(e),live=M.filter(m=>status(m)==="live"),
 const EMBLEMS=["🦁","🐺","🦅","🐉","🦈","🐻","🦊","🐯","🔥","⚡","👑","🏆","⚽","🏉","🎾","🏀","💎","🚀","🎯","🛡️","⚔️","🌟","🍀","🐐"];
 const GCOLORS=["#35d07f","#ffd23f","#ff7a45","#5fa8ff","#c084fc","#ff5a5f","#2ec4b6","#f8fafc","#ff9f1c","#8ac926"];
 const ACCESS={open:["Ouverte","Tout le monde peut la rejoindre depuis l’annuaire."],request:["Sur demande","Visible dans l’annuaire ; le chef ou un adjoint accepte chaque demande."],private:["Privée","Invisible dans l’annuaire : on la rejoint seulement avec son code."]};
-const emb=(l,sz)=>{const e=(l&&l.emblem)||{};if(typeof e.img==="string"&&/^g\/[a-z0-9-]{1,40}\.(webp|png)$/.test(e.img))return`<span class="gemb img ${sz||""}" role="img" aria-label="Logo" style="--gc:${esc(e.c||"#35d07f")};background-image:url(/${e.img.replace(/\.webp$/,".png")}?v=2)"></span>`;return`<span class="gemb ${sz||""}" style="--gc:${esc(e.c||"#35d07f")}">${esc(e.i||"🛡️")}</span>`};
+// logo image d'une guilde (envoyé par le chef, ou posé par les organisateurs) ; gardé en mémoire pour ne pas clignoter
+const LOGO_KEEP={};
+function gLogoUrl(e){if(!e)return"";if(typeof e.lg==="string"&&/^\d{1,15}\.\d{1,6}$/.test(e.lg)){const[g,v]=e.lg.split(".");return`/api/game?glogo=${g}&v=${v}`}
+  if(typeof e.img==="string"&&/^g\/[a-z0-9-]{1,40}\.(webp|png)$/.test(e.img))return"/"+e.img.replace(/\.webp$/,".png")+"?v=2";return""}
+const emb=(l,sz)=>{const e=(l&&l.emblem)||{},u=gLogoUrl(e);if(u){if(!LOGO_KEEP[u]){const im=new Image();im.src=u;LOGO_KEEP[u]=im}
+  return`<span class="gemb img ${sz||""}" role="img" aria-label="Logo" style="--gc:${esc(e.c||"#35d07f")};background-image:url(${u})"></span>`}
+  return`<span class="gemb ${sz||""}" style="--gc:${esc(e.c||"#35d07f")}">${esc(e.i||"🛡️")}</span>`};
 const seenTxt=t=>{const h=(Date.now()-t)/H;return h<1?"en ligne récemment":h<24?`vu il y a ${Math.round(h)} h`:`vu il y a ${Math.round(h/24)} j`};
 async function openMembers(){U.open="gmem";const head=`<div class="grab"><h3>Membres</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
   layerLater(head+`<div class="skel"></div><div class="skel"></div>`);
@@ -1720,22 +1728,33 @@ function viewMembers(j){const boss=j.role!=="membre",RL={chef:"👑 Chef",adjoin
 function openGMenu(){const d=U.lg.data,cur=d&&d.leagues.find(l=>l.code===U.lg.code);if(!cur)return;const boss=cur.mine||cur.role==="officer";U.open="gmenu";
   layer(`<div class="grab"><h3>${esc(cur.name)}</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   <div class="lgcode" style="margin-bottom:10px"><div><small>Code de la guilde</small><br><b>${esc(cur.code)}</b></div><button class="btn gold" data-act="lginv">${ic("share")} Inviter</button></div>
-  <div class="mlist"><button data-act="gmem">👥 Membres${boss&&cur.nreq?` · <b style="color:var(--sel)">${cur.nreq} demande${cur.nreq>1?"s":""}</b>`:""}</button>${boss?`<button data-act="gset">⚙️ Gérer la guilde (emblème, devise, accès, championnat)</button>`:""}
+  <div class="mlist"><button data-act="gmem">👥 Membres${boss&&cur.nreq?` · <b style="color:var(--sel)">${cur.nreq} demande${cur.nreq>1?"s":""}</b>`:""}</button>${boss?`<button data-act="gset">⚙️ Gérer la guilde (logo, emblème, devise, accès, championnat)</button>`:""}
   <button data-act="gstats">📈 Statistiques de la guilde</button><button data-act="gdir">🔎 Trouver une autre guilde</button><button data-act="lgnew">➕ Créer une guilde</button><button data-act="lgjoin">🔑 Rejoindre avec un code</button>
   <button data-act="lgleave" style="color:var(--loss)">🚪 Quitter la guilde</button></div>`)}
 async function guildAct(action,args,ask){if(ask&&!confirm(ask))return;try{const j=await api(action,{code:U.lg.code,...args});if(j&&j.error)throw j;toast("C’est fait.","win");await loadBoards();openMembers()}
   catch(e){toast(e&&e.error==="full"?"La guilde est pleine.":e&&e.error==="too_many"?"Ce joueur est déjà dans trop de guildes.":"Action impossible.","bad")}}
-function openGuildSet(){const cur=U.lg.data.leagues.find(l=>l.code===U.lg.code);if(!cur)return;const e=cur.emblem||{};U.gf={i:e.i||"🛡️",c:e.c||"#35d07f",a:cur.access||"private",m:cur.motto||"",n:cur.name,chef:!!cur.mine,ch:cur.champ===false?"0":"1"};U.open="gset";layer(viewGuildSet())}
+function openGuildSet(){const cur=U.lg.data.leagues.find(l=>l.code===U.lg.code);if(!cur)return;const e=cur.emblem||{};U.gf={i:e.i||"🛡️",c:e.c||"#35d07f",lg:e.lg,img:e.img,a:cur.access||"private",m:cur.motto||"",n:cur.name,chef:!!cur.mine,ch:cur.champ===false?"0":"1"};U.open="gset";layer(viewGuildSet())}
 function keepGuildForm(){const m=$("#g-motto"),n=$("#g-name");if(m)U.gf.m=m.value;if(n)U.gf.n=n.value}
 function viewGuildSet(){const f=U.gf;
   return`<div class="grab"><h3>Gérer la guilde</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
-  <div class="gprev">${emb({emblem:{i:f.i,c:f.c}},"xl")}</div>
-  <div class="grp">Emblème</div><div class="gpick">${EMBLEMS.map(x=>`<button data-act="gpick" data-f="i" data-v="${x}" aria-pressed="${f.i===x}">${x}</button>`).join("")}</div>
+  <div class="gprev">${emb({emblem:{i:f.i,c:f.c,lg:f.lg,img:f.img}},"xl")}</div>
+  <div class="grp">Logo (image)</div><div class="glogo"><button class="btn" data-act="glogo">📷 ${f.lg||f.img?"Changer le logo":"Mettre un logo"}</button>${f.lg||f.img?`<button class="btn ghost" data-act="glogodel">Retirer le logo</button>`:""}</div>
+  <p class="note" style="text-align:left;margin:6px 0 0">${f.lg||f.img?"Le logo remplace l’emblème partout. Retire-le pour revenir à l’emblème.":"Une image (idéalement PNG au fond transparent) qui remplace l’emblème partout : onglets, combats, annuaire."}</p>
+  <div class="grp">Emblème${f.lg||f.img?" (si pas de logo)":""}</div><div class="gpick">${EMBLEMS.map(x=>`<button data-act="gpick" data-f="i" data-v="${x}" aria-pressed="${f.i===x}">${x}</button>`).join("")}</div>
   <div class="grp">Couleur</div><div class="gpick col">${GCOLORS.map(x=>`<button data-act="gpick" data-f="c" data-v="${x}" aria-pressed="${f.c===x}" style="background:${x}" aria-label="Couleur"></button>`).join("")}</div>
   <div class="form">${f.chef?`<label>Nom<input id="g-name" maxlength="24" value="${esc(f.n)}"></label>`:""}<label>Devise (facultatif)<input id="g-motto" maxlength="60" value="${esc(f.m)}" placeholder="ex. On ne lâche rien"></label></div>
   <div class="grp">Qui peut rejoindre ?</div>${Object.entries(ACCESS).map(([k,[t,d]])=>`<button class="gacc" data-act="gpick" data-f="a" data-v="${k}" aria-pressed="${f.a===k}"><b>${t}</b><small>${d}</small></button>`).join("")}
   ${f.chef?`<div class="grp">Championnat des guildes</div><button class="gacc" data-act="gpick" data-f="ch" data-v="1" aria-pressed="${f.ch==="1"}"><b>On participe</b><small>Chaque lundi, un adversaire de votre niveau (il faut au moins 3 membres).</small></button><button class="gacc" data-act="gpick" data-f="ch" data-v="0" aria-pressed="${f.ch==="0"}"><b>Pause</b><small>Pas de championnat ; les défis restent possibles.</small></button>`:""}
   <button class="btn gold wide" data-act="gsave" style="margin-top:12px">Enregistrer</button>`}
+function pickGuildLogo(){keepGuildForm();const inp=document.createElement("input");inp.type="file";inp.accept="image/*";
+  inp.onchange=async()=>{const f=inp.files&&inp.files[0];if(!f)return;try{const url=URL.createObjectURL(f),im=await new Promise((ok,ko)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=ko;i.src=url});
+    const k=Math.min(1,440/im.width,190/im.height),w=Math.max(1,Math.round(im.width*k)),h=Math.max(1,Math.round(im.height*k)),cv=document.createElement("canvas");cv.width=w;cv.height=h;const c=cv.getContext("2d");c.drawImage(im,0,0,w,h);URL.revokeObjectURL(url);
+    let d=cv.toDataURL("image/png");if(d.length>200000){const c2=document.createElement("canvas");c2.width=w;c2.height=h;const x=c2.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,w,h);x.drawImage(cv,0,0);d=c2.toDataURL("image/jpeg",.86)}
+    await setGuildLogo(d)}catch(e){toast("Image illisible, essaie une autre.","bad")}};inp.click()}
+async function setGuildLogo(img){keepGuildForm();try{toast(img?"Envoi du logo…":"Logo retiré…");const j=await api("guild_logo",{code:U.lg.code,img});if(!j||j.error)throw j;
+  const e=j.emblem||{};U.gf.lg=e.lg;U.gf.img=e.img;const cur=U.lg.data&&U.lg.data.leagues.find(l=>l.code===U.lg.code);if(cur)cur.emblem={...(cur.emblem||{}),lg:e.lg,img:e.img};
+  if(U.open==="gset")layer(viewGuildSet());$("#main")._html=null;render();toast(img?"Logo enregistré !":"Logo retiré.","win")}
+  catch(e){toast(e&&e.error==="image"?"Image trop lourde : essaie une image plus petite.":"Impossible d’envoyer le logo.","bad")}}
 async function saveGuild(){keepGuildForm();const f=U.gf;try{const j=await api("guild_update",{code:U.lg.code,emblem:{i:f.i,c:f.c},access:f.a,motto:f.m,name:f.n,...(f.chef?{champ:f.ch==="1"}:{})});if(j.error)throw j;closeLayer();toast("Guilde mise à jour.","win");loadBoards()}catch(e){toast(e.code==="name_bad"?"Nom ou devise refusés : choisis des mots corrects.":"Impossible d’enregistrer.","bad")}}
 async function openDir(q){U.open="gdir";const head=`<div class="grab"><h3>Trouver une guilde</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   <div class="form"><input id="g-q" placeholder="Rechercher une guilde…" value="${esc(q||"")}" autocomplete="off"></div>`;
@@ -2495,7 +2514,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.16";
+const VERSION="2.17";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

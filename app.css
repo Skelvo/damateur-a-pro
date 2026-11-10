@@ -863,3 +863,4 @@ html.cv .mc,html.cv .res-row,html.cv .prow,html.cv .ticket{content-visibility:au
 .mcard.bn-b21 .hfx,.bn-b21 .mcnote{display:none}.mcard.bn-b21 .hho{border-radius:18px}
 .stsw.bn-b21,.csw.bn-b21{background:url("teckel-cadre.webp?v=2") center/92% auto no-repeat,#3a1f0e!important}
 .gemb.img{background-color:#fff;background-repeat:no-repeat;background-position:center;background-size:86% auto;width:50px;height:22px}.gemb.img.lg{width:106px;height:46px}.gemb.img.xl{width:190px;height:84px}
+.glogo{display:flex;gap:8px;flex-wrap:wrap}.glogo .btn{flex:1}

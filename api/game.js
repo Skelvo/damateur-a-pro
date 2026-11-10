@@ -894,6 +894,7 @@ const ACTIONS = {
     // un logo image posé par les organisateurs est conservé quand la guilde change son emblème
     const prevE = ((await s.query(`select emblem from leagues where code = $1`, [code]))[0] || {}).emblem;
     if (prevE && typeof prevE.img === "string" && GIMG.test(prevE.img)) emblem.img = prevE.img;
+    if (prevE && typeof prevE.lg === "string" && /^\d{1,15}\.\d{1,6}$/.test(prevE.lg)) emblem.lg = prevE.lg;
     const access = ["open", "request", "private"].includes(b.access) ? b.access : "private";
     const name = cleanName(b.name, 24), motto = cleanName(b.motto, 60);
     if ((name && await badName(s, name)) || isBad(motto)) throw fail(400, "name_bad");
@@ -1209,6 +1210,23 @@ const ACTIONS = {
     return { ok: !!r[0], players: r };
   },
   // mode testeur : tout le style débloqué pour un joueur (organisateurs seulement)
+  // logo de la guilde envoyé depuis le téléphone (chef ou adjoint) ; null le retire
+  async guild_logo(s, b) {
+    const p = await me(s, b.token);
+    const code = cleanName(b.code, 8).toUpperCase(), role = await guildRole(s, code, p.id);
+    if (role !== "chef" && role !== "adjoint") throw fail(403, "not_allowed");
+    if (b.img == null) {
+      const r = await s.query(`update leagues set logo = null, emblem = coalesce(emblem, '{}'::jsonb) - 'lg' - 'img' where code = $1 returning emblem`, [code]);
+      return { ok: true, emblem: r[0] && r[0].emblem };
+    }
+    const img = String(b.img);
+    if (!/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(img) || img.length > 220000) throw fail(400, "image");
+    const cur = (await s.query(`select gid, emblem from leagues where code = $1`, [code]))[0];
+    if (!cur) throw fail(404, "none");
+    const v = ((cur.emblem && String(cur.emblem.lg || "").split(".")[1]) | 0) + 1, lg = `${cur.gid}.${v}`;
+    const r = await s.query(`update leagues set logo = $2, emblem = (coalesce(emblem, '{}'::jsonb) - 'img') || jsonb_build_object('lg', $3::text) where code = $1 returning emblem`, [code, img, lg]);
+    return { ok: true, emblem: r[0].emblem };
+  },
   async admin_guild_img(s, b) {
     admin(b);
     const img = String(b.img || "");
@@ -2106,6 +2124,17 @@ export default async function handler(req, res) {
         res.setHeader("Content-Type", "image/jpeg");
         res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
         return res.status(200).end(buf);
+      } catch (e) { return res.status(500).json({ error: "server" }); }
+    }
+    if (q.glogo) {
+      try {
+        const s = await db();
+        const r = (await s.query(`select logo from leagues where gid = $1`, [String(int(q.glogo, 0, 1e15))]))[0];
+        if (!r || !r.logo) return res.status(404).json({ error: "none" });
+        const m = /^data:(image\/(?:png|jpeg));base64,/.exec(r.logo);
+        res.setHeader("Content-Type", m ? m[1] : "image/png");
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        return res.status(200).end(Buffer.from(r.logo.slice(r.logo.indexOf(",") + 1), "base64"));
       } catch (e) { return res.status(500).json({ error: "server" }); }
     }
     // équipes d'un championnat (équipe de cœur) : ESPN ne permet plus de les lire depuis le navigateur

@@ -1,5 +1,5 @@
 // Service worker : réseau d'abord (toujours revérifié auprès du serveur), cache en secours hors ligne.
-const C="dap-v64",IMG="dap-img-1",SHELL=["./","index.html","manifest.webmanifest","icon-192.png","icon-180.png","icon-512.png","logo-tribune.png","engine.js","app.js","app.css"];
+const C="dap-v65",IMG="dap-img-1",SHELL=["./","index.html","manifest.webmanifest","icon-192.png","icon-180.png","icon-512.png","logo-tribune.png","engine.js","app.js","app.css"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C&&x!==IMG).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
 // logos des équipes, drapeaux et photos de profil : gardés sur le téléphone (plus rapide, moins de données), 500 au plus
@@ -9,7 +9,7 @@ function imgFetch(e,u){return caches.open(IMG).then(async c=>{const hit=await c.
   const same=u.origin===location.origin;let r;try{r=await fetch(same?e.request:new Request(e.request.url,{mode:"cors",credentials:"omit"}))}catch(x){return fetch(e.request)}
   if(r&&r.ok&&r.type!=="opaque"){c.put(e.request.url,r.clone());if(++imgPuts%25===0)trimImg(c)}return r})}
 self.addEventListener("fetch",e=>{const u=new URL(e.request.url);if(e.request.method!=="GET")return;
-  if(e.request.destination==="image"&&(/(^|\.)espncdn\.com$/.test(u.hostname)||(u.origin===location.origin&&(u.pathname.startsWith("/logos/")||(u.pathname.includes("/api/")&&u.searchParams.has("avatar")&&u.searchParams.has("v")))))){e.respondWith(imgFetch(e,u));return}
+  if(e.request.destination==="image"&&(/(^|\.)espncdn\.com$/.test(u.hostname)||(u.origin===location.origin&&(u.pathname.startsWith("/logos/")||u.pathname.startsWith("/g/")||(u.pathname.includes("/api/")&&(u.searchParams.has("avatar")||u.searchParams.has("glogo"))&&u.searchParams.has("v")))))){e.respondWith(imgFetch(e,u));return}
   if(u.origin!==location.origin||u.pathname.includes("/api/"))return;
   const fresh=e.request.mode==="navigate"||/\.(html|txt|webmanifest)$/.test(u.pathname)||u.pathname.endsWith("/");
   const net=fetch(e.request,fresh?{cache:"no-cache"}:undefined).then(r=>{if(r.ok&&!u.pathname.endsWith("version.txt")){const cp=r.clone();caches.open(C).then(c=>c.put(e.request,cp))}return r});

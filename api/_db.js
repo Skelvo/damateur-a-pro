@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "35";
+const SCHEMA_VERSION = "36";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -262,6 +262,7 @@ const STATEMENTS = [
   `alter table leagues add column if not exists bl int not null default 0`,
   `alter table leagues add column if not exists bd int not null default 0`,
   `alter table leagues add column if not exists champ boolean not null default true`,
+  `alter table leagues add column if not exists logo text`,
   `create table if not exists battles (
      id bigserial primary key,
      kind text not null,
