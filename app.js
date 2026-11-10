@@ -1307,14 +1307,17 @@ async function shareTicket(id){const b=S.bets.find(x=>x.id===id);if(!b)return;to
 // lien de parrainage : on garde le code jusqu'à la création du compte
 function refFromLink(){const c=new URLSearchParams(location.search).get("parrain");if(!c)return;const code=c.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,8);
   const q=new URLSearchParams(location.search);q.delete("parrain");history.replaceState(null,"",location.pathname+(q.toString()?"?"+q:""));
-  try{localStorage.setItem("dap.ref",code)}catch(e){}}
-const refStored=()=>{try{return localStorage.getItem("dap.ref")||""}catch(e){return""}};
+  keepTmp("dap.ref",code)}
+// valeurs gardées le temps d'installer l'appli (ticket partagé, parrainage), puis oubliées : sinon Safari les remontrait à chaque visite
+function keepTmp(k,v){try{localStorage.setItem(k,v+"|"+Date.now())}catch(e){}}
+function getTmp(k,min){try{const raw=localStorage.getItem(k);if(!raw)return"";const[v,t]=raw.split("|");if(!t||Date.now()-Number(t)>min*6e4){localStorage.removeItem(k);return""}return v}catch(e){return""}}
+const refStored=()=>getTmp("dap.ref",24*60);
 function pariFromLink(){const c=new URLSearchParams(location.search).get("pari");if(!c)return;history.replaceState(null,"",location.pathname);
-  try{localStorage.setItem("dap.pari",c.toUpperCase().slice(0,10))}catch(e){}}
+  keepTmp("dap.pari",c.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,10));U.pariNow=1}
 let ptAt=0;async function pendingTicket(){if(!S.tok||GATE||Date.now()-ptAt<4000||(U.open&&U.open!=="slip"))return;ptAt=Date.now();
   try{const j=await api("pending_ticket",{});if(j.code)openShared(j.code)}catch(e){}}
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&S.name)setTimeout(pendingTicket,700)});
-function pariPending(){let c=null;try{c=localStorage.getItem("dap.pari")}catch(e){}if(!c||!S.name)return;try{localStorage.removeItem("dap.pari")}catch(e){}openShared(c)}
+function pariPending(){const c=getTmp("dap.pari",30);if(!c||!S.name)return;try{localStorage.removeItem("dap.pari")}catch(e){}openShared(c)}
 async function openShared(code){U.open="shared";U.shared=null;const head=`<div class="grab"><h3>Ticket partagé</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
   layerLater(head+`<div class="skel" style="height:220px"></div>`);
   try{const j=await api("shared_bet",{code});U.shared=j;if(U.open==="shared")layer(head+viewShared(j))}
@@ -2488,7 +2491,7 @@ function installBanner(){if(STANDALONE||!(IOS||ANDROID))return"";let x=0;try{x=+
 const SHARE_IOS=`<svg class="i" viewBox="0 0 24 24" style="color:#5fa8ff"><path d="M12 15V3M7.5 7.5L12 3l4.5 4.5"/><path d="M6 10.5H5a1 1 0 0 0-1 1V20a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8.5a1 1 0 0 0-1-1h-1"/></svg>`;
 const ADD_IOS=`<svg class="i" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/></svg>`;
 // lien complet à rouvrir dans Safari / Chrome (on garde le parrainage et le ticket partagé : le navigateur intégré d'Instagram ne partage rien avec Safari)
-function shareableUrl(){const q=new URLSearchParams();const r=refStored();if(r)q.set("parrain",r);let pc=null;try{pc=localStorage.getItem("dap.pari")}catch(e){}if(pc)q.set("pari",pc);
+function shareableUrl(){const q=new URLSearchParams();const r=refStored();if(r)q.set("parrain",r);const pc=U.pariNow?getTmp("dap.pari",30):"";if(pc)q.set("pari",pc);
   const lg=new URLSearchParams(location.search).get("guilde");if(lg)q.set("guilde",lg);return location.origin+location.pathname+(q.toString()?"?"+q:"")}
 const INAPP_NAME=/Instagram/i.test(UA)?"Instagram":/FBAN|FBAV|FB_IAB/i.test(UA)?"Facebook":/Snapchat/i.test(UA)?"Snapchat":/TikTok|musical_ly|Bytedance/i.test(UA)?"TikTok":/LinkedInApp/i.test(UA)?"LinkedIn":/Line\//i.test(UA)?"Line":/GSA\//i.test(UA)?"Google":"";
 function viewInstall(gate){const head=gate?"":`<div class="grab"><h3>Installer l’app</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
@@ -2521,7 +2524,7 @@ async function installPrompt(){if(!installEvt)return;installEvt.prompt();const r
 // Sur téléphone, le jeu ne s'utilise que depuis l'app installée (écran d'accueil) : dans un navigateur,
 // on n'affiche que la marche à suivre (et le code de transfert pour ceux qui jouaient déjà ici).
 const GATE=!STANDALONE&&!matchMedia("(display-mode: fullscreen), (display-mode: minimal-ui)").matches&&(IOS||ANDROID);
-function renderGate(){const lg=new URLSearchParams(location.search).get("guilde");let pc=null;try{pc=localStorage.getItem("dap.pari")}catch(e){}const rc=refStored();
+function renderGate(){const lg=new URLSearchParams(location.search).get("guilde");const pc=U.pariNow?getTmp("dap.pari",30):"";const rc=refStored();
   if(rc)setTimeout(async()=>{try{const j=await api("ref_info",{code:rc,mark:1});const box=$("#gref");if(box&&j.name)box.innerHTML=`<div class="refban">🎁 <span><b>${esc(j.name)} t’invite sur Tribune !</b><br>Installe l’app ci-dessous et crée ton compte : <b>+${tok(j.gets)} jetons de bienvenue</b> en plus des 1 000 de départ.</span></div>`}catch(e){}},30);
   if(pc)setTimeout(async()=>{try{const j=await api("shared_bet",{code:pc,mark:1});const box=$("#gpari");if(box)box.innerHTML=`<div class="gptk"><b>🎟️ Ticket de ${esc(j.name)}</b><small>${j.legs.length>1?"Combiné de "+j.legs.length:"Pari simple"} · cote ${fr(j.odds)}</small>
     ${j.legs.map(L=>`<div class="gpl"><span>${esc(L.l)}</span><b>${fr(L.o)}</b></div>`).join("")}</div>
@@ -2564,7 +2567,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.28";
+const VERSION="2.29";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -2583,7 +2586,7 @@ async function boot(){if(GATE||!S.name){hideSplash();setTimeout(afterBoot,300);r
       if(L0)await Promise.allSettled([loadProno(),loadLm(U.lg.code||L0.code)])})()])})()];
   await Promise.race([Promise.allSettled(jobs),new Promise(r=>setTimeout(r,6500))]);
   clearInterval(mt);U.lg.loading=false;render();hideSplash();setTimeout(afterBoot,400)}
-refFromLink();pariFromLink();
+refFromLink();pariFromLink();getTmp("dap.pari",30);getTmp("dap.ref",24*60);
 // coincé dans le navigateur d'Instagram, Facebook… : on tente tout de suite de rouvrir le lien dans Safari ou Chrome (une seule fois)
 // flèche vers le menu ••• d'Instagram / Facebook (seul moyen fiable de sortir sur iPhone)
 function inAppArrow(){if(!GATE||!INAPP_NAME||document.querySelector(".iaarrow"))return;if(!(IOS&&!IOS_SAFARI)&&!(ANDROID&&INAPP))return;
