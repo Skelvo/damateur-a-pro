@@ -441,6 +441,7 @@ function viewCareer(){const LV=myLv();
     <div class="prog"><div class="l"><span>${tok(LV.cur)} / ${tok(LV.need)} XP</span><span>${LV.next?esc(LV.next[2]+" "+LV.next[0])+" au niveau "+LV.next[1]:"Niveau "+(LV.lvl+1)}</span></div><div class="t"><i style="width:${LV.pct*100}%"></i></div></div></div>
   <div class="ckpi"><div><small>Jetons</small><b>${tok(S.bal)}</b></div><div><small>Réussite</small><b>${rate} %</b></div><div><small>Série</small><b>${streak}${streak>=3?" 🔥":""}</b></div><div><small>Plus gros gain</small><b class="pos">${best?"+"+tok(Math.round(best)):"—"}</b></div></div>
   ${palmares({id:S.pid,pal:U.mePal,best:{odds:W.reduce((a,b)=>Math.max(a,b.odds),0),pay:best}})}
+  <button class="cstyle ccard" data-act="mycard"><span class="csw cardsw">🃏</span><span><b>Ma carte de joueur</b><small>Ta note sur 99 et tes 6 stats, à partager</small></span><span class="arr">›</span></button>
   <button class="cstyle" data-act="style"><span class="csw bnr bn-${(S.cos&&S.cos.b)||"b1"}"></span><span><b>🎨 Mon style</b><small>Bannière, couleur du pseudo, titre : débloque-les en jouant</small></span><span class="arr">›</span></button>
   <button class="csucc" data-act="succ"><span><b>🏅 Succès</b><small>${SC.length} / ${SUCC.length} débloqués</small></span><span class="csi">${SUCC.filter(s=>SC.includes(s[0])).slice(-5).map(s=>ic(s[1])).join("")}</span><span class="arr">›</span></button>
   <div class="ctiles"><button data-act="stats">📊<b>Mes stats</b><small>Par sport, par pari, par mois</small></button><button data-act="mshare">📤<b>Mon mois</b><small>Bilan en image</small></button>
@@ -694,6 +695,9 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"mshare":shareMonth();break;
     case"follow":followShared();break;
     case"style":openStyle();break;
+    case"mycard":openCard({id:S.pid,name:S.name,av:S.avv,me:true,bets:S.bets,xp:S.xp,cos:S.cos});break;
+    case"pcard":if(U.prof)openCard(U.prof);break;
+    case"cardshare":shareCard();break;
     case"sttab":U.cosTab=d.v;styleRender(true);break;
     case"stpick":{const x=d.v,ty=x.startsWith("tm:")?"t":x[0];if(!U.cosD.unlocked.includes(x)){const c=COS.find(y=>y[0]===x);toast("🔒 "+(c?c[4]:"Pas encore débloqué"));break}U.cosEdit[ty]=x;styleRender();if(ty==="v")winFx(x);break}
     case"stsave":saveStyle();break;
@@ -874,8 +878,9 @@ function viewLeagues(){const L=U.lg,d=L.data;
   h+=`<div class="lgchips"><button data-act="lgsel" data-code="" aria-pressed="${!L.code}">${ic("fire")} Général</button>${d.leagues.map(l=>`<button data-act="lgsel" data-code="${esc(l.code)}" aria-pressed="${L.code===l.code}">${emb(l,"sm")}${esc(l.name)}</button>`).join("")}</div>`;
   const cur=d.leagues.find(l=>l.code===L.code);
   if(cur){const R=cur.mine?"chef":cur.role==="officer"?"adjoint":"membre",boss=R!=="membre";
-    h+=`<div class="lgcard gcomp" style="--gc:${esc((cur.emblem&&cur.emblem.c)||"#35d07f")}"><div class="gtop">${emb(cur,"lg")}<div class="gti"><h3>${esc(cur.name)}</h3>
-    ${cur.motto?`<em class="gmotto">« ${esc(cur.motto)} »</em>`:""}<small><button class="link" data-act="gmem">${cur.n} membre${cur.n>1?"s":""}</button> · tu es ${R}</small></div>
+    const gdv=cur.elo>=1200?"Diamant":cur.elo>=1150?"Platine":cur.elo>=1100?"Or":cur.elo>=1050?"Argent":"Bronze";
+    h+=`<div class="lgcard gcomp gd-${gdv}" style="--gc:${esc((cur.emblem&&cur.emblem.c)||"#35d07f")}"><div class="gtop">${emb(cur,"lg")}<div class="gti"><h3>${esc(cur.name)}</h3>
+    ${cur.motto?`<em class="gmotto">« ${esc(cur.motto)} »</em>`:""}<small><button class="link" data-act="gmem">${cur.n} membre${cur.n>1?"s":""}</button> · tu es ${R}</small>${gdv!=="Bronze"?`<span class="gdvb">${{Argent:"🥈",Or:"🥇",Platine:"💠",Diamant:"💎"}[gdv]} Guilde ${gdv}</span>`:""}</div>
     <button class="btn gold gsm" data-act="lginv" aria-label="Inviter">${ic("share")}</button><button class="gdots" data-act="gmenu" aria-label="Menu de la guilde">•••${boss&&cur.nreq?`<i class="tdd"></i>`:""}</button></div></div>`}
   else h+=`<div class="lgcard"><h3>Classement général</h3><small>Tous les joueurs${d.rank?` · tu es <b style="color:var(--sel)">${d.rank}<sup>e</sup></b> sur ${d.total}`:""}</small></div>`;
   if(cur&&d.last)h+=`<div class="champ">${ic("trophy")}<div><small>Vainqueur${d.last.winners.length>1?"s":""} de la semaine dernière</small><b>${d.last.winners.map(w=>esc(w.name)+` <span class="pos">+${tok(w.gain)}</span>`).join(" · ")}</b></div></div>`;
@@ -1027,7 +1032,7 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout
 const nameH=(name,cos)=>{const e=cos&&cos.e&&cosEmoji(cos.e);return`<span class="${cos&&cos.c&&cos.c!=="c0"?"nc-"+cos.c:""}">${esc(name)}</span>${e?`<span class="nemo e-${cos.e}">${e}</span>`:""}`};
 const frC=cos=>cos&&cos.f&&cos.f!=="f0"?" fr-"+cos.f:"";
 // effet quand un de mes paris passe
-const WFX={v10:["🪶","🪶","🪶"],v1:["⚽"],v2:["🎈","🎈","🎉"],v3:["🎆","🎇","✨"],v4:["🪙","🪙","💰"],v5:["⚡","⚡","🌩️"],v6:["👑","✨"],v7:["💸","💵","💶"],v8:["🔥","🔥","💥"],v9:["🌱","🌸","🌼"]};
+const WFX={v11:["❄️","❄️","❅","❆"],v10:["🪶","🪶","🪶"],v1:["⚽"],v2:["🎈","🎈","🎉"],v3:["🎆","🎇","✨"],v4:["🪙","🪙","💰"],v5:["⚡","⚡","🌩️"],v6:["👑","✨"],v7:["💸","💵","💶"],v8:["🔥","🔥","💥"],v9:["🌱","🌸","🌼"]};
 function winFx(v){v=v||(S.cos&&S.cos.v);if(!v||v==="v0"||!WFX[v]){confetti();return}if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;
   const c=document.createElement("div");c.className="erain";const E=WFX[v],up=v==="v2";
   for(let i=0;i<38;i++){const p=document.createElement("i");p.textContent=E[i%E.length];p.style.left=Math.random()*100+"%";p.style.fontSize=(22+Math.random()*22)+"px";
@@ -1054,7 +1059,7 @@ function viewStyle(){const j=U.cosD,E=U.cosEdit,un=new Set(j.unlocked),T=U.cosTa
   <div class="sttabs">${[["b","🖼️ Bannières"],["c","🎨 Couleurs"],["t","🏷️ Titres"],["y","✨ Style du titre"],["f","⭕ Cadres"],["e","😎 Emojis"],["v","🎉 Victoire"]].map(([k,n])=>`<button data-act="sttab" data-v="${k}" aria-pressed="${T===k}">${n}<small>${cnt(k)}</small></button>`).join("")}</div>
   ${T==="v"?`<p class="note" style="text-align:left">L’animation qui se lance quand un de tes paris passe. Touche un effet débloqué pour le voir.</p>`:T==="y"?`<p class="note" style="text-align:left">La couleur de ton titre (choisis aussi un titre dans 🏷️ Titres).</p>`:""}
   <div class="stgrid ${T}">${items.map(x=>`<button class="sti${x.ok?"":" lock"}${E[T]===x.id?" on":""}" data-act="stpick" data-v="${esc(x.id)}" ${x.ok?"":"aria-disabled=\"true\""}>
-    ${T==="b"?`<span class="stsw bnr bn-${x.id}"></span>`:T==="c"?`<span class="stc nc-${x.id}">Aa</span>`:T==="f"?avatar(S.pid||"me",S.name||"?",S.avv,"av stav"+(x.id!=="f0"?" fr-"+x.id:""),true):T==="e"?`<span class="ste${x.sec?" raven":""}">${x.id==="e0"?"∅":esc(x.n.split(" ")[0])}</span>`:T==="v"?`<span class="ste${x.sec?" raven":""}">${x.id==="v0"?"🎊":esc(x.n.split(" ")[0])}</span>`:T==="y"?`<span class="ttl${x.id!=="y0"?" ty-"+x.id:""}">${esc(cosTitle(E.t&&E.t!=="t0"?E.t:"t2"))}</span>`:""}${x.sec?`<span class="stsec">🐦‍⬛ Exclusif</span>`:""}<b>${esc(T==="e"&&x.id!=="e0"?x.n.split(" ").slice(1).join(" "):T==="v"&&x.id!=="v0"?x.n.split(" ").slice(1).join(" "):x.n)}</b>${x.ok?"":`<small>🔒 ${esc(x.d)}</small>`}</button>`).join("")}</div>
+    ${T==="b"?`<span class="stsw bnr bn-${x.id}"></span>`:T==="c"?`<span class="stc nc-${x.id}">Aa</span>`:T==="f"?avatar(S.pid||"me",S.name||"?",S.avv,"av stav"+(x.id!=="f0"?" fr-"+x.id:""),true):T==="e"?`<span class="ste${x.sec?" raven":""}">${x.id==="e0"?"∅":esc(x.n.split(" ")[0])}</span>`:T==="v"?`<span class="ste${x.sec?" raven":""}">${x.id==="v0"?"🎊":esc(x.n.split(" ")[0])}</span>`:T==="y"?`<span class="ttl${x.id!=="y0"?" ty-"+x.id:""}">${esc(cosTitle(E.t&&E.t!=="t0"?E.t:"t2"))}</span>`:""}${x.sec?`<span class="stsec">🐦‍⬛ Exclusif</span>`:""}${COS_SEASON[(COS.find(y=>y[0]===x.id)||[])[3]]?`<span class="stsea">${COS_SEASON[COS.find(y=>y[0]===x.id)[3]]}</span>`:""}<b>${esc(T==="e"&&x.id!=="e0"?x.n.split(" ").slice(1).join(" "):T==="v"&&x.id!=="v0"?x.n.split(" ").slice(1).join(" "):x.n)}</b>${x.ok?"":`<small>🔒 ${esc(x.d)}</small>`}</button>`).join("")}</div>
   <button class="btn gold wide" data-act="stsave" style="margin-top:12px">Enregistrer mon style</button>
   <p class="note">Ton style se voit sur ton profil, dans les classements et dans le chat. Tout se débloque en jouant : rien ne s’achète.</p>`}
 // réaffiche l'éditeur sans perdre la position des onglets ni de la liste
@@ -1063,6 +1068,58 @@ function styleRender(tab){const tl=$(".sttabs")?$(".sttabs").scrollLeft:0,sc=$("
   if(tab){const b=$(".sttabs [aria-pressed=true]");if(b&&T){const r=b.getBoundingClientRect(),R=T.getBoundingClientRect();if(r.left<R.left||r.right>R.right)T.scrollLeft+=r.left-R.left-16}}}
 async function saveStyle(){try{const j=await api("cos_set",{...U.cosEdit});if(j.error)throw j;S.cos=j.cos;saveLocal();closeLayer();confetti();toast("🎨 Style enregistré !","win");$("#main")._html=null;render();if(U.lg.data)loadBoards()}
   catch(e){toast("Impossible d’enregistrer pour l’instant.","bad")}}
+
+/* ---------- carte de joueur (façon carte de foot) : note sur 99 et 6 notes calculées sur les vrais paris ---------- */
+function cardStats(bets,xp){const D=bets.filter(b=>["won","lost","cashed"].includes(b.st)),W=D.filter(b=>b.st==="won");
+  const cl99=v=>Math.max(20,Math.min(99,Math.round(v))),lg=o=>Math.log2(Math.max(1.01,o||1.01)),avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
+  const rate=D.length?W.length/D.length*100:0,staked=D.reduce((a,b)=>a+b.stake,0),net=D.reduce((a,b)=>a+(b.st==="lost"?-b.stake:(b.pay||0)-b.stake),0);
+  const days=new Set(bets.filter(b=>b.at>Date.now()-30*DAY).map(b=>ymd(b.at))).size,L=levelOf(xp||0);
+  const S_={PRÉ:cl99(30+rate*.65),FLA:cl99(W.length?35+30*lg(avg(W.map(b=>+b.odds))):30),AUD:cl99(bets.length?30+25*lg(avg(bets.map(b=>+b.odds))):30),
+    GES:cl99(staked?50+net/staked*60:40),RÉG:cl99(30+days*2.3),EXP:cl99(30+L.lvl*.7)};
+  let note=cl99(S_.PRÉ*.2+S_.FLA*.15+S_.AUD*.1+S_.GES*.25+S_.RÉG*.1+S_.EXP*.2);if(D.length<5)note=Math.min(note,59);
+  const sp={};for(const b of bets)for(const x of b.legs)sp[x.sp]=(sp[x.sp]||0)+1;const main=Object.entries(sp).sort((a,b)=>b[1]-a[1])[0];
+  return{note,stats:S_,n:D.length,lvl:L.lvl,tier:L.tier,sport:main?{foot:"FOOT",rugby:"RUGBY",tennis:"TENNIS",basket:"NBA"}[main[0]]||"":""}}
+const CARD_T=[[90,"LÉGENDE",["#2a0d5c","#7a3cff","#ffd23f"],"#ffe680"],[80,"ÉLITE",["#0b1d3a","#123a6b","#d4a017"],"#ffd23f"],[70,"OR",["#7a5a00","#e0b02a","#fff1a8"],"#2a1d00"],
+  [60,"ARGENT",["#5f6b74","#c9d3dc","#f4f7f9"],"#1f262b"],[0,"BRONZE",["#5a3417","#b0753c","#e8b27a"],"#2a1608"]];
+async function playerCard(p){const C=cardStats(p.bets||[],p.xp),T=CARD_T.find(x=>C.note>=x[0]),W=720,H=1000,cv=document.createElement("canvas");cv.width=W;cv.height=H;const c=cv.getContext("2d");
+  try{await Promise.all([document.fonts.load('800 80px "Barlow Condensed"'),document.fonts.load('700 30px Barlow')])}catch(e){}
+  const dark=T[0]>=80,ink=T[3];
+  // forme de la carte
+  const shape=()=>{c.beginPath();c.moveTo(60,70);c.quadraticCurveTo(W/2,10,W-60,70);c.lineTo(W-40,H-200);c.quadraticCurveTo(W-40,H-120,W/2,H-40);c.quadraticCurveTo(40,H-120,40,H-200);c.closePath()};
+  c.fillStyle="#0a110f";c.fillRect(0,0,W,H);
+  c.save();shape();c.clip();let g=c.createLinearGradient(0,0,W,H);g.addColorStop(0,T[2][0]);g.addColorStop(.5,T[2][1]);g.addColorStop(1,T[2][2]);c.fillStyle=g;c.fillRect(0,0,W,H);
+  // reflets
+  c.globalAlpha=.18;c.fillStyle="#fff";for(let i=0;i<5;i++){c.beginPath();c.moveTo(-200+i*220,0);c.lineTo(-100+i*220,0);c.lineTo(100+i*220,H);c.lineTo(0+i*220,H);c.closePath();c.fill()}c.globalAlpha=1;
+  if(T[0]>=90){const r=c.createRadialGradient(W/2,380,20,W/2,380,420);r.addColorStop(0,"#ffd23f55");r.addColorStop(1,"transparent");c.fillStyle=r;c.fillRect(0,0,W,H)}
+  c.restore();c.save();shape();c.lineWidth=10;c.strokeStyle=dark?T[3]:"#ffffffaa";c.stroke();c.restore();
+  // note + sport
+  c.fillStyle=ink;c.textAlign="center";c.font='800 150px "Barlow Condensed"';c.fillText(String(C.note),170,250);
+  c.font='800 46px "Barlow Condensed"';c.fillText(C.sport||"MULTI",170,300);c.font='800 30px "Barlow Condensed"';c.fillText(T[1],170,342);
+  // photo
+  const ax=470,ay=230,ar=150;c.save();c.beginPath();c.arc(ax,ay,ar,0,Math.PI*2);c.closePath();c.fillStyle=avc(p.name||"?");c.fill();c.clip();
+  let img=null;try{const src=p.me&&S.avatar?S.avatar:p.av?avUrl(p.id,p.av):"";if(src)img=await loadImg(src)}catch(e){}
+  if(img)c.drawImage(img,ax-ar,ay-ar,ar*2,ar*2);else{c.fillStyle="#0b1310";c.font='800 170px "Barlow Condensed"';c.fillText((p.name||"?")[0].toUpperCase(),ax,ay+60)}
+  c.restore();c.beginPath();c.arc(ax,ay,ar,0,Math.PI*2);c.lineWidth=8;c.strokeStyle=ink+"cc";c.stroke();
+  // nom, titre, niveau
+  c.fillStyle=ink;c.font='800 80px "Barlow Condensed"';let nm=(p.name||"Joueur").toUpperCase();while(c.measureText(nm).width>W-140&&nm.length>3)nm=nm.slice(0,-1);c.fillText(nm,W/2,500);
+  c.fillRect(110,525,W-220,3);const tt=p.cos&&p.cos.t&&cosTitle(p.cos.t);c.font='700 30px Barlow';c.fillText(tt?tt:`${C.tier} · niveau ${C.lvl}`,W/2,570);
+  // 6 notes
+  const ks=Object.keys(C.stats);ks.forEach((k,i)=>{const col=i<3?0:1,row=i%3,x=col?W/2+60:150,y=650+row*78;c.textAlign="left";c.font='800 64px "Barlow Condensed"';c.fillText(String(C.stats[k]),x,y);c.font='700 36px "Barlow Condensed"';c.fillText(k,x+86,y)});
+  c.fillRect(W/2-2,600,4,200);
+  // bas : logo Tribune
+  const logo=await loadImg("logo-tribune.png?v=2");if(logo){const lw=120,lh=lw*logo.height/logo.width;c.globalAlpha=dark?1:.85;if(!dark){c.filter="brightness(0)"}c.drawImage(logo,W/2-lw/2,838,lw,lh);c.filter="none";c.globalAlpha=1}
+  c.textAlign="center";c.font='700 22px Barlow';c.fillText(C.n<5?"CARTE PROVISOIRE":`${C.n} PARIS`,W/2,940);
+  return{blob:await new Promise(ok=>cv.toBlob(ok,"image/png")),C,T}}
+async function openCard(p){U.open="card";const head=`<div class="grab"><h3>Carte de joueur</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
+  layerLater(head+`<div class="skel" style="height:420px"></div>`,200);
+  try{const{blob,C,T}=await playerCard(p);U.cardBlob=blob;U.cardName=p.name;const url=URL.createObjectURL(blob);if(U.open!=="card")return;
+    layer(head+`<div class="pcardimg"><img src="${url}" alt="Carte de ${esc(p.name)}"></div>
+    <p class="note">Note <b>${C.note}</b> (${T[1].toLowerCase()}) : précision, flair, audace, gestion, régularité et expérience, calculés sur les vrais paris.</p>
+    <button class="btn gold wide" data-act="cardshare">${ic("share")} Partager la carte</button>`)}
+  catch(e){if(U.open==="card")layer(head+`<div class="empty">${ic("info")}<b>Impossible de créer la carte</b>Réessaie dans un instant.</div>`)}}
+async function shareCard(){const b=U.cardBlob;if(!b)return;const file=new File([b],"carte-tribune.png",{type:"image/png"}),txt=`Ma carte de joueur sur Tribune 🃏 ${APP_URL}`;
+  if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],text:txt})}catch(e){}return}
+  const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="carte-tribune.png";document.body.appendChild(a);a.click();a.remove();toast("Carte enregistrée.","win")}
 
 /* ---------- week-ends spéciaux (thème automatique, à tour de rôle) ---------- */
 const WE=()=>weekendOf(today());
@@ -1076,15 +1133,27 @@ async function claimGifts(){if(!S.tok||Date.now()-gfAt<6e4)return;gfAt=Date.now(
 /* ---------- ticket à partager (image) ---------- */
 const imgP={};function loadImg(src){return imgP[src]||(imgP[src]=new Promise(ok=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>ok(null);i.src=src}))}
 function wrapTxt(c,t,max){const w=String(t).split(" "),L=[];let cur="";for(const x of w){const n=cur?cur+" "+x:x;if(c.measureText(n).width>max&&cur){L.push(cur);cur=x}else cur=n}if(cur)L.push(cur);return L}
+// couleurs de fond des images partagées selon la bannière du joueur
+const BN_COL={b1:["#0b2a17","#06140b","rgba(53,208,127,.4)","rgba(36,128,63,.4)"],b2:["#0c1d3d","#050b18","rgba(255,255,255,.18)","rgba(95,168,255,.25)"],
+  b3:["#3a0800","#120300","rgba(255,122,26,.45)","rgba(255,43,43,.35)"],b4:["#14082a","#07040f","rgba(255,43,214,.35)","rgba(0,229,255,.3)"],
+  b5:["#120a2e","#05030f","rgba(107,47,214,.5)","rgba(31,143,255,.4)"],b6:["#2a1a00","#0c0716","rgba(255,210,63,.45)","rgba(122,60,255,.45)"],
+  b7:["#3a2a00","#120c00","rgba(255,210,63,.5)","rgba(255,230,128,.3)"],b8:["#2a3036","#0e1114","rgba(215,222,227,.35)","rgba(139,151,160,.3)"],
+  b9:["#1b1032","#08051a","rgba(122,60,255,.45)","rgba(255,255,255,.15)"],b10:["#1e0909","#0a0303","rgba(255,59,59,.4)","rgba(255,59,59,.2)"],
+  b11:["#0f3d1d","#051208","rgba(124,242,138,.4)","rgba(31,122,52,.4)"],b12:["#3d2a00","#120c00","rgba(255,210,63,.5)","rgba(255,210,63,.3)"],
+  b13:["#2a0610","#06102a","rgba(179,18,43,.5)","rgba(18,64,179,.5)"],b14:["#2a1407","#0c0603","rgba(143,71,25,.5)","rgba(255,122,69,.3)"],
+  b15:["#3a1a0a","#120804","rgba(199,91,43,.5)","rgba(255,255,255,.12)"],b16:["#3a2410","#120b04","rgba(196,139,71,.5)","rgba(255,210,63,.2)"],
+  b17:["#0e3b28","#05120c","rgba(53,208,127,.4)","rgba(255,210,63,.3)"],b18:["#1a1033","#050308","rgba(143,134,255,.4)","rgba(232,226,255,.2)"],
+  b19:["#0b1d3a","#050b18","rgba(255,255,255,.3)","rgba(255,90,95,.3)"]};
 async function ticketImage(b,link){
   const W=1080,legs=b.legs.slice(0,8),more=b.legs.length-legs.length,RH=128,tkH=110+legs.length*RH+(more?50:0)+60+190,H=Math.max(1350,560+tkH+230);
   const cv=document.createElement("canvas");cv.width=W;cv.height=H;const c=cv.getContext("2d");
   try{await Promise.all([document.fonts.load('800 80px "Barlow Condensed"'),document.fonts.load('700 30px Barlow'),document.fonts.load('500 30px Barlow')])}catch(e){}
   const st=["won","lost","cashed","void"].includes(b.st)?b.st:"open",SC={won:"#35d07f",lost:"#ff5a5f",cashed:"#ffd23f",void:"#9fb2a8",open:"#5fa8ff"}[st];
   // fond : nuit de match, projecteurs, lignes du terrain
-  let g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,"#04100a");g.addColorStop(1,"#0a2216");c.fillStyle=g;c.fillRect(0,0,W,H);
+  const BC=BN_COL[S.cos&&S.cos.b]||["#04100a","#0a2216","rgba(53,208,127,.35)","rgba(255,210,63,.22)"];
+  let g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,BC[0]);g.addColorStop(1,BC[1]);c.fillStyle=g;c.fillRect(0,0,W,H);
   const glow=(x,y,r,col)=>{const r2=c.createRadialGradient(x,y,0,x,y,r);r2.addColorStop(0,col);r2.addColorStop(1,"rgba(0,0,0,0)");c.fillStyle=r2;c.fillRect(0,0,W,H)};
-  glow(120,-40,700,"rgba(53,208,127,.35)");glow(W-80,-60,650,"rgba(255,210,63,.22)");glow(W/2,H+120,800,SC+"33");
+  glow(120,-40,700,BC[2]);glow(W-80,-60,650,BC[3]);glow(W/2,H+120,800,SC+"33");
   c.save();c.globalAlpha=.07;c.fillStyle="#fff";for(const [x0,dir] of [[60,1],[W-60,-1]]){c.beginPath();c.moveTo(x0,-10);c.lineTo(x0+dir*620,H);c.lineTo(x0+dir*320,H);c.closePath();c.fill()}c.restore();
   c.save();c.strokeStyle="rgba(255,255,255,.05)";c.lineWidth=4;c.beginPath();c.arc(W/2,H-40,230,0,Math.PI*2);c.stroke();c.beginPath();c.moveTo(0,H-40);c.lineTo(W,H-40);c.stroke();c.restore();
   // en-tête : logo + joueur
@@ -1507,7 +1576,7 @@ async function openProfile(id){const me=U.lg.data&&String(id)===String(U.lg.data
     if(S.pid)api("profile",{id:S.pid}).then(r=>{if(U.open==="prof"){p.hist=r.hist;p.pal=r.pal;layer(viewProfile(p))}}).catch(()=>{});return}
   try{const p=await api("profile",{id});if(U.open==="prof")layer(viewProfile(p))}
   catch(e){if(U.open==="prof")layer(`<div class="grab"><h3>Profil</h3><button class="x" data-act="close">${ic("x")}</button></div><div class="empty">${ic("info")}<b>${e.code==="not_friend"?"Profil privé":"Pas de connexion"}</b>${e.code==="not_friend"?"Tu ne vois que les joueurs de tes guildes.":"Réessaie dans un instant."}</div>`)}}
-function viewProfile(p){const done=p.won+p.lost,rate=done?Math.round(p.won/done*100):0,B=p.bets||[],open=B.filter(b=>b.st==="open"),past=B.filter(b=>b.st!=="open").slice(0,12);
+function viewProfile(p){U.prof=p;const done=p.won+p.lost,rate=done?Math.round(p.won/done*100):0,B=p.bets||[],open=B.filter(b=>b.st==="open"),past=B.filter(b=>b.st!=="open").slice(0,12);
   const row=(U.lg.data&&U.lg.data.rows||[]).find(r=>String(r.id)===String(p.id)),tr=row?row.tr:0,sc=row?row.sc:0;
   const bet=b=>{const tag=b.st==="won"?`<span class="tag won">+${tok(b.pay)}</span>`:b.st==="lost"?`<span class="tag lost">Perdu</span>`:b.st==="void"?`<span class="tag void">Remboursé</span>`:b.st==="cashed"?`<span class="tag cashed">Encaissé +${tok(b.pay)}</span>`:`<span class="tag open">En cours</span>`;
     return`<div class="pbet"><div class="pbh"><b>${b.legs.length>1?"Combiné · "+b.legs.length:"Simple"}</b>${tag}</div>
@@ -1519,6 +1588,8 @@ function viewProfile(p){const done=p.won+p.lost,rate=done?Math.round(p.won/done*
     ${p.me?`<button class="link" data-act="photo">Changer ma photo</button>`:""}</div></div>
   <div class="pstats"><div><small>Jetons</small><b>${tok(p.bal)}</b></div><div><small>Record</small><b>${tok(p.peak)}</b></div><div><small>Réussite</small><b>${rate} %</b></div>
     <div><small>Gagnés</small><b class="pos">${p.won}</b></div><div><small>Meilleure cote</small><b>${p.best&&p.best.odds?fr(p.best.odds):"—"}</b></div><div><small>Plus gros gain</small><b class="pos">${p.best&&p.best.pay?"+"+tok(p.best.pay):"—"}</b></div></div>
+  <button class="btn wide pcardbtn" data-act="pcard">🃏 Voir la carte de joueur</button>
+  ${(()=>{const bw=(p.bets||[]).filter(b=>b.st==="won").sort((a,b)=>b.odds-a.odds)[0];return bw?`<div class="grp">🏆 Ticket record</div><div class="vitr"><div class="vth"><b>${bw.legs.length>1?"Combiné de "+bw.legs.length:"Pari simple"}</b><span>cote <b>${fr(+bw.odds)}</b> · <span class="pos">+${tok(bw.pay)}</span></span></div>${bw.legs.slice(0,5).map(L=>`<div class="vtl">✓ ${esc(L.l)} <small>${esc(L.ml||"")}</small></div>`).join("")}${bw.legs.length>5?`<div class="vtl"><small>+ ${bw.legs.length-5} autres</small></div>`:""}</div>`:""})()}
   ${curve(p.hist,p.bal)}
   ${palmares(p)}
   ${(p.badges||[]).length?`<div class="grp">Succès (${p.badges.length}/${SUCC.length})</div>${succGrid(p.badges)}`:""}
@@ -2356,7 +2427,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.96";
+const VERSION="1.97";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

@@ -551,13 +551,15 @@ async function cosFlags(s, pid) {
       exists (select 1 from leagues l where l.owner = p.id and l.bw > 0) as chief,
       coalesce((select sum(delta) from ledger where player = p.id and kind = 'prono'), 0)::int as prono,
       (select count(*)::int from ledger where player = p.id and kind = 'lm') as lm,
-      (select count(*)::int from bal_hist where player = p.id) as days
+      (select count(*)::int from bal_hist where player = p.id) as days,
+      exists (select 1 from bets x where x.player = p.id and ((extract(month from x.at at time zone 'Europe/Paris') = 12 and extract(day from x.at at time zone 'Europe/Paris') >= 15)
+        or (extract(month from x.at at time zone 'Europe/Paris') = 1 and extract(day from x.at at time zone 'Europe/Paris') <= 5))) as noel
     from players p where p.id = $1`, [pid]))[0];
   if (!r) return {};
   const badges = Array.isArray(r.badges) ? r.badges : [], grants = Object.fromEntries((Array.isArray(r.cos_grant) ? r.cos_grant : []).map((k) => [k, true]));
   return { ...grants, all: !!r.cos_all, lvl: EG.levelOf(r.xp).lvl, months: r.months || [], podium: r.podium, battles3: r.battles >= 3, odds10: r.odds10, wheel500: r.wheel500, jackpot: r.jackpot,
     duels5: r.duels >= 5, rugby10: r.rugby >= 10, tennis10: r.tennis >= 10, nba10: r.nba >= 10, pioneer: r.pioneer, streak5: badges.includes("s5"), draws5: r.draws >= 5,
-    combo4: r.combo4, chief: r.chief, prono20: r.prono >= 200, lm10: r.lm >= 10, days30: r.days >= 30, month1: (r.months || []).length > 0 };
+    combo4: r.combo4, chief: r.chief, prono20: r.prono >= 200, lm10: r.lm >= 10, days30: r.days >= 30, noel: r.noel, month1: (r.months || []).length > 0 };
 }
 
 // ---- Modération ----

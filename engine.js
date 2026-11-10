@@ -358,7 +358,13 @@ const COS=[
   ["b18","b","Nuit du Corbeau","corbeau","Style exclusif"],["c13","c","Plumage","corbeau","Style exclusif"],["t20","t","🪶 Le Corbeau","corbeau","Style exclusif"],
   ["t21","t","🔒 Message chiffré","corbeau","Style exclusif"],["y12","y","Corbeau","corbeau","Style exclusif"],["f13","f","Corbeau","corbeau","Style exclusif"],
   ["e17","e","🐦‍⬛ Corbeau","corbeau","Style exclusif"],["e18","e","🪶 Plume","corbeau","Style exclusif"],["v10","v","🐦‍⬛ Nuée de corbeaux","corbeau","Style exclusif"]];
-const COS_SECRET=["corbeau"];   // conditions « offertes » : les objets restent cachés tant qu'on ne les a pas
+COS.push(
+  // pack saisonnier « Noël » : pour tout le monde, à gagner en pariant pendant les fêtes (chaque année)
+  ["b19","b","Nuit de Noël","noel","Parier entre le 15 décembre et le 5 janvier"],["c14","c","Sucre d’orge","noel","Parier entre le 15 décembre et le 5 janvier"],
+  ["t22","t","🎅 Esprit de Noël","noel","Parier entre le 15 décembre et le 5 janvier"],["y13","y","Guirlande","noel","Parier entre le 15 décembre et le 5 janvier"],
+  ["f14","f","Sucre d’orge","noel","Parier entre le 15 décembre et le 5 janvier"],["e19","e","🎄 Sapin","noel","Parier entre le 15 décembre et le 5 janvier"],
+  ["e20","e","⛄ Bonhomme de neige","noel","Parier entre le 15 décembre et le 5 janvier"],["v11","v","❄️ Neige","noel","Parier entre le 15 décembre et le 5 janvier"]);
+const COS_SECRET=["corbeau"],COS_SEASON={noel:"🎄 Saisonnier"};   // conditions « offertes » : les objets restent cachés tant qu'on ne les a pas
 const cosEmoji=id=>{const x=COS.find(c=>c[0]===id&&c[1]==="e");return x&&id!=="e0"?x[2].split(" ")[0]:""};
 const MONTHS_FR=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 // objets débloqués à partir des drapeaux du serveur : {lvl, months:["2026-11",…], podium, battles, odds10, …, all}
@@ -367,5 +373,5 @@ function cosUnlocked(f){f=f||{};const ok=r=>!r||f.all||(r.startsWith("lv")?(f.lv
 function cosTitle(id){if(!id)return"";if(id.startsWith("tm:")){const m=id.slice(3);return"👑 Champion de "+(MONTHS_FR[+m.slice(5,7)-1]||m)+" "+m.slice(0,4)}const x=COS.find(c=>c[0]===id&&c[1]==="t");return x&&id!=="t0"?x[2]:""}
 function defisFor(day){const r=rng(hash("defis|"+day));return DEFIS.map(L=>L[Math.floor(r()*L.length)])}
 
-if(typeof globalThis!=="undefined")globalThis.ENGINE={COS,COS_SECRET,cosUnlocked,cosTitle,cosEmoji,TIERS,xpFor,levelOf,resMarket,marketInfo,mkOne,WEEKENDS,COMBO_BOOST,weekendOf,fr,strength,SP,SIM,MK,N,ALLSTATS,STATL,ESPN,MCC,MKC,ONE,cl,hash,rng,pois,binom,H,DAY,lvA,sims,simOne,tot,cmp3,avail,odd,mt,liveOK,canBet,liveSims,marketSims,markets,outcome,
+if(typeof globalThis!=="undefined")globalThis.ENGINE={COS,COS_SECRET,COS_SEASON,cosUnlocked,cosTitle,cosEmoji,TIERS,xpFor,levelOf,resMarket,marketInfo,mkOne,WEEKENDS,COMBO_BOOST,weekendOf,fr,strength,SP,SIM,MK,N,ALLSTATS,STATL,ESPN,MCC,MKC,ONE,cl,hash,rng,pois,binom,H,DAY,lvA,sims,simOne,tot,cmp3,avail,odd,mt,liveOK,canBet,liveSims,marketSims,markets,outcome,
   SOCSTAT,recStrength,amer,bookDiff,footProbs,TEAM_FR,frTeam,parseTeamEvent,parseTennis,status,realStats,PMK,legIdx,jointP,comboCalc,readLineup,applySummary,playerLegResult,legResultM,betResult,cashValueM,WHEEL,WP,JACKPOT,JACK_ODDS,EXTRA_DAY,DEFIS,DEFI_BONUS,defisFor,legsOf};
