@@ -194,6 +194,8 @@ async function recapFor(s, code) {
 
 // ---- Tâche du matin (Vercel Cron, chaque jour vers 8 h) : notifications du bilan (lundi) et de la saison (le 1er) ----
 async function morning(s) {
+  // règles : signalements et messages aux organisateurs gardés au plus un an
+  try { await s.query(`delete from reports where at < now() - interval '1 year'`); } catch (e) { console.error(e); }
   const t = (await s.query(`select extract(isodow from now() at time zone 'Europe/Paris')::int as dow,
       extract(day from now() at time zone 'Europe/Paris')::int as day, ${PREV_WEEK} as w, ${PREV_MONTH} as m`))[0];
   const once = async (key) => !!(await s.query(`insert into meta (key, value) values ($1, '1') on conflict do nothing returning key`, [key]))[0];

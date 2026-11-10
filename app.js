@@ -1467,9 +1467,9 @@ function openHelp(focus){U.open="help";layer(`<div class="grab"><h3>Comment ça 
   if(focus)setTimeout(()=>{const e=$("#hq-"+focus);if(e)e.scrollIntoView({block:"center"})},80)}
 
 /* ---------- règles du jeu, confidentialité, modération, suppression du compte ---------- */
-const TOS_V="2026-11";
+const TOS_V="2026-11b";
 function legalHTML(){return`<div class="legal">
-<p class="lgl-up">Version du 9 novembre 2026</p>
+<p class="lgl-up">Version du 10 novembre 2026</p>
 <h4>1. Le jeu</h4>
 <p>Tribune est un jeu <b>100 % gratuit</b> de pronostics sportifs, créé et géré par un particulier pour jouer entre amis, sans but commercial et sans publicité.</p>
 <p>Les <b>jetons sont fictifs</b> : ils n’ont aucune valeur, ne s’achètent pas, ne se vendent pas, ne s’échangent pas et ne se convertissent jamais en argent, en cadeau ou en avantage réel. Les récompenses (roue, défis, classements, combats de guildes…) sont uniquement des jetons fictifs. Tribune n’est donc pas un jeu d’argent : on ne mise jamais d’argent et on ne gagne rien de réel.</p>
@@ -1480,22 +1480,30 @@ function legalHTML(){return`<div class="legal">
 <h4>4. Bonne conduite</h4>
 <p>Pseudos, noms de guilde, devises et messages doivent rester corrects. Sont interdits : insultes, propos racistes, sexistes, homophobes ou haineux, harcèlement, contenus sexuels ou violents, publication d’informations personnelles sur quelqu’un, spam, triche (bugs exploités, plusieurs comptes pour gonfler un classement).</p>
 <p><b>Modération automatique</b> : les mots grossiers ou haineux sont refusés dans les noms et masqués dans le chat. Chacun peut <b>signaler</b> un message, un pseudo ou une guilde et <b>bloquer</b> un joueur. Un message signalé par plusieurs membres est masqué ; un pseudo ou un nom de guilde signalé par trois joueurs différents est remplacé. Le chef et les adjoints d’une guilde peuvent supprimer les messages de leur chat et exclure un membre. En cas d’abus grave, un compte peut être supprimé.</p>
+<p><b>Images</b> : tu dois avoir le droit d’utiliser les images que tu mets dans l’appli (photo de profil, logo de guilde). Pas de photo de quelqu’un sans son accord, pas de logo d’entreprise ou de marque sans l’accord de son propriétaire. Une image déplacée peut être signalée ; elle est retirée automatiquement après plusieurs signalements, ou par les organisateurs.</p>
 <h4>5. Ton compte</h4>
 <p>Pas d’e-mail ni de mot de passe : ton compte est lié à ton téléphone et à ton <b>code de compte</b>. Garde-le pour toi : quiconque l’a peut récupérer ton compte. Tu peux supprimer ton compte à tout moment dans Carrière › Supprimer mon compte.</p>
 <h4>6. Données personnelles</h4>
-<p><b>Ce qui est enregistré</b> : ton pseudo, ta photo de profil si tu en mets une, tes jetons, tes paris et tes statistiques, tes guildes, tes messages de chat, tes pronostics et duels, ton équipe de cœur, ta date d’acceptation de ces règles, et, si tu les actives, l’adresse technique de tes notifications. Pour limiter les abus, une empreinte de ton adresse IP est utilisée, brouillée et changée chaque jour : elle ne permet pas de te retrouver.</p>
-<p><b>Ce qui n’est pas enregistré</b> : ni nom réel, ni e-mail, ni téléphone, ni position, ni contacts. Aucun traceur publicitaire, aucune revente, aucun partage commercial. Ton téléphone garde une copie de ta partie (stockage local), nécessaire au jeu ; il n’y a pas de cookie publicitaire.</p>
+<p><b>Responsable</b> : l’organisateur de Tribune (un particulier), joignable à <a href="mailto:contact.tribuneps@gmail.com" style="color:var(--acc)">contact.tribuneps@gmail.com</a>.</p>
+<p><b>Ce qui est enregistré</b> : ton pseudo, ta photo de profil si tu en mets une, ton style et les réglages de ta carte de joueur, tes jetons, tes paris et tes statistiques, tes guildes (et leur logo si un chef ou un adjoint en met un), tes messages de chat, tes pronostics et duels, ton équipe de cœur, ta date d’acceptation de ces règles, et, si tu les actives, l’adresse technique de tes notifications. Pour limiter les abus, une empreinte de ton adresse IP est utilisée, brouillée et changée chaque jour : elle ne permet pas de te retrouver.</p>
+<p><b>Ce qui n’est pas enregistré</b> : ni nom réel, ni e-mail (sauf si tu nous écris toi-même par e-mail), ni téléphone, ni position, ni contacts. Aucun traceur publicitaire, aucune revente, aucun partage commercial. Ton téléphone garde une copie de ta partie (stockage local), nécessaire au jeu ; il n’y a pas de cookie publicitaire.</p>
 <p><b>Pourquoi</b> : faire fonctionner le jeu (base légale : l’exécution du service que tu utilises) et le protéger des abus (intérêt légitime).</p>
-<p><b>Qui les voit</b> : les joueurs voient ton pseudo, ta photo et tes résultats dans les classements ; les membres de tes guildes voient aussi tes paris, ton profil et tes messages. Les données sont hébergées par des prestataires techniques : Vercel (site et serveur) et Neon (base de données), qui peuvent se trouver hors de l’Union européenne avec les garanties prévues par le RGPD. Les notifications passent par le service de ton téléphone (Apple, Google ou Mozilla).</p>
-<p><b>Combien de temps</b> : tant que ton compte existe. Quand tu le supprimes, tout est effacé tout de suite (paris, messages, photo, guildes dont tu étais le seul membre…) ; seuls les signalements et messages envoyés aux organisateurs sont gardés au plus un an, sans lien avec ton compte.</p>
+<p><b>Qui les voit</b> : les joueurs voient ton pseudo, ta photo et tes résultats dans les classements ; les membres de tes guildes voient aussi tes paris, ton profil et tes messages. Les données sont hébergées par des prestataires techniques : Vercel (site et serveur) et Neon (base de données), qui peuvent se trouver hors de l’Union européenne avec les garanties prévues par le RGPD. Les notifications passent par le service de ton téléphone (Apple, Google ou Mozilla). Les messages envoyés avec « Nous écrire » (avec ton pseudo) sont transmis par Resend (service d’envoi d’e-mails) vers la boîte de contact des organisateurs, hébergée par Google (Gmail).</p>
+<p><b>Combien de temps</b> : tant que ton compte existe. Quand tu le supprimes, tout est effacé tout de suite (paris, messages, photo, guildes dont tu étais le seul membre…) ; seuls les signalements et les messages envoyés aux organisateurs (formulaire ou e-mail) sont gardés au plus un an, puis supprimés.</p>
 <p><b>Tes droits</b> : accès, rectification (change ton pseudo), effacement (supprime ton compte), opposition et limitation. Pour toute demande : Carrière › Nous écrire, ou par e-mail à <a href="mailto:contact.tribuneps@gmail.com" style="color:var(--acc)">contact.tribuneps@gmail.com</a>. Tu peux aussi saisir la CNIL (cnil.fr).</p>
 <h4>7. Jeu responsable</h4>
-<p>Même sans argent, si les paris prennent trop de place pour toi ou un proche : <a href="https://www.joueurs-info-service.fr" target="_blank" rel="noopener">Joueurs Info Service</a>, 09 74 75 13 13 (appel non surtaxé).</p>
+<p>Tribune se joue sans argent, mais reprend le principe des paris sportifs. Les <b>vrais paris d’argent</b> présentent des risques : perte d’argent, endettement, dépendance, isolement. Ici, on joue pour le plaisir entre amis : ne mise jamais de vrai argent pour « te refaire » ou pour prolonger le jeu.</p>
+<p>Tribune n’a <b>aucun lien avec un site de paris</b>, n’en fait pas la promotion et ne reçoit rien de leur part. Les cotes sont calculées par l’appli : ce ne sont <b>pas celles d’un bookmaker</b>, et réussir ici ne veut pas dire réussir avec de l’argent.</p>
+<p>Si les paris (d’argent ou non) prennent trop de place pour toi ou un proche, parles-en : <a href="https://www.joueurs-info-service.fr" target="_blank" rel="noopener">Joueurs Info Service</a>, 09 74 75 13 13 (appel non surtaxé, 7 j/7).</p>
 <h4>8. Divers</h4>
-<p>Les noms, logos et drapeaux des équipes appartiennent à leurs propriétaires et servent seulement à reconnaître les matchs. Ces règles peuvent évoluer ; en cas de changement important, l’appli te les remontre. Droit français.</p></div>`}
+<p>Les noms, logos et drapeaux des équipes appartiennent à leurs propriétaires et servent seulement à reconnaître les matchs. Ces règles peuvent évoluer ; en cas de changement important, l’appli te les remontre. Droit français.</p>
+<h4>9. Mentions légales</h4>
+<p><b>Édition</b> : Tribune est édité par un particulier, à titre non commercial. Contact : <a href="mailto:contact.tribuneps@gmail.com" style="color:var(--acc)">contact.tribuneps@gmail.com</a>.</p>
+<p><b>Hébergement</b> : Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, États-Unis (vercel.com). Base de données : Neon Inc. (neon.tech).</p>
+<p><b>Données sportives</b> : scores et statistiques issus d’un flux public (ESPN) ; Tribune n’est lié à aucune compétition, équipe ou ligue.</p></div>`}
 function openLegal(){U.open="legal";layer(`<div class="grab"><h3>Règles et confidentialité</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`+legalHTML())}
 // joueurs déjà inscrits : on fait accepter les règles une fois (et à chaque nouvelle version)
-function openTos(){if(U.open&&U.open!=="tos"){setTimeout(()=>{if(S.name&&S.tosV!==TOS_V)openTos()},5000);return}U.open="tos";layer(`<div class="tosh"><h3>Avant de continuer</h3><p class="note" style="text-align:left">Tribune s’ouvre à plus de monde : voici les règles du jeu et ce qu’on fait (et ne fait pas) de tes données. Prends une minute pour les lire.</p></div>`+legalHTML()+
+function openTos(){if(U.open&&U.open!=="tos"){setTimeout(()=>{if(S.name&&S.tosV!==TOS_V)openTos()},5000);return}U.open="tos";layer(`<div class="tosh"><h3>Avant de continuer</h3><p class="note" style="text-align:left">${S.tosV?"Les règles ont été mises à jour (10 novembre) : adresse de contact, mentions légales, images envoyées, jeu responsable et données. Prends une minute pour les relire, puis valide pour continuer.":"Tribune s’ouvre à plus de monde : voici les règles du jeu et ce qu’on fait (et ne fait pas) de tes données. Prends une minute pour les lire."}</p></div>`+legalHTML()+
   `<label class="agechk"><input type="checkbox" id="tos-ok"><span>J’ai <b>18 ans ou plus</b> et j’accepte les règles du jeu et la politique de confidentialité.</span></label>
   <button class="btn gold wide" data-act="tosok">Continuer</button><p class="note"><button class="link" data-act="tosno">Je n’ai pas 18 ans</button></p>`)}
 function tosOk(){if(!$("#tos-ok")||!$("#tos-ok").checked){toast("Coche la case pour continuer.","bad");return}S.tosV=TOS_V;save();closeLayer();syncSoon();if(S.introSeen!==INTRO_V)setTimeout(openIntro,400)}
@@ -2516,7 +2524,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.20";
+const VERSION="2.21";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
