@@ -308,7 +308,13 @@ const WEEKENDS={roue:{n:"Week-end de la roue",e:"🎡",d:"Tous les gains de la r
 const COMBO_BOOST=.25;
 function weekendOf(day){const t=Date.UTC(+day.slice(0,4),+day.slice(4,6)-1,+day.slice(6,8))/864e5,dow=new Date(t*864e5).getUTCDay();
   const k=["combo","roue","defis"][Math.floor((t+3)/7)%3];return{k,...WEEKENDS[k],on:dow===6||dow===0,soon:dow===5,last:dow===0}}
+// Niveaux d'expérience (XP), du spectateur à la légende : XP gagnée en pariant (calculée par le serveur), jamais perdue.
+const TIERS=[["Spectateur",1,"👀"],["Supporter",5,"📣"],["Habitué",10,"🎟️"],["Abonné",15,"💳"],["Ultra",20,"🔥"],["Capo",27,"📢"],["Connaisseur",34,"🧠"],
+  ["Expert",42,"🎯"],["Consultant",51,"🎙️"],["Analyste",61,"📊"],["Stratège",72,"♟️"],["Oracle",85,"🔮"],["Légende",100,"👑"]];
+const xpFor=L=>L<=1?0:Math.round(60*Math.pow(L-1,1.55));   // XP totale pour atteindre le niveau L
+function levelOf(xp){xp=Math.max(0,Math.floor(xp||0));let L=1;while(xpFor(L+1)<=xp)L++;let ti=0;TIERS.forEach((t,i)=>{if(L>=t[1])ti=i});
+  const a=xpFor(L),b=xpFor(L+1);return{lvl:L,tier:TIERS[ti][0],ic:TIERS[ti][2],ti,xp,cur:xp-a,need:b-a,pct:(xp-a)/(b-a),next:TIERS[ti+1]||null}}
 function defisFor(day){const r=rng(hash("defis|"+day));return DEFIS.map(L=>L[Math.floor(r()*L.length)])}
 
-if(typeof globalThis!=="undefined")globalThis.ENGINE={resMarket,marketInfo,mkOne,WEEKENDS,COMBO_BOOST,weekendOf,fr,strength,SP,SIM,MK,N,ALLSTATS,STATL,ESPN,MCC,MKC,ONE,cl,hash,rng,pois,binom,H,DAY,lvA,sims,simOne,tot,cmp3,avail,odd,mt,liveOK,canBet,liveSims,marketSims,markets,outcome,
+if(typeof globalThis!=="undefined")globalThis.ENGINE={TIERS,xpFor,levelOf,resMarket,marketInfo,mkOne,WEEKENDS,COMBO_BOOST,weekendOf,fr,strength,SP,SIM,MK,N,ALLSTATS,STATL,ESPN,MCC,MKC,ONE,cl,hash,rng,pois,binom,H,DAY,lvA,sims,simOne,tot,cmp3,avail,odd,mt,liveOK,canBet,liveSims,marketSims,markets,outcome,
   SOCSTAT,recStrength,amer,bookDiff,footProbs,TEAM_FR,frTeam,parseTeamEvent,parseTennis,status,realStats,PMK,legIdx,jointP,comboCalc,readLineup,applySummary,playerLegResult,legResultM,betResult,cashValueM,WHEEL,WP,JACKPOT,JACK_ODDS,EXTRA_DAY,DEFIS,DEFI_BONUS,defisFor,legsOf};

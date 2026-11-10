@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "32";
+const SCHEMA_VERSION = "33";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -339,6 +339,24 @@ const STATEMENTS = [
      unique (bet))`,
   // lien de ticket ouvert dans Safari (iPhone) : empreinte brouillée de la connexion, gardée 20 min, pour que l'app installée ouvre le ticket
   `create table if not exists link_hits (ip text not null, code text not null, at timestamptz not null default now(), primary key (ip, code))`,
+  // XP : calculée par le serveur à partir des paris qu'il a réglés et du registre (défis, combats, prono, match de la guilde, podiums)
+  `alter table players add column if not exists xp_seed int`,
+  `create or replace view pxp as
+     with b as (select player, status, stake, odds::float8 as odds, pay::float8 as pay,
+                  row_number() over (partition by player, (settled_at at time zone 'Europe/Paris')::date order by settled_at, id) as rn
+                from bets where status in ('won', 'lost', 'cashed') and settled_at is not null),
+     bx as (select player, sum(
+              case when rn <= 10 and stake >= 5 then 10 else 0 end
+              + case when status = 'won' and stake >= 5 then least(200, round(15 * (odds - 1)))
+                     when status = 'cashed' and stake >= 5 and pay > stake then least(100, round(7.5 * (pay / stake - 1)))
+                     else 0 end) as xp from b group by player),
+     lx as (select player, sum(case kind when 'defi' then 15 when 'defis' then 30
+              when 'battle' then case when delta >= 200 then 50 when delta >= 75 then 25 else 10 end
+              when 'prono' then delta / 2 when 'lm' then 10
+              when 'prize' then case when delta >= 1000 then 100 when delta >= 500 then 60 when delta >= 250 then 40 else 0 end
+              else 0 end) as xp from ledger group by player)
+     select p.id as player, (coalesce(bx.xp, 0) + coalesce(lx.xp, 0) + coalesce(p.xp_seed, 0))::int as xp
+     from players p left join bx on bx.player = p.id left join lx on lx.player = p.id`,
   `create table if not exists rate_hits (key text not null, win bigint not null, n int not null default 0, primary key (key, win))`,
 ];
 

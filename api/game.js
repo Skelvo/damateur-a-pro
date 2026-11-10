@@ -57,7 +57,7 @@ const WEEK = `to_char(date_trunc('week', now() at time zone 'Europe/Paris'), 'YY
 const MONTH = `to_char(now() at time zone 'Europe/Paris', 'YYYY-MM')`;
 const PREV_WEEK = `to_char(date_trunc('week', now() at time zone 'Europe/Paris') - interval '7 days', 'YYYY-MM-DD')`;
 const PREV_MONTH = `to_char(date_trunc('month', now() at time zone 'Europe/Paris') - interval '1 month', 'YYYY-MM')`;
-const BOARD_COLS = `p.id, p.name, p.bal::float8 as bal, p.peak::float8 as peak, p.won, p.lost, p.avatar_v, p.fav, p.badges,
+const BOARD_COLS = `p.id, p.name, coalesce((select x.xp from pxp x where x.player = p.id), 0) as xp, p.bal::float8 as bal, p.peak::float8 as peak, p.won, p.lost, p.avatar_v, p.fav, p.badges,
   coalesce((select x.gain from sprofits x where x.player = p.id and x.per = ${WEEK}), 0)::float8 as week_gain,
   coalesce((select x.gain from sprofits x where x.player = p.id and x.per = ${MONTH}), 0)::float8 as month_gain`;
 // Gains par semaine (ou par mois) des membres d'une guilde, y compris la dernière période de ceux
@@ -735,7 +735,12 @@ const ACTIONS = {
       }
     }
     const cancel = await s.query(`select cid from bets where player = $1 and cancelled and at > now() - interval '30 days'`, [p.id]);
-    return { ok: true, name: name || p.name, wheel: wr && wr.wheel, av: wr ? wr.avatar_v || 0 : null, cancel };
+    // passage aux niveaux d'XP : chacun repart du niveau qui correspond à son ancienne division (une seule fois, jamais au-dessus de Capo)
+    const pk = (await s.query(`select peak::float8 as peak, xp_seed from players where id = $1`, [p.id]))[0];
+    if (pk && pk.xp_seed == null) { const D = [0, 1300, 1700, 2200, 3000, 4000, 5500, 7500, 10000, 14000, 20000, 30000, 50000]; let di = 0; D.forEach((v, i) => { if (pk.peak >= v) di = i; });
+      await s.query(`update players set xp_seed = $2 where id = $1 and xp_seed is null`, [p.id, EG.xpFor(EG.TIERS[Math.min(di, 5)][1])]); }
+    const xp = (await s.query(`select xp from pxp where player = $1`, [p.id]))[0];
+    return { ok: true, name: name || p.name, wheel: wr && wr.wheel, av: wr ? wr.avatar_v || 0 : null, cancel, xp: xp ? xp.xp : 0 };
   },
 
   // Code de transfert : emporter son compte (jetons, paris, défis…) dans l'app installée ou sur un
@@ -1392,7 +1397,7 @@ const ACTIONS = {
     return {
       me: p.id, leagues, code: code && leagues.some((l) => l.code === code) ? code : "", total, rank, last, lastSeason,
       season: { month: cur.m, label: monthName(cur.m), end: Math.round(Number(cur.mend)) }, week: cur.w,
-      rows: rows.map((r) => ({ id: r.id, name: r.name, bal: Math.round(r.bal), peak: Math.round(r.peak), won: r.won, lost: r.lost, week: Math.round(r.week_gain), season: Math.round(r.month_gain), tr: trophies[r.id] || 0, sc: crowns[r.id] || 0, av: r.avatar_v || 0, fav: r.fav ? { n: r.fav.name, l: r.fav.logo } : null, nb: Array.isArray(r.badges) ? r.badges.length : 0 })),
+      rows: rows.map((r) => ({ id: r.id, name: r.name, bal: Math.round(r.bal), peak: Math.round(r.peak), won: r.won, lost: r.lost, week: Math.round(r.week_gain), season: Math.round(r.month_gain), tr: trophies[r.id] || 0, sc: crowns[r.id] || 0, av: r.avatar_v || 0, fav: r.fav ? { n: r.fav.name, l: r.fav.logo } : null, nb: Array.isArray(r.badges) ? r.badges.length : 0, xp: r.xp || 0 })),
     };
   },
 
@@ -1427,10 +1432,11 @@ const ACTIONS = {
     }
     const r = (await s.query(
       `select id, name, bal::float8 as bal, peak::float8 as peak, won, lost, avatar_v, bets, fav, badges, extract(epoch from created_at) * 1000 as since,
+         coalesce((select x.xp from pxp x where x.player = players.id), 0) as xp,
          (select count(*)::int from weekly w where w.player = players.id) as weeks
        from players where id = $1`, [id]))[0];
     if (!r) throw fail(404, "unknown");
-    return { id: r.id, name: r.name, bal: Math.round(r.bal), peak: Math.round(r.peak), won: r.won, lost: r.lost, av: r.avatar_v || 0,
+    return { id: r.id, name: r.name, bal: Math.round(r.bal), peak: Math.round(r.peak), won: r.won, lost: r.lost, av: r.avatar_v || 0, xp: r.xp || 0,
       bets: (r.bets && r.bets.list) || [], best: (r.bets && r.bets.best) || null, since: Math.round(Number(r.since)),
       fav: r.fav || null, badges: Array.isArray(r.badges) ? r.badges : [],
       pal: (await s.query(`select
