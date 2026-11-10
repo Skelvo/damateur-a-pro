@@ -538,6 +538,8 @@ html.cv .mc,html.cv .res-row,html.cv .prow,html.cv .ticket{content-visibility:au
 .stgrid.t .sti{padding:11px 8px}.stgrid.t .sti b{font-size:13.5px}
 .xprules{display:grid;gap:4px}.xprules>div{display:flex;justify-content:space-between;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:13.5px}.xprules b{color:var(--sel);white-space:nowrap;font-size:13px}
 .tiers{display:grid;gap:5px}.tiers>div{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 12px;opacity:.6}.tiers>div.done{opacity:.85}.tiers>div.cur{opacity:1;border-color:var(--sel);background:linear-gradient(135deg,#3d3006,var(--card) 70%)}.tiers span{font-size:22px}.tiers b{flex:1;font:800 18px "Barlow Condensed";text-transform:uppercase}.tiers small{color:var(--mute);font-size:12.5px}
+.lw{display:block;margin-top:3px;color:#cfd9d3!important;font-size:12.5px}.lw.live{color:#ff8a8f!important;font-weight:600}.lw .lws{color:var(--ink);font-weight:700}
+.dwait{background:var(--card2)!important;color:var(--mute)!important;border:1px solid var(--line2)!important}
 .palm0{background:var(--card);border:1px dashed var(--line2);border-radius:12px;padding:11px 12px;font-size:13.5px;color:var(--mute)}
 .palm2{display:grid;gap:6px;margin-top:6px}.palm2>div{display:flex;justify-content:space-between;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px}.palm2 b{font:800 18px "Barlow Condensed"}
 .gcomp{padding:12px 14px}.gcomp .gtop{gap:10px}.gti{flex:1;min-width:0}.gti h3{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gti small .link{padding:0;font-size:inherit;color:inherit;text-decoration:underline}
@@ -837,7 +839,7 @@ html.cv .mc,html.cv .res-row,html.cv .prow,html.cv .ticket{content-visibility:au
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.90"></script>
+<script src="engine.js?v=1.91"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -1212,6 +1214,13 @@ async function cashOut(id){const b=S.bets.find(x=>x.id===id);const v=b&&cashValu
     if(b.st!=="open")return}
   else{v2=cashValue(b);if(!v2){toast("Le match a bougé : encaissement plus possible.","bad");render();return}}
   b.st="cashed";b.pay=v2;postAct("cash",{pay:v2,stake:b.stake});b.done=Date.now();S.bal+=v2;S.peak=Math.max(S.peak,S.bal);save();render();bump();toast(`${ic("coin")} Encaissé : +${tok(v2)} jetons`,"win")}
+// date du match, direct (minute et score) ou score final, pour chaque sélection d'un pari
+function legWhen(L){const m=L.mid&&findMatch(L.mid),t=(m&&m.t)||L.t;if(!t)return"";const st=m?status(m):(t>Date.now()?"pre":null);
+  if(st==="live"){const I=liveInfo(m);return`<small class="lw live">🔴 En direct${I.clock?" · "+esc(I.clock):""}${I.sc?` · <span class="lws">${I.sc[0]} – ${I.sc[1]}</span>`:""}</small>`}
+  if(st==="post"){const sc=finalScore(m);return`<small class="lw">🏁 Terminé${sc?` · <span class="lws">${sc[0]} – ${sc[1]}</span>`:""} · ${esc(fShort(t))}</small>`}
+  if(st==="wait")return`<small class="lw">⏳ Match fini, résultat attendu · ${esc(fShort(t))}</small>`;
+  if(st==="cancel")return`<small class="lw">Reporté</small>`;
+  return`<small class="lw">📅 ${esc(fShort(t))} à ${fTime(t)}</small>`}
 function legStatus(L){return L.r==="w"?`<span class="st w">✓</span>`:L.r==="l"?`<span class="st l">✗</span>`:L.r==="v"?`<span class="st v">↺</span>`:`<span class="st p"></span>`}
 function viewBets(){const B=S.bets.slice().reverse(),op=B.filter(b=>b.st==="open"),cl_=B.filter(b=>b.st!=="open");
   const W=cl_.filter(b=>b.st==="won").length,Lo=cl_.filter(b=>b.st==="lost").length,rate=W+Lo?W/(W+Lo):0;
@@ -1227,8 +1236,8 @@ function viewBets(){const B=S.bets.slice().reverse(),op=B.filter(b=>b.st==="open
   if(!list.length)h+=`<div class="empty">${ic("ticket")}<b>${U.btab==="o"?"Aucun pari en cours":"Pas encore de résultat"}</b>${U.btab==="o"?"Choisis un match et touche une cote.":"Tes tickets réglés apparaîtront ici."}<br><button class="btn" style="margin-top:12px" data-act="tab" data-tab="m">Voir les matchs</button></div>`;
   h+=list.map(b=>{const tag=b.st==="won"?`<span class="tag won">+${tok(b.pay)}</span>`:b.st==="lost"?`<span class="tag lost">Perdu</span>`:b.st==="void"?`<span class="tag void">Remboursé</span>`:b.st==="cashed"?`<span class="tag cashed">Encaissé +${tok(b.pay)}</span>`:`<span class="tag open">En cours</span>`;
     const cv=b.st==="open"?cashValue(b):0;
-    return`<div class="ticket ${b.st}"><div class="th"><b>${b.legs.length>1?"Combiné · "+b.legs.length:"Simple"}</b><span>${new Date(b.at).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})} · ${fTime(b.at)}</span></div>
-    <div class="tl">${b.legs.map(L=>`<div class="leg">${legStatus(L)}<div><b>${esc(L.l)} <span style="color:var(--mute);font-weight:500">@ ${fr(L.o)}</span></b><small>${esc(L.mt)}</small><small>${esc(L.ml)}</small></div></div>`).join("")}</div>
+    return`<div class="ticket ${b.st}"><div class="th"><b>${b.legs.length>1?"Combiné · "+b.legs.length:"Simple"}</b><span>Parié le ${new Date(b.at).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})} · ${fTime(b.at)}</span></div>
+    <div class="tl">${b.legs.map(L=>`<div class="leg">${legStatus(L)}<div><b>${esc(L.l)} <span style="color:var(--mute);font-weight:500">@ ${fr(L.o)}</span></b><small>${esc(L.mt)}</small><small>${esc(L.ml)}</small>${legWhen(L)}</div></div>`).join("")}</div>
     <div class="tf"><div><small>Mise</small><b>${tok(b.stake)}</b></div><div style="text-align:center"><small>Cote</small><b>${fr(b.odds)}</b></div><div style="text-align:right"><small>${b.st==="won"?"Gain":b.st==="cashed"?"Encaissé":"Gain possible"}</small>${b.st==="open"?`<b>${tok(b.stake*b.odds)}</b>`:tag}</div></div>
     ${cv?`<button class="cashbtn" data-act="cash" data-id="${esc(b.id)}">${ic("coin")} Encaisser maintenant <b>${tok(cv)}</b></button>`:""}
     <button class="tshare" data-act="tshare" data-id="${esc(b.id)}">${ic("share")} Partager le ticket</button></div>`}).join("");
@@ -2977,7 +2986,7 @@ function defisCard(){const D=defisState(),done=D.filter(d=>d.got).length;
   if(S.dch.all)return`<div class="dcard done">${ic("trophy")}<span>Défis du jour terminés · reviens demain pour 3 nouveaux défis</span></div>`;
   return`<div class="dcard"><div class="dh"><b>${ic("target")} Défis du jour</b><span>${WE().on&&WE().k==="defis"?"🎯 ×2 · ":""}${done}/3 · tous : +${defiBonus()}</span></div>
   ${D.map(d=>`<div class="drow${d.got?" ok":""}"${d.got?"":` data-act="defigo" data-id="${d.id}" role="button"`}><span class="dic">${ic(d.ic,d.cls||"")}</span><div><b>${esc(d.t)}</b><div class="dbar"><i style="width:${d.n/d.g*100}%"></i></div></div>
-    ${d.got?`<span class="dgot">✓</span>`:d.n>=d.g?`<button class="btn gold" data-act="defi" data-id="${d.id}">+${d.r}</button>`:`<span class="drw">${d.n}/${d.g} · +${d.r}</span>`}</div>`).join("")}
+    ${d.got?`<span class="dgot">✓</span>`:d.n>=d.g?`<button class="btn gold${(S.dch.wait||[]).includes(d.id)?" dwait":""}" data-act="defi" data-id="${d.id}">${(S.dch.wait||[]).includes(d.id)?"⏳ Réessayer":"+"+d.r}</button>`:`<span class="drw">${d.n}/${d.g} · +${d.r}</span>`}</div>`).join("")}
   ${done===3?`<button class="btn gold wide" data-act="defiall" style="margin-top:8px">${ic("gift")} Bonus des 3 défis : +${defiBonus()}</button>`:""}</div>`}
 // toucher un défi emmène au bon endroit
 function defiGo(id){const goSp=sp=>{U.ev=null;U.sp=sp;U.lv=-1;U.tab="m";render();const o=[...document.querySelectorAll("#main .mc")].find(x=>x.offsetParent);if(o)o.scrollIntoView({block:"center",behavior:"smooth"})};
@@ -2994,9 +3003,14 @@ function defiGo(id){const goSp=sp=>{U.ev=null;U.sp=sp;U.lv=-1;U.tab="m";render()
   if(id==="3sp"){goSp(U.sp);return toast("Parie sur 3 sports différents : change de sport avec les cartes en haut.")}
   if(["cb3","wcb"].includes(id)){goSp("foot");return toast("Mets au moins "+(id==="cb3"?"3":"2")+" pronostics dans ton ticket, puis choisis « Combiné ».")}
   goSp(U.sp);toast(id==="o25"?"Choisis une cote de 2,50 ou plus.":"Choisis un match et touche une cote.")}
-async function claimDefi(id){const D=defisState(),d=D.find(x=>x.id===id);if(!d||d.got||d.n<d.g)return;
-  let j;try{j=await api("defi_claim",{id})}catch(e){toast("Pas de connexion : réessaie dans un instant.","bad");return}
-  if(j.error==="not_done"){toast("Le serveur n’a pas encore validé ce défi (paris vérifiés toutes les 10 min). Réessaie un peu plus tard.");return}
+let defBusy={};
+async function claimDefi(id){const D=defisState(),d=D.find(x=>x.id===id);if(!d||d.got||d.n<d.g||defBusy[id])return;
+  defBusy[id]=1;document.querySelectorAll(`[data-act=defi][data-id="${id}"]`).forEach(b=>{b.disabled=true;b.textContent="⏳"});
+  let j;try{j=await api("defi_claim",{id})}catch(e){defBusy[id]=0;render();toast("Pas de connexion : réessaie dans un instant.","bad");return}
+  defBusy[id]=0;
+  if(j.error==="not_done"){S.dch.wait=S.dch.wait||[];if(!S.dch.wait.includes(id))S.dch.wait.push(id);save();render();
+    toast("Le serveur ne voit pas encore ce défi comme réussi : seuls les paris faits avec la dernière version comptent, et un pari gagné est vérifié dans les 10 minutes. Réessaie un peu plus tard.");return}
+  if(S.dch.wait)S.dch.wait=S.dch.wait.filter(x=>x!==id);
   if(!S.dch.got.includes(id))S.dch.got.push(id);if(j.ok){S.bal+=j.v;S.peak=Math.max(S.peak,S.bal);toast(`${ic("target")} Défi réussi : +${j.v} jetons`,"win");bump()}save();render()}
 async function claimAll(){const D=defisState();if(S.dch.all||D.some(d=>!d.got))return;let j;try{j=await api("defi_claim",{all:true})}catch(e){toast("Pas de connexion : réessaie dans un instant.","bad");return}
   if(j.error==="not_done"){toast("Le serveur n’a pas encore validé tous tes défis. Réessaie un peu plus tard.");return}
@@ -3166,7 +3180,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.90";
+const VERSION="1.91";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

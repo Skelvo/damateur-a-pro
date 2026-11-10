@@ -844,7 +844,9 @@ const ACTIONS = {
   async defi_claim(s, b) {
     const p = await me(s, b.token);
     const day = await parisDay(s);
-    await settleOpen(s, { player: p.id, budget: 8e3 });
+    // on ne revérifie les paris (lent : flux ESPN) que si le défi dépend de paris gagnés pas encore réglés
+    const needWin = b.all || ["w1e", "w1", "w2", "o25", "wcard", "wbt", "wcb"].includes(String(b.id || ""));
+    if (needWin) await settleOpen(s, { player: p.id, budget: 5e3 });
     const rows = await s.query(`select legs, odds::float8 as odds, status, to_char(at at time zone 'Europe/Paris', 'YYYYMMDD') as d,
         to_char(settled_at at time zone 'Europe/Paris', 'YYYYMMDD') as sd from bets where player = $1 and (at > now() - interval '2 days' or settled_at > now() - interval '2 days')`, [p.id]);
     const P = rows.filter((r) => r.d === day), W = rows.filter((r) => r.status === "won" && r.sd === day);
