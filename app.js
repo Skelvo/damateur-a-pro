@@ -1032,13 +1032,14 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout
 const nameH=(name,cos)=>{const e=cos&&cos.e&&cosEmoji(cos.e);return`<span class="${cos&&cos.c&&cos.c!=="c0"?"nc-"+cos.c:""}">${esc(name)}</span>${e?`<span class="nemo e-${cos.e}">${e}</span>`:""}`};
 const frC=cos=>cos&&cos.f&&cos.f!=="f0"?" fr-"+cos.f:"";
 // effet quand un de mes paris passe
-const WFX={v11:["❄️","❄️","❅","❆"],v10:["🪶","🪶","🪶"],v1:["⚽"],v2:["🎈","🎈","🎉"],v3:["🎆","🎇","✨"],v4:["🪙","🪙","💰"],v5:["⚡","⚡","🌩️"],v6:["👑","✨"],v7:["💸","💵","💶"],v8:["🔥","🔥","💥"],v9:["🌱","🌸","🌼"]};
+const WFX={v12:["🦴","🐾","🦴","🌭"],v11:["❄️","❄️","❅","❆"],v10:["🪶","🪶","🪶"],v1:["⚽"],v2:["🎈","🎈","🎉"],v3:["🎆","🎇","✨"],v4:["🪙","🪙","💰"],v5:["⚡","⚡","🌩️"],v6:["👑","✨"],v7:["💸","💵","💶"],v8:["🔥","🔥","💥"],v9:["🌱","🌸","🌼"]};
 function winFx(v){v=v||(S.cos&&S.cos.v);if(!v||v==="v0"||!WFX[v]){confetti();return}if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;
   const c=document.createElement("div");c.className="erain";const E=WFX[v],up=v==="v2";
   for(let i=0;i<38;i++){const p=document.createElement("i");p.textContent=E[i%E.length];p.style.left=Math.random()*100+"%";p.style.fontSize=(22+Math.random()*22)+"px";
     p.style.animationDelay=(Math.random()*.9)+"s";p.style.animationDuration=(1.6+Math.random()*1.4)+"s";if(up)p.classList.add("up");c.appendChild(p)}
   if(v==="v5"){c.classList.add("flash")}
   if(v==="v10"){c.classList.add("raven");for(let i=0;i<9;i++){const r=document.createElement("b");r.textContent="🐦‍⬛";r.style.top=(8+Math.random()*70)+"%";r.style.fontSize=(30+Math.random()*30)+"px";r.style.animationDelay=(Math.random()*1.2)+"s";c.appendChild(r)}}
+  if(v==="v12"){c.classList.add("teckel");for(let i=0;i<6;i++){const r=document.createElement("b");r.style.top=(10+Math.random()*70)+"%";const k=.7+Math.random()*.6;r.style.width=150*k+"px";r.style.height=65*k+"px";r.style.animationDelay=(Math.random()*1.3)+"s";c.appendChild(r)}}
   document.body.appendChild(c);setTimeout(()=>c.remove(),4000)}
 const ttlH=cos=>{const t=cos&&cos.t&&cosTitle(cos.t);return t?`<span class="ttl${cos.y&&cos.y!=="y0"?" ty-"+cos.y:""}">${esc(t)}</span>`:""};
 const bnC=cos=>cos&&cos.b&&cos.b!=="b0"?" bnr bn-"+cos.b:"";
@@ -1049,7 +1050,7 @@ async function openStyle(){U.open="style";U.cosTab=U.cosTab||"b";const head=`<di
   U.cosEdit={b:"b0",c:"c0",t:"t0",f:"f0",e:"e0",v:"v0",y:"y0",...Object.fromEntries(Object.entries(j.cos||{}).filter(([,v])=>v))};layer(viewStyle())}
 function viewStyle(){const j=U.cosD,E=U.cosEdit,un=new Set(j.unlocked),T=U.cosTab,LV=myLv();
   const vis=x=>!(COS_SECRET.includes(x[3])&&!un.has(x[0]));
-  const items=COS.filter(x=>x[1]===T&&vis(x)).map(x=>({id:x[0],n:x[2],d:x[4],ok:un.has(x[0]),sec:COS_SECRET.includes(x[3])}));
+  const items=COS.filter(x=>x[1]===T&&vis(x)).map(x=>({id:x[0],n:x[2],d:x[4],ok:un.has(x[0]),sec:COS_SECRET.includes(x[3]),pk:x[3]}));
   if(T==="t")for(const id of j.unlocked)if(id.startsWith("tm:"))items.splice(1,0,{id,n:cosTitle(id),d:"",ok:true});
   const tm=ty=>ty==="t"?j.unlocked.filter(x=>x.startsWith("tm:")).length:0,cnt=ty=>`${COS.filter(x=>x[1]===ty&&un.has(x[0])).length+tm(ty)}/${COS.filter(x=>x[1]===ty&&vis(x)).length+tm(ty)}`;
   const prev={b:E.b,c:E.c,t:T==="y"&&(!E.t||E.t==="t0")?"t2":E.t,f:E.f,e:E.e,v:E.v,y:E.y};
@@ -1059,7 +1060,7 @@ function viewStyle(){const j=U.cosD,E=U.cosEdit,un=new Set(j.unlocked),T=U.cosTa
   <div class="sttabs">${[["b","🖼️ Bannières"],["c","🎨 Couleurs"],["t","🏷️ Titres"],["y","✨ Style du titre"],["f","⭕ Cadres"],["e","😎 Emojis"],["v","🎉 Victoire"]].map(([k,n])=>`<button data-act="sttab" data-v="${k}" aria-pressed="${T===k}">${n}<small>${cnt(k)}</small></button>`).join("")}</div>
   ${T==="v"?`<p class="note" style="text-align:left">L’animation qui se lance quand un de tes paris passe. Touche un effet débloqué pour le voir.</p>`:T==="y"?`<p class="note" style="text-align:left">La couleur de ton titre (choisis aussi un titre dans 🏷️ Titres).</p>`:""}
   <div class="stgrid ${T}">${items.map(x=>`<button class="sti${x.ok?"":" lock"}${E[T]===x.id?" on":""}" data-act="stpick" data-v="${esc(x.id)}" ${x.ok?"":"aria-disabled=\"true\""}>
-    ${T==="b"?`<span class="stsw bnr bn-${x.id}"></span>`:T==="c"?`<span class="stc nc-${x.id}">Aa</span>`:T==="f"?avatar(S.pid||"me",S.name||"?",S.avv,"av stav"+(x.id!=="f0"?" fr-"+x.id:""),true):T==="e"?`<span class="ste${x.sec?" raven":""}">${x.id==="e0"?"∅":esc(x.n.split(" ")[0])}</span>`:T==="v"?`<span class="ste${x.sec?" raven":""}">${x.id==="v0"?"🎊":esc(x.n.split(" ")[0])}</span>`:T==="y"?`<span class="ttl${x.id!=="y0"?" ty-"+x.id:""}">${esc(cosTitle(E.t&&E.t!=="t0"?E.t:"t2"))}</span>`:""}${x.sec?`<span class="stsec">🐦‍⬛ Exclusif</span>`:""}${COS_SEASON[(COS.find(y=>y[0]===x.id)||[])[3]]?`<span class="stsea">${COS_SEASON[COS.find(y=>y[0]===x.id)[3]]}</span>`:""}<b>${esc(T==="e"&&x.id!=="e0"?x.n.split(" ").slice(1).join(" "):T==="v"&&x.id!=="v0"?x.n.split(" ").slice(1).join(" "):x.n)}</b>${x.ok?"":`<small>🔒 ${esc(x.d)}</small>`}</button>`).join("")}</div>
+    ${T==="b"?`<span class="stsw bnr bn-${x.id}"></span>`:T==="c"?`<span class="stc nc-${x.id}">Aa</span>`:T==="f"?avatar(S.pid||"me",S.name||"?",S.avv,"av stav"+(x.id!=="f0"?" fr-"+x.id:""),true):T==="e"?`<span class="ste${x.pk==="corbeau"?" raven":""}">${x.id==="e0"?"∅":esc(x.n.split(" ")[0])}</span>`:T==="v"?`<span class="ste${x.pk==="corbeau"?" raven":""}">${x.id==="v0"?"🎊":esc(x.n.split(" ")[0])}</span>`:T==="y"?`<span class="ttl${x.id!=="y0"?" ty-"+x.id:""}">${esc(cosTitle(E.t&&E.t!=="t0"?E.t:"t2"))}</span>`:""}${x.sec?x.pk==="teckel"?`<span class="stsec tk">🐕 Exclusif</span>`:`<span class="stsec">🐦‍⬛ Exclusif</span>`:""}${COS_SEASON[(COS.find(y=>y[0]===x.id)||[])[3]]?`<span class="stsea">${COS_SEASON[COS.find(y=>y[0]===x.id)[3]]}</span>`:""}<b>${esc(T==="e"&&x.id!=="e0"?x.n.split(" ").slice(1).join(" "):T==="v"&&x.id!=="v0"?x.n.split(" ").slice(1).join(" "):x.n)}</b>${x.ok?"":`<small>🔒 ${esc(x.d)}</small>`}</button>`).join("")}</div>
   <button class="btn gold wide" data-act="stsave" style="margin-top:12px">Enregistrer mon style</button>
   <p class="note">Ton style se voit sur ton profil, dans les classements et dans le chat. Tout se débloque en jouant : rien ne s’achète.</p>`}
 // réaffiche l'éditeur sans perdre la position des onglets ni de la liste
@@ -1143,7 +1144,7 @@ const BN_COL={b1:["#0b2a17","#06140b","rgba(53,208,127,.4)","rgba(36,128,63,.4)"
   b13:["#2a0610","#06102a","rgba(179,18,43,.5)","rgba(18,64,179,.5)"],b14:["#2a1407","#0c0603","rgba(143,71,25,.5)","rgba(255,122,69,.3)"],
   b15:["#3a1a0a","#120804","rgba(199,91,43,.5)","rgba(255,255,255,.12)"],b16:["#3a2410","#120b04","rgba(196,139,71,.5)","rgba(255,210,63,.2)"],
   b17:["#0e3b28","#05120c","rgba(53,208,127,.4)","rgba(255,210,63,.3)"],b18:["#1a1033","#050308","rgba(143,134,255,.4)","rgba(232,226,255,.2)"],
-  b19:["#0b1d3a","#050b18","rgba(255,255,255,.3)","rgba(255,90,95,.3)"]};
+  b20:["#b8652a","#2a170a","rgba(255,208,138,.45)","rgba(194,122,58,.35)"],b19:["#0b1d3a","#050b18","rgba(255,255,255,.3)","rgba(255,90,95,.3)"]};
 async function ticketImage(b,link){
   const W=1080,legs=b.legs.slice(0,8),more=b.legs.length-legs.length,RH=128,tkH=110+legs.length*RH+(more?50:0)+60+190,H=Math.max(1350,560+tkH+230);
   const cv=document.createElement("canvas");cv.width=W;cv.height=H;const c=cv.getContext("2d");
@@ -2427,7 +2428,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.98";
+const VERSION="1.99";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

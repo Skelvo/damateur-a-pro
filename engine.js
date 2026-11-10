@@ -364,7 +364,13 @@ COS.push(
   ["t22","t","🎅 Esprit de Noël","noel","Parier entre le 15 décembre et le 5 janvier"],["y13","y","Guirlande","noel","Parier entre le 15 décembre et le 5 janvier"],
   ["f14","f","Sucre d’orge","noel","Parier entre le 15 décembre et le 5 janvier"],["e19","e","🎄 Sapin","noel","Parier entre le 15 décembre et le 5 janvier"],
   ["e20","e","⛄ Bonhomme de neige","noel","Parier entre le 15 décembre et le 5 janvier"],["v11","v","❄️ Neige","noel","Parier entre le 15 décembre et le 5 janvier"]);
-const COS_SECRET=["corbeau"],COS_SEASON={noel:"🎄 Saisonnier"};   // conditions « offertes » : les objets restent cachés tant qu'on ne les a pas
+COS.push(
+  // pack exclusif « Teckel » (offert, invisible pour les autres)
+  ["b20","b","Le Teckel","teckel","Style exclusif"],["c15","c","Poil de feu","teckel","Style exclusif"],["t23","t","🌭 Saucisse officielle","teckel","Style exclusif"],
+  ["t24","t","🐾 Teckel en chef","teckel","Style exclusif"],["y14","y","Teckel","teckel","Style exclusif"],["f15","f","Teckel","teckel","Style exclusif"],
+  ["e21","e","🐕 Teckel","teckel","Style exclusif"],["e22","e","🦴 Os","teckel","Style exclusif"],["e23","e","🌭 Saucisse","teckel","Style exclusif"],
+  ["v12","v","🐕 Course de teckels","teckel","Style exclusif"]);
+const COS_SECRET=["corbeau","teckel"],COS_SEASON={noel:"🎄 Saisonnier"};   // conditions « offertes » : les objets restent cachés tant qu'on ne les a pas
 const cosEmoji=id=>{const x=COS.find(c=>c[0]===id&&c[1]==="e");return x&&id!=="e0"?x[2].split(" ")[0]:""};
 const MONTHS_FR=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 // objets débloqués à partir des drapeaux du serveur : {lvl, months:["2026-11",…], podium, battles, odds10, …, all}
