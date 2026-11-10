@@ -1083,38 +1083,81 @@ function cardStats(bets,xp){const D=bets.filter(b=>["won","lost","cashed"].inclu
   return{note,stats:S_,n:D.length,lvl:L.lvl,tier:L.tier,sport:main?{foot:"FOOT",rugby:"RUGBY",tennis:"TENNIS",basket:"NBA"}[main[0]]||"":""}}
 const CARD_T=[[90,"LÉGENDE",["#2a0d5c","#7a3cff","#ffd23f"],"#ffe680"],[80,"ÉLITE",["#0b1d3a","#123a6b","#d4a017"],"#ffd23f"],[70,"OR",["#7a5a00","#e0b02a","#fff1a8"],"#2a1d00"],
   [60,"ARGENT",["#5f6b74","#c9d3dc","#f4f7f9"],"#1f262b"],[0,"BRONZE",["#5a3417","#b0753c","#e8b27a"],"#2a1608"]];
-async function playerCard(p,o){o=o||{};const C=cardStats(p.bets||[],p.xp),T=CARD_T.find(x=>C.note>=x[0]),BNK=o.d==="bn"&&p.cos&&p.cos.b&&p.cos.b!=="b0"?p.cos.b:"",BC=BNK&&BN_COL[BNK],W=720,H=1000,cv=document.createElement("canvas");cv.width=W;cv.height=H;const c=cv.getContext("2d");
-  try{await Promise.all([document.fonts.load('800 80px "Barlow Condensed"'),document.fonts.load('700 30px Barlow')])}catch(e){}
-  const dark=BNK?true:T[0]>=80,ink=BNK?"#fff8ec":T[3];
-  // forme de la carte
-  const shape=()=>{c.beginPath();c.moveTo(60,70);c.quadraticCurveTo(W/2,10,W-60,70);c.lineTo(W-40,H-200);c.quadraticCurveTo(W-40,H-120,W/2,H-40);c.quadraticCurveTo(40,H-120,40,H-200);c.closePath()};
-  c.fillStyle="#0a110f";c.fillRect(0,0,W,H);
-  c.save();shape();c.clip();let g=c.createLinearGradient(0,0,W,H);if(BC){g.addColorStop(0,BC[0]);g.addColorStop(1,BC[1])}else{g.addColorStop(0,T[2][0]);g.addColorStop(.5,T[2][1]);g.addColorStop(1,T[2][2])}c.fillStyle=g;c.fillRect(0,0,W,H);
-  if(BC){for(const[x,y,col]of[[W*.15,120,BC[2]],[W*.9,H*.75,BC[3]]]){const r=c.createRadialGradient(x,y,10,x,y,420);r.addColorStop(0,col);r.addColorStop(1,"transparent");c.fillStyle=r;c.fillRect(0,0,W,H)}
-    const art=await bnArt(BNK);if(art){c.globalAlpha=.22;const aw=W*.8,ah=aw*art.height/art.width;c.drawImage(art,W/2-aw/2,705-ah/2,aw,ah);c.globalAlpha=1}}
-  // reflets
-  c.globalAlpha=.18;c.fillStyle="#fff";for(let i=0;i<5;i++){c.beginPath();c.moveTo(-200+i*220,0);c.lineTo(-100+i*220,0);c.lineTo(100+i*220,H);c.lineTo(0+i*220,H);c.closePath();c.fill()}c.globalAlpha=1;
-  if(T[0]>=90){const r=c.createRadialGradient(W/2,380,20,W/2,380,420);r.addColorStop(0,"#ffd23f55");r.addColorStop(1,"transparent");c.fillStyle=r;c.fillRect(0,0,W,H)}
-  c.restore();c.save();shape();c.lineWidth=10;c.strokeStyle=BNK?"#ffffffaa":dark?T[3]:"#ffffffaa";c.stroke();c.restore();
-  // note + sport
-  c.fillStyle=ink;c.textAlign="center";c.font='800 150px "Barlow Condensed"';c.fillText(String(C.note),170,250);
-  c.font='800 46px "Barlow Condensed"';c.fillText(C.sport||"MULTI",170,300);c.font='800 30px "Barlow Condensed"';c.fillText(T[1],170,342);
-  if(o.bd==="fav"&&p.fav&&p.fav.logo){const L=await loadImgX(p.fav.logo);if(L){c.drawImage(L,130,362,80,80)}}
-  else if(o.bd==="emo"){const em=p.cos&&p.cos.e&&cosEmoji(p.cos.e);if(em){c.font='64px serif';c.fillText(em,170,425)}}
-  // photo
-  const ax=470,ay=230,ar=150;c.save();c.beginPath();c.arc(ax,ay,ar,0,Math.PI*2);c.closePath();c.fillStyle=avc(p.name||"?");c.fill();c.clip();
+// palettes « métal » par rang : fond (4 teintes), encre, liseré (3 teintes), holographique
+const CARD_P={"BRONZE":{bg:["#4a2710","#a8682f","#e6a868","#7a4520"],ink:"#2a1406",trim:["#ffd9b0","#8a4f24","#f3c79a"],holo:0},
+  "ARGENT":{bg:["#59626b","#c3ccd5","#f5f8fb","#8a949e"],ink:"#1a2026",trim:["#ffffff","#7d8892","#e6ebf0"],holo:0},
+  "OR":{bg:["#7a5300","#e0ab1c","#fff0a6","#b8860b"],ink:"#2a1c00",trim:["#fff7cf","#9c7000","#ffe27a"],holo:0},
+  "ÉLITE":{bg:["#03070f","#0f2b55","#0a1c38","#020509"],ink:"#ffd23f",trim:["#fff1a8","#a87b00","#ffd23f"],holo:1},
+  "LÉGENDE":{bg:["#14042e","#5b1fb0","#2a0a5c","#0b0219"],ink:"#ffe9a0",trim:["#fff6c8","#c7952a","#ffd23f"],holo:2}};
+async function playerCard(p,o){o=o||{};const C=cardStats(p.bets||[],p.xp),T=CARD_T.find(x=>C.note>=x[0]),BNK=o.d==="bn"&&p.cos&&p.cos.b&&p.cos.b!=="b0"?p.cos.b:"",BC=BNK&&BN_COL[BNK];
+  const P=BC?{bg:[BC[0],BC[1],BC[0],BC[1]],ink:"#fff8ec",trim:["#ffffff","#9a9a9a","#f0f0f0"],holo:1,glow:[BC[2],BC[3]]}:CARD_P[T[1]];
+  const W=720,H=1000,cv=document.createElement("canvas");cv.width=W;cv.height=H;const c=cv.getContext("2d"),ink=P.ink;
+  try{await Promise.all([document.fonts.load('800 80px "Barlow Condensed"'),document.fonts.load('700 30px Barlow'),document.fonts.load('600 30px Barlow')])}catch(e){}
+  let sd=0;for(const ch of String(p.name||"x"))sd=(sd*31+ch.charCodeAt(0))>>>0;const rnd=()=>(sd=(sd*1664525+1013904223)>>>0)/4294967296;
+  // silhouette façon carte de foot : épaules découpées, pointe en bas
+  const shape=(k=1)=>{c.save();c.translate(W/2,H/2);c.scale(k,k);c.translate(-W/2,-H/2);c.beginPath();
+    c.moveTo(48,128);c.quadraticCurveTo(48,64,112,56);c.lineTo(250,44);c.quadraticCurveTo(300,40,326,22);c.quadraticCurveTo(360,6,394,22);c.quadraticCurveTo(420,40,470,44);
+    c.lineTo(608,56);c.quadraticCurveTo(672,64,672,128);c.lineTo(672,770);c.quadraticCurveTo(672,850,590,890);c.lineTo(392,978);c.quadraticCurveTo(360,992,328,978);c.lineTo(130,890);c.quadraticCurveTo(48,850,48,770);c.closePath();c.restore()};
+  c.clearRect(0,0,W,H);
+  // ombre portée
+  c.save();c.shadowColor="rgba(0,0,0,.55)";c.shadowBlur=40;c.shadowOffsetY=16;shape();c.fillStyle=P.bg[1];c.fill();c.restore();
+  // fond métal
+  c.save();shape();c.clip();
+  let g=c.createLinearGradient(0,0,W*.4,H);P.bg.forEach((x,i)=>g.addColorStop(i/3,x));c.fillStyle=g;c.fillRect(0,0,W,H);
+  if(P.glow)for(const[x,y,col]of[[W*.2,160,P.glow[0]],[W*.85,H*.7,P.glow[1]]]){const r=c.createRadialGradient(x,y,10,x,y,460);r.addColorStop(0,col);r.addColorStop(1,"transparent");c.fillStyle=r;c.fillRect(0,0,W,H)}
+  // facettes de cristal
+  for(let i=0;i<9;i++){c.beginPath();const x=rnd()*W,y=rnd()*H*.9;c.moveTo(x,y);c.lineTo(x+(rnd()-.5)*520,y+(rnd()-.2)*420);c.lineTo(x+(rnd()-.5)*520,y+(rnd()-.2)*420);c.closePath();c.fillStyle=rnd()<.5?"rgba(255,255,255,.07)":"rgba(0,0,0,.07)";c.fill()}
+  // fines rayures
+  c.globalAlpha=.06;c.strokeStyle="#fff";c.lineWidth=2;for(let x=-H;x<W;x+=16){c.beginPath();c.moveTo(x,0);c.lineTo(x+H*.55,H);c.stroke()}c.globalAlpha=1;
+  if(P.holo){c.globalCompositeOperation="overlay";g=c.createLinearGradient(0,0,W,H);["#ff5e7e","#ffd23f","#5cffb0","#5fa8ff","#c77dff","#ff5e7e"].forEach((x,i,a)=>g.addColorStop(i/(a.length-1),x));c.globalAlpha=P.holo>1?.42:.28;c.fillStyle=g;c.fillRect(0,0,W,H);c.globalAlpha=1;c.globalCompositeOperation="source-over";}
+  // lumière derrière le joueur
+  let r=c.createRadialGradient(470,250,20,470,250,330);r.addColorStop(0,"rgba(255,255,255,.38)");r.addColorStop(1,"rgba(255,255,255,0)");c.fillStyle=r;c.fillRect(0,0,W,H);
+  // dessin de la bannière en filigrane
+  if(BC){const art=await bnArt(BNK);if(art){c.globalAlpha=.16;const aw=W*.86,ah=aw*art.height/art.width;c.drawImage(art,W/2-aw/2,775-ah/2,aw,ah);c.globalAlpha=1}}
+  // photo détourée, fondue vers le bas
   let img=null;try{const src=p.me&&S.avatar?S.avatar:p.av?avUrl(p.id,p.av):"";if(src)img=await loadImg(src)}catch(e){}
-  if(img)c.drawImage(img,ax-ar,ay-ar,ar*2,ar*2);else{c.fillStyle="#0b1310";c.font='800 170px "Barlow Condensed"';c.fillText((p.name||"?")[0].toUpperCase(),ax,ay+60)}
-  c.restore();c.beginPath();c.arc(ax,ay,ar,0,Math.PI*2);c.lineWidth=8;c.strokeStyle=ink+"cc";c.stroke();
-  // nom, titre, niveau
-  c.fillStyle=ink;c.font='800 80px "Barlow Condensed"';let nm=(p.name||"Joueur").toUpperCase();while(c.measureText(nm).width>W-140&&nm.length>3)nm=nm.slice(0,-1);c.fillText(nm,W/2,500);
-  c.fillRect(110,525,W-220,3);const tt=o.sub!=="lvl"&&p.cos&&p.cos.t&&cosTitle(p.cos.t);c.font='700 30px Barlow';c.fillText(tt?tt:`${C.tier} · niveau ${C.lvl}`,W/2,570);
-  // 6 notes
-  const ks=Object.keys(C.stats);ks.forEach((k,i)=>{const col=i<3?0:1,row=i%3,x=col?W/2+60:150,y=650+row*78;c.textAlign="left";c.font='800 64px "Barlow Condensed"';c.fillText(String(C.stats[k]),x,y);c.font='700 36px "Barlow Condensed"';c.fillText(k,x+86,y)});
-  c.fillRect(W/2-2,600,4,200);
-  // bas : logo Tribune
-  const logo=await loadImg("logo-tribune.png?v=2");if(logo){const lw=100,lh=lw*logo.height/logo.width;let li=logo;if(!dark){const o=document.createElement("canvas");o.width=logo.width;o.height=logo.height;const oc=o.getContext("2d");oc.drawImage(logo,0,0);oc.globalCompositeOperation="source-in";oc.fillStyle=ink;oc.fillRect(0,0,o.width,o.height);li=o}c.globalAlpha=dark?1:.85;c.drawImage(li,W/2-lw/2,822,lw,lh);c.globalAlpha=1}
-  c.textAlign="center";c.font='800 26px "Barlow Condensed"';c.fillText(`${C.n} PARI${C.n>1?"S":""}`,W/2,912);
+  {const px=262,py=66,pw=390,ph=440,o2=document.createElement("canvas");o2.width=pw;o2.height=ph;const oc=o2.getContext("2d");
+    if(img){const s=Math.max(pw/img.width,ph/img.height),iw=img.width*s,ih=img.height*s;oc.drawImage(img,(pw-iw)/2,(ph-ih)/2.6,iw,ih)}
+    else{oc.fillStyle=ink;oc.globalAlpha=.9;oc.textAlign="center";oc.font='800 300px "Barlow Condensed"';oc.fillText((p.name||"?")[0].toUpperCase(),pw/2,ph*.78)}
+    oc.globalCompositeOperation="destination-in";const fg=oc.createLinearGradient(0,0,0,ph);fg.addColorStop(0,"rgba(0,0,0,0)");fg.addColorStop(.07,"rgba(0,0,0,1)");fg.addColorStop(.68,"rgba(0,0,0,1)");fg.addColorStop(1,"rgba(0,0,0,0)");oc.fillStyle=fg;oc.fillRect(0,0,pw,ph);
+    const sg=oc.createLinearGradient(0,0,pw,0);sg.addColorStop(0,"rgba(0,0,0,0)");sg.addColorStop(.14,"rgba(0,0,0,1)");sg.addColorStop(.9,"rgba(0,0,0,1)");sg.addColorStop(1,"rgba(0,0,0,0)");oc.fillStyle=sg;oc.fillRect(0,0,pw,ph);
+    c.drawImage(o2,px,py)}
+  // bandeau du nom
+  g=c.createLinearGradient(0,500,0,640);g.addColorStop(0,"rgba(0,0,0,0)");g.addColorStop(.5,ink===P.ink&&!["#ffd23f","#ffe9a0","#fff8ec"].includes(ink)?"rgba(255,255,255,.18)":"rgba(0,0,0,.28)");g.addColorStop(1,"rgba(0,0,0,0)");c.fillStyle=g;c.fillRect(0,500,W,140);
+  // reflet du haut + vignette
+  g=c.createLinearGradient(0,0,0,H*.45);g.addColorStop(0,"rgba(255,255,255,.28)");g.addColorStop(1,"rgba(255,255,255,0)");c.fillStyle=g;c.fillRect(0,0,W,H);
+  r=c.createRadialGradient(W/2,H*.45,H*.35,W/2,H*.45,H*.75);r.addColorStop(0,"rgba(0,0,0,0)");r.addColorStop(1,"rgba(0,0,0,.45)");c.fillStyle=r;c.fillRect(0,0,W,H);
+  // holographique (élite, légende, bannière)
+  if(P.holo){
+    for(let i=0;i<(P.holo>1?26:14);i++){const x=60+rnd()*(W-120),y=60+rnd()*(H-200),s=3+rnd()*9;c.fillStyle=`rgba(255,255,255,${.5+rnd()*.5})`;c.beginPath();c.moveTo(x,y-s);c.quadraticCurveTo(x,y,x+s,y);c.quadraticCurveTo(x,y,x,y+s);c.quadraticCurveTo(x,y,x-s,y);c.quadraticCurveTo(x,y,x,y-s);c.fill()}}
+  c.restore();
+  // liserés en relief
+  g=c.createLinearGradient(0,0,W,H);g.addColorStop(0,P.trim[0]);g.addColorStop(.45,P.trim[1]);g.addColorStop(.7,P.trim[2]);g.addColorStop(1,P.trim[1]);
+  shape();c.lineWidth=14;c.strokeStyle=g;c.stroke();shape();c.lineWidth=3;c.strokeStyle="rgba(0,0,0,.35)";c.stroke();
+  shape(.945);c.lineWidth=2.5;c.strokeStyle=g;c.globalAlpha=.75;c.stroke();c.globalAlpha=1;
+  // colonne de gauche : note, sport, écusson, rang
+  const txt=(t,x,y,f,col=ink,al="center")=>{c.font=f;c.textAlign=al;c.fillStyle=col;c.fillText(t,x,y)};
+  c.save();c.shadowColor="rgba(0,0,0,.25)";c.shadowBlur=6;c.shadowOffsetY=3;
+  txt(String(C.note),160,232,'800 150px "Barlow Condensed"');txt(C.sport||"MULTI",160,284,'800 44px "Barlow Condensed"');c.restore();
+  c.fillStyle=ink;c.globalAlpha=.6;c.fillRect(118,304,84,3);c.globalAlpha=1;
+  let by=320;if(o.bd==="fav"&&p.fav&&p.fav.logo){const L=await loadImgX(p.fav.logo);if(L){c.drawImage(L,122,by,76,76);by+=92}}
+  else if(o.bd==="emo"){const em=p.cos&&p.cos.e&&cosEmoji(p.cos.e);if(em){txt(em,160,by+64,'66px serif');by+=92}}
+  c.fillStyle=ink;c.globalAlpha=.6;if(by>320)c.fillRect(118,by,84,3);c.globalAlpha=1;
+  txt(T[1],160,by+44,'800 30px "Barlow Condensed"');
+  // nom
+  let nm=(p.name||"Joueur").toUpperCase(),fs=92;c.font=`800 ${fs}px "Barlow Condensed"`;while(c.measureText(nm).width>W-170&&fs>54){fs-=4;c.font=`800 ${fs}px "Barlow Condensed"`}
+  c.save();c.shadowColor="rgba(0,0,0,.3)";c.shadowBlur=8;c.shadowOffsetY=3;txt(nm,W/2,590,`800 ${fs}px "Barlow Condensed"`);c.restore();
+  // ornement
+  c.fillStyle=ink;c.globalAlpha=.75;c.fillRect(130,614,205,2.5);c.fillRect(W-335,614,205,2.5);c.beginPath();c.moveTo(W/2,603);c.lineTo(W/2+12,615);c.lineTo(W/2,627);c.lineTo(W/2-12,615);c.closePath();c.fill();c.globalAlpha=1;
+  const tt=o.sub!=="lvl"&&p.cos&&p.cos.t&&cosTitle(p.cos.t);txt(tt?tt:`${C.tier} · niveau ${C.lvl}`,W/2,664,'600 29px Barlow');
+  // statistiques
+  const ks=Object.keys(C.stats);ks.forEach((k,i)=>{const col=i<3?0:1,row=i%3,x=col?W/2+58:178,y=738+row*66;
+    txt(String(C.stats[k]),x+30,y,'800 60px "Barlow Condensed"',ink,"right");c.globalAlpha=.85;txt(k,x+44,y,'700 34px "Barlow Condensed"',ink,"left");c.globalAlpha=1});
+  c.fillStyle=ink;c.globalAlpha=.45;c.fillRect(W/2-1.5,690,3,190);c.globalAlpha=1;
+  // pied : logo et nombre de paris
+  const logo=await loadImg("logo-tribune.png?v=2");if(logo){const lw=86,lh=lw*logo.height/logo.width;let li=logo;if(!["#ffd23f","#ffe9a0","#fff8ec"].includes(ink)){const o3=document.createElement("canvas");o3.width=logo.width;o3.height=logo.height;const oc=o3.getContext("2d");oc.drawImage(logo,0,0);oc.globalCompositeOperation="source-in";oc.fillStyle=ink;oc.fillRect(0,0,o3.width,o3.height);li=o3}
+    c.globalAlpha=.9;c.drawImage(li,W/2-lw/2,888,lw,lh);c.globalAlpha=1}
+  txt(`${C.n} PARI${C.n>1?"S":""}`,W/2,952,'800 22px "Barlow Condensed"');
   return{blob:await new Promise(ok=>cv.toBlob(ok,"image/png")),C,T}}
 async function openCard(p){U.open="card";U.cardP=p;const head=`<div class="grab"><h3>Carte de joueur</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
   if(!U.cardSk)layerLater(head+`<div class="skel" style="height:420px"></div>`,200);
@@ -2442,7 +2485,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.00";
+const VERSION="2.01";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
