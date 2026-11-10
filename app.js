@@ -1717,6 +1717,8 @@ const EVENTS=[
   {id:"job",n:"Jeux olympiques · basket",sp:"basket",lv:7,em:"🥇",c:"#ee334e"},
   {id:"jobw",n:"Jeux olympiques · basket féminin",sp:"basket",lv:8,em:"🥇",c:"#ee334e"},
   {id:"rwc",n:"Coupe du monde de rugby",sp:"rugby",lv:15,em:"🏉",c:"#c8a24a"},
+  {id:"nc",n:"Nations Championship",sp:"rugby",lv:16,em:"🏉",c:"#0b3d91"},
+  {id:"trc",n:"Rugby Championship",sp:"rugby",lv:17,em:"🏉",c:"#2a6b3a"},
   {id:"6n",n:"Tournoi des Six Nations",sp:"rugby",lv:13,em:"🏉",c:"#1d6b3a"},
   {id:"tests",n:"Tests internationaux de rugby",sp:"rugby",lv:14,em:"🏉",c:"#a0522d"},
   {id:"rg",n:"Roland-Garros",sp:"tennis",lv:6,re:/roland|french open/i,em:"🎾",c:"#c4532a"},
@@ -2569,7 +2571,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.34";
+const VERSION="2.35";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
