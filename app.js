@@ -437,8 +437,8 @@ function viewCareer(){const LV=myLv();
   const pushTxt=pushState()==="on"?"Activées sur ce téléphone · <button class='link' data-act='pushtest' style='padding:0'>tester</button>":pushState()==="denied"?"Refusées : autorise-les dans les réglages du téléphone":pushState()==="na"?(IOS&&!STANDALONE?"Installe d’abord l’app sur l’écran d’accueil":"Pas disponibles sur ce téléphone"):"Désactivées";
   if(S.tok&&!U.cosD&&!U.cosLoad){U.cosLoad=1;loadCos().then(()=>{if(U.tab==="c"&&!U.open){$("#main")._html=null;render()}})}
   const MC=mcInfo(S.bets,S.xp);let h=`<div class="pcard chero${MC.cls}${bnC(S.cos)}">${MC.fx}<div class="mctop">${MC.note("button","mycard")}<div class="who"><button class="avbtn" data-act="photo" aria-label="Changer ma photo">${avatar(S.pid||"me",S.name||"?",S.avv,"av"+frC(S.cos),true)}<span class="cam">${ic("plus")}</span></button>
-    <div><h2>${nameH(S.name||"Joueur",S.cos)}${S.fav?` <span class="cfav">${S.fav.logo?`<img src="${esc(S.fav.logo)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:"❤️"}</span>`:""}</h2>${ttlH(S.cos)}<button class="div" data-act="divs">${LV.ic} ${esc(LV.tier)} · niveau ${LV.lvl} ›</button></div></div></div>
-    <div class="prog"><div class="l"><span>${tok(LV.cur)} / ${tok(LV.need)} XP</span><span>${LV.next?esc(LV.next[2]+" "+LV.next[0])+" au niveau "+LV.next[1]:"Niveau "+(LV.lvl+1)}</span></div><div class="t"><i style="width:${LV.pct*100}%"></i></div></div></div>
+    <div><h2>${nameH(S.name||"Joueur",S.cos)}${S.fav?` <span class="cfav">${S.fav.logo?`<img src="${esc(S.fav.logo)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:"❤️"}</span>`:""}</h2>${ttlH(S.cos)}<button class="div" data-act="divs">${LV.ic} ${esc(LV.tier)} · niveau ${LV.lvl} ›</button>
+    <div class="prog mprog"><div class="t"><i style="width:${LV.pct*100}%"></i></div><div class="l"><span>${tok(LV.cur)} / ${tok(LV.need)} XP</span><span>${LV.next?esc(LV.next[2]+" "+LV.next[0])+" niv. "+LV.next[1]:"Niveau "+(LV.lvl+1)}</span></div></div></div></div></div></div>
   <div class="ckpi"><div><small>Jetons</small><b>${tok(S.bal)}</b></div><div><small>Réussite</small><b>${rate} %</b></div><div><small>Série</small><b>${streak}${streak>=3?" 🔥":""}</b></div><div><small>Plus gros gain</small><b class="pos">${best?"+"+tok(Math.round(best)):"—"}</b></div></div>
   ${palmares({id:S.pid,pal:U.mePal,best:{odds:W.reduce((a,b)=>Math.max(a,b.odds),0),pay:best}})}
   <button class="cstyle ccard" data-act="mycard"><span class="csw cardsw">🃏</span><span><b>Ma carte de joueur</b><small>Ta note sur 99 et tes 6 stats, à partager</small></span><span class="arr">›</span></button>
@@ -2495,7 +2495,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.03";
+const VERSION="2.04";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

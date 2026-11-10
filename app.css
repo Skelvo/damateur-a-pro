@@ -846,3 +846,5 @@ html.cv .mc,html.cv .res-row,html.cv .prow,html.cv .ticket{content-visibility:au
 .phero.mc{padding:16px 16px 16px 14px;gap:12px}
 .phero.mc .av.big{width:68px;height:68px}
 .mc h2{text-shadow:0 2px 8px #0008}
+.chero .who{flex:1;min-width:0}.chero .who>div{flex:1;min-width:0}
+.prog.mprog{margin-top:8px}.mprog .t{height:6px}.mprog .l{margin:5px 0 0;font-size:11.5px;gap:8px}.mprog .l span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
