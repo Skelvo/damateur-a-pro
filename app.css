@@ -872,3 +872,4 @@ html.cv .mc,html.cv .res-row,html.cv .prow,html.cv .ticket{content-visibility:au
 .refrow .av{width:36px;height:36px;border-radius:11px;grid-row:span 2}.refrow small{display:block;color:var(--mute);font-size:12px}
 .refbar{grid-column:2;display:block;height:6px;border-radius:4px;background:#ffffff1a;overflow:hidden}.refbar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--sel))}
 .refhero+.xcode+.btn,.xcode+[data-act=refshare]{margin-top:10px}
+.wrefc{margin:-2px 0 12px;text-align:left}.wrefc summary{cursor:pointer;color:var(--acc);font-weight:600;font-size:14px;list-style:none}.wrefc summary::-webkit-details-marker{display:none}.wrefc .form{margin-top:8px}.wrefc input{text-transform:uppercase;letter-spacing:.15em;font-weight:700}

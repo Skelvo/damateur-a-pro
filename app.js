@@ -1169,7 +1169,7 @@ async function playerCard(p,o){o=o||{};const C=cardStats(p.bets||[],p.xp),T=CARD
   txt(`${C.n} PARI${C.n>1?"S":""}`,W/2,952,'800 22px "Barlow Condensed"');
   return{blob:await new Promise(ok=>cv.toBlob(ok,"image/png")),C,T}}
 function refDone(j){try{localStorage.removeItem("dap.ref")}catch(e){}if(j&&j.parrain){S.refBy=j.parrain;saveLocal();setTimeout(claimGifts,2500)}}
-async function wrefFill(){const b=$("#wref"),rc=refStored();if(!b)return;try{const j=await api("ref_info",rc?{code:rc}:{pending:1});if(j.name&&$("#wref"))$("#wref").innerHTML=`<div class="refban">🎁 <span><b>Invité par ${esc(j.name)}</b><br>+${tok(j.gets)} jetons de bienvenue en plus des 1 000 de départ.</span></div>`}catch(e){}}
+async function wrefFill(){const b=$("#wref"),rc=refStored();if(!b)return;try{const j=await api("ref_info",rc?{code:rc}:{pending:1});if(j.name&&j.code&&$("#w-ref")&&!$("#w-ref").value)$("#w-ref").value=j.code;if(j.name&&$("#wref"))$("#wref").innerHTML=`<div class="refban">🎁 <span><b>Invité par ${esc(j.name)}</b><br>+${tok(j.gets)} jetons de bienvenue en plus des 1 000 de départ.</span></div>`}catch(e){}}
 async function openRef(){U.open="ref";const head=`<div class="grab"><h3>Parrainer un ami</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
   layerLater(head+`<div class="skel" style="height:140px"></div><div class="skel"></div>`);
   try{if(!(await ensureSession()))throw 0;const j=await api("ref_get",{});if(U.open!=="ref")return;U.ref=j;const ok=j.friends.filter(f=>f.ok).length;
@@ -1182,7 +1182,7 @@ async function openRef(){U.open="ref";const head=`<div class="grab"><h3>Parraine
         :`<div class="empty">${ic("group")}<b>Pas encore de filleul</b>Envoie ton lien : ton ami l’ouvre, installe l’app et crée son compte, c’est tout.</div>`}
       <p class="note">Jusqu’à ${j.max} parrainages récompensés. Les jetons restent fictifs. À 3 amis validés, tu débloques le titre « 🤝 Recruteur ».</p>`)}
   catch(e){if(U.open==="ref")layer(head+`<div class="empty">${ic("info")}<b>Pas de connexion</b>Réessaie dans un instant.</div>`)}}
-async function refShare(){const j=U.ref;if(!j)return;const url=APP_URL+"?parrain="+j.code,text=`Viens jouer avec moi sur Tribune 🏆 Paris sportifs gratuits entre amis (jetons fictifs). Avec mon lien tu reçois +${j.gets} jetons de bienvenue :`;
+async function refShare(){const j=U.ref;if(!j)return;const url=APP_URL+"?parrain="+j.code,text=`Viens jouer avec moi sur Tribune 🏆 Paris sportifs gratuits entre amis (jetons fictifs). Avec mon lien tu reçois +${j.gets} jetons de bienvenue (mon code de parrainage : ${j.code}) :`;
   try{if(navigator.share){await navigator.share({title:"Tribune",text,url});return}}catch(e){if(e&&e.name==="AbortError")return}
   try{await navigator.clipboard.writeText(text+" "+url);toast("Lien copié : colle-le à ton ami !","win")}catch(e){prompt("Copie ce lien :",url)}}
 async function openCard(p){U.open="card";U.cardP=p;const head=`<div class="grab"><h3>Carte de joueur</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
@@ -2454,7 +2454,7 @@ function viewWelcome(rename,msg){return`<div class="welcome">${rename?`<div clas
   
   <img src="logo-tribune.png?v=2" alt="Tribune" class="wlogo"><p class="note" style="font-size:15px">Parie gratuitement sur les vrais matchs de foot, de rugby, de tennis et de NBA, en direct. Monte de niveau, de Spectateur à Légende.</p>
   <div class="feat"><div>${ic("card","yc")}Cartons, corners, hors-jeux</div><div>${ic("posts")}Essais, pénalités ratées</div><div>${ic("broken")}Doubles fautes, raquettes cassées</div></div>`}
-  ${!S.name?`<div id="wref"></div>`:""}
+  ${!S.name?`<div id="wref"></div><details class="wrefc"><summary>🎁 J’ai un code de parrainage</summary><div class="form"><input id="w-ref" maxlength="8" placeholder="ex. BLVUEY" autocapitalize="characters" autocomplete="off" value="${esc(refStored())}"></div></details>`:""}
   <div class="form" style="text-align:left"><label>Ton pseudo<input id="w-name" maxlength="18" value="${esc(S.name)}" placeholder="ex. Le Pronostiqueur" autocomplete="nickname"></label>
   <p class="warn" id="w-err" hidden></p>
   ${rename?"":`<label class="agechk"><input type="checkbox" id="w-age"><span>J’ai <b>18 ans ou plus</b> et j’accepte les <button class="link" data-act="wlegal" style="padding:0">règles du jeu et la politique de confidentialité</button>.</span></label><div id="w-legal" hidden></div>`}
@@ -2468,7 +2468,7 @@ async function welcomeGo(){const inp=$("#w-name"),n=(inp.value||"").replace(/\s+
   const bad=()=>{err.hidden=false;err.textContent=`« ${n} » n’est pas accepté. Choisis un pseudo correct.`;b.disabled=false;inp.focus();inp.select()};
   const taken=()=>{err.hidden=false;err.textContent=`« ${n} » est déjà pris. Choisis un autre pseudo.`;b.disabled=false;inp.focus();inp.select()};
   if(first&&!S.tok&&!S.bets.length&&S.starter!=="done"){S.bal=0;S.peak=Math.max(0,S.peak);S.starter="pending"}
-  try{if(first||!S.tok){const j=await api("session",{name:n,bal:S.bal,peak:S.peak,ref:refStored(),...myStats()});S.tok=j.token;S.pid=j.id;refDone(j)}
+  try{if(first||!S.tok){const rIn=$("#w-ref"),rv=rIn&&rIn.value.trim()?rIn.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,8):refStored();const j=await api("session",{name:n,bal:S.bal,peak:S.peak,ref:rv,...myStats()});S.tok=j.token;S.pid=j.id;refDone(j)}
     else{const j=await api("sync",{name:n,bal:S.bal,peak:S.peak,...myStats()});if(j.name_taken){taken();return}if(j.name_bad){bad();return}}}
   catch(e){if(e.code==="name_taken"){taken();return}if(e.code==="name_bad"){bad();return}}   // hors connexion : on accepte, la vérification se fera plus tard
   if(first)S.tosV=TOS_V;S.name=n;askedName=false;save();U.open=null;layer("");render();
@@ -2553,7 +2553,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.23";
+const VERSION="2.24";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

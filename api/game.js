@@ -1271,7 +1271,7 @@ const ACTIONS = {
       await s.query(`delete from link_hits where at < now() - interval '3 hours'`);
       await s.query(`insert into link_hits (ip, code) values ($1, $2) on conflict (ip, code) do update set at = now()`, [ipKey(req), "R:" + code]);
     }
-    return { name: r.name, gets: REF_NEW };
+    return { name: r.name, gets: REF_NEW, code };
   },
   // mon style : ce que j'ai débloqué et ce que j'affiche
   async cos_get(s, b) {
