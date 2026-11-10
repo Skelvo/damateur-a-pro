@@ -348,7 +348,12 @@ const COS=[
   // v = effet quand un de tes paris passe
   ["v0","v","Confettis","",""],["v1","v","⚽ Pluie de ballons","lv5","Atteindre le niveau 5"],["v2","v","🎈 Ballons","lv10","Atteindre le niveau 10"],["v3","v","🎆 Feu d’artifice","lv20","Atteindre le niveau 20"],
   ["v4","v","🪙 Pluie de pièces","wheel500","Gagner 500 ou plus à la roue"],["v5","v","⚡ Orage","battles3","Gagner 3 combats de guildes"],["v6","v","👑 Couronnes","month1","Finir 1er du mois dans une guilde"],
-  ["v7","v","💸 Billets","jackpot","Toucher le jackpot de la roue"],["v8","v","🔥 Feu","streak5","Gagner 5 paris d’affilée"],["v9","v","🌱 Printemps","pioneer","Jouer depuis la première heure"]];
+  ["v7","v","💸 Billets","jackpot","Toucher le jackpot de la roue"],["v8","v","🔥 Feu","streak5","Gagner 5 paris d’affilée"],["v9","v","🌱 Printemps","pioneer","Jouer depuis la première heure"],
+  // y = style du titre (animés pour les plus durs)
+  ["y0","y","Classique","",""],["y1","y","Vert","lv5","Atteindre le niveau 5"],["y2","y","Argent","podium","Finir sur le podium du mois"],["y3","y","Or brillant","month1","Finir 1er du mois dans une guilde"],
+  ["y4","y","Feu","streak5","Gagner 5 paris d’affilée"],["y5","y","Glace","odds10","Gagner un pari à une cote de 10 ou plus"],["y6","y","Néon","lv34","Atteindre le niveau 34"],
+  ["y7","y","Électrique","battles3","Gagner 3 combats de guildes"],["y8","y","Galaxie","lv61","Atteindre le niveau 61"],["y9","y","Arc-en-ciel","lv100","Atteindre le niveau 100"],
+  ["y10","y","Pionnier","pioneer","Jouer depuis la première heure"],["y11","y","Jackpot","jackpot","Toucher le jackpot de la roue"]];
 const cosEmoji=id=>{const x=COS.find(c=>c[0]===id&&c[1]==="e");return x&&id!=="e0"?x[2].split(" ")[0]:""};
 const MONTHS_FR=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 // objets débloqués à partir des drapeaux du serveur : {lvl, months:["2026-11",…], podium, battles, odds10, …, all}
