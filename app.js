@@ -2504,6 +2504,7 @@ function viewInstall(gate){const head=gate?"":`<div class="grab"><h3>Installer l
       <p class="small">${INAPP_NAME==="Instagram"||INAPP_NAME==="Facebook"?"Ça ne marche pas ? Copie le lien et colle-le dans Safari :":`Rien ne se passe ? `+INAPP_NAME==="Instagram"?"Touche les <b>•••</b> en haut à droite, puis <b>Ouvrir dans le navigateur externe</b>.":INAPP_NAME==="Facebook"?"Touche les <b>•••</b> en haut à droite, puis <b>Ouvrir dans le navigateur externe</b>.":INAPP_NAME==="Snapchat"||INAPP_NAME==="TikTok"?"Touche les <b>•••</b> (ou la flèche de partage), puis <b>Ouvrir dans le navigateur</b>.":"Cherche le menu <b>•••</b> ou la boussole 🧭, puis <b>Ouvrir dans Safari</b>."+"<br>Ou copie le lien et colle-le dans Safari :"}</p>
       <button class="btn ghost wide" data-act="copylink">📋 Copier le lien</button></div><div class="grp">Ensuite, dans Safari</div>`
       :!IOS?`<p class="note" style="text-align:left">Sur iPhone, ouvre <b>${esc(url.replace(/^https:\/\//,""))}</b> dans <b>Safari</b> (pas dans Instagram, WhatsApp ou Chrome), puis :</p>`:"")+`
+    <div class="instvid"><video src="media/install-iphone.mp4?v=1" poster="media/install-iphone.jpg?v=1" controls playsinline muted preload="none"></video><small>▶️ La démo en 15 secondes</small></div>
     <ol class="steps"><li><span class="n">1</span><div>Dans Safari, touche le bouton <b>Partager</b> ${SHARE_IOS}<small>Selon ta version d’iOS : dans la barre du bas, à côté de l’adresse, ou dans le menu <b>•••</b>.</small></div></li>
       <li><span class="n">2</span><div>Fais défiler et choisis <b>Sur l’écran d’accueil</b> ${ADD_IOS}, puis <b>Ajouter</b>.<small>Si l’option « Ouvrir comme app web » apparaît, laisse-la activée.</small></div></li>
       <li><span class="n">3</span><div>Ouvre <b>Tribune</b> depuis ton écran d’accueil et choisis ton pseudo : <b>1 000 jetons</b> t’attendent.<small>Tu avais déjà un compte ? Touche « J’ai déjà un compte » et entre ton <b>code de compte</b> pour tout retrouver.</small></div></li></ol>
@@ -2567,7 +2568,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.30";
+const VERSION="2.31";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
