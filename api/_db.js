@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "30";
+const SCHEMA_VERSION = "31";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -330,6 +330,13 @@ const STATEMENTS = [
      player bigint primary key references players(id) on delete cascade,
      bal numeric not null,
      at timestamptz not null default now())`,
+  // tickets partagés : un code court par pari, pour ouvrir le ticket depuis un lien et le suivre
+  `create table if not exists shared_bets (
+     code text primary key,
+     bet bigint not null references bets(id) on delete cascade,
+     follows int not null default 0,
+     at timestamptz not null default now(),
+     unique (bet))`,
   `create table if not exists rate_hits (key text not null, win bigint not null, n int not null default 0, primary key (key, win))`,
 ];
 

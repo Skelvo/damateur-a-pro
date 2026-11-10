@@ -498,6 +498,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 .csec>.row,.csec>.rcard{margin:0 12px 8px}.csec>.row:last-child{margin-bottom:12px}
 .palm{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.palm>div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 4px;text-align:center;opacity:.55}.palm>div.on{opacity:1;border-color:#7a610f;background:linear-gradient(160deg,#3d3006,var(--card) 75%)}
 .palm span{font-size:22px;display:block}.palm b{display:block;font:800 24px "Barlow Condensed"}.palm small{display:block;font-size:11px;color:var(--mute);line-height:1.15}
+.shwho{display:flex;align-items:center;gap:10px;margin-bottom:10px}.shwho .av{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font:800 20px "Barlow Condensed";color:#0b1310;flex:none;overflow:hidden}.shwho>div{flex:1}.shwho b{display:block}.shwho small{color:var(--mute);font-size:12.5px}
 .palm0{background:var(--card);border:1px dashed var(--line2);border-radius:12px;padding:11px 12px;font-size:13.5px;color:var(--mute)}
 .palm2{display:grid;gap:6px;margin-top:6px}.palm2>div{display:flex;justify-content:space-between;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px}.palm2 b{font:800 18px "Barlow Condensed"}
 .gcomp{padding:12px 14px}.gcomp .gtop{gap:10px}.gti{flex:1;min-width:0}.gti h3{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gti small .link{padding:0;font-size:inherit;color:inherit;text-decoration:underline}
@@ -796,7 +797,7 @@ body.darkside .nav button[aria-current="page"] .i{color:#ff3b3b}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div id="rot" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><b>Tourne ton téléphone</b><small>Tribune se joue à la verticale.</small></div>
 
-<script src="engine.js?v=1.85"></script>
+<script src="engine.js?v=1.86"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -1475,6 +1476,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"help":openHelp();break;
     case"tshare":shareTicket(d.id);break;
     case"mshare":shareMonth();break;
+    case"follow":followShared();break;
     case"divs":openDivs();break;
     case"succ":openSucc();break;
     case"fxdemo":{const k=d.v,ru=k==="try";FXQ.push({k,team:ru?"Toulouse":k==="g"?"Rennes":"Lille",who:ru?"":k==="g"?"B. Dia":k==="yc"?"C. Verdonk":"M. Kjaergaard",min:67,m:ru?{h:"Toulouse",a:"Toulon",sc:[17,10]}:{h:"Rennes",a:"Lille",sc:k==="g"?[2,1]:[1,1]}});fxNext();break}
@@ -1811,7 +1813,7 @@ async function claimGifts(){if(!S.tok||Date.now()-gfAt<6e4)return;gfAt=Date.now(
 /* ---------- ticket à partager (image) ---------- */
 const imgP={};function loadImg(src){return imgP[src]||(imgP[src]=new Promise(ok=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>ok(null);i.src=src}))}
 function wrapTxt(c,t,max){const w=String(t).split(" "),L=[];let cur="";for(const x of w){const n=cur?cur+" "+x:x;if(c.measureText(n).width>max&&cur){L.push(cur);cur=x}else cur=n}if(cur)L.push(cur);return L}
-async function ticketImage(b){
+async function ticketImage(b,link){
   const W=1080,legs=b.legs.slice(0,8),more=b.legs.length-legs.length,RH=128,tkH=110+legs.length*RH+(more?50:0)+60+190,H=Math.max(1350,560+tkH+230);
   const cv=document.createElement("canvas");cv.width=W;cv.height=H;const c=cv.getContext("2d");
   try{await Promise.all([document.fonts.load('800 80px "Barlow Condensed"'),document.fonts.load('700 30px Barlow'),document.fonts.load('500 30px Barlow')])}catch(e){}
@@ -1863,15 +1865,44 @@ async function ticketImage(b){
   c.fillStyle=SC;c.textAlign="center";c.fillText(stamp,0,18);c.restore();
   // pied
   const fy=ty+tkH+90;c.textAlign="center";c.fillStyle="#e8efe9";c.font='800 46px "Barlow Condensed"';c.fillText(st==="won"?"QUI FAIT MIEUX ? 😏":st==="lost"?"LA REVANCHE, C’EST QUAND ?":"QUI ME SUIT ?",W/2,fy);
-  c.fillStyle="#35d07f";c.font='700 32px Barlow';c.fillText((location.host+location.pathname.replace(/index\.html$/,"")).replace(/\/$/,""),W/2,fy+52);
+  c.fillStyle="#35d07f";c.font='700 32px Barlow';c.fillText((link||APP_URL).replace(/^https?:\/\//,"").replace(/\/$/,""),W/2,fy+52);
   c.fillStyle="#6b7a72";c.font='500 26px Barlow';c.fillText("Paris gratuits entre potes · jetons fictifs",W/2,fy+92);
   return new Promise(ok=>cv.toBlob(ok,"image/png"))}
-async function shareTicket(id){const b=S.bets.find(x=>x.id===id);if(!b)return;toast("Préparation de l’image…");
-  try{const blob=await ticketImage(b),file=new File([blob],"ticket-tribune.png",{type:"image/png"});
-    const txt=b.st==="won"?`Ticket gagnant sur Tribune : +${tok(b.pay)} jetons à ${fr(b.odds)} 🔥`:b.st==="lost"?"Raté de peu sur Tribune… 😅":`Mon ticket sur Tribune : cote ${fr(b.odds)}, qui me suit ?`;
+const APP_URL="https://damateur-a-pro.vercel.app/";
+async function shareTicket(id){const b=S.bets.find(x=>x.id===id);if(!b)return;toast("Préparation du ticket…");
+  try{let link=APP_URL;if(b.sid){try{const j=await api("share_bet",{cid:b.id});if(j.code)link=APP_URL+"?pari="+j.code}catch(e){}}
+    const blob=await ticketImage(b,link),file=new File([blob],"ticket-tribune.png",{type:"image/png"});
+    const head=b.st==="won"?`Ticket gagnant sur Tribune : +${tok(b.pay)} jetons à ${fr(b.odds)} 🔥`:b.st==="lost"?"Raté de peu sur Tribune… 😅":`Mon ticket sur Tribune : cote ${fr(b.odds)}, qui me suit ? 😏`;
+    const txt=`${head}\n👉 ${b.st==="open"?"Touche pour voir le ticket et le suivre":"Touche pour voir le ticket"} : ${link}`;
     if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],text:txt})}catch(e){}return}
-    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="ticket-tribune.png";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4e3);toast("Image du ticket enregistrée.","win")}
+    if(navigator.share){try{await navigator.share({text:txt})}catch(e){}return}
+    try{await navigator.clipboard.writeText(txt);toast("Lien du ticket copié : colle-le dans ta conversation.","win")}catch(e){}
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="ticket-tribune.png";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4e3)}
   catch(e){toast("Impossible de créer l’image.","bad")}}
+// lien de ticket (…/?pari=CODE) : on ouvre le ticket ; un nouveau joueur le retrouve après son inscription
+function pariFromLink(){const c=new URLSearchParams(location.search).get("pari");if(!c)return;history.replaceState(null,"",location.pathname);
+  try{localStorage.setItem("dap.pari",c.toUpperCase().slice(0,10))}catch(e){}}
+function pariPending(){let c=null;try{c=localStorage.getItem("dap.pari")}catch(e){}if(!c||!S.name)return;try{localStorage.removeItem("dap.pari")}catch(e){}openShared(c)}
+async function openShared(code){U.open="shared";U.shared=null;const head=`<div class="grab"><h3>Ticket partagé</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
+  layerLater(head+`<div class="skel" style="height:220px"></div>`);
+  try{const j=await api("shared_bet",{code});U.shared=j;if(U.open==="shared")layer(head+viewShared(j))}
+  catch(e){if(U.open==="shared")layer(head+`<div class="empty">${ic("info")}<b>${e.code==="unknown"?"Ticket introuvable":"Pas de connexion"}</b>${e.code==="unknown"?"Ce lien de ticket n’existe plus.":"Réessaie dans un instant."}</div>`)}}
+function viewShared(j){const me=String(j.pid)===String(S.pid),st=j.status,tag=st==="won"?`<span class="tag won">Gagné +${tok(j.pay)}</span>`:st==="lost"?`<span class="tag lost">Perdu</span>`:st==="void"?`<span class="tag void">Remboursé</span>`:st==="cashed"?`<span class="tag cashed">Encaissé +${tok(j.pay)}</span>`:`<span class="tag open">En cours</span>`;
+  const open=j.legs.filter(L=>!L.r&&L.t>Date.now()-60e3).length;
+  return`<div class="shwho">${avatar(j.pid,j.name,j.av,"av")}<div><b>${esc(j.name)}</b><small>${j.legs.length>1?"Combiné de "+j.legs.length:"Pari simple"} · ${new Date(j.at).toLocaleDateString("fr-FR",{day:"numeric",month:"long"})}</small></div>${tag}</div>
+  <div class="ticket ${st}"><div class="tl">${j.legs.map(L=>`<div class="leg">${legStatus(L)}<div><b>${esc(L.l)} <span style="color:var(--mute);font-weight:500">@ ${fr(L.o)}</span></b><small>${esc(L.mt||"")}</small><small>${esc(L.ml||"")}</small></div></div>`).join("")}</div>
+  <div class="tf"><div><small>Mise</small><b>${tok(j.stake)}</b></div><div style="text-align:center"><small>Cote</small><b>${fr(j.odds)}</b></div><div style="text-align:right"><small>${st==="open"?"Gain possible":"Gain"}</small><b>${st==="lost"?"0":tok(st==="open"?j.stake*j.odds:j.pay)}</b></div></div></div>
+  ${j.follows?`<p class="note">🎟️ ${j.follows} personne${j.follows>1?"s suivent":" suit"} ce ticket</p>`:""}
+  ${me?`<p class="note">C’est ton ticket.</p>`:st!=="open"||!open?`<p class="note">Ce ticket n’est plus ouvert : les matchs ont commencé ou sont finis.</p>`
+    :S.name?`<button class="btn gold wide" data-act="follow">🎟️ Je suis ce pari</button><p class="note">Ses sélections encore ouvertes vont dans ton ticket, aux cotes du moment. Tu choisis ta mise.</p>`
+    :`<button class="btn gold wide" data-act="close">Créer mon compte pour le suivre</button>`}`}
+async function followShared(){const j=U.shared;if(!j)return;const b=$("[data-act=follow]");if(b){b.disabled=true;b.textContent="Préparation…"}
+  await Promise.allSettled([...new Set(j.legs.map(L=>L.sp))].map(sp=>loadSport(sp)));await loadEvents();
+  let added=0,gone=0;for(const L of j.legs){if(L.r){continue}const m=findMatch(L.mid);if(!m||!canBet(m)||PMK[L.mk]){gone++;continue}
+    const mk=markets(m).find(x=>x.id===L.mk);if(!mk||!mk.sels[L.k]||!mk.sels[L.k].o){gone++;continue}if(!selOf(L.mid,L.mk,L.k))pick(L.mid,L.mk,L.k);added++}
+  if(!added){toast("Plus aucune sélection de ce ticket n’est ouverte.","bad");if(b){b.disabled=false;b.textContent="🎟️ Je suis ce pari"}return}
+  U.combo=!!j.combo&&U.sel.length>1;api("shared_bet",{code:j.code,follow:1}).catch(()=>{});
+  U.tab="m";U.open="slip";layer(viewSlip());render();toast(`🎟️ ${added} sélection${added>1?"s":""} de ${esc(j.name)} ajoutée${added>1?"s":""}${gone?` (${gone} plus disponible${gone>1?"s":""})`:""}. Choisis ta mise !`,"win")}
 
 /* ---------- guide : présentation en 4 écrans, premier pari accompagné, missions « Premiers pas », aide ---------- */
 // 1) présentation (glisser ou « Suivant »)
@@ -1904,7 +1935,7 @@ function introGo(d){U.ii=Math.max(0,Math.min(INTRO_N-1,U.ii+d));layer(viewIntro(
 let ixT=null;
 document.addEventListener("touchstart",e=>{if(U.open==="intro"&&e.target.closest&&e.target.closest("#intro"))ixT={x:e.touches[0].clientX,y:e.touches[0].clientY}},{passive:true});
 document.addEventListener("touchend",e=>{if(!ixT||U.open!=="intro")return;const dx=e.changedTouches[0].clientX-ixT.x,dy=e.changedTouches[0].clientY-ixT.y;ixT=null;if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5)introGo(dx<0?1:-1)},{passive:true});
-function introEnd(coach){S.introSeen=INTRO_V;save();closeLayer();if(coach)startCoach();else if(!grantStarter(false))toast("Tu peux revoir la présentation dans Carrière › Comment ça marche ?")}
+function introEnd(coach){S.introSeen=INTRO_V;save();closeLayer();if(!coach)setTimeout(pariPending,800);if(coach)startCoach();else if(!grantStarter(false))toast("Tu peux revoir la présentation dans Carrière › Comment ça marche ?")}
 
 // 2) match d'entraînement : un faux match qui se joue en quelques secondes, sans toucher aux vrais matchs.
 // Le premier pari est forcément gagné et débloque les 1 000 premiers jetons du nouveau joueur.
@@ -1947,7 +1978,7 @@ function topSafe(){if(safeTop==null){const d=document.createElement("div");d.sty
 function startCoach(){U.coach={end:-1};if(U.open)closeLayer();if(U.tab!=="m"){U.tab="m";render()}window.scrollTo({top:0});
   let c=$("#coach");if(!c){c=document.createElement("div");c.id="coach";c.innerHTML=`<div class="cspot"></div><div class="cbub"><small class="cst"></small><p class="ctx"></p><div class="cbt"><button class="link" data-act="cskip">Passer le guide</button><button class="btn gold" data-act="cnext" hidden>Suivant</button></div></div>`;document.body.appendChild(c)}
   c.hidden=false;openTraining();clearInterval(coachT);coachT=setInterval(coachTick,250);coachTick()}
-function stopCoach(done){clearInterval(coachT);U.coach=null;const c=$("#coach");if(c)c.hidden=true;S.coachDone=1;
+function stopCoach(done){setTimeout(pariPending,1200);clearInterval(coachT);U.coach=null;const c=$("#coach");if(c)c.hidden=true;S.coachDone=1;
   if(U.open==="train"){U.tr=null;U.open=null;layer("")}grantStarter(false);save();
   if(done){U.tab="m";render();window.scrollTo({top:0});toast("Guide terminé ! Il te reste quelques missions « Premiers pas » pour gagner des jetons 🎁","win");loadGuide(true)}}
 function coachStep(){const C=U.coach,T=U.tr;
@@ -3048,7 +3079,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.85";
+const VERSION="1.86";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -3067,13 +3098,14 @@ async function boot(){if(GATE||!S.name){hideSplash();setTimeout(afterBoot,300);r
       if(L0)await Promise.allSettled([loadProno(),loadLm(U.lg.code||L0.code)])})()])})()];
   await Promise.race([Promise.allSettled(jobs),new Promise(r=>setTimeout(r,6500))]);
   clearInterval(mt);U.lg.loading=false;render();hideSplash();setTimeout(afterBoot,400)}
+pariFromLink();
 if(GATE)renderGate();else{
 render();
 if(!S.name){hideSplash();U.open="welcome";layer(viewWelcome(false))}else{syncSoon();joinFromLink()}
 loadFeeds();boot();
 setTimeout(()=>{if(S.dk&&Object.values(S.dk).some(x=>!x.settled))checkDarkAll()},5000);
 goFrom(location.href);
-var afterBoot=function(){pushRefresh();if(S.name&&S.starter==="pending"&&S.introSeen===INTRO_V&&!U.coach)grantStarter(false);if(S.name&&S.tosV!==TOS_V)openTos();else if(S.name&&S.introSeen!==INTRO_V)openIntro();if(S.name){claimPrizes();claimBattles();claimGifts();ensureRcode()}if(S.name)Promise.resolve().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()};
+var afterBoot=function(){pushRefresh();if(S.introSeen===INTRO_V&&S.tosV===TOS_V)setTimeout(pariPending,600);if(S.name&&S.starter==="pending"&&S.introSeen===INTRO_V&&!U.coach)grantStarter(false);if(S.name&&S.tosV!==TOS_V)openTos();else if(S.name&&S.introSeen!==INTRO_V)openIntro();if(S.name){claimPrizes();claimBattles();claimGifts();ensureRcode()}if(S.name)Promise.resolve().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()};
 setInterval(()=>{if(!document.hidden&&S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},12e4);
 // matchs en direct qui te concernent (regardé, parié, équipe de cœur) : leur compétition est rafraîchie toutes les 20 s pour les animations
 setInterval(()=>{if(document.hidden)return;const hot=new Set([...REG.values()].filter(m=>m.src==="espn"&&m.state==="in"&&(m.sp==="foot"||m.sp==="rugby")&&fxMine(m)).map(m=>m.sp+"|"+m.lv));

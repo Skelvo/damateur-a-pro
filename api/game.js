@@ -1137,6 +1137,39 @@ const ACTIONS = {
       bestOdds: bo ? { ...who(bo), odds: bo.odds, label: (bo.legs[0] || {}).l, n: bo.legs.length } : null,
       bigWin: bg ? { ...who(bg), gain: Math.round(bg.pay - bg.stake), odds: bg.odds } : null };
   },
+  // partager un pari : code court (le même à chaque partage du même pari)
+  async share_bet(s, b) {
+    const p = await me(s, b.token);
+    const bt = (await s.query(`select id from bets where player = $1 and cid = $2`, [p.id, cleanName(b.cid, 40)]))[0];
+    if (!bt) throw fail(404, "unknown");
+    const old = (await s.query(`select code from shared_bets where bet = $1`, [bt.id]))[0];
+    if (old) return { code: old.code };
+    for (let i = 0; i < 6; i++) {
+      let code = "";
+      for (let k = 0; k < 7; k++) code += CODE_CHARS[randomInt(CODE_CHARS.length)];
+      const r = await s.query(`insert into shared_bets (code, bet) values ($1, $2) on conflict do nothing returning code`, [code, bt.id]);
+      if (r[0]) return { code };
+    }
+    throw fail(500, "code");
+  },
+  // voir un ticket partagé (sans compte) ; follow = « je suis ce pari » (compté une fois par joueur)
+  async shared_bet(s, b) {
+    const code = cleanName(b.code, 10).toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const r = (await s.query(`select sb.code, sb.follows, x.player, pl.name, pl.avatar_v, x.stake, x.odds::float8 as odds, x.status, x.pay::float8 as pay, x.combo, x.legs,
+         extract(epoch from x.at) * 1000 as at from shared_bets sb join bets x on x.id = sb.bet join players pl on pl.id = x.player where sb.code = $1`, [code]))[0];
+    if (!r) throw fail(404, "unknown");
+    if (b.follow && b.token) {
+      const p = await me(s, b.token);
+      if (String(p.id) !== String(r.player) && await credit(s, p.id, 0, "follow", code)) {
+        await s.query(`update shared_bets set follows = follows + 1 where code = $1`, [code]);
+        r.follows++;
+        await notify(s, [r.player], { title: "🎟️ Quelqu'un suit ton pari !", body: `${p.name} a suivi ton ticket (cote ${Number(r.odds).toFixed(2).replace(".", ",")}). Pas de pression 😏`, url: "./?go=bets", tag: "follow-" + code });
+      }
+    }
+    const legs = (r.legs || []).map((L) => ({ mid: L.mid, path: L.path, t: L.t, sp: L.sp, mk: L.mk, k: L.k, line: L.line, o: L.o, l: L.l, ml: L.ml, mt: L.mt, r: L.r || null }));
+    return { code: r.code, name: r.name, pid: r.player, av: r.avatar_v || 0, stake: r.stake, odds: r.odds, status: r.status, pay: r.pay, combo: r.combo, legs,
+      at: Math.round(Number(r.at)), follows: r.follows };
+  },
   async starter_log(s, b) {
     const p = await me(s, b.token);
     const ok = (await s.query(`select 1 from players where id = $1 and created_at > now() - interval '3 days'`, [p.id]))[0];
