@@ -1350,7 +1350,7 @@ const ACTIONS = {
     for (let i = 0; i < refs.length; i += 40) {
       const part = await Promise.all(refs.slice(i, i + 40).map(get));
       for (const L of part) if (L && (!q || String(L.name || "").toLowerCase().includes(q) || String(L.abbreviation || "").toLowerCase().includes(q)))
-        out.push({ id: L.id, name: L.name, abbr: L.abbreviation, season: L.season && L.season.year });
+        out.push({ id: L.id, slug: L.slug, name: L.name, abbr: L.abbreviation, season: L.season && L.season.year });
     }
     return { count: refs.length, leagues: out };
   },
