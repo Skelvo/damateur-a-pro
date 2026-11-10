@@ -897,3 +897,13 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 .refsw{display:flex!important;align-items:center;justify-content:center;font-size:20px!important;line-height:1;overflow:hidden}
 .form select{width:100%;margin-top:6px;padding:12px 14px;border-radius:12px;background:var(--card2);color:var(--ink);border:1px solid var(--line2);font:600 15px Barlow,sans-serif;-webkit-appearance:none;appearance:none;background-image:linear-gradient(45deg,transparent 50%,#8ea198 50%),linear-gradient(135deg,#8ea198 50%,transparent 50%);background-position:calc(100% - 20px) 50%,calc(100% - 14px) 50%;background-size:6px 6px;background-repeat:no-repeat}
 .form textarea{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line2);background:var(--card);color:var(--ink);font:500 16px Barlow,sans-serif;resize:vertical;min-height:120px}.form textarea:focus,.form select:focus{outline:none;border-color:var(--acc)}
+/* petits écrans (iPhone SE, vieux Android) */
+.sbar button[aria-pressed=true]{background:#1a2b24}
+@supports (background:color-mix(in srgb,red 10%,blue)){.sbar button[aria-pressed=true]{background:color-mix(in srgb,var(--c) 18%,var(--card))}}
+@media (max-width:370px){
+  .sbar button{flex-direction:column;height:52px;gap:2px;font-size:13px;letter-spacing:.02em}.sbar button .ball{width:19px;height:19px}
+  .mcnote{min-width:40px;padding:0 9px 0 0}.mcnote b{font-size:34px}.mcnote small{font-size:10px}
+  .mcard .av,.chero .av{width:50px!important;height:50px!important}.chero h2{font-size:22px}.chero .who{gap:9px}
+  .mprog .l span:last-child{display:none}.chero .ttl{font-size:11px}
+}
+@media (max-width:370px){.brand{gap:7px}.brand b{font-size:19px}.blogo img{width:34px;height:34px}}
