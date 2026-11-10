@@ -1046,7 +1046,7 @@ const ttlH=cos=>{const t=cos&&cos.t&&cosTitle(cos.t);return t?`<span class="ttl$
 // finitions « mini-carte » (même métal, liserés et reflet que la carte de joueur) pour le haut des profils
 const MC_K={"BRONZE":"bronze","ARGENT":"argent","OR":"or","ÉLITE":"elite","LÉGENDE":"legende"};
 function mcInfo(bets,xp){let C;try{C=cardStats(bets||[],xp)}catch(e){C={note:40}}const T=CARD_T.find(x=>C.note>=x[0]);
-  return{cls:" mc mt-"+MC_K[T[1]],fx:`<i class="hfx"></i><i class="hho"></i>`,note:(tag="div",act="")=>`<${tag} class="mcnote"${act?` data-act="${act}" aria-label="Ma carte de joueur"`:""}><b>${C.note}</b><small>${T[1]}</small></${tag}>`}}
+  return{cls:" mcard mt-"+MC_K[T[1]],fx:`<i class="hfx"></i><i class="hho"></i><i class="tkb"></i>`,note:(tag="div",act="")=>`<${tag} class="mcnote"${act?` data-act="${act}" aria-label="Ma carte de joueur"`:""}><b>${C.note}</b><small>${T[1]}</small></${tag}>`}}
 const bnC=cos=>cos&&cos.b&&cos.b!=="b0"?" bnr bn-"+cos.b:"";
 async function loadCos(){if(!S.tok)return null;try{const j=await api("cos_get",{});U.cosD=j;S.cos=j.cos||{};saveLocal();return j}catch(e){return null}}
 async function openStyle(){U.open="style";U.cosTab=U.cosTab||"b";const head=`<div class="grab"><h3>Mon style</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
@@ -1211,7 +1211,7 @@ const BN_COL={b1:["#0b2a17","#06140b","rgba(53,208,127,.4)","rgba(36,128,63,.4)"
   b13:["#2a0610","#06102a","rgba(179,18,43,.5)","rgba(18,64,179,.5)"],b14:["#2a1407","#0c0603","rgba(143,71,25,.5)","rgba(255,122,69,.3)"],
   b15:["#3a1a0a","#120804","rgba(199,91,43,.5)","rgba(255,255,255,.12)"],b16:["#3a2410","#120b04","rgba(196,139,71,.5)","rgba(255,210,63,.2)"],
   b17:["#0e3b28","#05120c","rgba(53,208,127,.4)","rgba(255,210,63,.3)"],b18:["#1a1033","#050308","rgba(143,134,255,.4)","rgba(232,226,255,.2)"],
-  b20:["#b8652a","#2a170a","rgba(255,208,138,.45)","rgba(194,122,58,.35)"],b19:["#0b1d3a","#050b18","rgba(255,255,255,.3)","rgba(255,90,95,.3)"]};
+  b21:["#b8652a","#2a170a","rgba(255,208,138,.45)","rgba(194,122,58,.35)"],b20:["#b8652a","#2a170a","rgba(255,208,138,.45)","rgba(194,122,58,.35)"],b19:["#0b1d3a","#050b18","rgba(255,255,255,.3)","rgba(255,90,95,.3)"]};
 async function ticketImage(b,link){
   const W=1080,legs=b.legs.slice(0,8),more=b.legs.length-legs.length,RH=128,tkH=110+legs.length*RH+(more?50:0)+60+190,H=Math.max(1350,560+tkH+230);
   const cv=document.createElement("canvas");cv.width=W;cv.height=H;const c=cv.getContext("2d");
@@ -2495,7 +2495,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.08";
+const VERSION="2.09";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
