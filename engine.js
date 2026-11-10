@@ -314,7 +314,32 @@ const TIERS=[["Spectateur",1,"👀"],["Supporter",5,"📣"],["Habitué",10,"🎟
 const xpFor=L=>L<=1?0:Math.round(60*Math.pow(L-1,1.55));   // XP totale pour atteindre le niveau L
 function levelOf(xp){xp=Math.max(0,Math.floor(xp||0));let L=1;while(xpFor(L+1)<=xp)L++;let ti=0;TIERS.forEach((t,i)=>{if(L>=t[1])ti=i});
   const a=xpFor(L),b=xpFor(L+1);return{lvl:L,tier:TIERS[ti][0],ic:TIERS[ti][2],ti,xp,cur:xp-a,need:b-a,pct:(xp-a)/(b-a),next:TIERS[ti+1]||null}}
+// Style du joueur : bannière de profil (b), couleur du pseudo (c), titre (t). Rien ne s'achète : tout se débloque en jouant.
+// req = condition vérifiée par le serveur (niveau lvN, podium du mois, combats, gros coups…)
+const COS=[
+  ["b0","b","Tribune","",""],["b1","b","Pelouse","lv5","Atteindre le niveau 5"],["b2","b","Nuit de match","lv10","Atteindre le niveau 10"],
+  ["b3","b","Brasier","lv20","Atteindre le niveau 20 (Ultra)"],["b4","b","Néon","lv34","Atteindre le niveau 34"],["b5","b","Galaxie","lv61","Atteindre le niveau 61"],
+  ["b6","b","Légende","lv100","Atteindre le niveau 100"],["b7","b","Or massif","month1","Finir 1er du mois dans une guilde"],["b8","b","Argent","podium","Finir sur le podium du mois"],
+  ["b9","b","Orage","battles3","Gagner 3 combats de guildes"],["b10","b","Viseur","odds10","Gagner un pari à une cote de 10 ou plus"],["b11","b","Trèfle","wheel500","Gagner 500 ou plus à la roue"],
+  ["b12","b","Jackpot","jackpot","Toucher le jackpot de la roue"],["b13","b","Derby","duels5","Gagner 5 duels"],["b14","b","Mêlée","rugby10","Gagner 10 paris de rugby"],
+  ["b15","b","Terre battue","tennis10","Gagner 10 paris de tennis"],["b16","b","Parquet","nba10","Gagner 10 paris NBA"],["b17","b","Pionnier","pioneer","Jouer depuis la première heure (avant décembre 2026)"],
+  ["c0","c","Blanc","",""],["c1","c","Vert Tribune","lv5","Atteindre le niveau 5"],["c2","c","Bleu ciel","lv10","Atteindre le niveau 10"],["c3","c","Orange","lv15","Atteindre le niveau 15"],
+  ["c4","c","Rose","lv27","Atteindre le niveau 27"],["c5","c","Violet","lv42","Atteindre le niveau 42"],["c6","c","Or","month1","Finir 1er du mois dans une guilde"],
+  ["c7","c","Argent","podium","Finir sur le podium du mois"],["c8","c","Feu","streak5","Gagner 5 paris d’affilée"],["c9","c","Glace","odds10","Gagner un pari à une cote de 10 ou plus"],
+  ["c10","c","Néon","lv51","Atteindre le niveau 51"],["c11","c","Arc-en-ciel","lv100","Atteindre le niveau 100"],["c12","c","Pionnier","pioneer","Jouer depuis la première heure"],
+  ["t0","t","Aucun titre","",""],["t1","t","🌱 Pionnier","pioneer","Jouer depuis la première heure"],["t2","t","🎯 Le Sniper","odds10","Gagner un pari à une cote de 10 ou plus"],
+  ["t3","t","🤝 Roi du nul","draws5","Gagner 5 paris sur un match nul"],["t4","t","🧾 Combinard","combo4","Gagner un combiné de 4 sélections ou plus"],["t5","t","⚔️ Gladiateur","battles3","Gagner 3 combats de guildes"],
+  ["t6","t","🛡️ Chef de guerre","chief","Être chef d’une guilde qui a gagné un combat"],["t7","t","🤺 Duelliste","duels5","Gagner 5 duels"],["t8","t","🔮 Le Prophète","prono20","Marquer 20 points au prono"],
+  ["t9","t","👁️ Voyant","lm10","Voir juste 10 fois au match de la guilde"],["t10","t","🍀 Chanceux","wheel500","Gagner 500 ou plus à la roue"],["t11","t","💰 Millionnaire","jackpot","Toucher le jackpot de la roue"],
+  ["t12","t","📅 Fidèle","days30","Jouer 30 jours différents"],["t13","t","🔥 Ultra","lv20","Atteindre le niveau 20"],["t14","t","👑 Légende","lv100","Atteindre le niveau 100"],
+  ["t15","t","🥉 Podium","podium","Finir sur le podium du mois"],["t16","t","🏉 Ovalie","rugby10","Gagner 10 paris de rugby"],["t17","t","🎾 Roi de la terre battue","tennis10","Gagner 10 paris de tennis"],
+  ["t18","t","🏀 Mister NBA","nba10","Gagner 10 paris NBA"],["t19","t","🔥 Inarrêtable","streak5","Gagner 5 paris d’affilée"]];
+const MONTHS_FR=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+// objets débloqués à partir des drapeaux du serveur : {lvl, months:["2026-11",…], podium, battles, odds10, …, all}
+function cosUnlocked(f){f=f||{};const ok=r=>!r||f.all||(r.startsWith("lv")?(f.lvl||1)>=+r.slice(2):!!f[r]);
+  const out=COS.filter(x=>ok(x[3])).map(x=>x[0]);for(const m of f.months||[])out.push("tm:"+m);if(f.all)out.push("tm:2026-11");return out}
+function cosTitle(id){if(!id)return"";if(id.startsWith("tm:")){const m=id.slice(3);return"👑 Champion de "+(MONTHS_FR[+m.slice(5,7)-1]||m)+" "+m.slice(0,4)}const x=COS.find(c=>c[0]===id&&c[1]==="t");return x&&id!=="t0"?x[2]:""}
 function defisFor(day){const r=rng(hash("defis|"+day));return DEFIS.map(L=>L[Math.floor(r()*L.length)])}
 
-if(typeof globalThis!=="undefined")globalThis.ENGINE={TIERS,xpFor,levelOf,resMarket,marketInfo,mkOne,WEEKENDS,COMBO_BOOST,weekendOf,fr,strength,SP,SIM,MK,N,ALLSTATS,STATL,ESPN,MCC,MKC,ONE,cl,hash,rng,pois,binom,H,DAY,lvA,sims,simOne,tot,cmp3,avail,odd,mt,liveOK,canBet,liveSims,marketSims,markets,outcome,
+if(typeof globalThis!=="undefined")globalThis.ENGINE={COS,cosUnlocked,cosTitle,TIERS,xpFor,levelOf,resMarket,marketInfo,mkOne,WEEKENDS,COMBO_BOOST,weekendOf,fr,strength,SP,SIM,MK,N,ALLSTATS,STATL,ESPN,MCC,MKC,ONE,cl,hash,rng,pois,binom,H,DAY,lvA,sims,simOne,tot,cmp3,avail,odd,mt,liveOK,canBet,liveSims,marketSims,markets,outcome,
   SOCSTAT,recStrength,amer,bookDiff,footProbs,TEAM_FR,frTeam,parseTeamEvent,parseTennis,status,realStats,PMK,legIdx,jointP,comboCalc,readLineup,applySummary,playerLegResult,legResultM,betResult,cashValueM,WHEEL,WP,JACKPOT,JACK_ODDS,EXTRA_DAY,DEFIS,DEFI_BONUS,defisFor,legsOf};

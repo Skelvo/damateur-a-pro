@@ -57,7 +57,7 @@ const WEEK = `to_char(date_trunc('week', now() at time zone 'Europe/Paris'), 'YY
 const MONTH = `to_char(now() at time zone 'Europe/Paris', 'YYYY-MM')`;
 const PREV_WEEK = `to_char(date_trunc('week', now() at time zone 'Europe/Paris') - interval '7 days', 'YYYY-MM-DD')`;
 const PREV_MONTH = `to_char(date_trunc('month', now() at time zone 'Europe/Paris') - interval '1 month', 'YYYY-MM')`;
-const BOARD_COLS = `p.id, p.name, coalesce((select x.xp from pxp x where x.player = p.id), 0) as xp, p.bal::float8 as bal, p.peak::float8 as peak, p.won, p.lost, p.avatar_v, p.fav, p.badges,
+const BOARD_COLS = `p.id, p.name, p.cos, coalesce((select x.xp from pxp x where x.player = p.id), 0) as xp, p.bal::float8 as bal, p.peak::float8 as peak, p.won, p.lost, p.avatar_v, p.fav, p.badges,
   coalesce((select x.gain from sprofits x where x.player = p.id and x.per = ${WEEK}), 0)::float8 as week_gain,
   coalesce((select x.gain from sprofits x where x.player = p.id and x.per = ${MONTH}), 0)::float8 as month_gain`;
 // Gains par semaine (ou par mois) des membres d'une guilde, y compris la dernière période de ceux
@@ -530,6 +530,34 @@ async function guideState(s, pid) {
   const done = {}, claimed = {};
   for (const g of GUIDE) { done[g] = !!r[g]; claimed[g] = got.has(g); }
   return { done, claimed, all: got.has("all"), reward: GUIDE_REWARD, bonus: GUIDE_ALL };
+}
+
+// ---- Style du joueur : ce qu'il a débloqué (tout est vérifié ici, rien ne s'achète) ----
+async function cosFlags(s, pid) {
+  const r = (await s.query(`select p.cos_all, p.badges, p.created_at < '2026-12-01' as pioneer,
+      coalesce((select xp from pxp where player = p.id), 0) as xp,
+      (select coalesce(json_agg(month order by month), '[]') from month_prizes where player = p.id and rank = 1) as months,
+      exists (select 1 from month_prizes where player = p.id and rank <= 3) as podium,
+      (select count(*)::int from battle_rewards where player = p.id and result = 'w') as battles,
+      exists (select 1 from bets where player = p.id and status = 'won' and odds >= 10) as odds10,
+      exists (select 1 from ledger where player = p.id and kind = 'wheel' and delta >= 500) as wheel500,
+      exists (select 1 from ledger where player = p.id and kind = 'wheel' and delta >= 1000000) as jackpot,
+      (select count(*)::int from ledger where player = p.id and kind = 'duel_win') as duels,
+      (select count(*)::int from bets where player = p.id and status = 'won' and legs->0->>'sp' = 'rugby') as rugby,
+      (select count(*)::int from bets where player = p.id and status = 'won' and legs->0->>'sp' = 'tennis') as tennis,
+      (select count(*)::int from bets where player = p.id and status = 'won' and legs->0->>'sp' = 'basket') as nba,
+      (select count(*)::int from bets where player = p.id and status = 'won' and exists (select 1 from jsonb_array_elements(legs) e where e->>'mk' = 'res' and e->>'k' = '1')) as draws,
+      exists (select 1 from bets where player = p.id and status = 'won' and jsonb_array_length(legs) >= 4) as combo4,
+      exists (select 1 from leagues l where l.owner = p.id and l.bw > 0) as chief,
+      coalesce((select sum(delta) from ledger where player = p.id and kind = 'prono'), 0)::int as prono,
+      (select count(*)::int from ledger where player = p.id and kind = 'lm') as lm,
+      (select count(*)::int from bal_hist where player = p.id) as days
+    from players p where p.id = $1`, [pid]))[0];
+  if (!r) return {};
+  const badges = Array.isArray(r.badges) ? r.badges : [];
+  return { all: !!r.cos_all, lvl: EG.levelOf(r.xp).lvl, months: r.months || [], podium: r.podium, battles3: r.battles >= 3, odds10: r.odds10, wheel500: r.wheel500, jackpot: r.jackpot,
+    duels5: r.duels >= 5, rugby10: r.rugby >= 10, tennis10: r.tennis >= 10, nba10: r.nba >= 10, pioneer: r.pioneer, streak5: badges.includes("s5"), draws5: r.draws >= 5,
+    combo4: r.combo4, chief: r.chief, prono20: r.prono >= 200, lm10: r.lm >= 10, days30: r.days >= 30, month1: (r.months || []).length > 0 };
 }
 
 // ---- Modération ----
@@ -1150,6 +1178,25 @@ const ACTIONS = {
     for (const x of r) if (await credit(s, p.id, 0, "pend", x.code)) return { code: x.code };
     return { code: null };
   },
+  // mon style : ce que j'ai débloqué et ce que j'affiche
+  async cos_get(s, b) {
+    const p = await me(s, b.token);
+    const f = await cosFlags(s, p.id), cur = (await s.query(`select cos from players where id = $1`, [p.id]))[0].cos || {};
+    return { flags: f, unlocked: EG.cosUnlocked(f), cos: cur };
+  },
+  async cos_set(s, b) {
+    const p = await me(s, b.token);
+    const un = new Set(EG.cosUnlocked(await cosFlags(s, p.id))), pick = (v, ty) => (typeof v === "string" && un.has(v) && (v.startsWith("tm:") ? ty === "t" : v[0] === ty) ? v : null);
+    const cos = { b: pick(b.b, "b"), c: pick(b.c, "c"), t: pick(b.t, "t") };
+    await s.query(`update players set cos = $2::jsonb where id = $1`, [p.id, JSON.stringify(cos)]);
+    return { ok: true, cos };
+  },
+  // mode testeur : tout le style débloqué pour un joueur (organisateurs seulement)
+  async admin_cos_all(s, b) {
+    admin(b);
+    const r = await s.query(`update players set cos_all = $2 where lower(name) = lower($1) returning id, name`, [String(b.name || ""), b.on !== false]);
+    return { ok: !!r[0], players: r };
+  },
   async share_bet(s, b) {
     const p = await me(s, b.token);
     const bt = (await s.query(`select id from bets where player = $1 and cid = $2`, [p.id, cleanName(b.cid, 40)]))[0];
@@ -1397,7 +1444,7 @@ const ACTIONS = {
     return {
       me: p.id, leagues, code: code && leagues.some((l) => l.code === code) ? code : "", total, rank, last, lastSeason,
       season: { month: cur.m, label: monthName(cur.m), end: Math.round(Number(cur.mend)) }, week: cur.w,
-      rows: rows.map((r) => ({ id: r.id, name: r.name, bal: Math.round(r.bal), peak: Math.round(r.peak), won: r.won, lost: r.lost, week: Math.round(r.week_gain), season: Math.round(r.month_gain), tr: trophies[r.id] || 0, sc: crowns[r.id] || 0, av: r.avatar_v || 0, fav: r.fav ? { n: r.fav.name, l: r.fav.logo } : null, nb: Array.isArray(r.badges) ? r.badges.length : 0, xp: r.xp || 0 })),
+      rows: rows.map((r) => ({ id: r.id, name: r.name, bal: Math.round(r.bal), peak: Math.round(r.peak), won: r.won, lost: r.lost, week: Math.round(r.week_gain), season: Math.round(r.month_gain), tr: trophies[r.id] || 0, sc: crowns[r.id] || 0, av: r.avatar_v || 0, fav: r.fav ? { n: r.fav.name, l: r.fav.logo } : null, nb: Array.isArray(r.badges) ? r.badges.length : 0, xp: r.xp || 0, cos: r.cos || null })),
     };
   },
 
@@ -1431,12 +1478,12 @@ const ACTIONS = {
       if (!ok) throw fail(403, "not_friend");
     }
     const r = (await s.query(
-      `select id, name, bal::float8 as bal, peak::float8 as peak, won, lost, avatar_v, bets, fav, badges, extract(epoch from created_at) * 1000 as since,
+      `select id, name, cos, bal::float8 as bal, peak::float8 as peak, won, lost, avatar_v, bets, fav, badges, extract(epoch from created_at) * 1000 as since,
          coalesce((select x.xp from pxp x where x.player = players.id), 0) as xp,
          (select count(*)::int from weekly w where w.player = players.id) as weeks
        from players where id = $1`, [id]))[0];
     if (!r) throw fail(404, "unknown");
-    return { id: r.id, name: r.name, bal: Math.round(r.bal), peak: Math.round(r.peak), won: r.won, lost: r.lost, av: r.avatar_v || 0, xp: r.xp || 0,
+    return { id: r.id, name: r.name, bal: Math.round(r.bal), peak: Math.round(r.peak), won: r.won, lost: r.lost, av: r.avatar_v || 0, xp: r.xp || 0, cos: r.cos || null,
       bets: (r.bets && r.bets.list) || [], best: (r.bets && r.bets.best) || null, since: Math.round(Number(r.since)),
       fav: r.fav || null, badges: Array.isArray(r.badges) ? r.badges : [],
       pal: (await s.query(`select
@@ -1772,9 +1819,9 @@ const ACTIONS = {
     if (!(await isMember(s, code, p.id))) throw fail(403, "not_member");
     const after = int(b.after, 0, 1e15);
     const rows = await s.query(
-      `select c.id, c.player, pl.name, pl.avatar_v, c.text, extract(epoch from c.at) * 1000 as ms from chat c join players pl on pl.id = c.player
+      `select c.id, c.player, pl.name, pl.avatar_v, pl.cos, c.text, extract(epoch from c.at) * 1000 as ms from chat c join players pl on pl.id = c.player
        where c.code = $1 and c.id > $2 and not c.hidden order by c.id desc limit 120`, [code, after]);
-    return { me: p.id, msgs: rows.reverse().map((r) => ({ id: r.id, who: r.player, name: r.name, av: r.avatar_v || 0, text: r.text, at: Math.round(Number(r.ms)) })) };
+    return { me: p.id, msgs: rows.reverse().map((r) => ({ id: r.id, who: r.player, name: r.name, av: r.avatar_v || 0, cos: r.cos || null, text: r.text, at: Math.round(Number(r.ms)) })) };
   },
   async chat_delete(s, b) {
     const p = await me(s, b.token);

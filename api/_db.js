@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "33";
+const SCHEMA_VERSION = "34";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -357,6 +357,9 @@ const STATEMENTS = [
               else 0 end) as xp from ledger group by player)
      select p.id as player, (coalesce(bx.xp, 0) + coalesce(lx.xp, 0) + coalesce(p.xp_seed, 0))::int as xp
      from players p left join bx on bx.player = p.id left join lx on lx.player = p.id`,
+  // style du joueur (bannière, couleur, titre) et mode testeur (tout débloqué)
+  `alter table players add column if not exists cos jsonb`,
+  `alter table players add column if not exists cos_all boolean not null default false`,
   `create table if not exists rate_hits (key text not null, win bigint not null, n int not null default 0, primary key (key, win))`,
 ];
 
