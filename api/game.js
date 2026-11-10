@@ -1110,7 +1110,7 @@ const ACTIONS = {
     const n = (await s.query(`select count(*)::int as n from reports where kind = 'guild' and target = $1 and text = $2`, [g.code, g.name]))[0].n;
     if (n < 3) return { ok: true };
     await banName(s, g.name);
-    await s.query(`update leagues set name = $2, motto = null where code = $1`, [g.code, "Guilde " + id]);
+    await s.query(`update leagues set name = $2, motto = null, logo = null, emblem = coalesce(emblem, '{}'::jsonb) - 'lg' - 'img' where code = $1`, [g.code, "Guilde " + id]);
     return { ok: true, renamed: true };
   },
   // écrire aux organisateurs (question, bug, signalement grave)
@@ -1242,7 +1242,7 @@ const ACTIONS = {
     admin(b);
     const img = String(b.img || "");
     if (img && !GIMG.test(img)) throw fail(400, "bad_img");
-    const r = await s.query(`update leagues set emblem = case when $2 = '' then coalesce(emblem, '{}'::jsonb) - 'img' else coalesce(emblem, '{}'::jsonb) || jsonb_build_object('img', $2::text) end
+    const r = await s.query(`update leagues set logo = case when $2 = '' then null else logo end, emblem = case when $2 = '' then coalesce(emblem, '{}'::jsonb) - 'img' - 'lg' else (coalesce(emblem, '{}'::jsonb) - 'lg') || jsonb_build_object('img', $2::text) end
        where lower(name) = lower($1) returning code, name, emblem`, [String(b.name || ""), img]);
     if (!r[0]) return { ok: false, guilds: (await s.query(`select code, name from leagues order by name`)).map((x) => x.name) };
     return { ok: true, guilds: r };

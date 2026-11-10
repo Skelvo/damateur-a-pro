@@ -1144,12 +1144,12 @@ async function playerCard(p,o){o=o||{};const C=cardStats(p.bets||[],p.xp),T=CARD
   // colonne de gauche : note, sport, écusson, rang
   const txt=(t,x,y,f,col=ink,al="center")=>{c.font=f;c.textAlign=al;c.fillStyle=col;c.fillText(t,x,y)};
   c.save();c.shadowColor="rgba(0,0,0,.25)";c.shadowBlur=6;c.shadowOffsetY=3;
-  txt(String(C.note),160,232,'800 150px "Barlow Condensed"');const spL=o.sp==="none"?"":o.sp&&o.sp!=="auto"?{foot:"FOOT",rugby:"RUGBY",tennis:"TENNIS",nba:"NBA"}[o.sp]:(C.sport||"MULTI");if(spL)txt(spL,160,284,'800 44px "Barlow Condensed"');c.restore();
+  txt(String(C.note),160,232,'800 150px "Barlow Condensed"');const spL=o.sp==="none"?"":o.sp&&o.sp!=="auto"?{foot:"FOOT",rugby:"RUGBY",tennis:"TENNIS",nba:"NBA"}[o.sp]:(C.sport||"MULTI");if(spL)txt(spL,160,284,'800 44px "Barlow Condensed"');c.restore();const up=spL?0:-50;c.save();c.translate(0,up);
   c.fillStyle=ink;c.globalAlpha=.6;c.fillRect(118,304,84,3);c.globalAlpha=1;
   let by=320;if(o.bd==="fav"&&p.fav&&p.fav.logo){const L=await loadImgX(p.fav.logo);if(L){c.drawImage(L,122,by,76,76);by+=92}}
   else if(o.bd==="emo"){const em=p.cos&&p.cos.e&&cosEmoji(p.cos.e);if(em){txt(em,160,by+64,'66px serif');by+=92}}
   c.fillStyle=ink;c.globalAlpha=.6;if(by>320)c.fillRect(118,by,84,3);c.globalAlpha=1;
-  txt(T[1],160,by+44,'800 30px "Barlow Condensed"');
+  txt(T[1],160,by+44,'800 30px "Barlow Condensed"');c.restore();
   // nom
   let nm=(p.name||"Joueur").toUpperCase(),fs=92;c.font=`800 ${fs}px "Barlow Condensed"`;while(c.measureText(nm).width>W-170&&fs>54){fs-=4;c.font=`800 ${fs}px "Barlow Condensed"`}
   c.save();c.shadowColor="rgba(0,0,0,.3)";c.shadowBlur=8;c.shadowOffsetY=3;txt(nm,W/2,590,`800 ${fs}px "Barlow Condensed"`);c.restore();
@@ -1507,7 +1507,7 @@ function toggleBlock(id,name){S.blocked=S.blocked||[];if(blocked(id)){S.blocked=
   save();if(U.open==="prof"||U.open==="chmenu"||U.open==="blocked")closeLayer();if(U.open==="blocked")openBlocked();render()}
 async function report(kind,id,what){if(!confirm(`Signaler ${what} ? Les signalements sont anonymes.`))return;
   try{const j=await api("report",{kind,id});if(j.error)throw j;closeLayer();
-    toast(j.hidden?"Merci : le message est masqué.":j.renamed?"Merci : le nom a été remplacé.":"Merci, c’est signalé. Plusieurs signalements entraînent une action automatique.","win");
+    toast(j.hidden?"Merci : le message est masqué.":j.renamed?(kind==="guild"?"Merci : le nom et le logo de la guilde ont été retirés.":"Merci : le nom a été remplacé."):"Merci, c’est signalé. Plusieurs signalements entraînent une action automatique.","win");
     if(kind==="chat"&&j.hidden){const c=CH[U.lg.code];if(c)c.msgs=c.msgs.filter(m=>String(m.id)!==String(id));render()}}
   catch(e){toast("Impossible de signaler pour l’instant.","bad")}}
 function openChMenu(id){const c=CH[U.lg.code],m=c&&c.msgs.find(x=>String(x.id)===String(id));if(!m)return;const cur=U.lg.data&&U.lg.data.leagues.find(l=>l.code===U.lg.code),boss=cur&&(cur.mine||cur.role==="officer");
@@ -1580,7 +1580,7 @@ async function openGRank(chal){U.open="gwr";const head=`<div class="grab"><h3>${
   try{const j=await api("guild_ranking",{});if(U.open!=="gwr")return;const me=(U.bt||{})[U.lg.code],boss=me&&me.role!=="membre"&&me.guild.ok;
     layer(head+(chal?`<p class="note" style="text-align:left">Le défi dure une semaine et commence lundi prochain. La guilde défiée doit accepter.</p>`:"")
       +(j.guilds.length?j.guilds.map((g,i)=>`<div class="gdrow"><span class="rk">${i+1}</span>${emb(g,"lg")}<div><b>${esc(g.name)}</b><small>${g.div.i} ${g.div.n} · cote ${g.elo} · ${g.w}V ${g.d}N ${g.l}D · ${g.n} membres</small></div>
-        ${g.mine?`<span class="tag won">Toi</span>`:`<button class="x sm" data-act="rep" data-k="guild" data-id="${esc(g.gid)}" data-w="le nom de la guilde « ${esc(g.name)} »" aria-label="Signaler">🚩</button>`+(boss?`<button class="btn ${chal?"gold":""}" data-act="gchal" data-id="${esc(g.gid)}" data-n="${esc(g.name)}">Défier</button>`:"")}</div>`).join("")
+        ${g.mine?`<span class="tag won">Toi</span>`:`<button class="x sm" data-act="rep" data-k="guild" data-id="${esc(g.gid)}" data-w="la guilde « ${esc(g.name)} » (nom ou logo déplacé)" aria-label="Signaler">🚩</button>`+(boss?`<button class="btn ${chal?"gold":""}" data-act="gchal" data-id="${esc(g.gid)}" data-n="${esc(g.name)}">Défier</button>`:"")}</div>`).join("")
       :`<div class="empty">${ic("trophy")}<b>Pas encore de guilde classée</b>Il faut au moins 3 membres pour entrer au classement.</div>`))}
   catch(e){if(U.open==="gwr")layer(head+`<div class="empty">${ic("info")}<b>Pas de connexion</b>Réessaie dans un instant.</div>`)}}
 const BERR={already:"Défi déjà envoyé à cette guilde.",busy:"Une des deux guildes a déjà un défi la semaine prochaine.",too_small:"Il faut au moins 3 membres dans chaque guilde.",too_many:"3 défis en attente au maximum.",not_allowed:"Seuls le chef et les adjoints peuvent faire ça."};
@@ -2515,7 +2515,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.18";
+const VERSION="2.19";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
