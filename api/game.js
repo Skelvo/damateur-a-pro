@@ -496,6 +496,8 @@ async function pronoCredit(s, pid, week) {
 }
 
 // ---- Guildes : emblème, devise, accès (ouverte / sur demande / privée), rôles (chef, adjoints, membres) ----
+const cardOpts = (k) => { const o = {}, ok = { d: ["rang", "bn"], bd: ["fav", "emo", "none"], sub: ["t", "lvl"], sp: ["auto", "foot", "rugby", "tennis", "nba", "none"] };
+  for (const [x, vals] of Object.entries(ok)) if (k && vals.includes(k[x])) o[x] = k[x]; return o; };
 const GIMG = /^g\/[a-z0-9-]{1,40}\.(webp|png)$/;
 const EMBLEMS = ["🦁","🐺","🦅","🐉","🦈","🐻","🦊","🐯","🔥","⚡","👑","🏆","⚽","🏉","🎾","🏀","💎","🚀","🎯","🛡️","⚔️","🌟","🍀","🐐"];
 const GCOLORS = ["#35d07f","#ffd23f","#ff7a45","#5fa8ff","#c084fc","#ff5a5f","#2ec4b6","#f8fafc","#ff9f1c","#8ac926"];
@@ -1197,8 +1199,17 @@ const ACTIONS = {
     const p = await me(s, b.token);
     const un = new Set(EG.cosUnlocked(await cosFlags(s, p.id))), pick = (v, ty) => (typeof v === "string" && un.has(v) && (v.startsWith("tm:") ? ty === "t" : v[0] === ty) ? v : null);
     const cos = { b: pick(b.b, "b"), c: pick(b.c, "c"), t: pick(b.t, "t"), f: pick(b.f, "f"), e: pick(b.e, "e"), v: pick(b.v, "v"), y: pick(b.y, "y") };
+    const prevK = ((await s.query(`select cos from players where id = $1`, [p.id]))[0] || {}).cos;
+    if (prevK && prevK.k) cos.k = cardOpts(prevK.k);
     await s.query(`update players set cos = $2::jsonb where id = $1`, [p.id, JSON.stringify(cos)]);
     return { ok: true, cos };
+  },
+  // réglages de la carte de joueur (design, écusson, texte, sport) : visibles par tous ceux qui ouvrent la carte
+  async card_set(s, b) {
+    const p = await me(s, b.token);
+    const k = cardOpts(b.k || {});
+    await s.query(`update players set cos = coalesce(cos, '{}'::jsonb) || jsonb_build_object('k', $2::jsonb) where id = $1`, [p.id, JSON.stringify(k)]);
+    return { ok: true, k };
   },
   // style offert à un joueur (pack exclusif) : organisateurs seulement
   async admin_cos_grant(s, b) {

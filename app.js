@@ -699,7 +699,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"style":openStyle();break;
     case"mycard":openCard({id:S.pid,name:S.name,av:S.avv,me:true,bets:S.bets,xp:S.xp,cos:S.cos,fav:S.fav});break;
     case"pcard":if(U.prof)openCard(U.prof);break;
-    case"cardopt":{S.cardOpt={...(S.cardOpt||{}),[d.k]:d.v};saveLocal();refreshCard(d.k,d.v);break}
+    case"cardopt":{S.cardOpt={...(S.cardOpt||{}),[d.k]:d.v};S.cos={...(S.cos||{}),k:{...((S.cos&&S.cos.k)||{}),[d.k]:d.v}};saveLocal();refreshCard(d.k,d.v);clearTimeout(U.cardT);U.cardT=setTimeout(()=>api("card_set",{k:S.cos.k}).catch(()=>{}),700);break}
     case"cardshare":shareCard();break;
     case"sttab":U.cosTab=d.v;styleRender(true);break;
     case"stpick":{const x=d.v,ty=x.startsWith("tm:")?"t":x[0];if(!U.cosD.unlocked.includes(x)){const c=COS.find(y=>y[0]===x);toast("🔒 "+(c?c[4]:"Pas encore débloqué"));break}U.cosEdit[ty]=x;styleRender();if(ty==="v")winFx(x);break}
@@ -1144,7 +1144,7 @@ async function playerCard(p,o){o=o||{};const C=cardStats(p.bets||[],p.xp),T=CARD
   // colonne de gauche : note, sport, écusson, rang
   const txt=(t,x,y,f,col=ink,al="center")=>{c.font=f;c.textAlign=al;c.fillStyle=col;c.fillText(t,x,y)};
   c.save();c.shadowColor="rgba(0,0,0,.25)";c.shadowBlur=6;c.shadowOffsetY=3;
-  txt(String(C.note),160,232,'800 150px "Barlow Condensed"');txt(C.sport||"MULTI",160,284,'800 44px "Barlow Condensed"');c.restore();
+  txt(String(C.note),160,232,'800 150px "Barlow Condensed"');const spL=o.sp==="none"?"":o.sp&&o.sp!=="auto"?{foot:"FOOT",rugby:"RUGBY",tennis:"TENNIS",nba:"NBA"}[o.sp]:(C.sport||"MULTI");if(spL)txt(spL,160,284,'800 44px "Barlow Condensed"');c.restore();
   c.fillStyle=ink;c.globalAlpha=.6;c.fillRect(118,304,84,3);c.globalAlpha=1;
   let by=320;if(o.bd==="fav"&&p.fav&&p.fav.logo){const L=await loadImgX(p.fav.logo);if(L){c.drawImage(L,122,by,76,76);by+=92}}
   else if(o.bd==="emo"){const em=p.cos&&p.cos.e&&cosEmoji(p.cos.e);if(em){txt(em,160,by+64,'66px serif');by+=92}}
@@ -1167,12 +1167,13 @@ async function playerCard(p,o){o=o||{};const C=cardStats(p.bets||[],p.xp),T=CARD
   return{blob:await new Promise(ok=>cv.toBlob(ok,"image/png")),C,T}}
 async function openCard(p){U.open="card";U.cardP=p;const head=`<div class="grab"><h3>Carte de joueur</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
   if(!U.cardSk)layerLater(head+`<div class="skel" style="height:420px"></div>`,200);
-  const o=p.me?{d:"rang",bd:S.fav?"fav":"emo",sub:"t",...(S.cardOpt||{})}:{d:"rang",bd:"emo",sub:"t"};
+  const o=p.me?{d:"rang",bd:S.fav?"fav":"emo",sub:"t",sp:"auto",...(S.cardOpt||{}),...((S.cos&&S.cos.k)||{})}:{d:"rang",bd:"emo",sub:"t",sp:"auto",...((p.cos&&p.cos.k)||{})};
   try{const{blob,C,T}=await playerCard(p,o);U.cardBlob=blob;U.cardName=p.name;const url=URL.createObjectURL(blob);if(U.open!=="card")return;
     const ch=(k,v,n,ok=true)=>ok?`<button data-act="cardopt" data-k="${k}" data-v="${v}" aria-pressed="${o[k]===v}">${n}</button>`:"";
     const opts=p.me?`<div class="cdopt"><b>Design</b><div>${ch("d","rang","🏅 Mon rang")}${ch("d","bn","🖼️ Ma bannière",S.cos&&S.cos.b&&S.cos.b!=="b0")}</div>
       <b>Écusson</b><div>${ch("bd","fav","❤️ Mon équipe",!!S.fav)}${ch("bd","emo","😎 Mon emoji",!!(S.cos&&S.cos.e&&S.cos.e!=="e0"))}${ch("bd","none","Aucun")}</div>
-      <b>Sous le pseudo</b><div>${ch("sub","t","🏷️ Mon titre")}${ch("sub","lvl","⭐ Mon niveau")}</div></div>`:"";
+      <b>Sous le pseudo</b><div>${ch("sub","t","🏷️ Mon titre")}${ch("sub","lvl","⭐ Mon niveau")}</div>
+      <b>Sport</b><div>${ch("sp","auto","✨ Auto")}${ch("sp","foot","⚽ Foot")}${ch("sp","rugby","🏉 Rugby")}${ch("sp","tennis","🎾 Tennis")}${ch("sp","nba","🏀 NBA")}${ch("sp","none","Aucun")}</div></div>`:"";
     layer(head+`<div class="pcardimg"><img src="${url}" alt="Carte de ${esc(p.name)}"></div>${opts}
     <p class="note">Note <b>${C.note}</b> (${T[1].toLowerCase()}) : précision, flair, audace, gestion, régularité et expérience, calculés sur les vrais paris.${p.me?" Ta bannière et ton style se changent dans « Mon style ».":""}</p>
     <button class="btn gold wide" data-act="cardshare">${ic("share")} Partager la carte</button>`);U.cardSk=0}
@@ -1180,7 +1181,7 @@ async function openCard(p){U.open="card";U.cardP=p;const head=`<div class="grab"
 // change un réglage de la carte sans rouvrir la fenêtre : seuls les boutons et l'image se mettent à jour
 async function refreshCard(k,v){const p=U.cardP;if(!p)return;document.querySelectorAll(`[data-act=cardopt][data-k="${k}"]`).forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===v));
   const im=$(".pcardimg img");if(im)im.classList.add("cdbusy");const n=(U.cardN=(U.cardN||0)+1);
-  try{const o={d:"rang",bd:S.fav?"fav":"emo",sub:"t",...(S.cardOpt||{})},{blob}=await playerCard(p,o);if(n!==U.cardN||U.open!=="card")return;U.cardBlob=blob;
+  try{const o={d:"rang",bd:S.fav?"fav":"emo",sub:"t",sp:"auto",...(S.cardOpt||{}),...((S.cos&&S.cos.k)||{})},{blob}=await playerCard(p,o);if(n!==U.cardN||U.open!=="card")return;U.cardBlob=blob;
     const url=URL.createObjectURL(blob),im2=$(".pcardimg img");if(im2){const old=im2.src;im2.onload=()=>{im2.classList.remove("cdbusy");if(old.startsWith("blob:"))URL.revokeObjectURL(old)};im2.src=url}}
   catch(e){const im3=$(".pcardimg img");if(im3)im3.classList.remove("cdbusy")}}
 async function shareCard(){const b=U.cardBlob;if(!b)return;const file=new File([b],"carte-tribune.png",{type:"image/png"}),txt=`Ma carte de joueur sur Tribune 🃏 ${APP_URL}`;
@@ -2514,7 +2515,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.17";
+const VERSION="2.18";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
