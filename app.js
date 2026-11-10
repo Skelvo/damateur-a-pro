@@ -695,8 +695,9 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"mshare":shareMonth();break;
     case"follow":followShared();break;
     case"style":openStyle();break;
-    case"mycard":openCard({id:S.pid,name:S.name,av:S.avv,me:true,bets:S.bets,xp:S.xp,cos:S.cos});break;
+    case"mycard":openCard({id:S.pid,name:S.name,av:S.avv,me:true,bets:S.bets,xp:S.xp,cos:S.cos,fav:S.fav});break;
     case"pcard":if(U.prof)openCard(U.prof);break;
+    case"cardopt":{S.cardOpt={...(S.cardOpt||{}),[d.k]:d.v};saveLocal();const sh=$(".sheet"),sc=sh?sh.scrollTop:0;U.cardSk=1;openCard(U.cardP).then(()=>{const s2=$(".sheet");if(s2)s2.scrollTop=sc});break}
     case"cardshare":shareCard();break;
     case"sttab":U.cosTab=d.v;styleRender(true);break;
     case"stpick":{const x=d.v,ty=x.startsWith("tm:")?"t":x[0];if(!U.cosD.unlocked.includes(x)){const c=COS.find(y=>y[0]===x);toast("🔒 "+(c?c[4]:"Pas encore débloqué"));break}U.cosEdit[ty]=x;styleRender();if(ty==="v")winFx(x);break}
@@ -1082,20 +1083,24 @@ function cardStats(bets,xp){const D=bets.filter(b=>["won","lost","cashed"].inclu
   return{note,stats:S_,n:D.length,lvl:L.lvl,tier:L.tier,sport:main?{foot:"FOOT",rugby:"RUGBY",tennis:"TENNIS",basket:"NBA"}[main[0]]||"":""}}
 const CARD_T=[[90,"LÉGENDE",["#2a0d5c","#7a3cff","#ffd23f"],"#ffe680"],[80,"ÉLITE",["#0b1d3a","#123a6b","#d4a017"],"#ffd23f"],[70,"OR",["#7a5a00","#e0b02a","#fff1a8"],"#2a1d00"],
   [60,"ARGENT",["#5f6b74","#c9d3dc","#f4f7f9"],"#1f262b"],[0,"BRONZE",["#5a3417","#b0753c","#e8b27a"],"#2a1608"]];
-async function playerCard(p){const C=cardStats(p.bets||[],p.xp),T=CARD_T.find(x=>C.note>=x[0]),W=720,H=1000,cv=document.createElement("canvas");cv.width=W;cv.height=H;const c=cv.getContext("2d");
+async function playerCard(p,o){o=o||{};const C=cardStats(p.bets||[],p.xp),T=CARD_T.find(x=>C.note>=x[0]),BNK=o.d==="bn"&&p.cos&&p.cos.b&&p.cos.b!=="b0"?p.cos.b:"",BC=BNK&&BN_COL[BNK],W=720,H=1000,cv=document.createElement("canvas");cv.width=W;cv.height=H;const c=cv.getContext("2d");
   try{await Promise.all([document.fonts.load('800 80px "Barlow Condensed"'),document.fonts.load('700 30px Barlow')])}catch(e){}
-  const dark=T[0]>=80,ink=T[3];
+  const dark=BNK?true:T[0]>=80,ink=BNK?"#fff8ec":T[3];
   // forme de la carte
   const shape=()=>{c.beginPath();c.moveTo(60,70);c.quadraticCurveTo(W/2,10,W-60,70);c.lineTo(W-40,H-200);c.quadraticCurveTo(W-40,H-120,W/2,H-40);c.quadraticCurveTo(40,H-120,40,H-200);c.closePath()};
   c.fillStyle="#0a110f";c.fillRect(0,0,W,H);
-  c.save();shape();c.clip();let g=c.createLinearGradient(0,0,W,H);g.addColorStop(0,T[2][0]);g.addColorStop(.5,T[2][1]);g.addColorStop(1,T[2][2]);c.fillStyle=g;c.fillRect(0,0,W,H);
+  c.save();shape();c.clip();let g=c.createLinearGradient(0,0,W,H);if(BC){g.addColorStop(0,BC[0]);g.addColorStop(1,BC[1])}else{g.addColorStop(0,T[2][0]);g.addColorStop(.5,T[2][1]);g.addColorStop(1,T[2][2])}c.fillStyle=g;c.fillRect(0,0,W,H);
+  if(BC){for(const[x,y,col]of[[W*.15,120,BC[2]],[W*.9,H*.75,BC[3]]]){const r=c.createRadialGradient(x,y,10,x,y,420);r.addColorStop(0,col);r.addColorStop(1,"transparent");c.fillStyle=r;c.fillRect(0,0,W,H)}
+    const art=await bnArt(BNK);if(art){c.globalAlpha=.22;const aw=W*.8,ah=aw*art.height/art.width;c.drawImage(art,W/2-aw/2,705-ah/2,aw,ah);c.globalAlpha=1}}
   // reflets
   c.globalAlpha=.18;c.fillStyle="#fff";for(let i=0;i<5;i++){c.beginPath();c.moveTo(-200+i*220,0);c.lineTo(-100+i*220,0);c.lineTo(100+i*220,H);c.lineTo(0+i*220,H);c.closePath();c.fill()}c.globalAlpha=1;
   if(T[0]>=90){const r=c.createRadialGradient(W/2,380,20,W/2,380,420);r.addColorStop(0,"#ffd23f55");r.addColorStop(1,"transparent");c.fillStyle=r;c.fillRect(0,0,W,H)}
-  c.restore();c.save();shape();c.lineWidth=10;c.strokeStyle=dark?T[3]:"#ffffffaa";c.stroke();c.restore();
+  c.restore();c.save();shape();c.lineWidth=10;c.strokeStyle=BNK?"#ffffffaa":dark?T[3]:"#ffffffaa";c.stroke();c.restore();
   // note + sport
   c.fillStyle=ink;c.textAlign="center";c.font='800 150px "Barlow Condensed"';c.fillText(String(C.note),170,250);
   c.font='800 46px "Barlow Condensed"';c.fillText(C.sport||"MULTI",170,300);c.font='800 30px "Barlow Condensed"';c.fillText(T[1],170,342);
+  if(o.bd==="fav"&&p.fav&&p.fav.logo){const L=await loadImgX(p.fav.logo);if(L){c.drawImage(L,130,362,80,80)}}
+  else if(o.bd==="emo"){const em=p.cos&&p.cos.e&&cosEmoji(p.cos.e);if(em){c.font='64px serif';c.fillText(em,170,425)}}
   // photo
   const ax=470,ay=230,ar=150;c.save();c.beginPath();c.arc(ax,ay,ar,0,Math.PI*2);c.closePath();c.fillStyle=avc(p.name||"?");c.fill();c.clip();
   let img=null;try{const src=p.me&&S.avatar?S.avatar:p.av?avUrl(p.id,p.av):"";if(src)img=await loadImg(src)}catch(e){}
@@ -1103,7 +1108,7 @@ async function playerCard(p){const C=cardStats(p.bets||[],p.xp),T=CARD_T.find(x=
   c.restore();c.beginPath();c.arc(ax,ay,ar,0,Math.PI*2);c.lineWidth=8;c.strokeStyle=ink+"cc";c.stroke();
   // nom, titre, niveau
   c.fillStyle=ink;c.font='800 80px "Barlow Condensed"';let nm=(p.name||"Joueur").toUpperCase();while(c.measureText(nm).width>W-140&&nm.length>3)nm=nm.slice(0,-1);c.fillText(nm,W/2,500);
-  c.fillRect(110,525,W-220,3);const tt=p.cos&&p.cos.t&&cosTitle(p.cos.t);c.font='700 30px Barlow';c.fillText(tt?tt:`${C.tier} · niveau ${C.lvl}`,W/2,570);
+  c.fillRect(110,525,W-220,3);const tt=o.sub!=="lvl"&&p.cos&&p.cos.t&&cosTitle(p.cos.t);c.font='700 30px Barlow';c.fillText(tt?tt:`${C.tier} · niveau ${C.lvl}`,W/2,570);
   // 6 notes
   const ks=Object.keys(C.stats);ks.forEach((k,i)=>{const col=i<3?0:1,row=i%3,x=col?W/2+60:150,y=650+row*78;c.textAlign="left";c.font='800 64px "Barlow Condensed"';c.fillText(String(C.stats[k]),x,y);c.font='700 36px "Barlow Condensed"';c.fillText(k,x+86,y)});
   c.fillRect(W/2-2,600,4,200);
@@ -1111,13 +1116,18 @@ async function playerCard(p){const C=cardStats(p.bets||[],p.xp),T=CARD_T.find(x=
   const logo=await loadImg("logo-tribune.png?v=2");if(logo){const lw=100,lh=lw*logo.height/logo.width;let li=logo;if(!dark){const o=document.createElement("canvas");o.width=logo.width;o.height=logo.height;const oc=o.getContext("2d");oc.drawImage(logo,0,0);oc.globalCompositeOperation="source-in";oc.fillStyle=ink;oc.fillRect(0,0,o.width,o.height);li=o}c.globalAlpha=dark?1:.85;c.drawImage(li,W/2-lw/2,822,lw,lh);c.globalAlpha=1}
   c.textAlign="center";c.font='800 26px "Barlow Condensed"';c.fillText(`${C.n} PARI${C.n>1?"S":""}`,W/2,912);
   return{blob:await new Promise(ok=>cv.toBlob(ok,"image/png")),C,T}}
-async function openCard(p){U.open="card";const head=`<div class="grab"><h3>Carte de joueur</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
-  layerLater(head+`<div class="skel" style="height:420px"></div>`,200);
-  try{const{blob,C,T}=await playerCard(p);U.cardBlob=blob;U.cardName=p.name;const url=URL.createObjectURL(blob);if(U.open!=="card")return;
-    layer(head+`<div class="pcardimg"><img src="${url}" alt="Carte de ${esc(p.name)}"></div>
-    <p class="note">Note <b>${C.note}</b> (${T[1].toLowerCase()}) : précision, flair, audace, gestion, régularité et expérience, calculés sur les vrais paris.</p>
-    <button class="btn gold wide" data-act="cardshare">${ic("share")} Partager la carte</button>`)}
-  catch(e){if(U.open==="card")layer(head+`<div class="empty">${ic("info")}<b>Impossible de créer la carte</b>Réessaie dans un instant.</div>`)}}
+async function openCard(p){U.open="card";U.cardP=p;const head=`<div class="grab"><h3>Carte de joueur</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
+  if(!U.cardSk)layerLater(head+`<div class="skel" style="height:420px"></div>`,200);
+  const o=p.me?{d:"rang",bd:S.fav?"fav":"emo",sub:"t",...(S.cardOpt||{})}:{d:"rang",bd:"emo",sub:"t"};
+  try{const{blob,C,T}=await playerCard(p,o);U.cardBlob=blob;U.cardName=p.name;const url=URL.createObjectURL(blob);if(U.open!=="card")return;
+    const ch=(k,v,n,ok=true)=>ok?`<button data-act="cardopt" data-k="${k}" data-v="${v}" aria-pressed="${o[k]===v}">${n}</button>`:"";
+    const opts=p.me?`<div class="cdopt"><b>Design</b><div>${ch("d","rang","🏅 Mon rang")}${ch("d","bn","🖼️ Ma bannière",S.cos&&S.cos.b&&S.cos.b!=="b0")}</div>
+      <b>Écusson</b><div>${ch("bd","fav","❤️ Mon équipe",!!S.fav)}${ch("bd","emo","😎 Mon emoji",!!(S.cos&&S.cos.e&&S.cos.e!=="e0"))}${ch("bd","none","Aucun")}</div>
+      <b>Sous le pseudo</b><div>${ch("sub","t","🏷️ Mon titre")}${ch("sub","lvl","⭐ Mon niveau")}</div></div>`:"";
+    layer(head+`<div class="pcardimg"><img src="${url}" alt="Carte de ${esc(p.name)}"></div>${opts}
+    <p class="note">Note <b>${C.note}</b> (${T[1].toLowerCase()}) : précision, flair, audace, gestion, régularité et expérience, calculés sur les vrais paris.${p.me?" Ta bannière et ton style se changent dans « Mon style ».":""}</p>
+    <button class="btn gold wide" data-act="cardshare">${ic("share")} Partager la carte</button>`);U.cardSk=0}
+  catch(e){U.cardSk=0;if(U.open==="card")layer(head+`<div class="empty">${ic("info")}<b>Impossible de créer la carte</b>Réessaie dans un instant.</div>`)}}
 async function shareCard(){const b=U.cardBlob;if(!b)return;const file=new File([b],"carte-tribune.png",{type:"image/png"}),txt=`Ma carte de joueur sur Tribune 🃏 ${APP_URL}`;
   if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],text:txt})}catch(e){}return}
   const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="carte-tribune.png";document.body.appendChild(a);a.click();a.remove();toast("Carte enregistrée.","win")}
@@ -1132,6 +1142,10 @@ async function claimGifts(){if(!S.tok||Date.now()-gfAt<6e4)return;gfAt=Date.now(
   toast(j.gifts.length===1?`🧾 ${esc(j.gifts[0].label)} : +${tok(t)} jetons !`:`🧾 Bonus du week-end : +${tok(t)} jetons !`,"win")}catch(e){}}
 
 /* ---------- ticket à partager (image) ---------- */
+const imgX={};function loadImgX(src){return imgX[src]||(imgX[src]=new Promise(ok=>{const i=new Image();i.crossOrigin="anonymous";i.referrerPolicy="no-referrer";i.onload=()=>ok(i);i.onerror=()=>ok(null);i.src=src}))}
+// dessin d'une bannière (son image SVG, lue dans la feuille de style) pour la carte de joueur
+async function bnArt(k){const d=document.createElement("span");d.className="bnr bn-"+k;d.style.cssText="position:absolute;left:-9999px";document.body.appendChild(d);const bg=getComputedStyle(d).backgroundImage;d.remove();
+  const m=/url\("(data:image\/svg[^"]+)"\)/.exec(bg);return m?loadImg(m[1]):null}
 const imgP={};function loadImg(src){return imgP[src]||(imgP[src]=new Promise(ok=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>ok(null);i.src=src}))}
 function wrapTxt(c,t,max){const w=String(t).split(" "),L=[];let cur="";for(const x of w){const n=cur?cur+" "+x:x;if(c.measureText(n).width>max&&cur){L.push(cur);cur=x}else cur=n}if(cur)L.push(cur);return L}
 // couleurs de fond des images partagées selon la bannière du joueur
@@ -2428,7 +2442,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="1.99";
+const VERSION="2.00";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
