@@ -436,8 +436,8 @@ function viewCareer(){const LV=myLv();
   if(S.pid&&!U.mePal&&!U.mePalLoad){U.mePalLoad=1;api("profile",{id:S.pid}).then(r=>{U.mePal=r.pal||{};if(U.tab==="c"&&!U.open)render()}).catch(()=>{U.mePalLoad=0})}
   const pushTxt=pushState()==="on"?"Activées sur ce téléphone · <button class='link' data-act='pushtest' style='padding:0'>tester</button>":pushState()==="denied"?"Refusées : autorise-les dans les réglages du téléphone":pushState()==="na"?(IOS&&!STANDALONE?"Installe d’abord l’app sur l’écran d’accueil":"Pas disponibles sur ce téléphone"):"Désactivées";
   if(S.tok&&!U.cosD&&!U.cosLoad){U.cosLoad=1;loadCos().then(()=>{if(U.tab==="c"&&!U.open){$("#main")._html=null;render()}})}
-  let h=`<div class="pcard chero${bnC(S.cos)}"><span class="bgnum">${LV.lvl}</span><div class="who"><button class="avbtn" data-act="photo" aria-label="Changer ma photo">${avatar(S.pid||"me",S.name||"?",S.avv,"av"+frC(S.cos),true)}<span class="cam">${ic("plus")}</span></button>
-    <div><h2>${nameH(S.name||"Joueur",S.cos)}${S.fav?` <span class="cfav">${S.fav.logo?`<img src="${esc(S.fav.logo)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:"❤️"}</span>`:""}</h2>${ttlH(S.cos)}<button class="div" data-act="divs">${LV.ic} ${esc(LV.tier)} · niveau ${LV.lvl} ›</button></div></div>
+  const MC=mcInfo(S.bets,S.xp);let h=`<div class="pcard chero${MC.cls}${bnC(S.cos)}">${MC.fx}<div class="mctop">${MC.note("button","mycard")}<div class="who"><button class="avbtn" data-act="photo" aria-label="Changer ma photo">${avatar(S.pid||"me",S.name||"?",S.avv,"av"+frC(S.cos),true)}<span class="cam">${ic("plus")}</span></button>
+    <div><h2>${nameH(S.name||"Joueur",S.cos)}${S.fav?` <span class="cfav">${S.fav.logo?`<img src="${esc(S.fav.logo)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:"❤️"}</span>`:""}</h2>${ttlH(S.cos)}<button class="div" data-act="divs">${LV.ic} ${esc(LV.tier)} · niveau ${LV.lvl} ›</button></div></div></div>
     <div class="prog"><div class="l"><span>${tok(LV.cur)} / ${tok(LV.need)} XP</span><span>${LV.next?esc(LV.next[2]+" "+LV.next[0])+" au niveau "+LV.next[1]:"Niveau "+(LV.lvl+1)}</span></div><div class="t"><i style="width:${LV.pct*100}%"></i></div></div></div>
   <div class="ckpi"><div><small>Jetons</small><b>${tok(S.bal)}</b></div><div><small>Réussite</small><b>${rate} %</b></div><div><small>Série</small><b>${streak}${streak>=3?" 🔥":""}</b></div><div><small>Plus gros gain</small><b class="pos">${best?"+"+tok(Math.round(best)):"—"}</b></div></div>
   ${palmares({id:S.pid,pal:U.mePal,best:{odds:W.reduce((a,b)=>Math.max(a,b.odds),0),pay:best}})}
@@ -1043,6 +1043,10 @@ function winFx(v){v=v||(S.cos&&S.cos.v);if(!v||v==="v0"||!WFX[v]){confetti();ret
   if(v==="v12"){c.classList.add("teckel");for(let i=0;i<6;i++){const r=document.createElement("b");r.style.top=(10+Math.random()*70)+"%";const k=.7+Math.random()*.6;r.style.width=150*k+"px";r.style.height=65*k+"px";r.style.animationDelay=(Math.random()*1.3)+"s";c.appendChild(r)}}
   document.body.appendChild(c);setTimeout(()=>c.remove(),4000)}
 const ttlH=cos=>{const t=cos&&cos.t&&cosTitle(cos.t);return t?`<span class="ttl${cos.y&&cos.y!=="y0"?" ty-"+cos.y:""}">${esc(t)}</span>`:""};
+// finitions « mini-carte » (même métal, liserés et reflet que la carte de joueur) pour le haut des profils
+const MC_K={"BRONZE":"bronze","ARGENT":"argent","OR":"or","ÉLITE":"elite","LÉGENDE":"legende"};
+function mcInfo(bets,xp){let C;try{C=cardStats(bets||[],xp)}catch(e){C={note:40}}const T=CARD_T.find(x=>C.note>=x[0]);
+  return{cls:" mc mt-"+MC_K[T[1]],fx:`<i class="hfx"></i><i class="hho"></i>`,note:(tag="div",act="")=>`<${tag} class="mcnote"${act?` data-act="${act}" aria-label="Ma carte de joueur"`:""}><b>${C.note}</b><small>${T[1]}</small></${tag}>`}}
 const bnC=cos=>cos&&cos.b&&cos.b!=="b0"?" bnr bn-"+cos.b:"";
 async function loadCos(){if(!S.tok)return null;try{const j=await api("cos_get",{});U.cosD=j;S.cos=j.cos||{};saveLocal();return j}catch(e){return null}}
 async function openStyle(){U.open="style";U.cosTab=U.cosTab||"b";const head=`<div class="grab"><h3>Mon style</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
@@ -1057,7 +1061,7 @@ function viewStyle(){const j=U.cosD,E=U.cosEdit,un=new Set(j.unlocked),T=U.cosTa
   const prev={b:E.b,c:E.c,t:T==="y"&&(!E.t||E.t==="t0")?"t2":E.t,f:E.f,e:E.e,v:E.v,y:E.y};
   return`<div class="grab"><h3>Mon style</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   ${j.flags.all?`<p class="testr">🧪 Mode testeur : tout est débloqué pour toi.</p>`:""}
-  <div class="pcard chero stprev${bnC(prev)}"><div class="who">${avatar(S.pid||"me",S.name||"?",S.avv,"av"+frC(prev),true)}<div><h2>${nameH(S.name||"Joueur",prev)}</h2>${ttlH(prev)}<span class="div">${LV.ic} ${esc(LV.tier)} · niveau ${LV.lvl}</span></div></div></div>
+  ${(()=>{const MC=mcInfo(S.bets,S.xp);return`<div class="pcard chero stprev${MC.cls}${bnC(prev)}">${MC.fx}<div class="mctop">${MC.note()}<div class="who">${avatar(S.pid||"me",S.name||"?",S.avv,"av"+frC(prev),true)}<div><h2>${nameH(S.name||"Joueur",prev)}</h2>${ttlH(prev)}<span class="div">${LV.ic} ${esc(LV.tier)} · niveau ${LV.lvl}</span></div></div></div></div>`})()}
   <div class="sttabs">${[["b","🖼️ Bannières"],["c","🎨 Couleurs"],["t","🏷️ Titres"],["y","✨ Style du titre"],["f","⭕ Cadres"],["e","😎 Emojis"],["v","🎉 Victoire"]].map(([k,n])=>`<button data-act="sttab" data-v="${k}" aria-pressed="${T===k}">${n}<small>${cnt(k)}</small></button>`).join("")}</div>
   ${T==="v"?`<p class="note" style="text-align:left">L’animation qui se lance quand un de tes paris passe. Touche un effet débloqué pour le voir.</p>`:T==="y"?`<p class="note" style="text-align:left">La couleur de ton titre (choisis aussi un titre dans 🏷️ Titres).</p>`:""}
   <div class="stgrid ${T}">${items.map(x=>`<button class="sti${x.ok?"":" lock"}${E[T]===x.id?" on":""}" data-act="stpick" data-v="${esc(x.id)}" ${x.ok?"":"aria-disabled=\"true\""}>
@@ -1647,7 +1651,7 @@ function viewProfile(p){U.prof=p;const done=p.won+p.lost,rate=done?Math.round(p.
       ${b.legs.map(L=>`<div class="pleg">${L.r==="w"?`<span class="st w">✓</span>`:L.r==="l"?`<span class="st l">✗</span>`:L.r==="v"?`<span class="st v">↺</span>`:`<span class="st p"></span>`}<div><b>${esc(L.l)}</b><small>${esc(L.ml)}</small></div></div>`).join("")}
       <small class="pbf">Mise ${tok(b.stake)} · cote ${fr(+b.odds||1)} · ${new Date(b.at).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})}</small></div>`};
   return`<div class="grab"><h3>Profil</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
-  <div class="phero${bnC(p.me?S.cos:p.cos)}">${avatar(p.id,p.name,p.av,"av big"+frC(p.me?S.cos:p.cos),p.me)}<div><h2>${nameH(p.name,p.me?S.cos:p.cos)}</h2>${ttlH(p.me?S.cos:p.cos)}<span class="div">${levelOf(p.xp||0).ic} ${esc(levelOf(p.xp||0).tier)} · niv. ${levelOf(p.xp||0).lvl}${sc?` · ${sc} mois gagné${sc>1?"s":""}`:""}${tr?` · ${tr} semaine${tr>1?"s":""} gagnée${tr>1?"s":""}`:""}</span>
+  ${(()=>{const MC=mcInfo(p.me?S.bets:p.bets,p.xp);return`<div class="phero${MC.cls}${bnC(p.me?S.cos:p.cos)}">${MC.fx}${MC.note()}`})()}${avatar(p.id,p.name,p.av,"av big"+frC(p.me?S.cos:p.cos),p.me)}<div><h2>${nameH(p.name,p.me?S.cos:p.cos)}</h2>${ttlH(p.me?S.cos:p.cos)}<span class="div">${levelOf(p.xp||0).ic} ${esc(levelOf(p.xp||0).tier)} · niv. ${levelOf(p.xp||0).lvl}${sc?` · ${sc} mois gagné${sc>1?"s":""}`:""}${tr?` · ${tr} semaine${tr>1?"s":""} gagnée${tr>1?"s":""}`:""}</span>
     ${p.fav?`<span class="pfav">${p.fav.logo?`<img src="${esc(p.fav.logo)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:"❤️"} ${esc(p.fav.name)}</span>`:""}
     ${p.me?`<button class="link" data-act="photo">Changer ma photo</button>`:""}</div></div>
   <div class="pstats"><div><small>Jetons</small><b>${tok(p.bal)}</b></div><div><small>Record</small><b>${tok(p.peak)}</b></div><div><small>Réussite</small><b>${rate} %</b></div>
@@ -2491,7 +2495,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.02";
+const VERSION="2.03";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
