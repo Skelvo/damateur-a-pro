@@ -798,8 +798,9 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"xmake2":U.open="install";layer(`<div class="grab"><h3>Transférer mon compte</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div><div class="xbox" id="xbox"></div>`);transferOut();break;
     case"xback":U.open="welcome";layer(viewWelcome(false));setTimeout(wrefFill,100);break;
     case"copycode":navigator.clipboard&&navigator.clipboard.writeText(d.code).then(()=>toast("Code copié.","win")).catch(()=>{});break;
-    case"copylink":{const u=location.origin+location.pathname;(navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast("Lien copié : colle-le dans Safari.","win")).catch(()=>prompt("Copie ce lien :",u));break}
+    case"copylink":{const u=shareableUrl();(navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast("Lien copié : colle-le dans Safari.","win")).catch(()=>prompt("Copie ce lien :",u));break}
     case"install":U.open="install";layer(viewInstall());break;
+    case"plat":U.plat=d.v;if(GATE)renderGate();else if(U.open==="install")layer(viewInstall());break;
     case"instx":try{localStorage.setItem("dap.inst",String(Date.now()))}catch(e){}render();break;
     case"instgo":installPrompt();break;
   }});
@@ -2486,19 +2487,28 @@ function installBanner(){if(STANDALONE||!(IOS||ANDROID))return"";let x=0;try{x=+
     <button class="btn" data-act="install">Comment&nbsp;?</button><button class="x" data-act="instx" aria-label="Plus tard">${ic("x")}</button></div>`}
 const SHARE_IOS=`<svg class="i" viewBox="0 0 24 24" style="color:#5fa8ff"><path d="M12 15V3M7.5 7.5L12 3l4.5 4.5"/><path d="M6 10.5H5a1 1 0 0 0-1 1V20a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8.5a1 1 0 0 0-1-1h-1"/></svg>`;
 const ADD_IOS=`<svg class="i" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/></svg>`;
+// lien complet à rouvrir dans Safari / Chrome (on garde le parrainage et le ticket partagé : le navigateur intégré d'Instagram ne partage rien avec Safari)
+function shareableUrl(){const q=new URLSearchParams();const r=refStored();if(r)q.set("parrain",r);let pc=null;try{pc=localStorage.getItem("dap.pari")}catch(e){}if(pc)q.set("pari",pc);
+  const lg=new URLSearchParams(location.search).get("guilde");if(lg)q.set("guilde",lg);return location.origin+location.pathname+(q.toString()?"?"+q:"")}
+const INAPP_NAME=/Instagram/i.test(UA)?"Instagram":/FBAN|FBAV|FB_IAB/i.test(UA)?"Facebook":/Snapchat/i.test(UA)?"Snapchat":/TikTok|musical_ly|Bytedance/i.test(UA)?"TikTok":/LinkedInApp/i.test(UA)?"LinkedIn":/Line\//i.test(UA)?"Line":/GSA\//i.test(UA)?"Google":"";
 function viewInstall(gate){const head=gate?"":`<div class="grab"><h3>Installer l’app</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
-  if(IOS){const url=location.origin+location.pathname;
-    return head+(IOS_SAFARI?"":`<div class="info">${ic("info")}<span><b style="color:var(--ink)">Ouvre d’abord ce lien dans Safari</b> : les autres navigateurs ne permettent pas toujours l’installation.<br><button class="btn ghost" style="margin-top:8px" data-act="copylink">Copier le lien</button></span></div>`)+
-    `<p class="note">Tu as ouvert le lien depuis une autre appli (Messages, WhatsApp, Instagram…) ? Touche d’abord <b>Ouvrir dans Safari</b> (ou la boussole), puis :</p>
+  const P=U.plat||(ANDROID?"android":"ios");
+  const pick=`<div class="platpick"><small>Ton téléphone</small><div><button data-act="plat" data-v="ios" aria-pressed="${P==="ios"}">🍏 iPhone</button><button data-act="plat" data-v="android" aria-pressed="${P==="android"}">🤖 Android</button></div></div>`;
+  if(P==="ios"){const url=shareableUrl(),inApp=IOS&&!IOS_SAFARI,app=INAPP_NAME||"une autre appli";
+    return head+pick+(inApp?`<div class="inappw"><b>⚠️ Tu es dans ${esc(app)}</b><p>Ici, l’installation ne marche pas : l’app s’installe <b>uniquement depuis Safari</b>.</p>
+      <a class="btn gold wide" href="x-safari-${esc(url)}">🧭 Ouvrir dans Safari</a>
+      <p class="small">Rien ne se passe ? ${INAPP_NAME==="Instagram"?"Touche les <b>•••</b> en haut à droite, puis <b>Ouvrir dans le navigateur externe</b>.":INAPP_NAME==="Facebook"?"Touche les <b>•••</b> en haut à droite, puis <b>Ouvrir dans le navigateur externe</b>.":INAPP_NAME==="Snapchat"||INAPP_NAME==="TikTok"?"Touche les <b>•••</b> (ou la flèche de partage), puis <b>Ouvrir dans le navigateur</b>.":"Cherche le menu <b>•••</b> ou la boussole 🧭, puis <b>Ouvrir dans Safari</b>."}<br>Ou copie le lien et colle-le dans Safari :</p>
+      <button class="btn ghost wide" data-act="copylink">📋 Copier le lien</button></div><div class="grp">Ensuite, dans Safari</div>`
+      :!IOS?`<p class="note" style="text-align:left">Sur iPhone, ouvre <b>${esc(url.replace(/^https:\/\//,""))}</b> dans <b>Safari</b> (pas dans Instagram, WhatsApp ou Chrome), puis :</p>`:"")+`
     <ol class="steps"><li><span class="n">1</span><div>Dans Safari, touche le bouton <b>Partager</b> ${SHARE_IOS}<small>Selon ta version d’iOS : dans la barre du bas, à côté de l’adresse, ou dans le menu <b>•••</b>.</small></div></li>
       <li><span class="n">2</span><div>Fais défiler et choisis <b>Sur l’écran d’accueil</b> ${ADD_IOS}, puis <b>Ajouter</b>.<small>Si l’option « Ouvrir comme app web » apparaît, laisse-la activée.</small></div></li>
-      <li><span class="n">3</span><div>Ouvre <b>Tribune</b> depuis ton écran d’accueil et touche « J’ai déjà un compte » avec ton <b>code de compte</b> : tu retrouves tes jetons, tes paris et tes guildes.<small>Sur iPhone, l’app installée ne voit pas ce que tu as fait dans Safari : le code fait le lien.</small></div></li></ol>
+      <li><span class="n">3</span><div>Ouvre <b>Tribune</b> depuis ton écran d’accueil et choisis ton pseudo : <b>1 000 jetons</b> t’attendent.<small>Tu avais déjà un compte ? Touche « J’ai déjà un compte » et entre ton <b>code de compte</b> pour tout retrouver.</small></div></li></ol>
     <div class="xbox" id="xbox">${S.name?(S.rcode?`<div class="xcode"><small>Ton code de compte (il ne change jamais)</small><b>${esc(S.rcode)}</b></div><button class="btn ghost wide" data-act="copycode" data-code="${esc(S.rcode)}">Copier mon code</button>`:`<button class="btn gold wide" data-act="xmake">${ic("ticket")} Créer un code pour l’app</button>`):gate?`<p class="note">Nouveau joueur ? Pas besoin de code : tu choisiras ton pseudo dans l’app.</p>`:`<p class="note">Choisis d’abord un pseudo pour avoir un code.</p>`}</div>
 `}
-  if(ANDROID&&INAPP&&!installEvt)return head+`<p class="note" style="font-size:15px">Ce lien s’est ouvert dans le navigateur d’une autre appli (WhatsApp, Messenger, Google…), qui ne permet pas d’installer. Ouvre-le dans <b>Chrome</b> :</p>
-      <a class="btn gold wide" href="intent://${location.host}${location.pathname}#Intent;scheme=https;package=com.android.chrome;end">${ic("share")} Ouvrir dans Chrome</a>
-      <p class="note">Si rien ne se passe : touche le menu <b>⋮</b> (ou <b>…</b>) et choisis <b>Ouvrir dans Chrome</b> ou <b>Ouvrir dans le navigateur</b>.</p>`;
-  if(ANDROID)return head+(installEvt?`<p class="note" style="font-size:15px">Un appui suffit : l’app s’ajoute à ton écran d’accueil, avec ton compte.</p><button class="btn gold wide" data-act="instgo">${ic("plus")} Installer l’app</button>`
+  if(ANDROID&&INAPP&&!installEvt){const u=shareableUrl().replace(/^https:\/\//,"");return head+pick+`<div class="inappw"><b>⚠️ Tu es dans ${esc(INAPP_NAME||"une autre appli")}</b><p>Ici, l’installation ne marche pas : ouvre le lien dans <b>Chrome</b>.</p>
+      <a class="btn gold wide" href="intent://${esc(u)}#Intent;scheme=https;package=com.android.chrome;end">${ic("share")} Ouvrir dans Chrome</a>
+      <p class="small">Si rien ne se passe : touche le menu <b>⋮</b> (ou <b>•••</b>) et choisis <b>Ouvrir dans Chrome</b> ou <b>Ouvrir dans le navigateur externe</b>.</p><button class="btn ghost wide" data-act="copylink">📋 Copier le lien</button></div>`}
+  if(P==="android")return head+pick+(!ANDROID?`<p class="note" style="text-align:left">Sur Android, ouvre <b>${esc(shareableUrl().replace(/^https:\/\//,""))}</b> dans <b>Chrome</b>, puis :</p>`:"")+(installEvt&&ANDROID?`<p class="note" style="font-size:15px">Un appui suffit : l’app s’ajoute à ton écran d’accueil, avec ton compte.</p><button class="btn gold wide" data-act="instgo">${ic("plus")} Installer l’app</button>`
     :`<ol class="steps"><li><span class="n">1</span><div>Dans Chrome, touche le menu <b>⋮</b> en haut à droite.</div></li>
       <li><span class="n">2</span><div>Choisis <b>Installer l’application</b> (ou <b>Ajouter à l’écran d’accueil</b>), puis confirme.</div></li>
       <li><span class="n">3</span><div>Ouvre <b>Tribune</b> depuis ton écran d’accueil : ton compte est déjà là.</div></li></ol>
@@ -2553,7 +2563,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.25";
+const VERSION="2.26";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

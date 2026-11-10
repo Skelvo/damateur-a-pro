@@ -873,3 +873,8 @@ html.cv .mc,html.cv .res-row,html.cv .prow,html.cv .ticket{content-visibility:au
 .refbar{grid-column:2;display:block;height:6px;border-radius:4px;background:#ffffff1a;overflow:hidden}.refbar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--sel))}
 .refhero+.xcode+.btn,.xcode+[data-act=refshare]{margin-top:10px}
 .wrefc{margin:-2px 0 12px;text-align:left}.wrefc summary{cursor:pointer;color:var(--acc);font-weight:600;font-size:14px;list-style:none}.wrefc summary::-webkit-details-marker{display:none}.wrefc .form{margin-top:8px}.wrefc input{text-transform:uppercase;letter-spacing:.15em;font-weight:700}
+.platpick{margin:4px 0 14px;text-align:left}.platpick small{display:block;color:var(--mute);font-size:12px;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+.platpick>div{display:grid;grid-template-columns:1fr 1fr;gap:8px}.platpick button{font:700 16px Barlow,sans-serif;color:var(--ink);background:var(--card2);border:1.5px solid var(--line2);border-radius:14px;padding:12px}
+.platpick button[aria-pressed=true]{background:#35d07f1f;border-color:var(--acc);color:#fff}
+.inappw{text-align:left;background:#ff5a5f14;border:1.5px solid #ff5a5f88;border-radius:16px;padding:13px 14px;margin-bottom:14px}.inappw>b{font-size:16px}.inappw p{margin:6px 0 10px;font-size:14px;line-height:1.4}.inappw .small{font-size:13px;color:var(--mute);margin-top:10px}.inappw .btn+.btn,.inappw .small+.btn{margin-top:6px}
+a.btn{text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px}
