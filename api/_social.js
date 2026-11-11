@@ -1,7 +1,7 @@
 // Programmateur de publications Instagram + Facebook (API officielle de Meta).
 // Les publications sont préparées en brouillon, validées, puis envoyées automatiquement à l'heure prévue
 // par la tâche « tick » (toutes les ~10 min). Aucun sticker ni sondage : l'API de Meta ne les permet pas.
-const GV = () => process.env.META_GRAPH_VERSION || "v21.0";
+const GV = () => process.env.META_GRAPH_VERSION || "v27.0";
 const G = (p) => `https://graph.facebook.com/${GV()}/${p}`;
 
 async function kvGet(s, k) { const r = (await s.query(`select value from meta where key = $1`, [k]))[0]; return r ? r.value : null; }
