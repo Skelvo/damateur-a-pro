@@ -485,6 +485,7 @@ function viewCareer(){const LV=myLv();
     <div class="row"><div><b>Règles et confidentialité</b><small>Le jeu, tes données, la modération</small></div><button class="link" data-act="legal">Lire</button></div>
     <div class="row"><div><b>Nous écrire</b><small>Question, bug, idée, signalement</small></div><button class="link" data-act="contact">Écrire</button></div>
     <div class="row"><div><b>Instagram</b><small>@tribune.pronos · nouveautés et pronos</small></div><button class="link" data-act="igo">Suivre</button></div>
+    <div class="row"><div><b>Facebook</b><small>Page Tribune Pronos · nouveautés et pronos</small></div><button class="link" data-act="fbgo">Suivre</button></div>
     <div class="row"><div><b>Apparaître sur nos réseaux</b><small>${S.socialOff?"Non : tu restes anonyme sur @tribune.pronos":"Ton pseudo et tes coups peuvent être mis en avant sur @tribune.pronos"}</small></div><button class="sw" role="switch" data-act="socialpref" aria-checked="${!S.socialOff}" aria-label="Apparaître sur nos réseaux"></button></div>
     ${(S.blocked||[]).length?`<div class="row"><div><b>Joueurs bloqués</b><small>${S.blocked.length} joueur${S.blocked.length>1?"s":""}</small></div><button class="link" data-act="blocked">Gérer</button></div>`:""}
   </details>`;
@@ -636,6 +637,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"rcrenew":renewRcode();break;
     case"rctype":typeRcode();break;
     case"igo":openInsta();break;
+    case"fbgo":openFb();break;
     case"socialpref":S.socialOff=!S.socialOff;save();render();toast(S.socialOff?"OK, tu n’apparaîtras pas sur nos réseaux.":"Tu peux apparaître sur nos réseaux. Merci !");api("social_pref",{ok:!S.socialOff}).catch(()=>{});break;
     case"igpop":closeLayer();openInsta();break;
     case"ignever":S.igNever=1;saveLocal();closeLayer();break;
@@ -757,7 +759,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"gtog":U.gOpen=!(U.gOpen??true);render();break;
     case"gclaim":guideClaim(d.k);break;
     case"ggo":if(U.open&&U.open.startsWith("td:")){U.open=null;layer("")}guideGo(d.k);break;
-    case"ghide":if(confirm("Masquer les missions « Premiers pas » ?")){S.guideHide=1;save();render()}break;
+    case"ghide":if(confirm("Masquer les missions ?")){S.guideHide=GSTEPS.length;save();render()}break;
     case"tosok":tosOk();break;
     case"tosno":tosNo();break;
     case"tosback":U.open=null;openTos();break;
@@ -962,8 +964,8 @@ function todayItems(){const T=[],we=WE();
   if(wheelAvail())T.push({k:"wheel",e:"🎡",l:extraAvail()?"Tour bonus":"Roue",dot:true,act:"wheel"});
   if(S.name){const D=defisState(),got=D.filter(d=>d.got).length;
     if(!S.dch.all)T.push({k:"defis",e:"🎯",l:`Défis ${got}/3`,dot:D.some(d=>d.n>=d.g&&!d.got)||got===3,act:"td",v:"defis"})}
-  const g=U.gs;if(g&&!S.guideHide&&!g.all){const n=GSTEPS.filter(([k])=>g.done[k]).length,r=GSTEPS.some(([k])=>g.done[k]&&!g.claimed[k])||GSTEPS.every(([k])=>g.claimed[k]);
-    T.push({k:"guide",e:"🚀",l:`Missions ${n}/${GSTEPS.length}`,dot:r,act:"td",v:"guide"})}
+  const g=U.gs;if(guideVisible(g)){const GL=guideList(g),n=GL.filter(([k])=>g.done[k]).length,r=GL.some(([k])=>g.done[k]&&!g.claimed[k])||(!g.all&&GSTEPS.every(([k])=>g.claimed[k]));
+    T.push({k:"guide",e:"🚀",l:g.all?"Nouvelle mission":`Missions ${n}/${GL.length}`,dot:r||g.all,act:"td",v:"guide"})}
   if(lmBanner())T.push({k:"lm",e:"🛡️",l:"Match guilde",dot:true,act:"lmgo"});
   if(pronoBanner()){const j=U.pr.data,todo=j.matches.some(m=>m.t>Date.now()&&!m.my);T.push({k:"prono",e:"🔮",l:"Prono",dot:todo,act:"prgo"})}
   for(const e of EVENTS.filter(evActive))T.push({k:"ev"+e.id,e:e.em,l:e.n,dot:evMatches(e).some(m=>status(m)==="live"),act:"ev",id:e.id,live:true});
@@ -1317,7 +1319,7 @@ async function ticketImage(b,link){
   c.fillStyle="#35d07f";c.font='700 32px Barlow';c.fillText((link||APP_URL).replace(/^https?:\/\//,"").replace(/\/$/,""),W/2,fy+52);
   c.fillStyle="#6b7a72";c.font='500 26px Barlow';c.fillText("Paris gratuits entre potes · jetons fictifs",W/2,fy+92);
   return new Promise(ok=>cv.toBlob(ok,"image/png"))}
-const APP_URL="https://damateur-a-pro.vercel.app/",IG_URL="https://www.instagram.com/tribune.pronos/";
+const APP_URL="https://damateur-a-pro.vercel.app/",IG_URL="https://www.instagram.com/tribune.pronos/",FB_URL="https://www.facebook.com/tribune.pronos";
 const IG_ICON=`<svg class="igic" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.3" cy="6.7" r="1.2" fill="currentColor"/></svg>`;
 async function shareTicket(id){const b=S.bets.find(x=>x.id===id);if(!b)return;toast("Préparation du ticket…");
   try{let link=APP_URL;if(b.sid){try{const j=await api("share_bet",{cid:b.id});if(j.code)link=APP_URL+"?pari="+j.code}catch(e){}}
@@ -1468,22 +1470,28 @@ function coachNext(){const C=U.coach;if(!C||C.end<0)return;if(C.end>=COACH_END.l
 // 3) missions « Premiers pas » (vérifiées par le serveur)
 const GSTEPS=[["bet","🎟️","Faire ton premier pari","Touche une cote, choisis ta mise, valide."],["wheel","🎡","Tourner la roue de la chance","Un tour gratuit chaque jour."],
   ["guild","🛡️","Rejoindre ou créer une guilde","Pour jouer avec tes potes ou tes collègues."],["push","🔔","Activer les notifications","Coup d’envoi, résultats, rappels."],
-  ["fav","❤️","Choisir ton équipe de cœur","Ses matchs remontent en premier."],["combo","🧾","Tenter un combiné","Au moins 2 pronostics sur un même ticket."],["insta","📸","Suivre Tribune sur Instagram","Nouveautés, pronos du week-end : @tribune.pronos"]];
+  ["fav","❤️","Choisir ton équipe de cœur","Ses matchs remontent en premier."],["combo","🧾","Tenter un combiné","Au moins 2 pronostics sur un même ticket."],["insta","📸","Suivre Tribune sur Instagram","Nouveautés, pronos du week-end : @tribune.pronos"],["fb","👍","Suivre Tribune sur Facebook","La Page Tribune Pronos : facebook.com/tribune.pronos"]];
+// missions masquées : on retient combien il y en avait, pour réafficher la carte quand une nouvelle arrive
+const guideHidden=()=>{const h=S.guideHide;return!!h&&(h===1?7:h)>=GSTEPS.length};
+// déjà tout fini (bonus final pris) : la carte revient seulement pour les nouvelles missions pas encore récupérées
+const guideList=g=>g.all?GSTEPS.filter(([k])=>!g.claimed[k]):GSTEPS;
+const guideVisible=g=>!!g&&!guideHidden()&&guideList(g).length>0;
 let gAt=0;
-async function loadGuide(force){if(!S.tok||S.guideHide||(!force&&Date.now()-gAt<2e4))return;gAt=Date.now();try{U.gs=await api("guide_status",{});if(U.tab==="m"&&(!U.open||U.open.startsWith("td:")))render()}catch(e){}}
-function guideLocal(){return{bet:S.bets.some(b=>b.sid),wheel:!!S.wheel,guild:!!(U.lg.data&&U.lg.data.leagues.length),push:pushState()==="on",fav:!!S.fav,combo:S.bets.some(b=>b.sid&&b.legs.length>1),insta:!!S.igDone}}
+async function loadGuide(force){if(!S.tok||guideHidden()||(!force&&Date.now()-gAt<2e4))return;gAt=Date.now();try{U.gs=await api("guide_status",{});if(U.tab==="m"&&(!U.open||U.open.startsWith("td:")))render()}catch(e){}}
+function guideLocal(){return{bet:S.bets.some(b=>b.sid),wheel:!!S.wheel,guild:!!(U.lg.data&&U.lg.data.leagues.length),push:pushState()==="on",fav:!!S.fav,combo:S.bets.some(b=>b.sid&&b.legs.length>1),insta:!!S.igDone,fb:!!S.fbDone}}
 let gLocAt=0;
-function guideCard(){const g=U.gs;if(!g||S.guideHide||g.all)return"";
-  {const L=guideLocal();if(GSTEPS.some(([k])=>L[k]&&!g.done[k])&&Date.now()-gLocAt>8e3&&(U.gTries=(U.gTries||0)+1)<=4){gLocAt=Date.now();if(L.fav&&!g.done.fav&&S.favOk!==S.fav.id)favPush();else setTimeout(()=>loadGuide(true),1500)}}const n=GSTEPS.filter(([k])=>g.done[k]).length,ready=GSTEPS.filter(([k])=>g.done[k]&&!g.claimed[k]).length,open=U.gOpen??(S.bets.length<3||ready>0);
-  let h=`<div class="gcard"><button class="ghd" data-act="gtog"><span class="gico">🚀</span><span><b>Premiers pas</b><small>${n}/${GSTEPS.length} faites · +${g.reward} jetons chacune${ready?` · <b class="pos">${ready} à récupérer</b>`:""}</small></span><span class="arr">${open?"⌃":"⌄"}</span></button>
-    <div class="gbar"><i style="width:${n/GSTEPS.length*100}%"></i></div>`;
-  if(open){h+=GSTEPS.map(([k,e,t,s])=>{const d=g.done[k],c=g.claimed[k];
+function guideCard(){const g=U.gs;if(!guideVisible(g))return"";const GL=guideList(g);
+  {const L=guideLocal();if(GSTEPS.some(([k])=>L[k]&&!g.done[k])&&Date.now()-gLocAt>8e3&&(U.gTries=(U.gTries||0)+1)<=4){gLocAt=Date.now();if(L.fav&&!g.done.fav&&S.favOk!==S.fav.id)favPush();else setTimeout(()=>loadGuide(true),1500)}}const n=GL.filter(([k])=>g.done[k]).length,ready=GL.filter(([k])=>g.done[k]&&!g.claimed[k]).length,open=U.gOpen??(S.bets.length<3||ready>0||g.all);
+  let h=`<div class="gcard"><button class="ghd" data-act="gtog"><span class="gico">🚀</span><span><b>${g.all?(GL.length>1?"Nouvelles missions":"Nouvelle mission"):"Premiers pas"}</b><small>${n}/${GL.length} faite${GL.length>1?"s":""} · +${g.reward} jetons${GL.length>1?" chacune":""}${ready?` · <b class="pos">${ready} à récupérer</b>`:""}</small></span><span class="arr">${open?"⌃":"⌄"}</span></button>
+    <div class="gbar"><i style="width:${n/GL.length*100}%"></i></div>`;
+  if(open){h+=GL.map(([k,e,t,s])=>{const d=g.done[k],c=g.claimed[k];
       return`<div class="gst${c?" ok":""}"><span class="ge">${c?"✅":e}</span><div><b>${t}</b><small>${s}</small></div>${c?`<span class="gok">+${g.reward}</span>`:d?`<button class="btn gold" data-act="gclaim" data-k="${k}">+${g.reward}</button>`:`<button class="btn ghost" data-act="ggo" data-k="${k}">Go</button>`}</div>`}).join("");
-    if(GSTEPS.every(([k])=>g.claimed[k]))h+=`<button class="btn gold wide" data-act="gclaim" data-k="all" style="margin-top:8px">🎉 Bonus final : +${g.bonus} jetons</button>`;
+    if(!g.all&&GSTEPS.every(([k])=>g.claimed[k]))h+=`<button class="btn gold wide" data-act="gclaim" data-k="all" style="margin-top:8px">🎉 Bonus final : +${g.bonus} jetons</button>`;
     h+=`<div class="gft"><button class="link" data-act="help">Comment ça marche ?</button><button class="link" data-act="ghide">Masquer</button></div>`}
   return h+`</div>`}
 // Instagram : ouvre le compte et le note (mission « Premiers pas »)
 function openInsta(){const l=document.createElement("a");l.href=IG_URL;l.target="_blank";l.rel="noopener";document.body.appendChild(l);l.click();l.remove();S.igDone=1;saveLocal();api("insta_click",{}).catch(()=>{})}
+function openFb(){const l=document.createElement("a");l.href=FB_URL;l.target="_blank";l.rel="noopener";document.body.appendChild(l);l.click();l.remove();S.fbDone=1;saveLocal();api("fb_click",{}).catch(()=>{})}
 function igPopup(){if(window.__gate||!S.name||S.igNever||S.igDone)return;S.launches=(S.launches||0)+1;saveLocal();if(S.launches%10)return;
   setTimeout(()=>{if(U.open)return;U.open="igpop";layer(`<div class="grab"><h3>On est sur Instagram !</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
     <div class="igpop">${IG_ICON}<p><b>@tribune.pronos</b>Nouveautés de l’appli, pronos du week-end, défis entre guildes… Abonne-toi pour ne rien rater !</p></div>
@@ -1492,7 +1500,7 @@ async function guideClaim(k){try{const j=await api("guide_claim",{step:k});if(j.
   catch(e){toast("Pas encore validé : réessaie dans un instant.","bad");loadGuide(true)}}
 function guideGo(k){if(k==="bet"){U.tab="m";render();const o=[...document.querySelectorAll("#main .mc")].find(x=>x.offsetParent);if(o)o.scrollIntoView({block:"center",behavior:"smooth"});toast("Choisis un vrai match et touche une cote : ton pronostic va dans ton ticket.");return}if(k==="wheel"){const wb=$("[data-act=wheel]");if(wheelAvail()&&wb)wb.click();else toast("Tu as déjà tourné la roue aujourd’hui : reviens demain !");return}
   if(k==="guild"){U.tab="l";render();window.scrollTo({top:0});loadBoards();toast("Crée ta guilde, rejoins-en une avec un code, ou trouve-en une dans l’annuaire.");return}
-  if(k==="push"){pushEnable();return}if(k==="fav"){openFav();return}if(k==="insta"){openInsta();setTimeout(()=>loadGuide(true),1500);return}
+  if(k==="push"){pushEnable();return}if(k==="fav"){openFav();return}if(k==="insta"){openInsta();setTimeout(()=>loadGuide(true),1500);return}if(k==="fb"){openFb();setTimeout(()=>loadGuide(true),1500);return}
   if(k==="combo"){openHelp("combo");return}}
 
 // 4) aide « Comment ça marche ? »
@@ -2612,7 +2620,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.46";
+const VERSION="2.47";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
