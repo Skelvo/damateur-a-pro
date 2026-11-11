@@ -1427,8 +1427,10 @@ const ACTIONS = {
     if (imgs && (imgs.length < 2 || imgs.length > 10 || !imgs.every(okImg))) throw fail(400, "images");
     const img = imgs ? imgs[0] : String(b.image || "");
     if (!okImg(img)) throw fail(400, "image");
-    const r = await s.query(`insert into social_posts (at, kind, networks, image, images, caption_ig, caption_fb, label, status) values ($1, $2, $3::jsonb, $4, $9::jsonb, $5, $6, $7, $8) returning id`,
-      [at.toISOString(), kind, JSON.stringify(nets), img, b.caption_ig ? String(b.caption_ig).slice(0, 2200) : null, b.caption_fb ? String(b.caption_fb).slice(0, 5000) : null, b.label ? String(b.label).slice(0, 80) : null, b.approve ? "approved" : "draft", imgs ? JSON.stringify(imgs) : null]);
+    const cover = b.cover ? String(b.cover) : null;
+    if (cover && !/^https:\/\/[^\s]+\.(png|jpe?g)$/i.test(cover)) throw fail(400, "cover");
+    const r = await s.query(`insert into social_posts (at, kind, networks, image, images, caption_ig, caption_fb, label, status, cover) values ($1, $2, $3::jsonb, $4, $9::jsonb, $5, $6, $7, $8, $10) returning id`,
+      [at.toISOString(), kind, JSON.stringify(nets), img, b.caption_ig ? String(b.caption_ig).slice(0, 2200) : null, b.caption_fb ? String(b.caption_fb).slice(0, 5000) : null, b.label ? String(b.label).slice(0, 80) : null, b.approve ? "approved" : "draft", imgs ? JSON.stringify(imgs) : null, cover]);
     return { ok: true, id: r[0].id };
   },
   // publier tout de suite ce qui est validé et dû (sans attendre le passage automatique)

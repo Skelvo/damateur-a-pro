@@ -54,7 +54,9 @@ async function igReady(c, id, tries = 12) {
 async function igPublish(c, p) {
   let box;
   if (p.kind === "reel") {   // vidéo : traitement plus long côté Instagram
-    box = await call(G(`${c.ig}/media`), { access_token: c.tok, media_type: "REELS", video_url: p.image, caption: p.caption_ig || "", share_to_feed: "true" });
+    const prm = { access_token: c.tok, media_type: "REELS", video_url: p.image, caption: p.caption_ig || "", share_to_feed: "true" };
+    if (p.cover) prm.cover_url = p.cover;   // couverture personnalisée
+    box = await call(G(`${c.ig}/media`), prm);
     await igReady(c, box.id, 40);
     const pub = await call(G(`${c.ig}/media_publish`), { access_token: c.tok, creation_id: box.id });
     return pub.id;
@@ -91,6 +93,14 @@ async function fbPublish(c, p) {
       const j = await r.json().catch(() => ({}));
       if (!r.ok || !j.success) throw new Error("envoi de la vidéo refusé : " + ((j.debug_info && j.debug_info.message) || (j.error && j.error.message) || r.status));
     } finally { clearTimeout(t); }
+    if (p.cover) {   // couverture personnalisée (avant publication) ; si ça échoue, Facebook en choisit une
+      try {
+        const img = await fetch(p.cover); if (!img.ok) throw new Error("couverture introuvable");
+        const fd = new FormData(); fd.append("access_token", c.tok); fd.append("is_preferred", "true");
+        fd.append("source", new Blob([await img.arrayBuffer()], { type: img.headers.get("content-type") || "image/jpeg" }), "cover.jpg");
+        await fetch(G(`${st.video_id}/thumbnails`), { method: "POST", body: fd });
+      } catch (e) { /* sans gravité */ }
+    }
     await call(G(`${c.page}/video_reels`), { access_token: c.tok, upload_phase: "finish", video_id: st.video_id, video_state: "PUBLISHED", description: p.caption_fb || "" });
     return st.video_id;
   }
@@ -112,7 +122,7 @@ async function fbPublish(c, p) {
 async function publishDue(s) {
   const due = await s.query(`update social_posts set status = 'publishing', tries = tries + 1
       where id in (select id from social_posts where status = 'approved' and at <= now() order by at limit 3)
-      returning id, kind, at, image, images, caption_ig, caption_fb, networks, result`);
+      returning id, kind, at, image, images, cover, caption_ig, caption_fb, networks, result`);
   if (!due.length) return 0;
   let c; try { c = await creds(s); } catch (e) {
     for (const p of due) await s.query(`update social_posts set status = 'error', error = $2 where id = $1`, [p.id, e.message]);
