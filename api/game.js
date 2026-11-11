@@ -299,7 +299,7 @@ async function reminders(s, slot) {
   const key = `remind:${slot}:${t.ymd}`;
   if (!(await s.query(`insert into meta (key, value) values ($1, '1') on conflict do nothing returning key`, [key]))[0]) return { skipped: "déjà fait" };
   const min = slot === "midi" ? 1 : 2;
-  const ppl = await s.query(`select p.id, p.name, p.fav from players p where p.remind >= $1 and p.seen_at < now() - interval '90 minutes'
+  const ppl = await s.query(`select p.id, p.name, p.fav, extract(epoch from now() - p.seen_at) / 86400 as idle, to_char(p.seen_at, 'YYYYMMDD') as sday from players p where p.remind >= $1 and p.seen_at < now() - interval '45 minutes'
       and exists (select 1 from push_subs x where x.player = p.id)`, [min]);
   if (!ppl.length) return { sent: 0 };
   const now = Date.now(), M = await todayMatches(t.ymd, now + 20 * 60e3, Math.round(Number(t.eod)));
@@ -315,7 +315,16 @@ async function reminders(s, slot) {
   const lm = await dayMatch(s).catch(() => null);
   const jobs = ppl.map(async (p) => {
     let msg = null;
-    if (pr) {
+    // joueur absent depuis plusieurs jours : un message « reviens » (une fois par palier et par absence), le soir
+    const idle = Number(p.idle) || 0, lvl = idle >= 10 ? 10 : idle >= 5 ? 5 : idle >= 2 ? 2 : 0;
+    if (slot === "soir" && lvl && (await sentOnce(s, `idle:${p.id}:${lvl}:${p.sday}`))) {
+      const g = (await s.query(`select l.name from league_members m join leagues l on l.code = m.code where m.player = $1 and not l.dark order by m.joined_at limit 1`, [p.id]))[0];
+      msg = lvl === 2 ? { title: "🎡 Ta roue t'attend depuis 2 jours", body: `Un tour gratuit chaque jour, des défis à relever${tonight ? ` et ce soir : ${tonight}` : ""}. Viens récupérer tes jetons !`, url: "./", tag: "idle" }
+        : lvl === 5 ? (g ? { title: `👀 « ${g.name} » avance sans toi`, body: "Tes potes ont joué cette semaine. Reviens défendre ta place au classement !", url: "./", tag: "idle" }
+                        : { title: "⚽ Les matchs continuent sans toi", body: `${tonight ? `Ce soir : ${tonight}. ` : ""}Un petit prono pour revenir dans la course ?`, url: "./", tag: "idle" })
+        : { title: "🏆 Ta place t'attend", body: "Ça fait 10 jours ! Tes jetons, ta carte de joueur et tes potes t'attendent. Un prono ce week-end ?", url: "./", tag: "idle" };
+    }
+    if (!msg && pr) {
       const mine = new Set((await s.query(`select mid from prono_picks where week = $1 and player = $2`, [pr.week, p.id])).map((x) => x.mid));
       const left = pr.open.filter((m) => !mine.has(m.mid)).length;
       const lg = (await s.query(`select code from league_members where player = $1 and code not in (select code from leagues where dark) order by joined_at limit 1`, [p.id]))[0];
