@@ -913,9 +913,9 @@ function viewLeagues(){const L=U.lg,d=L.data;
   h+=`<div class="lgchips"><button data-act="lgsel" data-code="" aria-pressed="${!L.code}">${ic("fire")} Général</button>${d.leagues.map(l=>`<button data-act="lgsel" data-code="${esc(l.code)}" aria-pressed="${L.code===l.code}">${emb(l,"sm")}${esc(l.name)}</button>`).join("")}</div>`;
   const cur=d.leagues.find(l=>l.code===L.code);
   if(cur){const R=cur.mine?"chef":cur.role==="officer"?"adjoint":"membre",boss=R!=="membre";
-    const gdv=cur.elo>=1200?"Diamant":cur.elo>=1150?"Platine":cur.elo>=1100?"Or":cur.elo>=1050?"Argent":"Bronze";
+    const gdv=["Bronze","Argent","Or","Platine","Diamant","Diamant"][gdivI(cur.elo||1000)];
     h+=`<div class="lgcard gcomp gd-${gdv}" style="--gc:${esc((cur.emblem&&cur.emblem.c)||"#35d07f")}"><div class="gtop">${emb(cur,"lg")}<div class="gti"><h3>${esc(cur.name)}</h3>
-    ${cur.motto?`<em class="gmotto">« ${esc(cur.motto)} »</em>`:""}<small><button class="link" data-act="gmem">${cur.n} membre${cur.n>1?"s":""}</button> · tu es ${R}</small>${gdv!=="Bronze"?`<span class="gdvb">${{Argent:"🥈",Or:"🥇",Platine:"💠",Diamant:"💎"}[gdv]} Guilde ${gdv}</span>`:""}</div>
+    ${cur.motto?`<em class="gmotto">« ${esc(cur.motto)} »</em>`:""}<small><button class="link" data-act="gmem">${cur.n} membre${cur.n>1?"s":""}</button> · tu es ${R}</small><button class="gdvb" data-act="gwr">${gdivImg(gdivI(cur.elo||1000),"gdis")} Guilde ${GDIV[gdivI(cur.elo||1000)][0]} ›</button></div>
     <button class="btn gold gsm" data-act="lginv" aria-label="Inviter">${ic("share")}</button><button class="gdots" data-act="gmenu" aria-label="Menu de la guilde">•••${boss&&cur.nreq?`<i class="tdd"></i>`:""}</button></div></div>`}
   else h+=`<div class="lgcard"><h3>Classement général</h3><small>Tous les joueurs${d.rank?` · tu es <b style="color:var(--sel)">${d.rank}<sup>e</sup></b> sur ${d.total}`:""}</small></div>`;
   if(cur&&d.last)h+=`<div class="champ">${ic("trophy")}<div><small>Vainqueur${d.last.winners.length>1?"s":""} de la semaine dernière</small><b>${d.last.winners.map(w=>esc(w.name)+` <span class="pos">+${tok(w.gain)}</span>`).join(" · ")}</b></div></div>`;
@@ -945,9 +945,9 @@ function viewLeagues(){const L=U.lg,d=L.data;
   const key=M==="week"?"week":M==="season"?"season":"bal",gainMode=M!=="total",rows=d.rows.slice().sort((a,b)=>b[key]-a[key]||b.bal-a.bal).slice(0,cur?60:50);
   const val=r=>gainMode?(r[key]>0?"+":"")+tok(r[key]):tok(r.bal),cls=r=>gainMode?(r[key]>=0?"pos":"neg"):"";
   if(!rows.length)h+=`<div class="empty">Personne pour l’instant.</div>`;
-  if(rows.length>=3){const P=[rows[1],rows[0],rows[2]],H=[64,90,48];
+  if(rows.length>=3){const P=[rows[0],rows[1],rows[2]],H=[90,66,48];
     h+=`<div class="podium">${P.map((r,i)=>`<div class="pod" data-act="prof" data-id="${esc(r.id)}">${avatar(r.id,r.name,r.av,"av"+frC(r.cos))}<b>${nameH(r.name,r.cos)}${r.id===d.me?" (toi)":""}</b><span class="${cls(r)}">${val(r)}</span>
-      <div class="blk" style="height:${H[i]}px;background:${["#c9d3dc","#ffd23f","#e0975a"][i]}">${[2,1,3][i]}</div></div>`).join("")}</div>`}
+      <div class="blk" style="height:${H[i]}px;background:${["#ffd23f","#c9d3dc","#e0975a"][i]}">${i+1}</div></div>`).join("")}</div>`}
   h+=rows.map((r,i)=>i<3&&rows.length>=3?"":`<div class="prow${r.id===d.me?" me":""}" data-act="prof" data-id="${esc(r.id)}"><span class="rk">${i+1}</span>${avatar(r.id,r.name,r.av,"av"+frC(r.cos))}
     <div><b>${nameH(r.name,r.cos)}${favCrest(r.fav)}${r.id===d.me?" (toi)":""}${r.sc?` <span class="trs crw">${ic("crown")}${r.sc>1?r.sc:""}</span>`:""}${r.tr?` <span class="trs">${ic("trophy")}${r.tr>1?r.tr:""}</span>`:""}</b><small>${r.cos&&r.cos.t&&cosTitle(r.cos.t)?esc(cosTitle(r.cos.t))+" · ":""}${levelOf(r.xp||0).ic} niv. ${levelOf(r.xp||0).lvl} · ${r.won} gagné${r.won>1?"s":""} · ${r.lost} perdu${r.lost>1?"s":""}</small></div>
     <span class="v ${cls(r)}">${val(r)}</span></div>`).join("");
@@ -1678,7 +1678,7 @@ function btLive(b){const lo=Math.min(b.my,b.their,0),a=b.my-lo+1,c=b.their-lo+1,
   <div class="btbar"><i style="width:${pct}%"></i></div><small class="btsub">${bet}/${b.myN} membre${b.myN>1?"s ont":" a"} parié cette semaine · détail ›</small></div>`}
 function viewBattle(cur){const j=(U.bt||{})[cur.code];if(!j)return"";const g=j.guild,boss=j.role!=="membre",B=j.battles;
   const live=B.filter(b=>b.status==="live"),ready=B.filter(b=>b.status==="ready"),pin=B.filter(b=>b.status==="pending"&&b.incoming),pout=B.filter(b=>b.status==="pending"&&!b.incoming),done=B.filter(b=>b.status==="done");
-  let h=`<div class="btcard"><button class="bthd" data-act="gwr"><span class="btdiv">${g.div.i} ${g.div.n}</span><small>Cote ${g.elo} · ${g.w}V ${g.d}N ${g.l}D · ${g.rank}<sup>e</sup> mondial</small><span class="arr">›</span></button>`;
+  let h=`<div class="btcard"><button class="bthd" data-act="gwr"><span class="btdiv">${gdivImg(gdivI(g.elo),"gdis")} ${GDIV[gdivI(g.elo)][0]}</span><small>Cote ${g.elo} · ${g.w}V ${g.d}N ${g.l}D · ${g.rank}<sup>e</sup> mondial</small><span class="arr">›</span></button>`;
   if(!g.ok)h+=`<p class="btnote">Il faut au moins ${j.min} membres pour combattre d’autres guildes. Invite tes potes !</p>`;
   h+=live.map(btLive).join("");
   h+=ready.map(b=>`<div class="btline">⚔️ <span>Défi accepté contre ${emb(b.vs)}<b>${esc(b.vs.name)}</b> · commence lundi</span></div>`).join("");
@@ -1700,13 +1700,23 @@ function viewBtDetail(){const j=(U.bt||{})[U.lg.code];const head=`<div class="gr
   h+=`<div class="grp">Les règles</div><p class="note" style="text-align:left">Le score d’une guilde, c’est la <b>moyenne des gains en paris</b> de la semaine (du lundi au dimanche) de <b>tous</b> ses membres, même ceux qui ne parient pas (ils comptent 0). Les membres sont figés au début du combat. La roue, les défis et les bonus ne comptent pas.<br><br>
   🏟️ <b>Championnat</b> : chaque lundi, un adversaire de cote proche est tiré automatiquement.<br>⚔️ <b>Défi</b> : le chef ou un adjoint défie une guilde pour la semaine suivante (un défi par semaine).<br><br>
   🎁 Récompense pour chaque membre qui a parié pendant la semaine : victoire <b>+${R.w}</b>, nul <b>+${R.d}</b>, défaite <b>+${R.l}</b> jetons. Résultat le mardi matin.<br><br>
-  Divisions selon la cote : 🥉 Bronze, 🥈 Argent (1050), 🥇 Or (1100), 💠 Platine (1150), 💎 Diamant (1200).</p>`;
+  Divisions selon la cote : Bronze, Argent (1050), Or (1100), Platine (1150), Diamant (1200) et Légende (1250).</p>`;
   return h}
+// divisions des guildes : écussons dessinés, de Bronze à Légende
+const GDIV=[["Bronze",-1e9],["Argent",1050],["Or",1100],["Platine",1150],["Diamant",1200],["Légende",1250]];
+const gdivI=elo=>{let i=0;GDIV.forEach((d,k)=>{if(elo>=d[1])i=k});return i};
+const gdivImg=(i,cls="gdi")=>`<img class="${cls}" src="gdiv/g${i+1}.webp?v=1" alt="${GDIV[i][0]}">`;
+function gLadder(elo){const i=gdivI(elo),nx=GDIV[i+1],pv=GDIV[i][1]<0?1000:GDIV[i][1],pct=nx?Math.max(4,Math.min(100,(elo-pv)/(nx[1]-pv)*100)):100;
+  return`<div class="gldr"><div class="gldrc">${gdivImg(i,"gdbig")}<div><small>Division de ta guilde</small><b>${GDIV[i][0]}</b><span>Cote ${elo}</span></div></div>
+    <div class="gldbar"><i style="width:${pct}%"></i></div><p class="gldn">${nx?`Encore <b>${nx[1]-elo}</b> point${nx[1]-elo>1?"s":""} de cote pour passer <b>${nx[0]}</b>`:"Tout en haut : division maximale 👑"}</p>
+    <div class="gldl">${GDIV.map((d,k)=>`<div class="${k<i?"ok":k===i?"cur":"lock"}">${gdivImg(k)}<small>${d[0]}</small><em>${d[1]<0?"départ":d[1]}</em></div>`).join("")}</div>
+    <p class="gldn" style="margin-top:6px">La cote monte en gagnant les combats de guildes du lundi, et baisse en les perdant.</p></div>`}
 async function openGRank(chal){U.open="gwr";const head=`<div class="grab"><h3>${chal?"Défier une guilde":"Classement des guildes"}</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
   layerLater(head+`<div class="skel"></div><div class="skel"></div>`);
   try{const j=await api("guild_ranking",{});if(U.open!=="gwr")return;const me=(U.bt||{})[U.lg.code],boss=me&&me.role!=="membre"&&me.guild.ok;
-    layer(head+(chal?`<p class="note" style="text-align:left">Le défi dure une semaine et commence lundi prochain. La guilde défiée doit accepter.</p>`:"")
-      +(j.guilds.length?j.guilds.map((g,i)=>`<div class="gdrow"><span class="rk">${i+1}</span>${emb(g,"lg")}<div><b>${esc(g.name)}</b><small>${g.div.i} ${g.div.n} · cote ${g.elo} · ${g.w}V ${g.d}N ${g.l}D · ${g.n} membres</small></div>
+    const mine=j.guilds.find(g=>g.mine),myElo=me&&me.guild&&me.guild.elo!=null?me.guild.elo:mine?mine.elo:null;
+    layer(head+(chal?`<p class="note" style="text-align:left">Le défi dure une semaine et commence lundi prochain. La guilde défiée doit accepter.</p>`:myElo!=null?gLadder(myElo):"")
+      +(j.guilds.length?j.guilds.map((g,i)=>`<div class="gdrow"><span class="rk">${i+1}</span>${emb(g,"lg")}<div><b>${esc(g.name)}</b><small>${gdivImg(gdivI(g.elo),"gdis")} ${GDIV[gdivI(g.elo)][0]} · cote ${g.elo} · ${g.w}V ${g.d}N ${g.l}D · ${g.n} membres</small></div>
         ${g.mine?`<span class="tag won">Toi</span>`:`<button class="x sm" data-act="rep" data-k="guild" data-id="${esc(g.gid)}" data-w="la guilde « ${esc(g.name)} » (nom ou logo déplacé)" aria-label="Signaler">🚩</button>`+(boss?`<button class="btn ${chal?"gold":""}" data-act="gchal" data-id="${esc(g.gid)}" data-n="${esc(g.name)}">Défier</button>`:"")}</div>`).join("")
       :`<div class="empty">${ic("trophy")}<b>Pas encore de guilde classée</b>Il faut au moins 3 membres pour entrer au classement.</div>`))}
   catch(e){if(U.open==="gwr")layer(head+`<div class="empty">${ic("info")}<b>Pas de connexion</b>Réessaie dans un instant.</div>`)}}
@@ -2668,7 +2678,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.58";
+const VERSION="2.59";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

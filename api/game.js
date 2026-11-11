@@ -687,7 +687,7 @@ const banName = (s, name) => s.query(`insert into banned_names (name) values ($1
 // pour que personne ne lance un défi en sachant déjà le résultat. Championnat : appariement auto le lundi.
 // Résultat le mardi à 6 h (le lundi laisse le temps aux téléphones d'envoyer les paris du dimanche soir).
 const NEXT_WEEK = `to_char(date_trunc('week', now() at time zone 'Europe/Paris') + interval '7 days', 'YYYY-MM-DD')`;
-const BDIV = [[1200, "Diamant", "💎"], [1150, "Platine", "💠"], [1100, "Or", "🥇"], [1050, "Argent", "🥈"], [-1e9, "Bronze", "🥉"]];
+const BDIV = [[1250, "Légende", "👑"], [1200, "Diamant", "💎"], [1150, "Platine", "💠"], [1100, "Or", "🥇"], [1050, "Argent", "🥈"], [-1e9, "Bronze", "🥉"]];
 const division = (elo) => { const d = BDIV.find((x) => elo >= x[0]); return { n: d[1], i: d[2] }; };
 const BREWARD = { w: 200, d: 75, l: 25 }, BK = 32, MIN_BATTLE = 3;
 const sgn = (x) => (x > 0 ? "+" : "") + x;
@@ -1438,6 +1438,13 @@ const ACTIONS = {
     return { count: refs.length, leagues: out };
   },
   // ---- Tableau de bord du programme (page /programme/, clé personnelle à part de la clé admin) ----
+  // diagnostic des rappels : passages des tâches planifiées et état des notifications d'un joueur
+  async admin_push_diag(s, b) {
+    admin(b);
+    const keys = await s.query(`select key from meta where key like 'remind:%' or key like 'morning:%' or key like 'recap:%' order by key desc limit 20`);
+    const pl = await s.query(`select p.id, p.name, p.remind, p.seen_at, (select count(*)::int from push_subs x where x.player = p.id) as subs from players p where lower(p.name) like lower($1) limit 5`, ["%" + String(b.name || "") + "%"]);
+    return { keys: keys.map((k) => k.key), players: pl, now: new Date().toISOString() };
+  },
   async admin_social_key(s, b) {
     admin(b);
     let k = await SOCIAL.kvGet(s, "social_view_key");
