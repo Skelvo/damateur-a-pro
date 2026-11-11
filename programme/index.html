@@ -103,7 +103,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .kv .v{flex:1;min-width:0;font-weight:700;font-size:14px;word-break:break-word}
 .kv button{flex:none;font:800 12px Barlow;color:var(--acc);padding:4px 6px}
 .how .sub{font:800 12px Barlow;color:#fff;margin:12px 0 2px;text-transform:uppercase;letter-spacing:.05em}
-.dl{display:block;text-align:center;margin-top:10px}
+.dl{display:block;text-align:center;margin-top:10px;color:var(--ink);text-decoration:none}
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%);background:var(--card2);border:1px solid var(--line2);border-radius:14px;padding:10px 16px;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
 .toast.on{opacity:1}
 </style>
@@ -115,7 +115,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 <div class="upd" id="updb"><span>Nouvelle version du programme</span><button onclick="location.reload()">Recharger</button></div>
 <script>
 const $=s=>document.querySelector(s);
-const TZ="Europe/Paris",PV="5";
+const TZ="Europe/Paris",PV="6";
 // nouvelle version en ligne ? (vérifié à l'ouverture et toutes les 2 minutes)
 async function checkV(){try{const v=(await (await fetch("version.txt?t="+Date.now(),{cache:"no-store"})).text()).trim();if(v&&v!==PV)$("#updb").classList.add("on")}catch(e){}}
 let KEY="",DATA=null,TAB="next",OPEN=new Set(),PIN="";
