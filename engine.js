@@ -287,7 +287,7 @@ function cashValueM(b,getM){if(b.st!=="open"||b.legs.some(L=>L.r==="l"||L.r==="v
 /* ---------- roue et défis du jour (le serveur tire la roue et vérifie les défis) ---------- */
 const WHEEL=[25,50,75,100,150,200,300,500],WP=[28,24,18,13,8,5,3,1];   // gains et chances en %
 const JACKPOT=1000000,JACK_ODDS=10000000;   // case jackpot tirée à part : 1 chance sur 10 millions
-const EXTRA_DAY="20261109";   // tour bonus offert à tout le monde ce jour-là
+const EXTRA_DAY="20261111";   // tour bonus offert à tout le monde ce jour-là
 const legsOf=B=>B.flatMap(b=>b.legs);
 const DEFIS=[
   [{id:"p3",ic:"ticket",t:"Place 3 paris",g:3,r:50,f:P=>P.length},
