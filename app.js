@@ -1340,10 +1340,20 @@ function refFromLink(){const c=new URLSearchParams(location.search).get("parrain
 function keepTmp(k,v){try{localStorage.setItem(k,v+"|"+Date.now())}catch(e){}}
 function getTmp(k,min){try{const raw=localStorage.getItem(k);if(!raw)return"";const[v,t]=raw.split("|");if(!t||Date.now()-Number(t)>min*6e4){localStorage.removeItem(k);return""}return v}catch(e){return""}}
 const refStored=()=>getTmp("dap.ref",24*60);
+// lien d'un match (…/?match=rugby-401234) : on ouvre directement la fiche du match pour faire son prono
+function matchFromLink(){const c=new URLSearchParams(location.search).get("match");if(!c)return;const q=new URLSearchParams(location.search);q.delete("match");history.replaceState(null,"",location.pathname+(q.toString()?"?"+q:""));
+  const v=String(c).toLowerCase().replace(/[^a-z0-9-]/g,"").slice(0,30);if(/^[a-z]+-\d+$/.test(v)){keepTmp("dap.match",v);U.matchNow=1}}
+let mpTries=0;async function matchPending(v){v=v||getTmp("dap.match",30);if(!v||!S.name||GATE)return;const[sp,eid]=v.split("-");if(!SP[sp])return;
+  try{await loadSport(sp)}catch(e){}
+  const m=[...REG.values()].find(x=>String(x.eid)===eid);
+  if(!m){if(++mpTries<8)setTimeout(()=>matchPending(v),2500);return}
+  try{localStorage.removeItem("dap.match")}catch(e){}mpTries=0;
+  if(U.open&&U.open!=="slip"){document.querySelectorAll(".scrim").forEach(x=>x.remove());U.open=null;layer("")}
+  U.tab="m";U.sp=sp;render();U.dtab="p";openDetail(m.id)}
 function pariFromLink(){const c=new URLSearchParams(location.search).get("pari");if(!c)return;history.replaceState(null,"",location.pathname);
   keepTmp("dap.pari",c.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,10));U.pariNow=1}
 let ptAt=0;async function pendingTicket(){if(!S.tok||GATE||Date.now()-ptAt<4000||(U.open&&U.open!=="slip"))return;ptAt=Date.now();
-  try{const j=await api("pending_ticket",{});if(j.code)openShared(j.code)}catch(e){}}
+  try{const j=await api("pending_ticket",{});if(j.code)openShared(j.code);else if(j.match)matchPending(j.match)}catch(e){}}
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&S.name)setTimeout(pendingTicket,700)});
 function pariPending(){const c=getTmp("dap.pari",30);if(!c||!S.name)return;try{localStorage.removeItem("dap.pari")}catch(e){}openShared(c)}
 async function openShared(code){U.open="shared";U.shared=null;const head=`<div class="grab"><h3>Ticket partagé</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
@@ -2577,6 +2587,7 @@ async function installPrompt(){if(!installEvt)return;installEvt.prompt();const r
 // on n'affiche que la marche à suivre (et le code de transfert pour ceux qui jouaient déjà ici).
 const GATE=!STANDALONE&&!matchMedia("(display-mode: fullscreen), (display-mode: minimal-ui)").matches&&(IOS||ANDROID);window.__gate=GATE;
 function renderGate(){const lg=new URLSearchParams(location.search).get("guilde");const pc=U.pariNow?getTmp("dap.pari",30):"";const rc=refStored();
+  const mc=U.matchNow?getTmp("dap.match",30):"";if(mc)setTimeout(async()=>{try{await api("match_mark",{m:mc})}catch(e){}const box=$("#gmatch");if(box)box.innerHTML=`<div class="gpgo">📲 <b>Tu as déjà l’app ?</b> Ouvre maintenant <b>Tribune</b> depuis ton écran d’accueil : <b>le match s’ouvrira tout seul</b> (dans les 20 minutes), prêt pour ton prono.</div><p class="note">Pas encore l’app ? Installe-la ci-dessous : le match t’attendra.</p>`},40);
   if(rc)setTimeout(async()=>{try{const j=await api("ref_info",{code:rc,mark:1});const box=$("#gref");if(box&&j.name)box.innerHTML=`<div class="refban">🎁 <span><b>${esc(j.name)} t’invite sur Tribune !</b><br>Installe l’app ci-dessous et crée ton compte : <b>+${tok(j.gets)} jetons de bienvenue</b> en plus des 1 000 de départ.</span></div>`}catch(e){}},30);
   if(pc)setTimeout(async()=>{try{const j=await api("shared_bet",{code:pc,mark:1});const box=$("#gpari");if(box)box.innerHTML=`<div class="gptk"><b>🎟️ Ticket de ${esc(j.name)}</b><small>${j.legs.length>1?"Combiné de "+j.legs.length:"Pari simple"} · cote ${fr(j.odds)}</small>
     ${j.legs.map(L=>`<div class="gpl"><span>${esc(L.l)}</span><b>${fr(L.o)}</b></div>`).join("")}</div>
@@ -2584,7 +2595,7 @@ function renderGate(){const lg=new URLSearchParams(location.search).get("guilde"
     <p class="note">Pas encore l’app ? Installe-la ci-dessous : le ticket t’attendra.</p>`}catch(e){}},50);
   document.body.classList.add("gated");
   $("#main")._html=null;$("#main").innerHTML=`<div class="gate"><h1 class="glogo"><img src="logo-tribune.png?v=2" alt="Tribune"></h1><small style="color:var(--mute2)">v${VERSION}</small><p class="gsub">Le jeu se joue <b>uniquement depuis l’app</b> sur ton écran d’accueil. C’est gratuit, sans store, et ça prend 10 secondes.</p>
-    <div id="gref"></div>${pc?`<div id="gpari"><div class="skel" style="height:120px"></div></div>`:""}
+    <div id="gref"></div><div id="gmatch"></div>${pc?`<div id="gpari"><div class="skel" style="height:120px"></div></div>`:""}
     ${lg?`<div class="xcode" style="margin-bottom:12px"><small>Invitation à une guilde : une fois dans l’app, va dans Guildes › Rejoindre et entre ce code</small><b>${esc(lg.toUpperCase().slice(0,8))}</b></div>`:""}
     <div id="ginst">${viewInstall(true)}</div>
     <a class="igban gig" href="${IG_URL}" target="_blank" rel="noopener">${IG_ICON}<span><b>@tribune.pronos</b><small>Suis-nous sur Instagram</small></span><span class="arr">›</span></a></div>`}
@@ -2620,7 +2631,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.50";
+const VERSION="2.51";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -2639,7 +2650,7 @@ async function boot(){if(GATE||!S.name){hideSplash();setTimeout(afterBoot,300);r
       if(L0)await Promise.allSettled([loadProno(),loadLm(U.lg.code||L0.code)])})()])})()];
   await Promise.race([Promise.allSettled(jobs),new Promise(r=>setTimeout(r,6500))]);
   clearInterval(mt);U.lg.loading=false;render();hideSplash();setTimeout(afterBoot,400)}
-refFromLink();pariFromLink();setTimeout(igPopup,0);getTmp("dap.pari",30);getTmp("dap.ref",24*60);
+refFromLink();pariFromLink();matchFromLink();setTimeout(igPopup,0);getTmp("dap.pari",30);getTmp("dap.ref",24*60);
 // coincé dans le navigateur d'Instagram, Facebook… : on tente tout de suite de rouvrir le lien dans Safari ou Chrome (une seule fois)
 // flèche vers le menu ••• d'Instagram / Facebook (seul moyen fiable de sortir sur iPhone)
 function inAppArrow(){if(!GATE||!INAPP_NAME||document.querySelector(".iaarrow"))return;if(!(IOS&&!IOS_SAFARI)&&!(ANDROID&&INAPP))return;
@@ -2653,7 +2664,7 @@ if(!S.name){hideSplash();U.open="welcome";layer(viewWelcome(false));setTimeout(w
 loadFeeds();boot();
 setTimeout(()=>{if(S.dk&&Object.values(S.dk).some(x=>!x.settled))checkDarkAll()},5000);
 goFrom(location.href);
-var afterBoot=function(){pushRefresh();if(S.introSeen===INTRO_V&&S.tosV===TOS_V){setTimeout(pariPending,600);setTimeout(pendingTicket,900)}if(S.name&&S.starter==="pending"&&S.introSeen===INTRO_V&&!U.coach)grantStarter(false);if(S.name&&S.tosV!==TOS_V)openTos();else if(S.name&&S.introSeen!==INTRO_V)openIntro();if(S.name){claimPrizes();claimBattles();claimGifts();ensureRcode()}if(S.name)Promise.resolve().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels();autoWheel()};
+var afterBoot=function(){pushRefresh();if(S.introSeen===INTRO_V&&S.tosV===TOS_V){setTimeout(pariPending,600);setTimeout(pendingTicket,900);setTimeout(()=>matchPending(),1200)}if(S.name&&S.starter==="pending"&&S.introSeen===INTRO_V&&!U.coach)grantStarter(false);if(S.name&&S.tosV!==TOS_V)openTos();else if(S.name&&S.introSeen!==INTRO_V)openIntro();if(S.name){claimPrizes();claimBattles();claimGifts();ensureRcode()}if(S.name)Promise.resolve().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels();autoWheel()};
 setInterval(()=>{if(!document.hidden&&S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},12e4);
 // matchs en direct qui te concernent (regardé, parié, équipe de cœur) : leur compétition est rafraîchie toutes les 20 s pour les animations
 setInterval(()=>{if(document.hidden)return;const hot=new Set([...REG.values()].filter(m=>m.src==="espn"&&m.state==="in"&&(m.sp==="foot"||m.sp==="rugby")&&fxMine(m)).map(m=>m.sp+"|"+m.lv));

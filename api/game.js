@@ -1316,8 +1316,20 @@ const ACTIONS = {
   async pending_ticket(s, b, req) {
     const p = await me(s, b.token);
     const r = await s.query(`select code from link_hits where ip = $1 and at > now() - interval '20 minutes' order by at desc limit 3`, [ipKey(req)]);
-    for (const x of r) if (await credit(s, p.id, 0, "pend", x.code)) return { code: x.code };
+    for (const x of r) {
+      if (x.code.startsWith("M:")) { if (await credit(s, p.id, 0, "pend", x.code)) return { code: null, match: x.code.slice(2) }; continue; }
+      if (x.code.includes(":")) continue;
+      if (await credit(s, p.id, 0, "pend", x.code)) return { code: x.code };
+    }
     return { code: null };
+  },
+  // lien d'un match ouvert dans le navigateur : noté 20 min pour que l'appli installée l'ouvre (comme les tickets partagés)
+  async match_mark(s, b, req) {
+    const v = String(b.m || "").toLowerCase();
+    if (!/^[a-z]{3,8}-\d{1,14}$/.test(v) || !req) return { ok: false };
+    await s.query(`delete from link_hits where at < now() - interval '1 hour'`);
+    await s.query(`insert into link_hits (ip, code) values ($1, $2) on conflict (ip, code) do update set at = now()`, [ipKey(req), "M:" + v]);
+    return { ok: true };
   },
   // parrainage : mon lien, mes filleuls
   async ref_get(s, b) {
@@ -1458,9 +1470,16 @@ const ACTIONS = {
     await s.query(`delete from meta where key = 'social_pin'`);
     return { ok: true };
   },
+  // consignes pour une publication à faire soi-même : étapes, sondage, sticker lien
+  async admin_social_howto(s, b) {
+    admin(b);
+    const h = b.howto && typeof b.howto === "object" ? b.howto : null;
+    const r = await s.query(`update social_posts set howto = $2::jsonb where id = $1 returning id`, [String(int(b.id, 0, 1e15)), h ? JSON.stringify(h).slice(0, 4000) : null]);
+    return { ok: !!r[0] };
+  },
   async social_board(s, b) {
     await boardKey(s, b);
-    const posts = await s.query(`select id, label, kind, networks, image, images, cover, status, error, caption_ig, caption_fb,
+    const posts = await s.query(`select id, label, kind, networks, image, images, cover, status, error, caption_ig, caption_fb, howto,
         extract(epoch from at) * 1000 as at, extract(epoch from published_at) * 1000 as published_at
       from social_posts where status <> 'cancelled' and (at > now() - interval '30 days' or status not in ('published', 'manual_done')) order by at`);
     return { posts, now: Date.now() };
