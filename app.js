@@ -749,6 +749,10 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"ixo":U.ix.o=+d.v;layer(viewIntro());break;
     case"ixs":U.ix.s=+d.v;layer(viewIntro());break;
     case"inext":introGo(1);break;
+    case"nnext":U.ni=Math.min(NEWS.length-1,U.ni+1);layer(viewNews());break;
+    case"nprev":U.ni=Math.max(0,U.ni-1);layer(viewNews());if(!U.ni)newsCard();break;
+    case"nskip":newsEnd();break;
+    case"ngo":{const v=d.v;newsEnd();setTimeout(()=>{if(v==="mycard")openCard({id:S.pid,name:S.name,av:S.avv,me:true,bets:S.bets,xp:S.xp,cos:S.cos,fav:S.fav});else if(v==="style")openStyle();else if(v==="wheel")openWheel();else if(v==="gwr"){U.tab="l";render();openGRank(false)}},250);break}
     case"iprev":introGo(-1);break;
     case"iskip":introEnd(false);break;
     case"istart":introEnd(true);break;
@@ -854,7 +858,7 @@ async function api(action,data={}){const c=new AbortController(),t=setTimeout(()
     if(!r.ok)throw Object.assign(new Error(j.error||r.status),{code:j.error||String(r.status)});return j}
   finally{clearTimeout(t)}}
 function wheelSync(j){if(j&&j.av!=null&&j.av!==(S.avv||0)){S.avv=j.av;S.avatar=null;saveLocal();if(!U.open)render()}   // photo du compte (après reconnexion, autre téléphone…)
-  const w=j&&j.wheel;if(!w)return;let ch=false;if(w.b&&w.b>(S.bonus||"")){S.bonus=w.b;ch=true}if(w.x&&w.x>(S.extraSpin||"")){S.extraSpin=w.x;ch=true}if(ch){saveLocal();if(!U.open)render()}}
+  const w=j&&j.wheel;if(!w)return;let ch=false;if(w.r&&w.r!==S.wheelR){S.wheelR=w.r;S.bonus=w.b||"";S.extraSpin=w.x||"";S.wheelAuto="";ch=true}if(w.b&&w.b>(S.bonus||"")){S.bonus=w.b;ch=true}if(w.x&&w.x>(S.extraSpin||"")){S.extraSpin=w.x;ch=true}if(ch){saveLocal();if(!U.open)render()}}
 // paris annulés par les organisateurs : remboursés et marqués « Remboursé »
 function applyCancel(j){if(!j||!Array.isArray(j.cancel))return;let n=0;for(const c of j.cancel){const b=S.bets.find(x=>x.id===c.cid&&x.st==="open");if(!b)continue;b.st="void";b.pay=b.stake;b.done=Date.now();S.bal+=b.stake;n++}
   if(n){save();render();toast(`↺ ${n>1?n+" paris annulés":"Un pari annulé"} par les organisateurs : mise remboursée.`)}}
@@ -1443,6 +1447,19 @@ function viewIntro(){const i=U.ii,X=U.ix,O=[["PSG",1.65],["Nul",3.8],["Lens",5.2
   return`<div class="intro" id="intro"><div class="ihead"><span class="idots">${Array.from({length:INTRO_N},(_,k)=>`<i class="${k===i?"on":""}"></i>`).join("")}</span><button class="link" data-act="iskip">Passer</button></div>
     <div class="ibody">${body}</div>
     <div class="ifoot">${i>0?`<button class="btn ghost" data-act="iprev">‹</button>`:""}${i<INTRO_N-1?`<button class="btn gold wide" data-act="inext">Suivant</button>`:`<button class="btn gold wide" data-act="istart">${ic("ticket")} ${S.starter==="pending"?"Mon match d’entraînement":"Match d’entraînement"}</button>`}</div>${i===INTRO_N-1?`<p class="note" style="margin:10px 0 0"><button class="link" data-act="iskip">${S.starter==="pending"?"Passer et recevoir mes 1 000 jetons":"C’est bon, j’ai compris"}</button></p>`:""}</div>`}
+// « Quoi de neuf ? » : montré une fois après une grosse mise à jour (changer NEWS_V pour le remontrer)
+const NEWS_V=1;
+const NEWS=[["card-legende.webp?v=1","Ta carte en métal","Bronze, argent, or, élite, légende : ta carte de joueur a maintenant une vraie matière. <b>Fais-la bouger avec le doigt</b>, elle est en 3D ! Tu peux aussi choisir le rang affiché.","mycard","Voir ma carte"],
+  ["bn/b20.webp?v=1","22 bannières illustrées","Stade, terre battue, parquet, orage, galaxie, teckel… Chaque bannière a sa scène en haut du profil et sa propre carte.","style","Mon style"],
+  ["fr/f5.webp?v=2","12 nouveaux cadres","Flammes, néon, glace, éclairs, diamant, pièces d’or… à débloquer en jouant, autour de ta photo partout dans l’appli.","style","Mon style"],
+  ["roue-anneau.webp?v=1","La nouvelle roue","Ampoules, cases en métal, la case qui s’allume sous la flèche, et des bruitages. Un tour gratuit chaque jour !","wheel","Tourner la roue"],
+  ["gdiv/g6.webp?v=1","Les divisions de guildes","Bronze, argent, or, platine, diamant… jusqu’à <b>Légende</b>. Gagnez les combats du lundi pour monter !","gwr","Le classement"]];
+function openNews(){if(U.open){setTimeout(()=>{if(S.newsSeen!==NEWS_V&&S.name)openNews()},4000);return}U.open="news";U.ni=0;layer(viewNews());newsCard()}
+function viewNews(){const i=U.ni,n=NEWS[i];return`<div class="intro news" id="news"><div class="ihead"><span class="idots">${NEWS.map((_,k)=>`<i class="${k===i?"on":""}"></i>`).join("")}</span><button class="link" data-act="nskip">Fermer</button></div>
+  <div class="ibody"><div class="nwk">✨ Quoi de neuf ?</div><div class="nwimg">${i===0?`<img id="nwcard" src="${n[0]}" alt="" style="visibility:hidden">`:i===2?`<div class="nwav">${avatar(S.pid||"me",S.name||"?",S.avv,"av fr-f5",true)}</div>`:i===3?`<div class="wheelbox nwwh">${wheelSvg()}<img class="wring" src="roue-anneau.webp?v=1" alt=""><img class="whub" src="roue-centre.webp?v=1" alt=""></div>`:`<img src="${n[0]}" alt="">`}</div><h2>${n[1]}</h2><p>${n[2]}</p><button class="btn ghost wide" data-act="ngo" data-v="${n[3]}">${n[4]} ›</button></div>
+  <div class="ifoot">${i>0?`<button class="btn ghost" data-act="nprev">‹</button>`:""}<button class="btn gold wide" data-act="${i<NEWS.length-1?"nnext":"nskip"}">${i<NEWS.length-1?"Suivant":"C’est parti !"}</button></div></div>`}
+async function newsCard(){const im=$("#nwcard");if(!im)return;try{const{blob}=await playerCard({id:S.pid,name:S.name,av:S.avv,me:true,bets:S.bets,xp:S.xp,cos:S.cos},{d:"rang",bd:"emo",sub:"t",sp:"auto"});const u=URL.createObjectURL(blob);const i2=$("#nwcard");if(i2){i2.src=u;i2.style.visibility=""}}catch(e){const i2=$("#nwcard");if(i2)i2.style.visibility=""}}
+function newsEnd(){S.newsSeen=NEWS_V;saveLocal();closeLayer()}
 function introGo(d){U.ii=Math.max(0,Math.min(INTRO_N-1,U.ii+d));layer(viewIntro());const s=$(".sheet");if(s)s.scrollTop=0}
 let ixT=null;
 document.addEventListener("touchstart",e=>{if(U.open==="intro"&&e.target.closest&&e.target.closest("#intro"))ixT={x:e.touches[0].clientX,y:e.touches[0].clientY}},{passive:true});
@@ -2691,7 +2708,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.68";
+const VERSION="2.69";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -2729,7 +2746,7 @@ function preloadArt(){const L=["roue-anneau.webp?v=1","roue-centre.webp?v=1",...
   if(S.cos&&S.cos.f&&/^f([1-9]|1[0-2])$/.test(S.cos.f))L.push(`fr/${S.cos.f}.webp?v=2`);
   if(S.cos&&S.cos.b&&BN_TEX[S.cos.b])L.push(`bn/${S.cos.b}.webp?v=1`);
   L.forEach((u,i)=>setTimeout(()=>{const im=new Image();im.decoding="async";im.src=u},i*60))}
-var afterBoot=function(){setTimeout(preloadArt,1200);pushRefresh();if(S.introSeen===INTRO_V&&S.tosV===TOS_V){setTimeout(pariPending,600);setTimeout(pendingTicket,900);setTimeout(()=>matchPending(),1200)}if(S.name&&S.starter==="pending"&&S.introSeen===INTRO_V&&!U.coach)grantStarter(false);if(S.name&&S.tosV!==TOS_V)openTos();else if(S.name&&S.introSeen!==INTRO_V)openIntro();if(S.name){claimPrizes();claimBattles();claimGifts();ensureRcode()}if(S.name)Promise.resolve().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels();autoWheel()};
+var afterBoot=function(){setTimeout(preloadArt,1200);pushRefresh();if(S.introSeen===INTRO_V&&S.tosV===TOS_V){setTimeout(pariPending,600);setTimeout(pendingTicket,900);setTimeout(()=>matchPending(),1200)}if(S.name&&S.starter==="pending"&&S.introSeen===INTRO_V&&!U.coach)grantStarter(false);if(S.name&&S.tosV!==TOS_V)openTos();else if(S.name&&S.introSeen!==INTRO_V){openIntro();S.newsSeen=NEWS_V;saveLocal()}else if(S.name&&S.newsSeen!==NEWS_V)setTimeout(openNews,2500);if(S.name){claimPrizes();claimBattles();claimGifts();ensureRcode()}if(S.name)Promise.resolve().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels();autoWheel()};
 setInterval(()=>{if(!document.hidden&&S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},12e4);
 // matchs en direct qui te concernent (regardé, parié, équipe de cœur) : leur compétition est rafraîchie toutes les 20 s pour les animations
 setInterval(()=>{if(document.hidden)return;const hot=new Set([...REG.values()].filter(m=>m.src==="espn"&&m.state==="in"&&(m.sp==="foot"||m.sp==="rugby")&&fxMine(m)).map(m=>m.sp+"|"+m.lv));

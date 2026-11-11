@@ -1017,3 +1017,13 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 @keyframes wwin{50%{filter:brightness(1.6) drop-shadow(0 0 14px #ffd23f)}}
 
 .wheel text{paint-order:stroke;stroke:#0005;stroke-width:1.2px}
+
+/* quoi de neuf */
+.news .nwk{font:800 12px Barlow;letter-spacing:.16em;color:var(--sel);text-transform:uppercase;text-align:center;margin-bottom:8px}
+.news .nwimg{display:grid;place-items:center;height:min(34vh,240px);margin-bottom:10px;border-radius:18px;background:radial-gradient(circle at 50% 45%,#ffd23f22,transparent 65%)}
+.news .nwimg img{max-height:100%;max-width:100%;object-fit:contain;border-radius:14px;filter:drop-shadow(0 12px 26px #000c)}
+.news h2{text-align:center}.news p{text-align:center}.news .btn.ghost{margin-top:12px}
+.news .nwimg img{max-height:min(34vh,240px);width:auto}
+.news .nwav{display:grid;place-items:center}.news .nwav .av{width:120px;height:120px;border-radius:50%;display:grid;place-items:center;font:800 54px "Barlow Condensed";color:#0b1310}
+.news .nwwh{width:min(200px,52vw);margin:16px auto}.news .nwwh .wring{width:117%;height:117%}
+.news .nwwh{display:block}.news .nwwh img{max-height:none}.news .nwwh .whub{width:22%}

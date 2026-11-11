@@ -1454,6 +1454,12 @@ const ACTIONS = {
     const pl = await s.query(`select p.id, p.name, p.remind, p.seen_at, (select count(*)::int from push_subs x where x.player = p.id) as subs from players p where lower(p.name) like lower($1) limit 5`, ["%" + String(b.name || "") + "%"]);
     return { keys: keys.map((k) => k.key), players: pl, now: new Date().toISOString() };
   },
+  // remet la roue du jour à zéro pour un joueur (tests)
+  async admin_wheel_reset(s, b) {
+    admin(b);
+    const r = await s.query(`update players set wheel = (coalesce(wheel, '{}'::jsonb) - 'b' - 'x') || jsonb_build_object('r', extract(epoch from now())::bigint::text) where lower(name) = lower($1) returning id, name`, [String(b.name || "")]);
+    return { ok: !!r[0], players: r };
+  },
   async admin_social_key(s, b) {
     admin(b);
     let k = await SOCIAL.kvGet(s, "social_view_key");
