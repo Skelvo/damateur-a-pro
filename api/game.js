@@ -1401,6 +1401,10 @@ const ACTIONS = {
     if (!tok) throw fail(400, "token");
     try { return { ok: true, ...(await SOCIAL.setup(s, tok)) }; } catch (e) { return { ok: false, error: e.message }; }
   },
+  async admin_social_check(s, b) {
+    admin(b);
+    try { return { ok: true, ...(await SOCIAL.check(s)) }; } catch (e) { return { ok: false, error: e.message }; }
+  },
   async admin_social_add(s, b) {
     admin(b);
     const kind = b.kind === "story" ? "story" : "post", nets = (Array.isArray(b.networks) ? b.networks : ["instagram", "facebook"]).filter((x) => x === "instagram" || x === "facebook");
