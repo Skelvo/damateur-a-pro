@@ -165,7 +165,15 @@ function outcome(d,m,st,line){ // index de la sélection gagnante, null si stats
 const ESPN="https://site.api.espn.com/apis/site/v2/sports/";
 const SOCSTAT={yellowCards:"yc",redCards:"rc",offsides:"of",wonCorners:"co",foulsCommitted:"fo",shotsOnTarget:"sot",penaltyKickShots:"pk"};
 const strength=(name,sp,lv)=>((hash(name+"|"+sp)%2001)/1000-1)*(lv<3?1.1:.9);
+// rugby : niveau de base (≈ classement mondial / Top 14) + forme récente (ESPN donne « WWLWT », pas « v-n-d »)
+const RUGBY_BASE={"afrique du sud":1.3,"nouvelle-zelande":1.15,"irlande":1.1,"france":1.05,"angleterre":.9,"argentine":.75,"ecosse":.6,"australie":.6,"fidji":.35,"italie":.3,"pays de galles":.1,"japon":.05,"georgie":0,"samoa":-.25,"tonga":-.35,"uruguay":-.45,"espagne":-.45,"portugal":-.45,"etats-unis":-.6,"roumanie":-.65,"chili":-.65,"canada":-.7,"namibie":-.85,"pays-bas":-1,"belgique":-1,"bresil":-1.1,"zimbabwe":-1,"hong kong":-1,"paraguay":-1.3,
+  toulouse:.95,toulousain:.95,"bordeaux":.8,"union bordeaux":.8,toulon:.5,"la rochelle":.5,clermont:.3,racing:.3,castres:.2,pau:.2,paloise:.2,bayonne:.2,"stade francais":.15,montpellier:.1,lyon:.1,perpignan:-.2,vannes:-.45,montauban:-.6};
+const rugbyBase=n=>{const k=String(n).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");if(k in RUGBY_BASE)return RUGBY_BASE[k];
+  for(const b in RUGBY_BASE)if(b.length>3&&!/ /.test(b)&&k.includes(b))return RUGBY_BASE[b];for(const b in RUGBY_BASE)if(/ /.test(b)&&k.includes(b))return RUGBY_BASE[b];return null};
+const formRate=f=>{if(!/^[WLTD]{3,}$/.test(f||""))return null;let w=0;for(const ch of f)w+=ch==="W"?1:ch==="L"?0:.5;return w/f.length};
 function recStrength(c,name,sp,lv){const s=c.records&&c.records[0]&&c.records[0].summary;
+  if(sp==="rugby"){const fr=formRate(c.form||s),f=fr==null?null:(fr-.5)*1.6,b=rugbyBase(name);
+    if(b!=null)return cl((b*.85+(f||0)*.35)*1.9,-3,3);if(f!=null)return f*1.4;return strength(name,sp,lv)*.4}
   if(s&&/^\d+-\d+-\d+$/.test(s)){const[w,d,l]=s.split("-").map(Number),n=w+d+l;if(n>=3)return cl(((3*w+d)/n-1.4)/.8,-1.4,1.4)}
   if(sp==="basket"&&s&&/^\d+-\d+$/.test(s)){const[w,l]=s.split("-").map(Number),n=w+l;if(n>=3)return cl((w/n-.5)*2.6,-1.3,1.3)}
   return strength(name,sp,lv)*.6}

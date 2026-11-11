@@ -781,7 +781,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"stake":{U.stakeTouched=true;const n=U.sel.length,combo=U.combo&&n>1&&!comboBlocked();U.stake=d.v==="max"?Math.max(1,Math.floor(S.bal/(combo?1:n))):+d.v;refreshLayer();break}
     case"place":place();break;
     case"clear":U.sel=[];closeLayer();break;
-    case"wheel":{U.wheelOk=false;U.open="wheel";layer(viewWheel());const ok=()=>{if(U.wheelOk)return;U.wheelOk=true;if(U.open==="wheel"&&!spinning)layer(viewWheel())};syncNow().finally(ok);setTimeout(ok,4000);break}
+    case"wheel":openWheel();break;
     case"spin":spin();break;
     case"defi":claimDefi(d.id);break;
     case"defiall":claimAll();break;
@@ -2463,6 +2463,12 @@ function nextReset(){const d=new Date();d.setHours(24,0,0,0);const m=Math.round(
 // tour bonus offert à tout le monde, une seule journée (en plus du tour quotidien)
 const extraAvail=()=>today()===EXTRA_DAY&&S.bonus===today()&&S.extraSpin!==today();
 const wheelAvail=()=>S.bonus!==today()||extraAvail();
+function openWheel(){U.wheelOk=false;U.open="wheel";layer(viewWheel());const ok=()=>{if(U.wheelOk)return;U.wheelOk=true;if(U.open==="wheel"&&!spinning)layer(viewWheel())};syncNow().finally(ok);setTimeout(ok,4000)}
+// à l'ouverture de l'appli : la roue s'affiche d'elle-même quand un tour est dispo (une fois par jour, si rien d'autre n'est ouvert)
+function autoWheel(){if(window.__gate||GATE||!S.name||S.tosV!==TOS_V||S.introSeen!==INTRO_V||U.coach||!wheelAvail())return;
+  const k=today()+(extraAvail()?"x":"");if(S.wheelAuto===k)return;
+  setTimeout(()=>{if(U.open||!wheelAvail()||S.wheelAuto===k)return;S.wheelAuto=k;saveLocal();openWheel()},1500)}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)autoWheel()});
 function viewWheel(){const done=!wheelAvail();
   return`<div class="grab"><h3>Roue de la chance</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   ${WE().on&&WE().k==="roue"?`<div class="webox mini"><span class="wee">🎡</span><div><b>Week-end de la roue</b><p>Ton gain sera doublé (×2) !</p></div></div>`:""}
@@ -2606,7 +2612,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.45";
+const VERSION="2.46";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -2639,7 +2645,7 @@ if(!S.name){hideSplash();U.open="welcome";layer(viewWelcome(false));setTimeout(w
 loadFeeds();boot();
 setTimeout(()=>{if(S.dk&&Object.values(S.dk).some(x=>!x.settled))checkDarkAll()},5000);
 goFrom(location.href);
-var afterBoot=function(){pushRefresh();if(S.introSeen===INTRO_V&&S.tosV===TOS_V){setTimeout(pariPending,600);setTimeout(pendingTicket,900)}if(S.name&&S.starter==="pending"&&S.introSeen===INTRO_V&&!U.coach)grantStarter(false);if(S.name&&S.tosV!==TOS_V)openTos();else if(S.name&&S.introSeen!==INTRO_V)openIntro();if(S.name){claimPrizes();claimBattles();claimGifts();ensureRcode()}if(S.name)Promise.resolve().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()};
+var afterBoot=function(){pushRefresh();if(S.introSeen===INTRO_V&&S.tosV===TOS_V){setTimeout(pariPending,600);setTimeout(pendingTicket,900)}if(S.name&&S.starter==="pending"&&S.introSeen===INTRO_V&&!U.coach)grantStarter(false);if(S.name&&S.tosV!==TOS_V)openTos();else if(S.name&&S.introSeen!==INTRO_V)openIntro();if(S.name){claimPrizes();claimBattles();claimGifts();ensureRcode()}if(S.name)Promise.resolve().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels();autoWheel()};
 setInterval(()=>{if(!document.hidden&&S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},12e4);
 // matchs en direct qui te concernent (regardé, parié, équipe de cœur) : leur compétition est rafraîchie toutes les 20 s pour les animations
 setInterval(()=>{if(document.hidden)return;const hot=new Set([...REG.values()].filter(m=>m.src==="espn"&&m.state==="in"&&(m.sp==="foot"||m.sp==="rugby")&&fxMine(m)).map(m=>m.sp+"|"+m.lv));
