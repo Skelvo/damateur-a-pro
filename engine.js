@@ -379,6 +379,7 @@ COS.push(
   ["e21","e","🐕 Teckel","teckel","Style exclusif"],["e22","e","🦴 Os","teckel","Style exclusif"],["e23","e","🌭 Saucisse","teckel","Style exclusif"],
   ["v12","v","🐕 Course de teckels","teckel","Style exclusif"],["f16","f","Hot-dog","teckel","Style exclusif"],["f17","f","Teckel enroulé","teckel","Style exclusif"],["b21","b","Teckel géant","teckel","Style exclusif"]);
 COS.push(["t25","t","🤝 Recruteur","ref3","Parrainer 3 amis qui jouent"]);
+COS.push(["b22","b","Stade Tribune","lv2","Atteindre le niveau 2"]);
 COS.push(["f18","f","Laurier d’or","concours","Gagner un concours Tribune"],["t26","t","🏆 Roi du prono","concours","Gagner un concours Tribune"]);
 const COS_SECRET=["corbeau","teckel","concours"],COS_SEASON={noel:"🎄 Saisonnier"};   // conditions « offertes » : les objets restent cachés tant qu'on ne les a pas
 const cosEmoji=id=>{const x=COS.find(c=>c[0]===id&&c[1]==="e");return x&&id!=="e0"?x[2].split(" ")[0]:""};

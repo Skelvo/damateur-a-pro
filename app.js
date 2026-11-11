@@ -1123,6 +1123,10 @@ const CARD_T=[[90,"LÉGENDE",["#2a0d5c","#7a3cff","#ffd23f"],"#ffe680"],[80,"ÉL
   [60,"ARGENT",["#5f6b74","#c9d3dc","#f4f7f9"],"#1f262b"],[0,"BRONZE",["#5a3417","#b0753c","#e8b27a"],"#2a1608"]];
 // palettes « métal » par rang : fond (4 teintes), encre, liseré (3 teintes), holographique
 // textures dessinées par rang (images), posées sur la forme de la carte
+// bannières illustrées (une image 3:2 : bande pour le profil, centre pour la carte)
+const BN_TEX={b1:"bn/b1-c.webp?v=1",b2:"bn/b2-c.webp?v=1",b3:"bn/b3-c.webp?v=1",b4:"bn/b4-c.webp?v=1",b5:"bn/b5-c.webp?v=1",b6:"bn/b6-c.webp?v=1",b7:"bn/b7-c.webp?v=1",b8:"bn/b8-c.webp?v=1",b9:"bn/b9-c.webp?v=1",b10:"bn/b10-c.webp?v=1",b11:"bn/b11-c.webp?v=1",b12:"bn/b12-c.webp?v=1",b13:"bn/b13-c.webp?v=1",b14:"bn/b14-c.webp?v=1",b15:"bn/b15-c.webp?v=1",b16:"bn/b16-c.webp?v=1",b17:"bn/b17-c.webp?v=1",b18:"bn/b18-c.webp?v=1",b19:"bn/b19-c.webp?v=1",b22:"bn/b22-c.webp?v=1"};
+// étincelles sur la carte « Ma bannière » : 0 sobre, 1 quelques-unes, 2 beaucoup (bannières rares)
+const BN_FX={b5:1,b6:1,b7:1,b9:1,b12:1,b18:1,b19:1};
 // encre adaptée quand la texture dessinée est sombre
 const CARD_INK={"BRONZE":"#ffe8cf","OR":"#fff3d0"};
 const CARD_TEX={"BRONZE":"card-bronze.webp?v=3","ARGENT":"card-argent.webp?v=1","OR":"card-or.webp?v=3","ÉLITE":"card-elite.webp?v=1","LÉGENDE":"card-legende.webp?v=1"};
@@ -1131,8 +1135,8 @@ const CARD_P={"BRONZE":{bg:["#4a2710","#a8682f","#e6a868","#7a4520"],ink:"#2a140
   "OR":{bg:["#7a5300","#e0ab1c","#fff0a6","#b8860b"],ink:"#2a1c00",trim:["#fff7cf","#9c7000","#ffe27a"],holo:0},
   "ÉLITE":{bg:["#03070f","#0f2b55","#0a1c38","#020509"],ink:"#ffd23f",trim:["#fff1a8","#a87b00","#ffd23f"],holo:1},
   "LÉGENDE":{bg:["#14042e","#5b1fb0","#2a0a5c","#0b0219"],ink:"#ffe9a0",trim:["#fff6c8","#c7952a","#ffd23f"],holo:2}};
-async function playerCard(p,o){o=o||{};const C=cardStats(p.bets||[],p.xp),T=(()=>{const real=CARD_T.find(x=>C.note>=x[0]),ch=o.rk&&o.rk!=="auto"&&CARD_T.find(x=>x[1]===o.rk);return ch&&ch[0]<=real[0]?ch:real})(),BNK=o.d==="bn"&&p.cos&&p.cos.b&&p.cos.b!=="b0"?p.cos.b:"",BC=BNK&&BN_COL[BNK];
-  const P=BC?{bg:[BC[0],BC[1],BC[0],BC[1]],ink:"#fff8ec",trim:["#ffffff","#9a9a9a","#f0f0f0"],holo:1,glow:[BC[2],BC[3]]}:(CARD_TEX[T[1]]&&CARD_INK[T[1]]?{...CARD_P[T[1]],ink:CARD_INK[T[1]]}:CARD_P[T[1]]);
+async function playerCard(p,o){o=o||{};const C=cardStats(p.bets||[],p.xp),T=(()=>{const real=CARD_T.find(x=>C.note>=x[0]),ch=o.rk&&o.rk!=="auto"&&CARD_T.find(x=>x[1]===o.rk);return ch&&ch[0]<=real[0]?ch:real})(),BNK=o.d==="bn"&&p.cos&&p.cos.b&&p.cos.b!=="b0"?p.cos.b:"",BNT=BNK&&BN_TEX[BNK],BC=BNK&&!BNT&&BN_COL[BNK];
+  const P=BC?{bg:[BC[0],BC[1],BC[0],BC[1]],ink:"#fff8ec",trim:["#ffffff","#9a9a9a","#f0f0f0"],holo:1,glow:[BC[2],BC[3]]}:BNT?{...CARD_P["LÉGENDE"],ink:"#fff6e0",holo:BN_FX[BNK]||0}:(CARD_TEX[T[1]]&&CARD_INK[T[1]]?{...CARD_P[T[1]],ink:CARD_INK[T[1]]}:CARD_P[T[1]]);
   const W=720,H=1000,K=o.scale||1,cv=document.createElement("canvas");cv.width=W*K;cv.height=H*K;const c=cv.getContext("2d"),ink=P.ink;c.scale(K,K);
   try{await Promise.all([document.fonts.load('800 80px "Barlow Condensed"'),document.fonts.load('700 30px Barlow'),document.fonts.load('600 30px Barlow')])}catch(e){}
   let sd=0;for(const ch of String(p.name||"x"))sd=(sd*31+ch.charCodeAt(0))>>>0;const rnd=()=>(sd=(sd*1664525+1013904223)>>>0)/4294967296;
@@ -1147,7 +1151,7 @@ async function playerCard(p,o){o=o||{};const C=cardStats(p.bets||[],p.xp),T=(()=
   c.save();shape();c.clip();
   let g=c.createLinearGradient(0,0,W*.4,H);P.bg.forEach((x,i)=>g.addColorStop(i/3,x));c.fillStyle=g;c.fillRect(0,0,W,H);
   // texture dessinée du rang (si disponible) à la place des facettes et rayures
-  const TX=!BC&&CARD_TEX[T[1]]?await loadImg(CARD_TEX[T[1]]).catch(()=>null):null;
+  const TX=BNT?await loadImg(BNT).catch(()=>null):!BC&&CARD_TEX[T[1]]?await loadImg(CARD_TEX[T[1]]).catch(()=>null):null;
   if(TX){const s=Math.max(W/TX.width,H/TX.height);c.drawImage(TX,(W-TX.width*s)/2,(H-TX.height*s)/2,TX.width*s,TX.height*s);
     // le bas de la texture est éclairci pour que le texte foncé reste lisible
     // texture gardée telle quelle ; le texte reçoit un halo (clair sous une encre foncée, sombre sous une encre claire) pour rester lisible partout
@@ -2664,7 +2668,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.55";
+const VERSION="2.56";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

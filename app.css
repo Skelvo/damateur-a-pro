@@ -929,3 +929,25 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 
 .cdopt .rkn{display:block;color:var(--mute);font-size:11.5px;margin:-2px 0 8px}
 .cdopt button.lk{opacity:.45}
+
+/* bannières illustrées : scène en haut du profil (gauche assombrie pour le pseudo) */
+.bn-b1{background:linear-gradient(90deg,#050906e6,#05090680 40%,#05090618 78%),url(bn/b1.webp?v=1) center 45%/cover!important}.bn-b1::before,.bn-b1::after{display:none!important}.bn-b1 .hfx,.bn-b1 .hho{display:none}
+.bn-b2{background:linear-gradient(90deg,#050906e6,#05090680 40%,#05090618 78%),url(bn/b2.webp?v=1) center 45%/cover!important}.bn-b2::before,.bn-b2::after{display:none!important}.bn-b2 .hfx,.bn-b2 .hho{display:none}
+.bn-b3{background:linear-gradient(90deg,#050906e6,#05090680 40%,#05090618 78%),url(bn/b3.webp?v=1) center 45%/cover!important}.bn-b3::before,.bn-b3::after{display:none!important}.bn-b3 .hfx,.bn-b3 .hho{display:none}
+.bn-b4{background:linear-gradient(90deg,#050906e6,#05090680 40%,#05090618 78%),url(bn/b4.webp?v=1) center 45%/cover!important}.bn-b4::before,.bn-b4::after{display:none!important}.bn-b4 .hfx,.bn-b4 .hho{display:none}
+.bn-b5{background:linear-gradient(90deg,#050906e6,#05090680 40%,#05090618 78%),url(bn/b5.webp?v=1) center 45%/cover!important}.bn-b5::before,.bn-b5::after{display:none!important}.bn-b5 .hfx,.bn-b5 .hho{display:none}
+.bn-b6{background:linear-gradient(90deg,#050906e6,#05090680 40%,#05090618 78%),url(bn/b6.webp?v=1) center 45%/cover!important}.bn-b6::before,.bn-b6::after{display:none!important}.bn-b6 .hfx,.bn-b6 .hho{display:none}
+.bn-b7{background:linear-gradient(90deg,#050906e6,#05090680 40%,#05090618 78%),url(bn/b7.webp?v=1) center 45%/cover!important}.bn-b7::before,.bn-b7::after{display:none!important}.bn-b7 .hfx,.bn-b7 .hho{display:none}
+.bn-b8{background:linear-gradient(90deg,#050906e6,#05090680 40%,#05090618 78%),url(bn/b8.webp?v=1) center 45%/cover!important}.bn-b8::before,.bn-b8::after{display:none!important}.bn-b8 .hfx,.bn-b8 .hho{display:none}
+.bn-b9{background:linear-gradient(90deg,#050906e6,#05090680 40%,#05090618 78%),url(bn/b9.webp?v=1) center 45%/cover!important}.bn-b9::before,.bn-b9::after{display:none!important}.bn-b9 .hfx,.bn-b9 .hho{display:none}
+.bn-b10{background:linear-gradient(90deg,#050906e6,#05090680 40%,#05090618 78%),url(bn/b10.webp?v=1) center 45%/cover!important}.bn-b10::before,.bn-b10::after{display:none!important}.bn-b10 .hfx,.bn-b10 .hho{display:none}
+.bn-b11{background:linear-gradient(90deg,#050906e6,#05090680 40%,#05090618 78%),url(bn/b11.webp?v=1) center 45%/cover!important}.bn-b11::before,.bn-b11::after{display:none!important}.bn-b11 .hfx,.bn-b11 .hho{display:none}
+.bn-b12{background:linear-gradient(90deg,#050906e6,#05090680 40%,#05090618 78%),url(bn/b12.webp?v=1) center 45%/cover!important}.bn-b12::before,.bn-b12::after{display:none!important}.bn-b12 .hfx,.bn-b12 .hho{display:none}
+.bn-b13{background:linear-gradient(90deg,#050906e6,#05090680 40%,#05090618 78%),url(bn/b13.webp?v=1) center 45%/cover!important}.bn-b13::before,.bn-b13::after{display:none!important}.bn-b13 .hfx,.bn-b13 .hho{display:none}
+.bn-b14{background:linear-gradient(90deg,#050906e6,#05090680 40%,#05090618 78%),url(bn/b14.webp?v=1) center 45%/cover!important}.bn-b14::before,.bn-b14::after{display:none!important}.bn-b14 .hfx,.bn-b14 .hho{display:none}
+.bn-b15{background:linear-gradient(90deg,#050906e6,#05090680 40%,#05090618 78%),url(bn/b15.webp?v=1) center 45%/cover!important}.bn-b15::before,.bn-b15::after{display:none!important}.bn-b15 .hfx,.bn-b15 .hho{display:none}
+.bn-b16{background:linear-gradient(90deg,#050906e6,#05090680 40%,#05090618 78%),url(bn/b16.webp?v=1) center 45%/cover!important}.bn-b16::before,.bn-b16::after{display:none!important}.bn-b16 .hfx,.bn-b16 .hho{display:none}
+.bn-b17{background:linear-gradient(90deg,#050906e6,#05090680 40%,#05090618 78%),url(bn/b17.webp?v=1) center 45%/cover!important}.bn-b17::before,.bn-b17::after{display:none!important}.bn-b17 .hfx,.bn-b17 .hho{display:none}
+.bn-b18{background:linear-gradient(90deg,#050906e6,#05090680 40%,#05090618 78%),url(bn/b18.webp?v=1) center 45%/cover!important}.bn-b18::before,.bn-b18::after{display:none!important}.bn-b18 .hfx,.bn-b18 .hho{display:none}
+.bn-b19{background:linear-gradient(90deg,#050906e6,#05090680 40%,#05090618 78%),url(bn/b19.webp?v=1) center 45%/cover!important}.bn-b19::before,.bn-b19::after{display:none!important}.bn-b19 .hfx,.bn-b19 .hho{display:none}
+.bn-b22{background:linear-gradient(90deg,#050906e6,#05090680 40%,#05090618 78%),url(bn/b22.webp?v=1) center 45%/cover!important}.bn-b22::before,.bn-b22::after{display:none!important}.bn-b22 .hfx,.bn-b22 .hho{display:none}
