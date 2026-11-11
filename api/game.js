@@ -597,6 +597,11 @@ async function addMember(s, code, pid, name) {
 
 // ---- Premiers pas ----
 const GUIDE = ["bet", "wheel", "guild", "push", "fav", "combo", "insta", "fb"], GUIDE_REWARD = 50, GUIDE_ALL = 100;
+// clé du tableau de bord du programme (lecture + validation des publications)
+async function boardKey(s, b) {
+  const want = (await SOCIAL.kvGet(s, "social_view_key")) || "", got = String(b.k || "");
+  if (want.length < 24 || got.length !== want.length || !timingSafeEqual(Buffer.from(got), Buffer.from(want))) throw fail(403, "forbidden");
+}
 async function guideState(s, pid) {
   const r = (await s.query(`select
       exists (select 1 from bets where player = $1) as bet,
@@ -1406,6 +1411,42 @@ const ACTIONS = {
         out.push({ id: L.id, slug: L.slug, name: L.name, abbr: L.abbreviation, season: L.season && L.season.year });
     }
     return { count: refs.length, leagues: out };
+  },
+  // ---- Tableau de bord du programme (page /programme/, clé personnelle à part de la clé admin) ----
+  async admin_social_key(s, b) {
+    admin(b);
+    let k = await SOCIAL.kvGet(s, "social_view_key");
+    if (!k || b.rotate) { k = newToken(); await s.query(`insert into meta (key, value) values ('social_view_key', $1) on conflict (key) do update set value = excluded.value`, [k]); }
+    return { key: k };
+  },
+  // à prévoir sans visuel encore (planned), à poster soi-même (manual), ou programmé ailleurs (external = Metricool)
+  async admin_social_plan(s, b) {
+    admin(b);
+    const st = ["planned", "manual", "external"].includes(b.status) ? b.status : null; if (!st) throw fail(400, "status");
+    const at = new Date(String(b.at || "")); if (isNaN(at)) throw fail(400, "date");
+    const kind = ["story", "carousel", "reel", "post"].includes(b.kind) ? b.kind : "post";
+    const nets = (Array.isArray(b.networks) ? b.networks : ["instagram", "facebook"]).filter((x) => x === "instagram" || x === "facebook");
+    const img = /^https:\/\/[^\s]+\.(png|jpe?g|mp4)$/i.test(String(b.image || "")) ? String(b.image) : "";
+    const r = await s.query(`insert into social_posts (at, kind, networks, image, caption_ig, label, status) values ($1, $2, $3::jsonb, $4, $5, $6, $7) returning id`,
+      [at.toISOString(), kind, JSON.stringify(nets), img, b.note ? String(b.note).slice(0, 2200) : null, String(b.label || "").slice(0, 80), st]);
+    return { ok: true, id: r[0].id };
+  },
+  async social_board(s, b) {
+    await boardKey(s, b);
+    const posts = await s.query(`select id, label, kind, networks, image, images, cover, status, error, caption_ig, caption_fb,
+        extract(epoch from at) * 1000 as at, extract(epoch from published_at) * 1000 as published_at
+      from social_posts where status <> 'cancelled' and (at > now() - interval '30 days' or status not in ('published', 'manual_done')) order by at`);
+    return { posts, now: Date.now() };
+  },
+  // depuis le tableau de bord : valider / annuler un brouillon, cocher « c'est fait » une publication à faire soi-même
+  async social_act(s, b) {
+    await boardKey(s, b);
+    const id = String(int(b.id, 0, 1e15)), op = String(b.op || "");
+    const q = { approve: [`status = 'draft' and image <> ''`, "approved"], unapprove: [`status = 'approved'`, "draft"], cancel: [`status in ('draft', 'approved', 'planned')`, "cancelled"],
+      done: [`status = 'manual'`, "manual_done"], undone: [`status = 'manual_done'`, "manual"] }[op];
+    if (!q) throw fail(400, "op");
+    const r = await s.query(`update social_posts set status = $2, error = null where id = $1 and ${q[0]} returning id`, [id, q[1]]);
+    return { ok: !!r[0] };
   },
   // ---- Programmateur Instagram + Facebook (organisateurs seulement) ----
   async admin_social_setup(s, b) {

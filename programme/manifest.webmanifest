@@ -1,0 +1,15 @@
+{
+  "name": "Programme Tribune",
+  "short_name": "Programme",
+  "description": "Tableau de bord des publications Instagram et Facebook de Tribune.",
+  "lang": "fr",
+  "id": "/programme/",
+  "scope": "/programme/",
+  "display": "standalone",
+  "background_color": "#0a110f",
+  "theme_color": "#0a110f",
+  "icons": [
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
