@@ -74,6 +74,16 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .keyb input{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line2);background:var(--bg2);color:var(--ink);font:600 15px Barlow}
 .leg{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px}
 .foot{text-align:center;color:var(--mute);font-size:12px;margin-top:24px}
+.pin{max-width:340px;margin:40px auto 0;text-align:center}
+.pin h2{font:800 26px "Barlow Condensed";text-transform:uppercase}
+.pin p{color:var(--mute);margin:6px 0 22px;min-height:21px}.pin p.bad{color:#ff9a9d}
+.dots{display:flex;justify-content:center;gap:14px;margin-bottom:26px}
+.dots i{width:16px;height:16px;border-radius:50%;border:2px solid var(--line2)}.dots i.on{background:var(--acc);border-color:var(--acc)}
+.dots.shake{animation:sh .35s}@keyframes sh{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.pad button{height:64px;border-radius:18px;background:var(--card);border:1px solid var(--line);font:800 28px "Barlow Condensed"}
+.pad button:active{background:var(--card2)}.pad .ok{background:var(--acc);color:#04170d;border:0;font-size:18px}.pad .del{font-size:20px;color:var(--mute)}
+.link{color:var(--acc);font:700 13px Barlow;margin-top:18px}
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%);background:var(--card2);border:1px solid var(--line2);border-radius:14px;padding:10px 16px;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
 .toast.on{opacity:1}
 </style>
@@ -85,7 +95,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 <script>
 const $=s=>document.querySelector(s);
 const TZ="Europe/Paris";
-let KEY="",DATA=null,TAB="next",OPEN=new Set();
+let KEY="",DATA=null,TAB="next",OPEN=new Set(),PIN="";
+try{PIN=sessionStorage.getItem("progpin")||""}catch(e){}
 try{const u=new URL(location.href),k=u.searchParams.get("k");if(k){KEY=k;localStorage.setItem("progk",k)}else KEY=localStorage.getItem("progk")||""}catch(e){}
 const ST={approved:"Programmé",publishing:"En cours…",published:"Publié ✓",draft:"À valider",error:"Erreur",planned:"Je prépare",manual:"À faire par toi",manual_done:"Fait ✓",external:"Metricool"};
 const KIND={post:"Post",story:"Story",carousel:"Carrousel",reel:"Reel"};
@@ -97,8 +108,30 @@ const dayKey=t=>fmt(t,{year:"numeric",month:"2-digit",day:"2-digit"});
 function rel(t){const d=t-Date.now(),a=Math.abs(d),m=Math.round(a/6e4),h=Math.round(a/36e5),j=Math.round(a/864e5);
   const s=m<60?`${m} min`:h<36?`${h} h`:`${j} j`;return d>0?`dans ${s}`:`il y a ${s}`}
 function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("on");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("on"),2200)}
-async function api(action,data={}){const r=await fetch("/api/game",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,k:KEY,...data})});const j=await r.json().catch(()=>({}));if(!r.ok||j.error)throw Object.assign(new Error(j.error||r.status),{code:j.error||r.status});return j}
-async function load(){$("#rf").classList.add("spin");try{DATA=await api("social_board");render()}catch(e){if(e.code==="forbidden"){KEY="";try{localStorage.removeItem("progk")}catch(x){}renderKey(true)}else{toast("Pas de connexion, réessaie");if(!DATA)$("#app").innerHTML='<div class="empty">Impossible de charger le programme.</div>'}}finally{$("#rf").classList.remove("spin")}}
+async function api(action,data={}){const r=await fetch("/api/game",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,k:KEY,pin:PIN,...data})});const j=await r.json().catch(()=>({}));if(!r.ok||j.error)throw Object.assign(new Error(j.error||r.status),{code:j.error||r.status});return j}
+async function load(){if(PADMODE)return;$("#rf").classList.add("spin");try{DATA=await api("social_board");render()}catch(e){if(e.code==="forbidden"){KEY="";try{localStorage.removeItem("progk")}catch(x){}renderKey(true)}
+  else if(e.code==="pin_setup")pinPad("setup");else if(e.code==="pin_needed")pinPad("enter");else if(e.code==="pin_bad"){setPin("");pinPad("enter","Code incorrect")}
+  else if(e.code==="pin_locked"){setPin("");pinPad("enter","Trop d’essais : réessaie dans 15 minutes")}else{toast("Pas de connexion, réessaie");if(!DATA)$("#app").innerHTML='<div class="empty">Impossible de charger le programme.</div>'}}finally{$("#rf").classList.remove("spin")}}
+// ---- code en chiffres ----
+let PADMODE=null;
+function setPin(v){PIN=v;try{v?sessionStorage.setItem("progpin",v):sessionStorage.removeItem("progpin")}catch(e){}}
+function pinPad(mode,msg,first,old){PADMODE=mode;DATA=null;let v="";
+  const T={setup:["Choisis ton code","4 à 6 chiffres, pour protéger ton programme."],confirm:["Confirme ton code","Tape-le une seconde fois."],enter:["Ton code","Pour ouvrir le programme."],old:["Code actuel","Pour le changer, tape d’abord l’actuel."],"new":["Nouveau code","4 à 6 chiffres."],confirm2:["Confirme le nouveau code","Tape-le une seconde fois."]}[mode];
+  $("#app").innerHTML=`<div class="pin"><h2>${T[0]}</h2><p class="${msg?"bad":""}" id="pmsg">${msg||T[1]}</p><div class="dots" id="dots"></div>
+    <div class="pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join("")}<button class="del" data-k="del" aria-label="Effacer">⌫</button><button data-k="0">0</button><button class="ok" data-k="ok">OK</button></div>
+    ${mode==="enter"?"":`<button class="link" data-k="cancel">${mode==="setup"||mode==="confirm"?"":"Annuler"}</button>`}</div>`;
+  const dots=()=>{$("#dots").innerHTML=Array.from({length:Math.max(4,v.length)},(_, i)=>`<i class="${i<v.length?"on":""}"></i>`).join("")};dots();
+  const bad=t=>{$("#pmsg").textContent=t;$("#pmsg").className="bad";$("#dots").classList.remove("shake");void $("#dots").offsetWidth;$("#dots").classList.add("shake");v="";dots()};
+  $(".pin").onclick=async e=>{const b=e.target.closest("[data-k]");if(!b)return;const k=b.dataset.k;
+    if(k==="cancel"){PADMODE=null;load();return}
+    if(k==="del"){v=v.slice(0,-1);dots();return}
+    if(k!=="ok"){if(v.length<6){v+=k;dots()}if(v.length<6)return}
+    if(v.length<4){bad("Au moins 4 chiffres");return}
+    if(mode==="setup"||mode==="new"){pinPad(mode==="setup"?"confirm":"confirm2",null,v,old);return}
+    if(mode==="confirm"||mode==="confirm2"){if(v!==first){bad("Les deux codes sont différents");return}
+      try{await api("social_pin_set",{pin:v,old:old||""});setPin(v);PADMODE=null;toast(mode==="confirm"?"Code enregistré ✓":"Code changé ✓");load()}catch(x){bad(x.code==="pin_bad"?"Code actuel incorrect":"Erreur, réessaie")}return}
+    if(mode==="old"){pinPad("new",null,null,v);return}
+    setPin(v);PADMODE=null;load()}}
 function renderKey(bad){$("#app").innerHTML=`<div class="keyb"><h2>Ta clé d’accès</h2><p>${bad?"Cette clé ne marche pas. ":""}Ouvre le lien que Claude t’a donné, ou colle ta clé ici.</p><input id="kin" placeholder="Colle ta clé" autocomplete="off"><div class="acts"><button class="btn g" id="kok">Ouvrir le programme</button></div></div>`;
   $("#kok").onclick=()=>{KEY=$("#kin").value.trim();try{localStorage.setItem("progk",KEY)}catch(e){}load()}}
 function thumb(p){const im=p.kind==="reel"?(p.cover||""):p.kind==="carousel"&&p.images?p.images[0]:(/\.(png|jpe?g)$/i.test(p.image)?p.image:"");
@@ -133,8 +166,8 @@ function render(){if(!DATA)return;const now=Date.now(),t0=new Date(fmt(now,{year
   let last="";const today=dayKey(now),tom=dayKey(now+864e5);
   for(const p of L){const k=dayKey(p.at);if(k!==last){last=k;const lab=k===today?"Aujourd’hui":k===tom?"Demain":fmt(p.at,{weekday:"long",day:"numeric",month:"long"});
       const n=L.filter(x=>dayKey(x.at)===k).length;h+=`<div class="day${k===today?" today":""}"><span>${lab}</span><span>${n}</span></div>`}h+=card(p)}
-  h+=`<div class="foot">Heure de Paris · mis à jour à ${fmt(now,{hour:"2-digit",minute:"2-digit"})}</div>`;
-  $("#app").innerHTML=h;$("#sub").textContent=c("error")?`⚠️ ${c("error")} erreur${c("error")>1?"s":""} à regarder`:"Instagram et Facebook"}
+  h+=`<div class="foot">Heure de Paris · mis à jour à ${fmt(now,{hour:"2-digit",minute:"2-digit"})}<br><button class="link" id="chg">Changer mon code</button> · <button class="link" id="lock">Verrouiller</button></div>`;
+  $("#app").innerHTML=h;$("#chg").onclick=()=>pinPad("old");$("#lock").onclick=()=>{setPin("");pinPad("enter")};$("#sub").textContent=c("error")?`⚠️ ${c("error")} erreur${c("error")>1?"s":""} à regarder`:"Instagram et Facebook"}
 document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab],[data-tog],[data-op],[data-copy]");if(!t)return;
   if(t.dataset.tab){TAB=t.dataset.tab;render();return}
   if(t.dataset.copy){const[id,i]=t.dataset.copy.split(":"),p=DATA.posts.find(x=>String(x.id)===id);try{await navigator.clipboard.writeText(i==="0"?p.caption_ig:p.caption_fb);toast("Texte copié")}catch(x){toast("Copie impossible")}return}

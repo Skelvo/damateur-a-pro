@@ -2,7 +2,7 @@
 // et « ce que parient les autres ». Tout passe par POST /api/game {action, ...}.
 import * as SOCIAL from "./_social.js";
 import { db, hashToken, newToken, ipKey, overLimit } from "./_db.js";
-import { timingSafeEqual, randomInt } from "node:crypto";
+import { timingSafeEqual, randomInt, scryptSync, randomBytes } from "node:crypto";
 import { buildWeek, refreshResults, points, todayMatches, bestOfDay } from "./_prono.js";
 import { notify, members } from "./_push.js";
 import { checkBet, settleOpen, cashValueServer, loadMatch } from "./_bets.js";
@@ -598,9 +598,22 @@ async function addMember(s, code, pid, name) {
 // ---- Premiers pas ----
 const GUIDE = ["bet", "wheel", "guild", "push", "fav", "combo", "insta", "fb"], GUIDE_REWARD = 50, GUIDE_ALL = 100;
 // clé du tableau de bord du programme (lecture + validation des publications)
-async function boardKey(s, b) {
+async function boardKey(s, b, noPin) {
   const want = (await SOCIAL.kvGet(s, "social_view_key")) || "", got = String(b.k || "");
   if (want.length < 24 || got.length !== want.length || !timingSafeEqual(Buffer.from(got), Buffer.from(want))) throw fail(403, "forbidden");
+  if (!noPin) await pinCheck(s, b.pin);
+}
+// code en chiffres du tableau de bord : gardé brouillé (scrypt + sel) ; 8 essais ratés → bloqué 15 min
+const pinHash = (pin, salt) => scryptSync(String(pin), salt, 32).toString("hex");
+const pinOk = (pin) => /^\d{4,8}$/.test(String(pin || ""));
+async function pinFails(s) { const w = Math.floor(Date.now() / 1000 / 900) * 900; const r = (await s.query(`select n from rate_hits where key = 'pin:fail' and win = $1`, [w]))[0]; return r ? r.n : 0; }
+async function pinCheck(s, pin) {
+  const st = await SOCIAL.kvGet(s, "social_pin");
+  if (!st) throw fail(401, "pin_setup");
+  if (!pin) throw fail(401, "pin_needed");
+  if ((await pinFails(s)) >= 8) throw fail(429, "pin_locked");
+  const [salt, h] = st.split(":"), got = pinHash(pin, salt);
+  if (!pinOk(pin) || !timingSafeEqual(Buffer.from(got), Buffer.from(h))) { await overLimit("pin:fail", 1e9, 900); throw fail(401, "pin_bad"); }
 }
 async function guideState(s, pid) {
   const r = (await s.query(`select
@@ -1430,6 +1443,20 @@ const ACTIONS = {
     const r = await s.query(`insert into social_posts (at, kind, networks, image, caption_ig, label, status) values ($1, $2, $3::jsonb, $4, $5, $6, $7) returning id`,
       [at.toISOString(), kind, JSON.stringify(nets), img, b.note ? String(b.note).slice(0, 2200) : null, String(b.label || "").slice(0, 80), st]);
     return { ok: true, id: r[0].id };
+  },
+  // choisir son code (première fois) ou le changer (avec l'ancien)
+  async social_pin_set(s, b) {
+    await boardKey(s, b, true);
+    if (await SOCIAL.kvGet(s, "social_pin")) await pinCheck(s, b.old);
+    if (!pinOk(b.pin)) throw fail(400, "pin_format");
+    const salt = randomBytes(16).toString("hex");
+    await s.query(`insert into meta (key, value) values ('social_pin', $1) on conflict (key) do update set value = excluded.value`, [salt + ":" + pinHash(b.pin, salt)]);
+    return { ok: true };
+  },
+  async admin_social_pin_reset(s, b) {
+    admin(b);
+    await s.query(`delete from meta where key = 'social_pin'`);
+    return { ok: true };
   },
   async social_board(s, b) {
     await boardKey(s, b);
