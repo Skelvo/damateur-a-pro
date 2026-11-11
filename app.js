@@ -559,6 +559,9 @@ function render(){if(window.__gate)return;   // page d'installation : on ne dess
   renderSlipBar()}
 
 /* ---------- règlement des paris ---------- */
+// série en cours : pronos gagnés (ou perdus) d'affilée, dans l'ordre où ils ont été réglés
+function streakNow(){const L=S.bets.filter(b=>(b.st==="won"||b.st==="lost")&&b.done).sort((a,b)=>b.done-a.done);if(!L.length)return{w:true,n:0};
+  const w=L[0].st==="won";let n=0;for(const b of L){if((b.st==="won")!==w)break;n++}return{w,n}}
 const legResult=L=>legResultM(L,findMatch(L.mid));
 const cashValue=b=>cashValueM(b,findMatch);
 let settling=false;
@@ -573,13 +576,17 @@ async function settle(){if(settling)return;settling=true;
       if(!m&&L.snap&&!seen.has(L.snap.path+ymd(L.t))){seen.add(L.snap.path+ymd(L.t));fetches.push(espnRefetch({...L.snap,t:L.t}))}
       else if(m&&status(m)==="post"&&m.sp==="foot"&&m._sum!=="post")fetches.push(espnStats(m))}
     if(fetches.length)await Promise.all(fetches);
-    let won=0,lost=0,gain=0,voids=0;
+    let won=0,lost=0,gain=0,voids=0,ouch=0;const s0=streakNow();
     for(const b of S.bets.filter(b=>b.st==="open")){for(const L of b.legs)if(!L.r){const r=legResult(L);if(r)L.r=r}
-      if(b.legs.some(L=>L.r==="l")){b.st="lost";b.done=Date.now();lost++}
+      if(b.legs.some(L=>L.r==="l")){b.st="lost";b.done=Date.now();lost++;
+        // défaite qui fait mal (combiné raté d'une seule sélection, ou grosse mise) : annoncée dans le fil, une à la fois
+        const n=b.legs.length,ok=b.legs.filter(L=>L.r==="w").length,one=n>=3&&ok===n-1;
+        if(!ouch&&(one||b.stake>=500)){ouch++;postAct("lost",{stake:b.stake,n,one:one?1:0,odds:b.odds,last:(b.legs.find(L=>L.r==="l")||{}).l||""})}}
       else if(b.legs.every(L=>L.r)){const live=b.legs.filter(L=>L.r==="w");b.done=Date.now();
         if(!live.length){b.st="void";b.pay=b.stake;S.bal+=b.stake;voids++}
         else{const R=betResult(b);b.odds=R.odds;b.pay=R.pay;b.st="won";S.bal+=b.pay;gain+=b.pay;won++;
-          if(won<=3)postAct("won",{pay:b.pay,odds:b.odds,legs:b.legs.slice(0,3).map(L=>L.l)})}}}
+          if(won<=3)postAct("won",{pay:b.pay,odds:b.odds,n:b.legs.length,big:b.odds>=5||b.pay>=1000||b.legs.length>=4?1:0,legs:b.legs.slice(0,3).map(L=>L.l)})}}}
+    if(won||lost){const s1=streakNow(),T=s1.w?[3,5,7,10,15]:[5,8,12],hit=T.filter(t=>s1.n>=t&&(s0.w!==s1.w||s0.n<t)).pop();if(hit)postAct("streak",{n:hit,w:s1.w?1:0})}
     if(won||lost||voids){S.peak=Math.max(S.peak,S.bal);save();render();bump();
       if(won){toast(`${ic("trophy")} ${won} pari${won>1?"s":""} gagné${won>1?"s":""} : +${tok(gain)} jetons !`,"win");winFx()}
       if(lost)toast(`${lost} pari${lost>1?"s":""} perdu${lost>1?"s":""}. La revanche ?`);
@@ -1774,7 +1781,11 @@ function wheelAct(d){const v=d.v||0,b=v/(d.d?2:1),t=d.x?"au tour bonus":"à la r
 function actText(a){const d=a.data||{};const legs=(d.legs||[]).map(esc).join(" + ");
   switch(a.kind){
     case"bet":return`a parié <b>${tok(d.stake||0)}</b> sur ${legs||"un match"}${d.n>1&&d.odds?` <span class="mut">(combiné · cote ${fr(+d.odds)})</span>`:d.odds?` <span class="mut">@ ${fr(+d.odds)}</span>`:""}`;
-    case"won":return`a gagné <b class="pos">+${tok(d.pay||0)}</b> ${ic("trophy")}${legs?` <span class="mut">${legs}</span>`:""}`;
+    case"won":return d.big?`<span class="bigtag">🔥 Gros coup</span> a gagné <b class="pos">+${tok(d.pay||0)}</b>${d.n>1?` avec un combiné de ${d.n}`:""}${d.odds?` à <b>${fr(+d.odds)}</b>`:""}${legs?` <span class="mut">${legs}</span>`:""}`
+      :`a gagné <b class="pos">+${tok(d.pay||0)}</b> ${ic("trophy")}${legs?` <span class="mut">${legs}</span>`:""}`;
+    case"lost":return d.one?`💀 a perdu son combiné de ${d.n}… <b>à une seule sélection près</b>${d.last?` <span class="mut">(${esc(d.last)})</span>`:""}`
+      :`💸 a perdu <b class="neg">${tok(d.stake||0)}</b> jetons${d.last?` sur ${esc(d.last)}`:""}… aïe`;
+    case"streak":return d.w?`🔥 enchaîne <b class="pos">${d.n} pronos gagnés</b> d’affilée !`:`🥶 <b>${d.n} pronos perdus</b> de suite… ça va tourner`;
     case"cash":return`a encaissé <b>${tok(d.pay||0)}</b> avant la fin`;
     case"wheel":return d.v>=1e6?`a touché le <b style="color:var(--sel)">JACKPOT</b> de la roue : <b class="pos">+${tok(d.v)}</b> 💰 (1 chance sur 10 millions !)`:wheelAct(d);
     case"defis":return`a réussi les 3 défis du jour`;
@@ -1792,7 +1803,8 @@ function luckBox(){const L=U.lg.luck||[];if(!L.length)return"";const me=String(U
 function viewFeed(){const F=U.lg.feed;if(!F){loadActFeed();return`<div class="skel" style="height:80px"></div><div class="skel" style="height:80px"></div>`}
   if(Date.now()-(U.lg.feedAt||0)>3e4)setTimeout(loadActFeed,0);
   if(!F.length)return`<div class="empty">${ic("group")}<b>Rien pour l’instant</b>Les paris, gains et duels des membres s’afficheront ici.</div>`;
-  return luckBox()+F.map(a=>`<div class="act"><span data-act="prof" data-id="${esc(a.who)}">${avatar(a.who,a.name,a.av,"av")}</span><div>
+  const top=F.find(a=>a.kind==="won"&&a.data&&a.data.big&&Date.now()-a.at<864e5),L=top?[top,...F.filter(a=>a!==top)]:F;
+  return luckBox()+L.map(a=>`<div class="act${a===top?" star":""}">${a===top?`<div class="startag">⭐ À la une</div>`:""}<span data-act="prof" data-id="${esc(a.who)}">${avatar(a.who,a.name,a.av,"av")}</span><div>
     <p><b>${esc(a.name)}${String(a.who)===String(U.lg.data.me)?" (toi)":""}</b> ${actText(a)}</p><small>${ago(a.at)}</small>
     <div class="reacts">${EMOS.map(e=>{const n=(a.reacts||{})[e]||0;return`<button data-act="react" data-id="${esc(a.id)}" data-e="${e}" aria-pressed="${a.mine===e}">${e}${n?` <span>${n}</span>`:""}</button>`}).join("")}</div></div></div>`).join("")}
 async function reactTo(id,e){const a=(U.lg.feed||[]).find(x=>String(x.id)===String(id));if(!a)return;const r=a.reacts=a.reacts||{};
@@ -2731,7 +2743,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.72";
+const VERSION="2.73";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

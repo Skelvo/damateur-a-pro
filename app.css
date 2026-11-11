@@ -1041,3 +1041,9 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 .luckn{width:22px;text-align:center;font:800 14px "Barlow Condensed";color:var(--mut,#9fb0a7)}
 .luckf{font-size:12px;color:var(--mut,#9fb0a7);margin:4px 2px 4px}
 .luckf:empty{display:none}
+/* fil de guilde : gros coup à la une */
+.act.star{flex-wrap:wrap;margin:0 0 10px;padding:10px 12px 12px;border:1px solid #ffd23f55;border-radius:16px;background:linear-gradient(150deg,#3a2e0a,#1a1608 60%,#121a15);box-shadow:0 6px 24px #ffd23f1a}
+.act.star>div:last-child{flex:1;min-width:0}
+.act>.startag{flex:0 0 100%;width:100%;font:800 12.5px "Barlow Condensed";letter-spacing:.08em;text-transform:uppercase;color:var(--sel,#ffd23f);margin-bottom:6px}
+.bigtag{display:inline-block;margin-right:4px;padding:1px 7px;border-radius:8px;background:#ffd23f;color:#1b1400;font:800 12px "Barlow Condensed";text-transform:uppercase;letter-spacing:.04em;vertical-align:1px}
+.act.star .reacts{flex-wrap:wrap}

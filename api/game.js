@@ -47,7 +47,7 @@ const lname = async (s, code) => ((await s.query(`select name from leagues where
 const go = (view, code) => `./?go=${view}&code=${encodeURIComponent(code)}`;
 const isDarkMember = async (s, code, pid) => !!(code && (await s.query(`select 1 from league_members m join leagues l on l.code = m.code and l.dark where m.code = $1 and m.player = $2`, [code, pid]))[0]);
 const isMember = async (s, code, pid) => !!(code && (await s.query(`select 1 from league_members where code = $1 and player = $2`, [code, pid]))[0]);
-const ACT_KINDS = ["bet", "won", "cash", "wheel", "defis", "duel", "duelwin", "join"];
+const ACT_KINDS = ["bet", "won", "cash", "wheel", "defis", "duel", "duelwin", "join", "lost", "streak"];
 const EMOS = ["🔥", "😂", "👏", "😱"];
 // violation de l'index unique sur le pseudo
 const isTaken = (e) => e && (e.code === "23505" || /players_name_u|duplicate key/i.test(String(e.message)));
