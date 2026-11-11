@@ -1124,9 +1124,9 @@ const CARD_T=[[90,"LÉGENDE",["#2a0d5c","#7a3cff","#ffd23f"],"#ffe680"],[80,"ÉL
 // palettes « métal » par rang : fond (4 teintes), encre, liseré (3 teintes), holographique
 // textures dessinées par rang (images), posées sur la forme de la carte
 // bannières illustrées (une image 3:2 : bande pour le profil, centre pour la carte)
-const BN_TEX={b1:"bn/b1-c.webp?v=1",b2:"bn/b2-c.webp?v=1",b3:"bn/b3-c.webp?v=1",b4:"bn/b4-c.webp?v=1",b5:"bn/b5-c.webp?v=1",b6:"bn/b6-c.webp?v=1",b7:"bn/b7-c.webp?v=1",b8:"bn/b8-c.webp?v=1",b9:"bn/b9-c.webp?v=1",b10:"bn/b10-c.webp?v=1",b11:"bn/b11-c.webp?v=1",b12:"bn/b12-c.webp?v=1",b13:"bn/b13-c.webp?v=1",b14:"bn/b14-c.webp?v=1",b15:"bn/b15-c.webp?v=1",b16:"bn/b16-c.webp?v=1",b17:"bn/b17-c.webp?v=1",b18:"bn/b18-c.webp?v=1",b19:"bn/b19-c.webp?v=1",b22:"bn/b22-c.webp?v=1"};
+const BN_TEX={b1:"bn/b1-c.webp?v=1",b2:"bn/b2-c.webp?v=1",b3:"bn/b3-c.webp?v=1",b4:"bn/b4-c.webp?v=1",b5:"bn/b5-c.webp?v=1",b6:"bn/b6-c.webp?v=1",b7:"bn/b7-c.webp?v=1",b8:"bn/b8-c.webp?v=1",b9:"bn/b9-c.webp?v=1",b10:"bn/b10-c.webp?v=1",b11:"bn/b11-c.webp?v=1",b12:"bn/b12-c.webp?v=1",b13:"bn/b13-c.webp?v=1",b14:"bn/b14-c.webp?v=1",b15:"bn/b15-c.webp?v=1",b16:"bn/b16-c.webp?v=1",b17:"bn/b17-c.webp?v=1",b18:"bn/b18-c.webp?v=1",b19:"bn/b19-c.webp?v=1",b22:"bn/b22-c.webp?v=1",b20:"bn/b20-c.webp?v=1",b21:"bn/b21-c.webp?v=1"};
 // étincelles sur la carte « Ma bannière » : 0 sobre, 1 quelques-unes, 2 beaucoup (bannières rares)
-const BN_FX={b5:1,b6:1,b7:1,b9:1,b12:1,b18:1,b19:1};
+const BN_FX={b20:1,b21:1,b5:1,b6:1,b7:1,b9:1,b12:1,b18:1,b19:1};
 // encre adaptée quand la texture dessinée est sombre
 const CARD_INK={"BRONZE":"#ffe8cf","OR":"#fff3d0"};
 const CARD_TEX={"BRONZE":"card-bronze.webp?v=3","ARGENT":"card-argent.webp?v=1","OR":"card-or.webp?v=3","ÉLITE":"card-elite.webp?v=1","LÉGENDE":"card-legende.webp?v=1"};
@@ -2668,7 +2668,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.56";
+const VERSION="2.57";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
