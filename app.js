@@ -1419,20 +1419,20 @@ async function followShared(){const j=U.shared;if(!j)return;const b=$("[data-act
 const INTRO_N=4,INTRO_V=2;   // changer INTRO_V remontre la présentation et le tuto à tout le monde
 function openIntro(){if(U.open&&U.open!=="intro"&&U.open!=="help"){setTimeout(()=>{if(S.name&&S.introSeen!==INTRO_V)openIntro()},5000);return}U.open="intro";U.ii=0;U.ix={o:1,s:20};layer(viewIntro())}
 function viewIntro(){const i=U.ii,X=U.ix,O=[["PSG",1.65],["Nul",3.8],["Lens",5.2]],o=O[X.o];
-  const S1=`<div class="iart">🏟️</div><h2>Parie sur les vrais matchs</h2><p>Foot, rugby, tennis et NBA : les vrais matchs, avec les scores <b>en direct</b>. Tu paries sur qui gagne, mais aussi sur les buteurs, les cartons, les corners, les essais, les aces…</p>
+  const S1=`<div class="iimg"><img src="img/intro1.webp?v=1" alt=""></div><h2>Parie sur les vrais matchs</h2><p>Foot, rugby, tennis et NBA : les vrais matchs, avec les scores <b>en direct</b>. Tu paries sur qui gagne, mais aussi sur les buteurs, les cartons, les corners, les essais, les aces…</p>
     <div class="ichips"><span>⚽ Foot</span><span>🏉 Rugby</span><span>🎾 Tennis</span><span>🏀 NBA</span></div>
     <div class="ibox">🎁 <b>1 000 jetons offerts</b> pour commencer${S.starter==="pending"?" : tu les gagnes sur un match d’entraînement à la fin de cette présentation":""}.<br>Ce sont des <b>jetons fictifs</b> : tout est gratuit, aucun argent en jeu, jamais.</div>`;
-  const S2=`<div class="iart">🔢</div><h2>La cote, en 10 secondes</h2><p>Chaque pronostic a une <b>cote</b>. Touche un choix pour voir :</p>
+  const S2=`<div class="iimg"><img src="img/intro2.webp?v=1" alt=""></div><h2>La cote, en 10 secondes</h2><p>Chaque pronostic a une <b>cote</b>. Touche un choix pour voir :</p>
     <div class="imc"><div class="imt"><b>PSG</b><span>contre</span><b>Lens</b></div><div class="odds c3">${O.map((x,k)=>`<button class="odd" data-act="ixo" data-v="${k}" aria-pressed="${X.o===k}"><span>${["1","N","2"][k]}</span><b>${fr(x[1])}</b></button>`).join("")}</div>
     <div class="ilegend"><span>1 = PSG gagne</span><span>N = match nul</span><span>2 = Lens gagne</span></div></div>
     <div class="chips">${[10,20,50,100].map(v=>`<button data-act="ixs" data-v="${v}" aria-pressed="${X.s===v}">${v}</button>`).join("")}</div>
     <div class="ibox calc">Tu mises <b>${X.s}</b> jetons sur « ${o[0]} » à <b>${fr(o[1])}</b><br>Si c’est bon, tu reçois <b class="pos">${tok(Math.round(X.s*o[1]))} jetons</b> <small>(${X.s} × ${fr(o[1])})</small><br>Si c’est raté, tu perds ta mise.</div>
     <p class="isub">Cote haute = résultat peu probable, mais gros gain. Cote basse = plus sûr, petit gain.</p>`;
-  const S3=`<div class="iart">🧾</div><h2>Simple ou combiné</h2>
+  const S3=`<div class="iimg"><img src="img/intro3.webp?v=1" alt=""></div><h2>Simple ou combiné</h2>
     <div class="itk"><b>Pari simple</b><small>Un seul pronostic</small><div class="itl"><span>PSG gagne</span><b>1,65</b></div><div class="itg">10 jetons → <b class="pos">17 jetons</b></div></div>
     <div class="itk gold"><b>Combiné</b><small>Plusieurs pronostics sur un ticket : les cotes se <b>multiplient</b></small><div class="itl"><span>PSG gagne</span><b>1,65</b></div><div class="itl"><span>Plus de 2,5 buts</span><b>1,90</b></div><div class="itg">Cote 1,65 × 1,90 = <b>3,14</b> · 10 jetons → <b class="pos">31 jetons</b></div></div>
     <p class="isub">⚠️ Dans un combiné, <b>tout</b> doit être bon. Un seul raté et le ticket est perdu.</p>`;
-  const S4=`<div class="iart">🏆</div><h2>Joue avec tes potes</h2>
+  const S4=`<div class="iimg"><img src="img/intro4.webp?v=1" alt=""></div><h2>Joue avec tes potes</h2>
     <div class="ilist"><div><span>📈</span><p><b>Ton niveau</b> : chaque pari te rapporte de l’XP (encore plus s’il est gagné et risqué). Tu montes de Spectateur à Légende.</p></div>
     <div><span>🛡️</span><p><b>Les guildes</b> : un groupe entre amis ou collègues, avec classement de la semaine et du mois, chat, prono du week-end et combats contre d’autres guildes.</p></div>
     <div><span>🎡</span><p><b>Chaque jour</b> : la roue de la chance et 3 défis pour gagner des jetons.</p></div>
@@ -2510,12 +2510,12 @@ function wheelSvg(){const n=WHEEL.length,R=140,c=150,pt=d=>{const r=(d-90)*Math.
   const j0=WSPAN,j1=360;
   return`<svg viewBox="0 0 300 300" class="wheel" id="wheel" aria-hidden="true"><defs><linearGradient id="jg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3b0"/><stop offset=".5" stop-color="#ffd23f"/><stop offset="1" stop-color="#b8860b"/></linearGradient></defs>
     ${WHEEL.map((v,i)=>{const [a0,a1]=WA[i],w=a1-a0,mid=(a0+a1)/2,dark=lum(WCOL[i])>.55,col=dark?"#0a110f":"#fff",big=w>=38;
-    return`<path d="M150 150L${pt(a0)}A${R} ${R} 0 ${w>180?1:0} 1 ${pt(a1)}Z" fill="${WCOL[i]}" stroke="#0a110f" stroke-width="3"/>
+    return`<g class="wseg" data-i="${i}"><path d="M150 150L${pt(a0)}A${R} ${R} 0 ${w>180?1:0} 1 ${pt(a1)}Z" fill="${WCOL[i]}" stroke="#0a110f" stroke-width="3"/>
     <g transform="rotate(${mid} 150 150)">${big?`<text x="150" y="50" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-weight="800" font-size="30" fill="${col}">${v}</text>
     <text x="150" y="68" text-anchor="middle" font-family="Barlow,sans-serif" font-weight="700" font-size="11" fill="${col}" opacity=".75">JETONS</text>
     <text x="150" y="86" text-anchor="middle" font-family="Barlow,sans-serif" font-weight="800" font-size="12" fill="${col}">${WP[i]} %</text>`
     :`<text x="150" y="44" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-weight="800" font-size="${w>=28?26:22}" fill="${col}">${v}</text>
-    <text x="150" y="60" text-anchor="middle" font-family="Barlow,sans-serif" font-weight="800" font-size="10.5" fill="${col}" opacity=".9">${WP[i]} %</text>`}</g>`}).join("")}
+    <text x="150" y="60" text-anchor="middle" font-family="Barlow,sans-serif" font-weight="800" font-size="10.5" fill="${col}" opacity=".9">${WP[i]} %</text>`}</g></g>`}).join("")}
     <path d="M150 150L${pt(j0)}A${R} ${R} 0 0 1 ${pt(j1)}Z" fill="#0a110f" stroke="#ffd23f" stroke-width="1.5"/>
     <g transform="rotate(${(j0+j1)/2} 150 150)"><text transform="translate(150 50) rotate(-90)" text-anchor="middle" dominant-baseline="central" font-family="Barlow Condensed,sans-serif" font-weight="800" font-size="14" fill="url(#jg)" letter-spacing=".3">1 000 000</text></g>
 </svg>`}
@@ -2534,7 +2534,7 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden)autoWheel(
 function viewWheel(){const done=!wheelAvail();
   return`<div class="grab"><h3>Roue de la chance</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   ${WE().on&&WE().k==="roue"?`<div class="webox mini"><span class="wee">🎡</span><div><b>Week-end de la roue</b><p>Ton gain sera doublé (×2) !</p></div></div>`:""}
-  <div class="wheelbox"><div class="pointer"></div>${wheelSvg()}<img class="wring" src="roue-anneau.webp?v=1" alt=""><img class="whub" src="roue-centre.webp?v=1" alt=""></div>
+  <div class="wheelbox"><div class="pointer"></div><svg class="wptr" id="wptr" viewBox="0 0 60 80" aria-hidden="true"><defs><linearGradient id="pg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff6c0"/><stop offset=".45" stop-color="#ffcf3a"/><stop offset="1" stop-color="#9a6a00"/></linearGradient><radialGradient id="pe" cx=".35" cy=".35"><stop offset="0" stop-color="#9dffc8"/><stop offset=".5" stop-color="#1fc46a"/><stop offset="1" stop-color="#0a5c30"/></radialGradient></defs><path d="M30 78 L6 22 A24 24 0 1 1 54 22 Z" fill="url(#pg)" stroke="#6b4a00" stroke-width="2"/><path d="M30 70 L12 24 A18 18 0 1 1 48 24 Z" fill="none" stroke="#fff3b0" stroke-width="1.5" opacity=".6"/><circle cx="30" cy="24" r="11" fill="url(#pe)" stroke="#ffe27a" stroke-width="2.5"/><circle cx="26" cy="20" r="3" fill="#fff" opacity=".8"/></svg>${wheelSvg()}<img class="wring" src="roue-anneau.webp?v=1" alt=""><img class="whub" src="roue-centre.webp?v=1" alt=""></div>
   <div id="wres" class="wres">${done&&S.wheel&&S.wheel.d===today()?`Aujourd’hui : <b>+${tok(S.wheel.v)} jetons</b>`:extraAvail()?"🎁 Tour bonus offert à tout le monde aujourd’hui !":"Un tour gratuit par jour"}</div>
   <button class="btn gold wide" data-act="spin" id="spin" ${done||U.wheelOk===false?"disabled":""}>${done?"Prochain tour dans "+nextReset():U.wheelOk===false?"Un instant…":extraAvail()?"Lancer le tour bonus":"Lancer la roue"}</button>
   <div class="info">${ic("info")}<span><b style="color:var(--ink)">100 % hasard.</b> Plus le gain est gros, plus il est rare : ${WHEEL.map((v,i)=>`<b style="color:var(--ink)">${v}</b> ${WP[i]} %`).join(" · ")}. Les cases rapetissent avec le gain ; la vraie chance est écrite sur chacune. Les jetons de la roue <b style="color:var(--ink)">ne comptent pas</b> dans les classements. La fine case dorée <b style="color:var(--sel)">JACKPOT 1 000 000</b> est tirée à part : <b style="color:var(--ink)">1 chance sur 10 millions</b> à chaque tour. Le tirage utilise le générateur aléatoire sécurisé du téléphone, sans aucun réglage caché.</span></div>`}
@@ -2555,7 +2555,14 @@ async function spin(){if(spinning||!wheelAvail()||U.wheelOk===false)return;spinn
     else{toast(`${wheelMini()} +${tok(v)} jetons ! ${extraAvail()?"Et tu as encore un tour bonus aujourd’hui !":"À demain pour un nouveau tour."}`,"win");if(v>=200)confetti()}if(!U.open)render()};
   if(!w||matchMedia("(prefers-reduced-motion: reduce)").matches){end();return}
   w.style.transition="none";w.style.transform="rotate(0deg)";void w.getBoundingClientRect();
-  w.style.transition="transform 5.2s cubic-bezier(.12,.75,.12,1)";requestAnimationFrame(()=>{w.style.transform=`rotate(${deg}deg)`});setTimeout(end,5400)}
+  w.style.transition="transform 5.2s cubic-bezier(.12,.75,.12,1)";requestAnimationFrame(()=>{w.style.transform=`rotate(${deg}deg)`});wheelTrack(w,5400);setTimeout(end,5400)}
+// pendant le tour : la case sous la flèche grossit et s'illumine, la flèche « claque » à chaque case
+function wheelTrack(w,ms){const segs=[...w.querySelectorAll(".wseg")],P=$("#wptr"),t0=performance.now();let last=-2;
+  const f=()=>{const m=getComputedStyle(w).transform;let a=0;if(m&&m!=="none"){const v=m.match(/matrix\(([^)]+)\)/);if(v){const[c,s2]=v[1].split(",").map(Number);a=Math.atan2(s2,c)*180/Math.PI}}
+    const at=((360-a)%360+360)%360;let i=WA.findIndex(([x,y])=>at>=x&&at<y);
+    if(i!==last){segs.forEach((g,k)=>g.classList.toggle("hot",k===i));last=i;if(P){P.classList.remove("tk");void P.getBoundingClientRect();P.classList.add("tk")}try{navigator.vibrate&&navigator.vibrate(4)}catch(e){}}
+    if(performance.now()-t0<ms+200)requestAnimationFrame(f);else{segs.forEach((g,k)=>g.classList.toggle("win",k===i))}};
+  requestAnimationFrame(f)}
 
 /* ---------- accueil ---------- */
 function viewWelcome(rename,msg){return`<div class="welcome">${rename?`<div class="grab"><h3>Ton pseudo</h3><button class="x" data-act="close">${ic("x")}</button></div>${msg?`<p class="warn" style="text-align:left">${msg}</p>`:""}`:`
@@ -2638,7 +2645,7 @@ function renderGate(){const lg=new URLSearchParams(location.search).get("guilde"
     <div class="gpgo">📲 <b>Tu as déjà l’app ?</b> Ouvre maintenant <b>Tribune</b> depuis ton écran d’accueil : <b>le ticket s’ouvrira tout seul</b> (dans les 20 minutes), avec le bouton « Je suis ce pari ».</div>
     <p class="note">Pas encore l’app ? Installe-la ci-dessous : le ticket t’attendra.</p>`}catch(e){}},50);
   document.body.classList.add("gated");
-  $("#main")._html=null;$("#main").innerHTML=`<div class="gate"><h1 class="glogo"><img src="logo-tribune.png?v=2" alt="Tribune"></h1><small style="color:var(--mute2)">v${VERSION}</small><p class="gsub">Le jeu se joue <b>uniquement depuis l’app</b> sur ton écran d’accueil. C’est gratuit, sans store, et ça prend 10 secondes.</p>
+  $("#main")._html=null;$("#main").innerHTML=`<div class="gate"><div class="ghero"><img src="img/gate.webp?v=1" alt=""></div><h1 class="glogo"><img src="logo-tribune.png?v=2" alt="Tribune"></h1><small style="color:var(--mute2)">v${VERSION}</small><p class="gsub">Le jeu se joue <b>uniquement depuis l’app</b> sur ton écran d’accueil. C’est gratuit, sans store, et ça prend 10 secondes.</p>
     <div id="gref"></div><div id="gmatch"></div>${pc?`<div id="gpari"><div class="skel" style="height:120px"></div></div>`:""}
     ${lg?`<div class="xcode" style="margin-bottom:12px"><small>Invitation à une guilde : une fois dans l’app, va dans Guildes › Rejoindre et entre ce code</small><b>${esc(lg.toUpperCase().slice(0,8))}</b></div>`:""}
     <div id="ginst">${viewInstall(true)}</div>
@@ -2675,7 +2682,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.62";
+const VERSION="2.63";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
