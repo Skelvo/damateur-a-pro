@@ -1414,16 +1414,20 @@ const ACTIONS = {
   },
   async admin_social_add(s, b) {
     admin(b);
-    const kind = b.kind === "story" ? "story" : "post", nets = (Array.isArray(b.networks) ? b.networks : ["instagram", "facebook"]).filter((x) => x === "instagram" || x === "facebook");
+    const kind = ["story", "carousel"].includes(b.kind) ? b.kind : "post", nets = (Array.isArray(b.networks) ? b.networks : ["instagram", "facebook"]).filter((x) => x === "instagram" || x === "facebook");
     const at = new Date(String(b.at || "")); if (isNaN(at)) throw fail(400, "date");
-    if (!/^https:\/\/[^\s]+\.(png|jpe?g)$/i.test(String(b.image || ""))) throw fail(400, "image");
-    const r = await s.query(`insert into social_posts (at, kind, networks, image, caption_ig, caption_fb, label, status) values ($1, $2, $3::jsonb, $4, $5, $6, $7, $8) returning id`,
-      [at.toISOString(), kind, JSON.stringify(nets), String(b.image), b.caption_ig ? String(b.caption_ig).slice(0, 2200) : null, b.caption_fb ? String(b.caption_fb).slice(0, 5000) : null, b.label ? String(b.label).slice(0, 80) : null, b.approve ? "approved" : "draft"]);
+    const okImg = (u) => /^https:\/\/[^\s]+\.(png|jpe?g)$/i.test(String(u || ""));
+    const imgs = kind === "carousel" ? (Array.isArray(b.images) ? b.images.map(String) : []) : null;
+    if (imgs && (imgs.length < 2 || imgs.length > 10 || !imgs.every(okImg))) throw fail(400, "images");
+    const img = imgs ? imgs[0] : String(b.image || "");
+    if (!okImg(img)) throw fail(400, "image");
+    const r = await s.query(`insert into social_posts (at, kind, networks, image, images, caption_ig, caption_fb, label, status) values ($1, $2, $3::jsonb, $4, $9::jsonb, $5, $6, $7, $8) returning id`,
+      [at.toISOString(), kind, JSON.stringify(nets), img, b.caption_ig ? String(b.caption_ig).slice(0, 2200) : null, b.caption_fb ? String(b.caption_fb).slice(0, 5000) : null, b.label ? String(b.label).slice(0, 80) : null, b.approve ? "approved" : "draft", imgs ? JSON.stringify(imgs) : null]);
     return { ok: true, id: r[0].id };
   },
   async admin_social_list(s, b) {
     admin(b);
-    return { posts: await s.query(`select id, label, kind, networks, image, status, error, result, to_char(at at time zone 'Europe/Paris', 'DD/MM HH24:MI') as quand, published_at
+    return { posts: await s.query(`select id, label, kind, networks, image, images, status, error, result, to_char(at at time zone 'Europe/Paris', 'DD/MM HH24:MI') as quand, published_at
       from social_posts where at > now() - interval '14 days' or status <> 'published' order by at`),
       configured: !!(await SOCIAL.kvGet(s, "meta_page_token")) };
   },

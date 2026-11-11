@@ -41,16 +41,32 @@ async function creds(s) {
   return { tok, page, ig };
 }
 
-async function igPublish(c, p) {
-  const params = { access_token: c.tok, image_url: p.image };
-  if (p.kind === "story") params.media_type = "STORIES"; else params.caption = p.caption_ig || "";
-  const box = await call(G(`${c.ig}/media`), params);
-  for (let i = 0; i < 10; i++) {   // l'image doit être traitée par Instagram avant publication
-    const st = await call(G(box.id), { access_token: c.tok, fields: "status_code" }, "GET");
-    if (st.status_code === "FINISHED") break;
+// attend qu'Instagram ait traité un conteneur (image, élément ou carrousel)
+async function igReady(c, id) {
+  for (let i = 0; i < 12; i++) {
+    const st = await call(G(id), { access_token: c.tok, fields: "status_code" }, "GET");
+    if (st.status_code === "FINISHED") return;
     if (st.status_code === "ERROR") throw new Error("Instagram a refusé l'image");
     await new Promise((r) => setTimeout(r, 1500));
   }
+}
+
+async function igPublish(c, p) {
+  let box;
+  if (p.kind === "carousel") {
+    const kids = [];
+    for (const url of p.images) {
+      const k = await call(G(`${c.ig}/media`), { access_token: c.tok, image_url: url, is_carousel_item: "true" });
+      kids.push(k.id);
+    }
+    for (const k of kids) await igReady(c, k);
+    box = await call(G(`${c.ig}/media`), { access_token: c.tok, media_type: "CAROUSEL", children: kids.join(","), caption: p.caption_ig || "" });
+  } else {
+    const params = { access_token: c.tok, image_url: p.image };
+    if (p.kind === "story") params.media_type = "STORIES"; else params.caption = p.caption_ig || "";
+    box = await call(G(`${c.ig}/media`), params);
+  }
+  await igReady(c, box.id);
   const pub = await call(G(`${c.ig}/media_publish`), { access_token: c.tok, creation_id: box.id });
   return pub.id;
 }
@@ -61,15 +77,25 @@ async function fbPublish(c, p) {
     const st = await call(G(`${c.page}/photo_stories`), { access_token: c.tok, photo_id: ph.id });
     return st.post_id || st.id || ph.id;
   }
+  if (p.kind === "carousel") {   // sur Facebook : une publication avec plusieurs photos
+    const params = { access_token: c.tok, message: p.caption_fb || "" };
+    let i = 0;
+    for (const url of p.images) {
+      const ph = await call(G(`${c.page}/photos`), { access_token: c.tok, url, published: "false" });
+      params[`attached_media[${i++}]`] = JSON.stringify({ media_fbid: ph.id });
+    }
+    const r = await call(G(`${c.page}/feed`), params);
+    return r.id;
+  }
   const r = await call(G(`${c.page}/photos`), { access_token: c.tok, url: p.image, message: p.caption_fb || "" });
   return r.post_id || r.id;
 }
 
-// Publie les publications validées dont l'heure est passée (au plus 3 par passage).
+// Publie les publications validées dont l'heure est passée (au plus 3 par passage ; un carrousel compte pour une).
 async function publishDue(s) {
   const due = await s.query(`update social_posts set status = 'publishing', tries = tries + 1
       where id in (select id from social_posts where status = 'approved' and at <= now() order by at limit 3)
-      returning id, kind, at, image, caption_ig, caption_fb, networks, result`);
+      returning id, kind, at, image, images, caption_ig, caption_fb, networks, result`);
   if (!due.length) return 0;
   let c; try { c = await creds(s); } catch (e) {
     for (const p of due) await s.query(`update social_posts set status = 'error', error = $2 where id = $1`, [p.id, e.message]);
