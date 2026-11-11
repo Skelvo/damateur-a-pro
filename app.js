@@ -1541,7 +1541,7 @@ function legalHTML(){return`<div class="legal">
 <p class="lgl-up">Version du 11 novembre 2026</p>
 <h4>1. Le jeu</h4>
 <p>Tribune est un jeu <b>100 % gratuit</b> de pronostics sportifs, créé et géré par un particulier pour jouer entre amis, sans but commercial et sans publicité.</p>
-<p>Les <b>jetons sont fictifs</b> : ils n’ont aucune valeur, ne s’achètent pas, ne se vendent pas, ne s’échangent pas et ne se convertissent jamais en argent, en cadeau ou en avantage réel. Les récompenses (roue, défis, classements, combats de guildes…) sont uniquement des jetons fictifs. Tribune n’est donc pas un jeu d’argent : on ne mise jamais d’argent et on ne gagne rien de réel.</p>
+<p>Les <b>jetons sont fictifs</b> : ils n’ont aucune valeur, ne s’achètent pas, ne se vendent pas, ne s’échangent pas et ne se convertissent jamais en argent, en cadeau ou en avantage réel. Les récompenses (roue, défis, classements, combats de guildes, concours…) sont uniquement des jetons fictifs ou des éléments de style dans l’appli (cadres, bannières, titres), sans aucune valeur et impossibles à échanger. Tribune n’est donc pas un jeu d’argent : on ne mise jamais d’argent et on ne gagne rien de réel.</p>
 <h4>2. Réservé aux 18 ans et plus</h4>
 <p>Parce qu’il reprend le principe des paris sportifs, Tribune est réservé aux personnes majeures. En jouant, tu confirmes avoir 18 ans ou plus.</p>
 <h4>3. Cotes, scores et résultats</h4>
@@ -2620,7 +2620,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.47";
+const VERSION="2.48";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

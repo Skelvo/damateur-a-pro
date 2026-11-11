@@ -379,7 +379,8 @@ COS.push(
   ["e21","e","🐕 Teckel","teckel","Style exclusif"],["e22","e","🦴 Os","teckel","Style exclusif"],["e23","e","🌭 Saucisse","teckel","Style exclusif"],
   ["v12","v","🐕 Course de teckels","teckel","Style exclusif"],["f16","f","Hot-dog","teckel","Style exclusif"],["f17","f","Teckel enroulé","teckel","Style exclusif"],["b21","b","Teckel géant","teckel","Style exclusif"]);
 COS.push(["t25","t","🤝 Recruteur","ref3","Parrainer 3 amis qui jouent"]);
-const COS_SECRET=["corbeau","teckel"],COS_SEASON={noel:"🎄 Saisonnier"};   // conditions « offertes » : les objets restent cachés tant qu'on ne les a pas
+COS.push(["f18","f","Laurier d’or","concours","Gagner un concours Tribune"],["t26","t","🏆 Roi du prono","concours","Gagner un concours Tribune"]);
+const COS_SECRET=["corbeau","teckel","concours"],COS_SEASON={noel:"🎄 Saisonnier"};   // conditions « offertes » : les objets restent cachés tant qu'on ne les a pas
 const cosEmoji=id=>{const x=COS.find(c=>c[0]===id&&c[1]==="e");return x&&id!=="e0"?x[2].split(" ")[0]:""};
 const MONTHS_FR=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 // objets débloqués à partir des drapeaux du serveur : {lvl, months:["2026-11",…], podium, battles, odds10, …, all}
