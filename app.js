@@ -1762,14 +1762,21 @@ async function btAnswer(id,v){if(v==="c"&&!confirm("Retirer ce défi ?"))return;
 const EMOS=["🔥","😂","👏","😱"];
 function postAct(kind,data){if(!S.name)return;ensureSession().then(ok=>ok&&api("act",{kind,data}).catch(()=>{}))}
 function ago(t){const m=Math.round((Date.now()-t)/6e4);return m<1?"à l’instant":m<60?`il y a ${m} min`:m<1440?`il y a ${Math.round(m/60)} h`:`il y a ${Math.round(m/1440)} j`}
-async function loadActFeed(){const c=U.lg.code;if(!c)return;try{const j=await api("feed",{code:c});if(U.lg.code===c){U.lg.feed=j.items;U.lg.feedAt=Date.now()}}catch(e){U.lg.feed=U.lg.feed||[]}
+async function loadActFeed(){const c=U.lg.code;if(!c)return;try{const j=await api("feed",{code:c});if(U.lg.code===c){U.lg.feed=j.items;U.lg.luck=j.luck||[];U.lg.feedAt=Date.now()}}catch(e){U.lg.feed=U.lg.feed||[]}
   if(U.tab==="l"&&!U.open)render()}
+// fil de guilde : chaque tour de roue, avec un petit mot selon la chance
+function wheelAct(d){const v=d.v||0,b=v/(d.d?2:1),t=d.x?"au tour bonus":"à la roue",x2=d.d?` <small class="mut">(roue ×2)</small>`:"";
+  return b>=500?`🔥 a décroché le <b style="color:var(--sel)">gros lot</b> ${t} : <b class="pos">+${tok(v)}</b>${x2}`
+    :b>=200?`🍀 a gagné <b class="pos">+${tok(v)}</b> ${t}, la chance !${x2}`
+    :b>=100?`🎡 a gagné <b>+${tok(v)}</b> ${t}${x2}`
+    :b>=50?`🎡 a gagné <b>+${tok(v)}</b> ${t}, peut mieux faire${x2}`
+    :`😅 seulement <b>+${tok(v)}</b> ${t}… pas de chance${x2}`}
 function actText(a){const d=a.data||{};const legs=(d.legs||[]).map(esc).join(" + ");
   switch(a.kind){
     case"bet":return`a parié <b>${tok(d.stake||0)}</b> sur ${legs||"un match"}${d.n>1&&d.odds?` <span class="mut">(combiné · cote ${fr(+d.odds)})</span>`:d.odds?` <span class="mut">@ ${fr(+d.odds)}</span>`:""}`;
     case"won":return`a gagné <b class="pos">+${tok(d.pay||0)}</b> ${ic("trophy")}${legs?` <span class="mut">${legs}</span>`:""}`;
     case"cash":return`a encaissé <b>${tok(d.pay||0)}</b> avant la fin`;
-    case"wheel":return d.v>=1e6?`a touché le <b style="color:var(--sel)">JACKPOT</b> de la roue : <b class="pos">+${tok(d.v)}</b> 💰 (1 chance sur 10 millions !)`:`a gagné <b>${tok(d.v||0)}</b> à la roue de la chance`;
+    case"wheel":return d.v>=1e6?`a touché le <b style="color:var(--sel)">JACKPOT</b> de la roue : <b class="pos">+${tok(d.v)}</b> 💰 (1 chance sur 10 millions !)`:wheelAct(d);
     case"defis":return`a réussi les 3 défis du jour`;
     case"duel":if(d.acc)return`relève le duel de ${esc(d.opp||"?")} : <b>${esc(d.pick||"")}</b> sur ${esc(d.mlabel||"")} <span class="mut">(${tok(d.stake||0)} jetons)</span>`;
       return`lance un duel : <b>${esc(d.pick||"")}</b> sur ${esc(d.mlabel||"")} <span class="mut">(${tok(d.stake||0)} jetons)</span>`;
@@ -1777,10 +1784,15 @@ function actText(a){const d=a.data||{};const legs=(d.legs||[]).map(esc).join(" +
     case"join":return`a rejoint la guilde`;
     case"share":return`partage son ticket : ${d.n>1?`combiné de ${d.n} · cote <b>${fr(+d.odds||1)}</b>`:`${esc(d.l||"")} @ <b>${fr(+d.odds||1)}</b>`} <button class="btn gold shbtn" data-act="shopen" data-c="${esc(d.code)}">🎟️ Voir / suivre</button>`;
   }return""}
+// qui a le plus de chance à la roue cette semaine (moyenne par tour)
+function luckBox(){const L=U.lg.luck||[];if(!L.length)return"";const me=String(U.lg.data&&U.lg.data.me),med=["🥇","🥈","🥉"];
+  return`<div class="luck"><div class="luckh">🍀 Chance à la roue <small>7 derniers jours · moyenne par tour</small></div>${L.slice(0,8).map((x,i)=>`<div class="luckr${String(x.who)===me?" me":""}" data-act="prof" data-id="${esc(x.who)}">
+    <span class="luckn">${med[i]||i+1}</span>${avatar(x.who,x.name,x.av,"av")}<b>${esc(x.name)}</b><small>${x.n} tour${x.n>1?"s":""}</small><em>${tok(x.avg)}</em></div>`).join("")}
+    ${L.length>1?`<p class="luckf">${L.length>2&&L[L.length-1].avg<L[0].avg?`😅 ${esc(L[L.length-1].name)} n’a vraiment pas de chance en ce moment…`:""}</p>`:""}</div>`}
 function viewFeed(){const F=U.lg.feed;if(!F){loadActFeed();return`<div class="skel" style="height:80px"></div><div class="skel" style="height:80px"></div>`}
   if(Date.now()-(U.lg.feedAt||0)>3e4)setTimeout(loadActFeed,0);
   if(!F.length)return`<div class="empty">${ic("group")}<b>Rien pour l’instant</b>Les paris, gains et duels des membres s’afficheront ici.</div>`;
-  return F.map(a=>`<div class="act"><span data-act="prof" data-id="${esc(a.who)}">${avatar(a.who,a.name,a.av,"av")}</span><div>
+  return luckBox()+F.map(a=>`<div class="act"><span data-act="prof" data-id="${esc(a.who)}">${avatar(a.who,a.name,a.av,"av")}</span><div>
     <p><b>${esc(a.name)}${String(a.who)===String(U.lg.data.me)?" (toi)":""}</b> ${actText(a)}</p><small>${ago(a.at)}</small>
     <div class="reacts">${EMOS.map(e=>{const n=(a.reacts||{})[e]||0;return`<button data-act="react" data-id="${esc(a.id)}" data-e="${e}" aria-pressed="${a.mine===e}">${e}${n?` <span>${n}</span>`:""}</button>`}).join("")}</div></div></div>`).join("")}
 async function reactTo(id,e){const a=(U.lg.feed||[]).find(x=>String(x.id)===String(id));if(!a)return;const r=a.reacts=a.reacts||{};
@@ -2719,7 +2731,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.71";
+const VERSION="2.72";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

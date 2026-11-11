@@ -963,7 +963,8 @@ const ACTIONS = {
     const u = await s.query(`update players set wheel = $2::jsonb where id = $1 and coalesce(wheel->>${extra ? "'x'" : "'b'"}, '') <> $3 returning id`, [p.id, JSON.stringify(nw), day]);
     if (!u[0]) return { error: "done" };
     await credit(s, p.id, v, "wheel", day + (extra ? "x" : ""));
-    if (v >= 200) await s.query(`insert into activity (player, kind, data) values ($1, 'wheel', $2::jsonb)`, [p.id, JSON.stringify({ v })]);
+    // chaque tour est affiché dans le fil des guildes (pour comparer la chance de chacun)
+    await s.query(`insert into activity (player, kind, data) values ($1, 'wheel', $2::jsonb)`, [p.id, JSON.stringify({ v, x: extra ? 1 : 0, d: x2 ? 1 : 0 })]);
     return { ok: true, i, v, jack, day, extra, x2 };
   },
   // ---- Défis du jour : vérifiés avec les paris enregistrés par le serveur ----
@@ -2274,7 +2275,12 @@ const ACTIONS = {
          (select emo from reactions r where r.act = a.id and r.player = $2) as mine
        from activity a join league_members m on m.player = a.player and m.code = $1 join players pl on pl.id = a.player
        where a.at > now() - interval '7 days' and a.kind not like 'dark%' order by a.at desc limit 60`, [code, p.id]);
-    return { me: p.id, items: rows.map((r) => ({ id: r.id, who: r.player, name: r.name, av: r.avatar_v || 0, kind: r.kind, data: r.data, at: Math.round(Number(r.ms)), reacts: r.reacts, mine: r.mine })) };
+    // chance à la roue sur 7 jours : moyenne gagnée par tour (tours enregistrés par le serveur)
+    const luck = await s.query(`select l.player, pl.name, pl.avatar_v, count(*)::int as n, sum(l.delta)::int as sum
+       from ledger l join league_members m on m.player = l.player and m.code = $1 join players pl on pl.id = l.player
+       where l.kind = 'wheel' and l.at > now() - interval '7 days' and l.delta < 1000000 group by l.player, pl.name, pl.avatar_v`, [code]);
+    return { me: p.id, items: rows.map((r) => ({ id: r.id, who: r.player, name: r.name, av: r.avatar_v || 0, kind: r.kind, data: r.data, at: Math.round(Number(r.ms)), reacts: r.reacts, mine: r.mine })),
+      luck: luck.map((r) => ({ who: r.player, name: r.name, av: r.avatar_v || 0, n: r.n, avg: Math.round(r.sum / r.n) })).sort((x, y) => y.avg - x.avg || y.n - x.n) };
   },
 
   async react(s, b) {

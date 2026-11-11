@@ -1027,3 +1027,17 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 .news .nwav{display:grid;place-items:center}.news .nwav .av{width:120px;height:120px;border-radius:50%;display:grid;place-items:center;font:800 54px "Barlow Condensed";color:#0b1310}
 .news .nwwh{width:min(200px,52vw);margin:16px auto}.news .nwwh .wring{width:117%;height:117%}
 .news .nwwh{display:block}.news .nwwh img{max-height:none}.news .nwwh .whub{width:22%}
+/* fil de guilde : chance à la roue */
+.luck{margin:0 0 14px;padding:12px 12px 6px;border-radius:16px;background:linear-gradient(160deg,#1c2b1f,#121a15);border:1px solid #35d07f33}
+.luckh{font:800 15px "Barlow Condensed";text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
+.luckh small{display:block;font:500 11.5px Barlow;text-transform:none;letter-spacing:0;color:var(--mut,#9fb0a7);margin-top:1px}
+.luckr{display:flex;align-items:center;gap:9px;padding:6px 4px;border-top:1px solid #ffffff0d;cursor:pointer}
+.luckr:first-of-type{border-top:0}
+.luckr.me{background:#35d07f14;border-radius:10px}
+.luckr .av{width:30px;height:30px;flex:none;border-radius:50%!important;display:grid;place-items:center;font:800 15px "Barlow Condensed";color:#0b1310}
+.luckr b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.luckr small{color:var(--mut,#9fb0a7);font-size:11.5px}
+.luckr em{font:800 17px "Barlow Condensed";font-style:normal;color:var(--sel,#ffd23f);min-width:44px;text-align:right}
+.luckn{width:22px;text-align:center;font:800 14px "Barlow Condensed";color:var(--mut,#9fb0a7)}
+.luckf{font-size:12px;color:var(--mut,#9fb0a7);margin:4px 2px 4px}
+.luckf:empty{display:none}
