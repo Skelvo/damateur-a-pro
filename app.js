@@ -2507,13 +2507,13 @@ const WA=(()=>{let a=0;return WD.map(p=>{const w=p*3.6,r=[a,a+w];a+=w;return r})
 const wCenter=i=>i<0?WSPAN+JW/2:(WA[i][0]+WA[i][1])/2;
 function wheelPick(){const r=fairIndex(100);let c=0;for(let i=0;i<WP.length;i++){c+=WP[i];if(r<c)return i}return 0}
 // cases texturées (images) : "d" = texte foncé, "l" = texte clair
-const WTEX=["l","d","l","d","d","l",0,0];
+const WTEX=["l","d","l","d","d","l",0,0],WFIT=[0,3,4];   // WFIT : texture entière dans la case (reflets des bords visibles)
 function wheelSvg(){const n=WHEEL.length,R=140,c=150,pt=d=>{const r=(d-90)*Math.PI/180;return(c+R*Math.cos(r)).toFixed(2)+" "+(c+R*Math.sin(r)).toFixed(2)};
   const j0=WSPAN,j1=360;
-  return`<svg viewBox="0 0 300 300" class="wheel" id="wheel" aria-hidden="true"><defs><linearGradient id="jg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3b0"/><stop offset=".5" stop-color="#ffd23f"/><stop offset="1" stop-color="#b8860b"/></linearGradient></defs>
-    ${WTEX.map((on,i)=>on?`<pattern id="wt${i}" patternUnits="userSpaceOnUse" width="300" height="300"><image href="img/w${i}.webp?v=1" width="300" height="300" preserveAspectRatio="xMidYMid slice"/></pattern>`:"").join("")}
+  return`<svg viewBox="0 0 300 300" class="wheel" id="wheel" aria-hidden="true"><defs><radialGradient id="wgl" cx="150" cy="150" r="140" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#000" stop-opacity=".25"/><stop offset=".35" stop-color="#000" stop-opacity="0"/><stop offset=".78" stop-color="#fff" stop-opacity="0"/><stop offset=".93" stop-color="#fff" stop-opacity=".22"/><stop offset=".985" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity=".1"/></radialGradient><linearGradient id="wsh" x1="0" y1="0" x2="1" y2="1"><stop offset=".25" stop-color="#fff" stop-opacity="0"/><stop offset=".45" stop-color="#fff" stop-opacity=".28"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/></linearGradient><linearGradient id="jg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3b0"/><stop offset=".5" stop-color="#ffd23f"/><stop offset="1" stop-color="#b8860b"/></linearGradient></defs>
+    ${WTEX.map((on,i)=>!on?"":WFIT.includes(i)?`<pattern id="wt${i}" patternContentUnits="objectBoundingBox" width="1" height="1"><image href="img/w${i}.webp?v=1" width="1" height="1" preserveAspectRatio="none"/></pattern>`:`<pattern id="wt${i}" patternUnits="userSpaceOnUse" width="300" height="300"><image href="img/w${i}.webp?v=1" width="300" height="300" preserveAspectRatio="xMidYMid slice"/></pattern>`).join("")}
     ${WHEEL.map((v,i)=>{const [a0,a1]=WA[i],w=a1-a0,mid=(a0+a1)/2,dark=WTEX[i]?WTEX[i]==="d":lum(WCOL[i])>.55,col=dark?"#0a110f":"#fff",big=w>=38;
-    return`<g class="wseg" data-i="${i}"><path d="M150 150L${pt(a0)}A${R} ${R} 0 ${w>180?1:0} 1 ${pt(a1)}Z" fill="${WTEX[i]?`url(#wt${i})`:WCOL[i]}" stroke="#0a110f" stroke-width="3"/>
+    return`<g class="wseg" data-i="${i}"><path d="M150 150L${pt(a0)}A${R} ${R} 0 ${w>180?1:0} 1 ${pt(a1)}Z" fill="${WTEX[i]?`url(#wt${i})`:WCOL[i]}" stroke="#0a110f" stroke-width="3"/><path d="M150 150L${pt(a0)}A${R} ${R} 0 ${w>180?1:0} 1 ${pt(a1)}Z" fill="url(#wgl)"/><path d="M150 150L${pt(a0)}A${R} ${R} 0 ${w>180?1:0} 1 ${pt(a1)}Z" fill="url(#wsh)"/>
     <g transform="rotate(${mid} 150 150)">${big?`<text x="150" y="50" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-weight="800" font-size="30" fill="${col}">${v}</text>
     <text x="150" y="68" text-anchor="middle" font-family="Barlow,sans-serif" font-weight="700" font-size="11" fill="${col}" opacity=".75">JETONS</text>
     <text x="150" y="86" text-anchor="middle" font-family="Barlow,sans-serif" font-weight="800" font-size="12" fill="${col}">${WP[i]} %</text>`
@@ -2685,7 +2685,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.64";
+const VERSION="2.66";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
