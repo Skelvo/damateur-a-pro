@@ -952,3 +952,10 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 .bn-b19{background:linear-gradient(90deg,#050906e6,#05090680 40%,#05090618 78%),url(bn/b19.webp?v=1) center 45%/cover!important}.bn-b19::before,.bn-b19::after{display:none!important}.bn-b19 .hfx,.bn-b19 .hho{display:none}
 .bn-b22{background:linear-gradient(90deg,#050906e6,#05090680 40%,#05090618 78%),url(bn/b22.webp?v=1) center 45%/cover!important}.bn-b22::before,.bn-b22::after{display:none!important}.bn-b22 .hfx,.bn-b22 .hho{display:none}
 .bn-b20,.mcard.bn-b20{background:linear-gradient(90deg,#050906e6,#05090680 40%,#05090610 78%),url(bn/b20.webp?v=1) 70% 40%/cover!important}.bn-b20::before,.bn-b20::after,.mcard.bn-b20::before,.mcard.bn-b20::after{display:none!important}.bn-b20 .hfx,.bn-b20 .hho{display:none}
+
+/* haut du profil (sans bannière) : la même matière que la carte de rang */
+.mcard.mt-bronze:not(.bnr){background:linear-gradient(90deg,#0000008c,#0000 75%),url(card-bronze.webp?v=3) center 35%/cover!important}.mcard.mt-bronze:not(.bnr) .hfx{opacity:.35}
+.mcard.mt-argent:not(.bnr){background:linear-gradient(90deg,#0000009e,#0000 75%),url(card-argent.webp?v=1) center 35%/cover!important}.mcard.mt-argent:not(.bnr) .hfx{opacity:.35}
+.mcard.mt-or:not(.bnr){background:linear-gradient(90deg,#00000094,#0000 75%),url(card-or.webp?v=3) center 35%/cover!important}.mcard.mt-or:not(.bnr) .hfx{opacity:.35}
+.mcard.mt-elite:not(.bnr){background:linear-gradient(90deg,#0000004d,#0000 75%),url(card-elite.webp?v=1) center 35%/cover!important}.mcard.mt-elite:not(.bnr) .hfx{opacity:.35}
+.mcard.mt-legende:not(.bnr){background:linear-gradient(90deg,#0000004d,#0000 75%),url(card-legende.webp?v=1) center 35%/cover!important}.mcard.mt-legende:not(.bnr) .hfx{opacity:.35}
