@@ -1121,6 +1121,8 @@ function cardStats(bets,xp){const D=bets.filter(b=>["won","lost","cashed"].inclu
 const CARD_T=[[90,"LÉGENDE",["#2a0d5c","#7a3cff","#ffd23f"],"#ffe680"],[80,"ÉLITE",["#0b1d3a","#123a6b","#d4a017"],"#ffd23f"],[70,"OR",["#7a5a00","#e0b02a","#fff1a8"],"#2a1d00"],
   [60,"ARGENT",["#5f6b74","#c9d3dc","#f4f7f9"],"#1f262b"],[0,"BRONZE",["#5a3417","#b0753c","#e8b27a"],"#2a1608"]];
 // palettes « métal » par rang : fond (4 teintes), encre, liseré (3 teintes), holographique
+// textures dessinées par rang (images), posées sur la forme de la carte
+const CARD_TEX={"BRONZE":"card-bronze.webp?v=3","ARGENT":"card-argent.webp?v=1","OR":"card-or.webp?v=3","ÉLITE":"card-elite.webp?v=1","LÉGENDE":"card-legende.webp?v=1"};
 const CARD_P={"BRONZE":{bg:["#4a2710","#a8682f","#e6a868","#7a4520"],ink:"#2a1406",trim:["#ffd9b0","#8a4f24","#f3c79a"],holo:0},
   "ARGENT":{bg:["#59626b","#c3ccd5","#f5f8fb","#8a949e"],ink:"#1a2026",trim:["#ffffff","#7d8892","#e6ebf0"],holo:0},
   "OR":{bg:["#7a5300","#e0ab1c","#fff0a6","#b8860b"],ink:"#2a1c00",trim:["#fff7cf","#9c7000","#ffe27a"],holo:0},
@@ -1141,14 +1143,25 @@ async function playerCard(p,o){o=o||{};const C=cardStats(p.bets||[],p.xp),T=CARD
   // fond métal
   c.save();shape();c.clip();
   let g=c.createLinearGradient(0,0,W*.4,H);P.bg.forEach((x,i)=>g.addColorStop(i/3,x));c.fillStyle=g;c.fillRect(0,0,W,H);
+  // texture dessinée du rang (si disponible) à la place des facettes et rayures
+  const TX=!BC&&CARD_TEX[T[1]]?await loadImg(CARD_TEX[T[1]]).catch(()=>null):null;
+  if(TX){const s=Math.max(W/TX.width,H/TX.height);c.drawImage(TX,(W-TX.width*s)/2,(H-TX.height*s)/2,TX.width*s,TX.height*s);
+    // le bas de la texture est éclairci pour que le texte foncé reste lisible
+    // texture gardée telle quelle ; le texte reçoit un halo (clair sous une encre foncée, sombre sous une encre claire) pour rester lisible partout
+    const ft=c.fillText.bind(c),light=parseInt(P.ink.slice(1,3),16)>128;
+    c.fillText=(t,x,y,...r)=>{const fs=parseFloat((c.font.match(/(\d+(?:\.\d+)?)px/)||[])[1]||20),col=c.fillStyle,d=Math.max(1.2,fs*.045);c.save();
+      c.shadowColor="rgba(0,0,0,.6)";c.shadowBlur=Math.max(2,fs*.08);c.shadowOffsetY=d*1.6;c.fillStyle=light?"rgba(20,10,0,.9)":"rgba(0,0,0,.55)";ft(t,x,y+d*.6,...r);c.restore();
+      c.save();c.fillStyle=light?"rgba(255,255,255,.18)":"rgba(255,250,235,.55)";ft(t,x,y-d*.7,...r);c.restore();
+      c.save();let g=col;if(typeof col==="string"){g=c.createLinearGradient(0,y-fs*.85,0,y+fs*.1);const lt=light;
+        g.addColorStop(0,lt?"#fff8d8":"#5a4a38");g.addColorStop(.45,col);g.addColorStop(1,lt?"#b98a1c":"#120a02")}c.fillStyle=g;ft(t,x,y,...r);c.restore()}}
   if(P.glow)for(const[x,y,col]of[[W*.2,160,P.glow[0]],[W*.85,H*.7,P.glow[1]]]){const r=c.createRadialGradient(x,y,10,x,y,460);r.addColorStop(0,col);r.addColorStop(1,"transparent");c.fillStyle=r;c.fillRect(0,0,W,H)}
   // facettes de cristal
-  for(let i=0;i<9;i++){c.beginPath();const x=rnd()*W,y=rnd()*H*.9;c.moveTo(x,y);c.lineTo(x+(rnd()-.5)*520,y+(rnd()-.2)*420);c.lineTo(x+(rnd()-.5)*520,y+(rnd()-.2)*420);c.closePath();c.fillStyle=rnd()<.5?"rgba(255,255,255,.07)":"rgba(0,0,0,.07)";c.fill()}
+  if(!TX)for(let i=0;i<9;i++){c.beginPath();const x=rnd()*W,y=rnd()*H*.9;c.moveTo(x,y);c.lineTo(x+(rnd()-.5)*520,y+(rnd()-.2)*420);c.lineTo(x+(rnd()-.5)*520,y+(rnd()-.2)*420);c.closePath();c.fillStyle=rnd()<.5?"rgba(255,255,255,.07)":"rgba(0,0,0,.07)";c.fill()}
   // fines rayures
-  c.globalAlpha=.06;c.strokeStyle="#fff";c.lineWidth=2;for(let x=-H;x<W;x+=16){c.beginPath();c.moveTo(x,0);c.lineTo(x+H*.55,H);c.stroke()}c.globalAlpha=1;
-  if(P.holo){c.globalCompositeOperation="overlay";g=c.createLinearGradient(0,0,W,H);["#ff5e7e","#ffd23f","#5cffb0","#5fa8ff","#c77dff","#ff5e7e"].forEach((x,i,a)=>g.addColorStop(i/(a.length-1),x));c.globalAlpha=P.holo>1?.42:.28;c.fillStyle=g;c.fillRect(0,0,W,H);c.globalAlpha=1;c.globalCompositeOperation="source-over";}
+  c.globalAlpha=TX?0:.06;c.strokeStyle="#fff";c.lineWidth=2;for(let x=-H;x<W;x+=16){c.beginPath();c.moveTo(x,0);c.lineTo(x+H*.55,H);c.stroke()}c.globalAlpha=1;
+  if(P.holo&&!TX){c.globalCompositeOperation="overlay";g=c.createLinearGradient(0,0,W,H);["#ff5e7e","#ffd23f","#5cffb0","#5fa8ff","#c77dff","#ff5e7e"].forEach((x,i,a)=>g.addColorStop(i/(a.length-1),x));c.globalAlpha=P.holo>1?.42:.28;c.fillStyle=g;c.fillRect(0,0,W,H);c.globalAlpha=1;c.globalCompositeOperation="source-over";}
   // lumière derrière le joueur
-  let r=c.createRadialGradient(470,250,20,470,250,330);r.addColorStop(0,"rgba(255,255,255,.38)");r.addColorStop(1,"rgba(255,255,255,0)");c.fillStyle=r;c.fillRect(0,0,W,H);
+  let r=c.createRadialGradient(470,250,20,470,250,330);r.addColorStop(0,`rgba(255,255,255,${TX?0:.38})`);r.addColorStop(1,"rgba(255,255,255,0)");c.fillStyle=r;c.fillRect(0,0,W,H);
   // dessin de la bannière en filigrane
   if(BC){const art=await bnArt(BNK);if(art){c.globalAlpha=.16;const aw=W*.86,ah=aw*art.height/art.width;c.drawImage(art,W/2-aw/2,775-ah/2,aw,ah);c.globalAlpha=1}}
   // photo détourée, fondue vers le bas
@@ -1213,6 +1226,18 @@ async function openRef(){U.open="ref";const head=`<div class="grab"><h3>Parraine
 async function refShare(){const j=U.ref;if(!j)return;const url=APP_URL+"?parrain="+j.code,text=`Viens jouer avec moi sur Tribune 🏆 Paris sportifs gratuits entre amis (jetons fictifs). Avec mon lien tu reçois +${j.gets} jetons de bienvenue (mon code de parrainage : ${j.code}) :`;
   try{if(navigator.share){await navigator.share({title:"Tribune",text,url});return}}catch(e){if(e&&e.name==="AbortError")return}
   try{await navigator.clipboard.writeText(text+" "+url);toast("Lien copié : colle-le à ton ami !","win")}catch(e){prompt("Copie ce lien :",url)}}
+// carte 3D : on l'incline avec le doigt (ou en bougeant le téléphone), un reflet suit la lumière
+function cardTilt(){const w=$("#tilt");if(!w)return;let tx=0,ty=0,cx=0,cy=0,act=false,raf=0,t0=performance.now();
+  const set=()=>{cx+=(tx-cx)*.16;cy+=(ty-cy)*.16;const idle=act?0:1,t=(performance.now()-t0)/1000,ix=cx+idle*Math.sin(t*.8)*5,iy=cy+idle*Math.cos(t*.6)*4;
+    w.style.transform=`rotateX(${iy}deg) rotateY(${ix}deg)`;w.style.setProperty("--gx",(50+ix*2.6)+"%");w.style.setProperty("--gy",(50-iy*2.6)+"%");w.style.setProperty("--go",(.25+Math.min(1,Math.hypot(ix,iy)/18)*.55).toFixed(2));
+    if(document.body.contains(w))raf=requestAnimationFrame(set)};raf=requestAnimationFrame(set);
+  const mv=e=>{const r=w.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;tx=Math.max(-1,Math.min(1,x*2))*20;ty=-Math.max(-1,Math.min(1,y*2))*20};
+  w.addEventListener("pointerdown",e=>{act=true;mv(e);try{w.setPointerCapture(e.pointerId)}catch(x){}
+    if(window.DeviceOrientationEvent&&typeof DeviceOrientationEvent.requestPermission==="function"&&!U.gyroAsk){U.gyroAsk=1;DeviceOrientationEvent.requestPermission().catch(()=>{})}});
+  w.addEventListener("pointermove",e=>{if(act)mv(e)});
+  const end=()=>{act=false;tx=0;ty=0};w.addEventListener("pointerup",end);w.addEventListener("pointercancel",end);
+  let b0=null;const ori=e=>{if(act||e.beta==null||!document.body.contains(w)){if(!document.body.contains(w))removeEventListener("deviceorientation",ori);return}if(b0==null)b0=[e.beta,e.gamma];tx=Math.max(-18,Math.min(18,(e.gamma-b0[1])*.8));ty=Math.max(-18,Math.min(18,-(e.beta-b0[0])*.8))};
+  addEventListener("deviceorientation",ori)}
 async function openCard(p){U.open="card";U.cardP=p;const head=`<div class="grab"><h3>Carte de joueur</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`;
   if(!U.cardSk)layerLater(head+`<div class="skel" style="height:420px"></div>`,200);
   const o=p.me?{d:"rang",bd:S.fav?"fav":"emo",sub:"t",sp:"auto",...(S.cardOpt||{}),...((S.cos&&S.cos.k)||{})}:{d:"rang",bd:"emo",sub:"t",sp:"auto",...((p.cos&&p.cos.k)||{})};
@@ -1222,15 +1247,15 @@ async function openCard(p){U.open="card";U.cardP=p;const head=`<div class="grab"
       <b>Écusson</b><div>${ch("bd","fav","❤️ Mon équipe",!!S.fav)}${ch("bd","emo","😎 Mon emoji",!!(S.cos&&S.cos.e&&S.cos.e!=="e0"))}${ch("bd","none","Aucun")}</div>
       <b>Sous le pseudo</b><div>${ch("sub","t","🏷️ Mon titre")}${ch("sub","lvl","⭐ Mon niveau")}</div>
       <b>Sport</b><div>${ch("sp","auto","✨ Auto")}${ch("sp","foot","⚽ Foot")}${ch("sp","rugby","🏉 Rugby")}${ch("sp","tennis","🎾 Tennis")}${ch("sp","nba","🏀 NBA")}${ch("sp","none","Aucun")}</div></div>`:"";
-    layer(head+`<div class="pcardimg"><img src="${url}" alt="Carte de ${esc(p.name)}"></div>${opts}
+    layer(head+`<div class="pcardimg"><div class="tilt" id="tilt"><img src="${url}" alt="Carte de ${esc(p.name)}"><i class="glare" style="-webkit-mask-image:url(${url});mask-image:url(${url})"></i></div></div><p class="tilthint">👆 Fais glisser ton doigt sur la carte pour la faire bouger</p>${opts}
     <p class="note">Note <b>${C.note}</b> (${T[1].toLowerCase()}) : précision, flair, audace, gestion, régularité et expérience, calculés sur les vrais paris.${p.me?" Ta bannière et ton style se changent dans « Mon style ».":""}</p>
-    <button class="btn gold wide" data-act="cardshare">${ic("share")} Partager la carte</button>`);U.cardSk=0}
+    <button class="btn gold wide" data-act="cardshare">${ic("share")} Partager la carte</button>`);U.cardSk=0;cardTilt()}
   catch(e){U.cardSk=0;if(U.open==="card")layer(head+`<div class="empty">${ic("info")}<b>Impossible de créer la carte</b>Réessaie dans un instant.</div>`)}}
 // change un réglage de la carte sans rouvrir la fenêtre : seuls les boutons et l'image se mettent à jour
 async function refreshCard(k,v){const p=U.cardP;if(!p)return;document.querySelectorAll(`[data-act=cardopt][data-k="${k}"]`).forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===v));
   const im=$(".pcardimg img");if(im)im.classList.add("cdbusy");const n=(U.cardN=(U.cardN||0)+1);
   try{const o={d:"rang",bd:S.fav?"fav":"emo",sub:"t",sp:"auto",...(S.cardOpt||{}),...((S.cos&&S.cos.k)||{})},{blob}=await playerCard(p,o);if(n!==U.cardN||U.open!=="card")return;U.cardBlob=blob;
-    const url=URL.createObjectURL(blob),im2=$(".pcardimg img");if(im2){const old=im2.src;im2.onload=()=>{im2.classList.remove("cdbusy");if(old.startsWith("blob:"))URL.revokeObjectURL(old)};im2.src=url}}
+    const url=URL.createObjectURL(blob),im2=$(".pcardimg img"),gl=$(".pcardimg .glare");if(gl){gl.style.webkitMaskImage=gl.style.maskImage=`url(${url})`}if(im2){const old=im2.src;im2.onload=()=>{im2.classList.remove("cdbusy");if(old.startsWith("blob:"))URL.revokeObjectURL(old)};im2.src=url}}
   catch(e){const im3=$(".pcardimg img");if(im3)im3.classList.remove("cdbusy")}}
 async function shareCard(){const b=U.cardBlob;if(!b)return;const file=new File([b],"carte-tribune.png",{type:"image/png"}),txt=`Ma carte de joueur sur Tribune 🃏 ${APP_URL}`;
   if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],text:txt})}catch(e){}return}
@@ -2631,7 +2656,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.51";
+const VERSION="2.52";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
