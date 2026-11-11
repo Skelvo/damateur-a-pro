@@ -486,6 +486,7 @@ function viewCareer(){const LV=myLv();
     <div class="row"><div><b>Nous écrire</b><small>Question, bug, idée, signalement</small></div><button class="link" data-act="contact">Écrire</button></div>
     <div class="row"><div><b>Instagram</b><small>@tribune.pronos · nouveautés et pronos</small></div><button class="link" data-act="igo">Suivre</button></div>
     <div class="row"><div><b>Facebook</b><small>Page Tribune Pronos · nouveautés et pronos</small></div><button class="link" data-act="fbgo">Suivre</button></div>
+    <div class="row"><div><b>Sons</b><small>${S.mute?"Coupés":"Bruitages de la roue et des gains"}</small></div><button class="sw" role="switch" data-act="mute" aria-checked="${!S.mute}" aria-label="Sons"></button></div>
     <div class="row"><div><b>Apparaître sur nos réseaux</b><small>${S.socialOff?"Non : tu restes anonyme sur @tribune.pronos":"Ton pseudo et tes coups peuvent être mis en avant sur @tribune.pronos"}</small></div><button class="sw" role="switch" data-act="socialpref" aria-checked="${!S.socialOff}" aria-label="Apparaître sur nos réseaux"></button></div>
     ${(S.blocked||[]).length?`<div class="row"><div><b>Joueurs bloqués</b><small>${S.blocked.length} joueur${S.blocked.length>1?"s":""}</small></div><button class="link" data-act="blocked">Gérer</button></div>`:""}
   </details>`;
@@ -637,6 +638,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"rcrenew":renewRcode();break;
     case"rctype":typeRcode();break;
     case"igo":openInsta();break;
+    case"mute":S.mute=!S.mute;saveLocal();render();if(!S.mute)wSound("win");break;
     case"fbgo":openFb();break;
     case"socialpref":S.socialOff=!S.socialOff;save();render();toast(S.socialOff?"OK, tu n’apparaîtras pas sur nos réseaux.":"Tu peux apparaître sur nos réseaux. Merci !");api("social_pref",{ok:!S.socialOff}).catch(()=>{});break;
     case"igpop":closeLayer();openInsta();break;
@@ -2542,7 +2544,7 @@ function viewWheel(){const done=!wheelAvail();
   <button class="btn gold wide" data-act="spin" id="spin" ${done||U.wheelOk===false?"disabled":""}>${done?"Prochain tour dans "+nextReset():U.wheelOk===false?"Un instant…":extraAvail()?"Lancer le tour bonus":"Lancer la roue"}</button>
   <div class="info">${ic("info")}<span><b style="color:var(--ink)">100 % hasard.</b> Plus le gain est gros, plus il est rare : ${WHEEL.map((v,i)=>`<b style="color:var(--ink)">${v}</b> ${WP[i]} %`).join(" · ")}. Les cases rapetissent avec le gain ; la vraie chance est écrite sur chacune. Les jetons de la roue <b style="color:var(--ink)">ne comptent pas</b> dans les classements. La fine case dorée <b style="color:var(--sel)">JACKPOT 1 000 000</b> est tirée à part : <b style="color:var(--ink)">1 chance sur 10 millions</b> à chaque tour. Le tirage utilise le générateur aléatoire sécurisé du téléphone, sans aucun réglage caché.</span></div>`}
 let spinning=false;
-async function spin(){if(spinning||!wheelAvail()||U.wheelOk===false)return;spinning=true;
+async function spin(){if(spinning||!wheelAvail()||U.wheelOk===false)return;spinning=true;wSound("tick");
   const b0=$("#spin");if(b0){b0.disabled=true;b0.textContent="Tirage…"}
   // le tirage est fait par le serveur (impossible à rejouer ou à truquer depuis le téléphone)
   let j;try{j=await api("wheel_spin",{})}catch(e){j={error:"offline"}}
@@ -2560,11 +2562,15 @@ async function spin(){if(spinning||!wheelAvail()||U.wheelOk===false)return;spinn
   w.style.transition="none";w.style.transform="rotate(0deg)";void w.getBoundingClientRect();
   w.style.transition="transform 5.2s cubic-bezier(.12,.75,.12,1)";requestAnimationFrame(()=>{w.style.transform=`rotate(${deg}deg)`});wheelTrack(w,5400);setTimeout(end,5400)}
 // pendant le tour : la case sous la flèche grossit et s'illumine, la flèche « claque » à chaque case
+// bruitages de la roue (fabriqués à la volée, rien à télécharger) ; coupés si le son est désactivé dans les réglages
+let WAC=null;function wSound(k){if(S.mute)return;try{WAC=WAC||new (window.AudioContext||window.webkitAudioContext)();if(WAC.state==="suspended")WAC.resume();const t=WAC.currentTime,o=(f,d,type,g,at=0)=>{const x=WAC.createOscillator(),v=WAC.createGain();x.type=type;x.frequency.setValueAtTime(f,t+at);v.gain.setValueAtTime(0,t+at);v.gain.linearRampToValueAtTime(g,t+at+.005);v.gain.exponentialRampToValueAtTime(.0001,t+at+d);x.connect(v).connect(WAC.destination);x.start(t+at);x.stop(t+at+d+.02)};
+  if(k==="tick"){o(1900,.035,"square",.05);o(950,.05,"triangle",.06)}
+  else{const notes=k==="jack"?[523,659,784,1047,1319,1568]:k==="big"?[523,659,784,1047]:[659,880,1175];notes.forEach((n,j)=>o(n,.35,"triangle",.12,j*.09));if(k!=="win")o(2093,.6,"sine",.06,notes.length*.09)}}catch(e){}}
 function wheelTrack(w,ms){const segs=[...w.querySelectorAll(".wseg")],P=$("#wptr"),t0=performance.now();let last=-2;
   const f=()=>{const m=getComputedStyle(w).transform;let a=0;if(m&&m!=="none"){const v=m.match(/matrix\(([^)]+)\)/);if(v){const[c,s2]=v[1].split(",").map(Number);a=Math.atan2(s2,c)*180/Math.PI}}
     const at=((360-a)%360+360)%360;let i=WA.findIndex(([x,y])=>at>=x&&at<y);
-    if(i!==last){segs.forEach((g,k)=>g.classList.toggle("hot",k===i));last=i;if(P){P.classList.remove("tk");void P.getBoundingClientRect();P.classList.add("tk")}try{navigator.vibrate&&navigator.vibrate(4)}catch(e){}}
-    if(performance.now()-t0<ms+200)requestAnimationFrame(f);else{segs.forEach((g,k)=>g.classList.toggle("win",k===i))}};
+    if(i!==last){segs.forEach((g,k)=>g.classList.toggle("hot",k===i));if(last!==-2)wSound("tick");last=i;if(P){P.classList.remove("tk");void P.getBoundingClientRect();P.classList.add("tk")}try{navigator.vibrate&&navigator.vibrate(4)}catch(e){}}
+    if(performance.now()-t0<ms+200)requestAnimationFrame(f);else{segs.forEach((g,k)=>g.classList.toggle("win",k===i));wSound(i<0?"jack":WHEEL[i]>=200?"big":"win")}};
   requestAnimationFrame(f)}
 
 /* ---------- accueil ---------- */
@@ -2685,7 +2691,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.67";
+const VERSION="2.68";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -2718,7 +2724,12 @@ if(!S.name){hideSplash();U.open="welcome";layer(viewWelcome(false));setTimeout(w
 loadFeeds();boot();
 setTimeout(()=>{if(S.dk&&Object.values(S.dk).some(x=>!x.settled))checkDarkAll()},5000);
 goFrom(location.href);
-var afterBoot=function(){pushRefresh();if(S.introSeen===INTRO_V&&S.tosV===TOS_V){setTimeout(pariPending,600);setTimeout(pendingTicket,900);setTimeout(()=>matchPending(),1200)}if(S.name&&S.starter==="pending"&&S.introSeen===INTRO_V&&!U.coach)grantStarter(false);if(S.name&&S.tosV!==TOS_V)openTos();else if(S.name&&S.introSeen!==INTRO_V)openIntro();if(S.name){claimPrizes();claimBattles();claimGifts();ensureRcode()}if(S.name)Promise.resolve().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels();autoWheel()};
+function preloadArt(){const L=["roue-anneau.webp?v=1","roue-centre.webp?v=1",...WTEX.map((x,i)=>x?`img/w${i}.webp?v=1`:"").filter(Boolean)];
+  try{const T=CARD_T.find(x=>cardStats(S.bets||[],S.xp).note>=x[0]);if(T&&CARD_TEX[T[1]])L.push(CARD_TEX[T[1]])}catch(e){}
+  if(S.cos&&S.cos.f&&/^f([1-9]|1[0-2])$/.test(S.cos.f))L.push(`fr/${S.cos.f}.webp?v=2`);
+  if(S.cos&&S.cos.b&&BN_TEX[S.cos.b])L.push(`bn/${S.cos.b}.webp?v=1`);
+  L.forEach((u,i)=>setTimeout(()=>{const im=new Image();im.decoding="async";im.src=u},i*60))}
+var afterBoot=function(){setTimeout(preloadArt,1200);pushRefresh();if(S.introSeen===INTRO_V&&S.tosV===TOS_V){setTimeout(pariPending,600);setTimeout(pendingTicket,900);setTimeout(()=>matchPending(),1200)}if(S.name&&S.starter==="pending"&&S.introSeen===INTRO_V&&!U.coach)grantStarter(false);if(S.name&&S.tosV!==TOS_V)openTos();else if(S.name&&S.introSeen!==INTRO_V)openIntro();if(S.name){claimPrizes();claimBattles();claimGifts();ensureRcode()}if(S.name)Promise.resolve().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels();autoWheel()};
 setInterval(()=>{if(!document.hidden&&S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},12e4);
 // matchs en direct qui te concernent (regardé, parié, équipe de cœur) : leur compétition est rafraîchie toutes les 20 s pour les animations
 setInterval(()=>{if(document.hidden)return;const hot=new Set([...REG.values()].filter(m=>m.src==="espn"&&m.state==="in"&&(m.sp==="foot"||m.sp==="rugby")&&fxMine(m)).map(m=>m.sp+"|"+m.lv));
