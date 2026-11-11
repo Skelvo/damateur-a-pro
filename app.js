@@ -485,6 +485,7 @@ function viewCareer(){const LV=myLv();
     <div class="row"><div><b>Règles et confidentialité</b><small>Le jeu, tes données, la modération</small></div><button class="link" data-act="legal">Lire</button></div>
     <div class="row"><div><b>Nous écrire</b><small>Question, bug, idée, signalement</small></div><button class="link" data-act="contact">Écrire</button></div>
     <div class="row"><div><b>Instagram</b><small>@tribune.pronos · nouveautés et pronos</small></div><button class="link" data-act="igo">Suivre</button></div>
+    <div class="row"><div><b>Apparaître sur nos réseaux</b><small>${S.socialOff?"Non : tu restes anonyme sur @tribune.pronos":"Ton pseudo et tes coups peuvent être mis en avant sur @tribune.pronos"}</small></div><button class="sw" role="switch" data-act="socialpref" aria-checked="${!S.socialOff}" aria-label="Apparaître sur nos réseaux"></button></div>
     ${(S.blocked||[]).length?`<div class="row"><div><b>Joueurs bloqués</b><small>${S.blocked.length} joueur${S.blocked.length>1?"s":""}</small></div><button class="link" data-act="blocked">Gérer</button></div>`:""}
   </details>`;
   return h+foot()}
@@ -635,6 +636,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"rcrenew":renewRcode();break;
     case"rctype":typeRcode();break;
     case"igo":openInsta();break;
+    case"socialpref":S.socialOff=!S.socialOff;save();render();toast(S.socialOff?"OK, tu n’apparaîtras pas sur nos réseaux.":"Tu peux apparaître sur nos réseaux. Merci !");api("social_pref",{ok:!S.socialOff}).catch(()=>{});break;
     case"igpop":closeLayer();openInsta();break;
     case"ignever":S.igNever=1;saveLocal();closeLayer();break;
     case"cflash":{document.querySelectorAll(".leg.conf").forEach(x=>{x.classList.remove("flash");void x.offsetWidth;x.classList.add("flash")});const f=document.querySelector(".leg.conf");if(f)f.scrollIntoView({block:"center",behavior:"smooth"});break}
@@ -861,8 +863,8 @@ let askedName=false;
 function askNewName(bad){if(GATE||askedName||U.open==="welcome"||U.open==="tos")return;askedName=true;U.open="welcome";layer(viewWelcome(true,bad?`Le pseudo « ${esc(S.name)} » n’est pas accepté (mot interdit ou signalé par plusieurs joueurs). Choisis-en un autre.`:`Le pseudo « ${esc(S.name)} » est déjà pris par un autre joueur. Choisis-en un autre pour apparaître dans les classements.`))}
 let syncT=0;
 function syncSoon(){if(!S.name)return;clearTimeout(syncT);syncT=setTimeout(async()=>{if(!(await ensureSession()))return;
-  try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,wb:S.bonus,wx:S.extraSpin,tos:S.tosV||"",...myStats(),...betsPayload()});wheelSync(j);applyCancel(j);xpUpdate(j.xp);if(j.name_taken)askNewName();if(j.name_bad)askNewName(true);backupSoon()}catch(e){if(e.code==="no_session"&&await ensureSession())syncSoon()}},2000)}
-async function syncNow(){clearTimeout(syncT);if(!(await ensureSession()))return false;try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,wb:S.bonus,wx:S.extraSpin,tos:S.tosV||"",...myStats(),...betsPayload()});wheelSync(j);applyCancel(j);xpUpdate(j.xp);if(j.name_bad)askNewName(true);return true}catch(e){return false}}
+  try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,wb:S.bonus,wx:S.extraSpin,tos:S.tosV||"",so:!S.socialOff,...myStats(),...betsPayload()});wheelSync(j);applyCancel(j);xpUpdate(j.xp);if(j.name_taken)askNewName();if(j.name_bad)askNewName(true);backupSoon()}catch(e){if(e.code==="no_session"&&await ensureSession())syncSoon()}},2000)}
+async function syncNow(){clearTimeout(syncT);if(!(await ensureSession()))return false;try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,wb:S.bonus,wx:S.extraSpin,tos:S.tosV||"",so:!S.socialOff,...myStats(),...betsPayload()});wheelSync(j);applyCancel(j);xpUpdate(j.xp);if(j.name_bad)askNewName(true);return true}catch(e){return false}}
 const pickKey=s=>s.mk+(s.line!=null?s.line:"");
 function sendPicks(sel){const picks=sel.filter(s=>!PMK[s.mk]).map(s=>({mid:s.mid,mk:pickKey(s),k:s.k}));if(!picks.length)return;ensureSession().then(ok=>ok&&api("picks",{picks}).catch(()=>{}));
   for(const p of picks){const c=CROWD[p.mid];if(c&&c.data){const m=((c.data[p.mk]??={}));m[p.k]=(m[p.k]||0)+1}}}
@@ -1526,9 +1528,9 @@ function openHelp(focus){U.open="help";layer(`<div class="grab"><h3>Comment ça 
   if(focus)setTimeout(()=>{const e=$("#hq-"+focus);if(e)e.scrollIntoView({block:"center"})},80)}
 
 /* ---------- règles du jeu, confidentialité, modération, suppression du compte ---------- */
-const TOS_V="2026-11b";
+const TOS_V="2026-11c";
 function legalHTML(){return`<div class="legal">
-<p class="lgl-up">Version du 10 novembre 2026</p>
+<p class="lgl-up">Version du 11 novembre 2026</p>
 <h4>1. Le jeu</h4>
 <p>Tribune est un jeu <b>100 % gratuit</b> de pronostics sportifs, créé et géré par un particulier pour jouer entre amis, sans but commercial et sans publicité.</p>
 <p>Les <b>jetons sont fictifs</b> : ils n’ont aucune valeur, ne s’achètent pas, ne se vendent pas, ne s’échangent pas et ne se convertissent jamais en argent, en cadeau ou en avantage réel. Les récompenses (roue, défis, classements, combats de guildes…) sont uniquement des jetons fictifs. Tribune n’est donc pas un jeu d’argent : on ne mise jamais d’argent et on ne gagne rien de réel.</p>
@@ -1544,10 +1546,11 @@ function legalHTML(){return`<div class="legal">
 <p>Pas d’e-mail ni de mot de passe : ton compte est lié à ton téléphone et à ton <b>code de compte</b>. Garde-le pour toi : quiconque l’a peut récupérer ton compte. Tu peux supprimer ton compte à tout moment dans Carrière › Supprimer mon compte.</p>
 <h4>6. Données personnelles</h4>
 <p><b>Responsable</b> : l’organisateur de Tribune (un particulier), joignable à <a href="mailto:contact.tribuneps@gmail.com" style="color:var(--acc)">contact.tribuneps@gmail.com</a>.</p>
-<p><b>Ce qui est enregistré</b> : ton pseudo, ta photo de profil si tu en mets une, ton style et les réglages de ta carte de joueur, tes jetons, tes paris et tes statistiques, tes guildes (et leur logo si un chef ou un adjoint en met un), tes messages de chat, tes pronostics et duels, ton équipe de cœur, ta date d’acceptation de ces règles, et, si tu les actives, l’adresse technique de tes notifications. Pour limiter les abus, une empreinte de ton adresse IP est utilisée, brouillée et changée chaque jour : elle ne permet pas de te retrouver.</p>
+<p><b>Ce qui est enregistré</b> : ton pseudo, ta photo de profil si tu en mets une, ton style et les réglages de ta carte de joueur, tes jetons, tes paris et tes statistiques, tes guildes (et leur logo si un chef ou un adjoint en met un), tes messages de chat, tes pronostics et duels, ton équipe de cœur, ton choix d’apparaître ou non sur nos réseaux, ta date d’acceptation de ces règles, et, si tu les actives, l’adresse technique de tes notifications. Pour limiter les abus, une empreinte de ton adresse IP est utilisée, brouillée et changée chaque jour : elle ne permet pas de te retrouver.</p>
 <p><b>Ce qui n’est pas enregistré</b> : ni nom réel, ni e-mail (sauf si tu nous écris toi-même par e-mail), ni téléphone, ni position, ni contacts. Aucun traceur publicitaire, aucune revente, aucun partage commercial. Ton téléphone garde une copie de ta partie (stockage local), nécessaire au jeu ; il n’y a pas de cookie publicitaire.</p>
 <p><b>Pourquoi</b> : faire fonctionner le jeu (base légale : l’exécution du service que tu utilises) et le protéger des abus (intérêt légitime).</p>
-<p><b>Qui les voit</b> : les joueurs voient ton pseudo, ta photo et tes résultats dans les classements ; les membres de tes guildes voient aussi tes paris, ton profil et tes messages. Les données sont hébergées par des prestataires techniques : Vercel (site et serveur) et Neon (base de données), qui peuvent se trouver hors de l’Union européenne avec les garanties prévues par le RGPD. Les notifications passent par le service de ton téléphone (Apple, Google ou Mozilla). Les messages envoyés avec « Nous écrire » (avec ton pseudo) sont transmis par Resend (service d’envoi d’e-mails) vers la boîte de contact des organisateurs, hébergée par Google (Gmail).</p>
+<p><b>Qui les voit</b> : les joueurs voient ton pseudo, ta photo et tes résultats dans les classements ; les membres de tes guildes voient aussi tes paris, ton profil et tes messages. Les données sont hébergées par des prestataires techniques : Vercel (site et serveur) et Neon (base de données), qui peuvent se trouver hors de l’Union européenne avec les garanties prévues par le RGPD. Les notifications passent par le service de ton téléphone (Apple, Google ou Mozilla). Les publications sur nos réseaux sont hébergées par Meta (Instagram, Facebook). Les messages envoyés avec « Nous écrire » (avec ton pseudo) sont transmis par Resend (service d’envoi d’e-mails) vers la boîte de contact des organisateurs, hébergée par Google (Gmail).</p>
+<p><b>Réseaux sociaux de Tribune</b> : pour faire vivre le jeu, Tribune peut montrer sur ses comptes Instagram et Facebook (@tribune.pronos) ton <b>pseudo</b>, ta <b>carte de joueur</b> (photo de profil comprise) et tes <b>résultats dans le jeu</b> : classements, meilleurs coups ou tickets de la semaine, guilde. Jamais ton code de compte, tes messages de chat ou une information qui permettrait de savoir qui tu es en vrai. Tu peux refuser à tout moment dans Carrière › Réglages › « Apparaître sur nos réseaux » : tu n’apparais plus, ou seulement comme « un joueur ». Pour faire retirer une publication déjà en ligne, écris-nous (base légale : intérêt légitime à faire connaître le jeu).</p>
 <p><b>Combien de temps</b> : tant que ton compte existe. Quand tu le supprimes, tout est effacé tout de suite (paris, messages, photo, guildes dont tu étais le seul membre…) ; seuls les signalements et les messages envoyés aux organisateurs (formulaire ou e-mail) sont gardés au plus un an, puis supprimés.</p>
 <p><b>Tes droits</b> : accès, rectification (change ton pseudo), effacement (supprime ton compte), opposition et limitation. Pour toute demande : Carrière › Nous écrire, ou par e-mail à <a href="mailto:contact.tribuneps@gmail.com" style="color:var(--acc)">contact.tribuneps@gmail.com</a>. Tu peux aussi saisir la CNIL (cnil.fr).</p>
 <h4>7. Jeu responsable</h4>
@@ -1562,7 +1565,7 @@ function legalHTML(){return`<div class="legal">
 <p><b>Données sportives</b> : scores et statistiques issus d’un flux public (ESPN) ; Tribune n’est lié à aucune compétition, équipe ou ligue.</p></div>`}
 function openLegal(){U.open="legal";layer(`<div class="grab"><h3>Règles et confidentialité</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>`+legalHTML())}
 // joueurs déjà inscrits : on fait accepter les règles une fois (et à chaque nouvelle version)
-function openTos(){if(U.open&&U.open!=="tos"){setTimeout(()=>{if(S.name&&S.tosV!==TOS_V)openTos()},5000);return}U.open="tos";layer(`<div class="tosh"><h3>Avant de continuer</h3><p class="note" style="text-align:left">${S.tosV?"Les règles ont été mises à jour (10 novembre) : adresse de contact, mentions légales, images envoyées, jeu responsable et données. Prends une minute pour les relire, puis valide pour continuer.":"Tribune s’ouvre à plus de monde : voici les règles du jeu et ce qu’on fait (et ne fait pas) de tes données. Prends une minute pour les lire."}</p></div>`+legalHTML()+
+function openTos(){if(U.open&&U.open!=="tos"){setTimeout(()=>{if(S.name&&S.tosV!==TOS_V)openTos()},5000);return}U.open="tos";layer(`<div class="tosh"><h3>Avant de continuer</h3><p class="note" style="text-align:left">${S.tosV?"Les règles ont été mises à jour (11 novembre) : Tribune peut désormais montrer ton pseudo, ta carte et tes résultats sur ses comptes Instagram et Facebook (tu peux refuser dans Réglages). Prends une minute pour les relire, puis valide pour continuer.":"Tribune s’ouvre à plus de monde : voici les règles du jeu et ce qu’on fait (et ne fait pas) de tes données. Prends une minute pour les lire."}</p></div>`+legalHTML()+
   `<label class="agechk"><input type="checkbox" id="tos-ok"><span>J’ai <b>18 ans ou plus</b> et j’accepte les règles du jeu et la politique de confidentialité.</span></label>
   <button class="btn gold wide" data-act="tosok">Continuer</button><p class="note"><button class="link" data-act="tosno">Je n’ai pas 18 ans</button></p>`)}
 function tosOk(){if(!$("#tos-ok")||!$("#tos-ok").checked){toast("Coche la case pour continuer.","bad");return}S.tosV=TOS_V;save();closeLayer();syncSoon();if(S.introSeen!==INTRO_V)setTimeout(openIntro,400)}
@@ -2603,7 +2606,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.43";
+const VERSION="2.44";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

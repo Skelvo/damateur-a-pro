@@ -846,6 +846,7 @@ const ACTIONS = {
       const json = JSON.stringify({ list: b.bets.slice(0, 40), best: b.best && typeof b.best === "object" ? b.best : null });
       if (json.length <= 150000) await s.query(`update players set bets = $2::jsonb where id = $1`, [p.id, json]);
     }
+    if (typeof b.so === "boolean") await s.query(`update players set social_ok = $2 where id = $1 and social_ok is distinct from $2`, [p.id, b.so]);
     if (typeof b.tos === "string" && b.tos) await s.query(`update players set tos = $2, tos_at = now() where id = $1 and tos is distinct from $2`, [p.id, cleanName(b.tos, 12)]);
     const name = cleanName(b.name, 18);
     if (name && name !== p.name && await badName(s, name)) return { ok: true, name_bad: true, name: p.name, wheel: wr && wr.wheel, av: wr ? wr.avatar_v || 0 : null };
@@ -1235,6 +1236,12 @@ const ACTIONS = {
     return await guideState(s, p.id);
   },
   // le joueur a ouvert le compte Instagram (mission « Suivre Tribune sur Instagram »)
+  // apparaître (pseudo, carte, résultats) dans les publications Instagram / Facebook de Tribune
+  async social_pref(s, b) {
+    const p = await me(s, b.token);
+    await s.query(`update players set social_ok = $2 where id = $1`, [p.id, b.ok !== false]);
+    return { ok: true, social_ok: b.ok !== false };
+  },
   async insta_click(s, b) {
     const p = await me(s, b.token);
     await credit(s, p.id, 0, "insta", "click");
@@ -1568,7 +1575,7 @@ const ACTIONS = {
   async admin_players(s, b) {
     admin(b);
     const rows = await s.query(
-      `select p.id, p.name, p.bal::float8 as bal, p.won, p.lost, p.created_at, p.seen_at,
+      `select p.id, p.name, p.bal::float8 as bal, p.won, p.lost, p.created_at, p.seen_at, p.social_ok,
          (select count(*)::int from league_members m where m.player = p.id) as leagues,
          (select count(*)::int from am_matches a where a.created_by = p.id) as matches
        from players p where lower(p.name) like lower($1) order by p.id`, ["%" + String(b.q || "") + "%"]);
