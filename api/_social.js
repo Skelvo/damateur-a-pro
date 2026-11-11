@@ -95,7 +95,7 @@ async function check(s) {
   const c = await creds(s), out = {};
   try { const a = await call(G(c.ig), { access_token: c.tok, fields: "username,media_count" }, "GET"); out.instagram = "@" + a.username + " (" + a.media_count + " publications)"; } catch (e) { out.instagram = "erreur : " + e.message; }
   try { const q = await call(G(`${c.ig}/content_publishing_limit`), { access_token: c.tok, fields: "quota_usage,config" }, "GET"); out.publication_instagram = "OK (quota : " + JSON.stringify((q.data || [])[0] || {}) + ")"; } catch (e) { out.publication_instagram = "erreur : " + e.message; }
-  try { const p = await call(G(c.page), { access_token: c.tok, fields: "name,tasks" }, "GET"); out.page = p.name + " · droits : " + (p.tasks || []).join(", "); } catch (e) { out.page = "erreur : " + e.message; }
+  try { const p = await call(G(c.page), { access_token: c.tok, fields: "name,followers_count" }, "GET"); out.page = p.name.trim() + " (lisible)"; } catch (e) { out.page = "erreur : " + e.message; }
   return out;
 }
 
