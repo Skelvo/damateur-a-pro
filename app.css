@@ -914,8 +914,8 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 .cfbox b{display:block;color:#ffc24d;font-size:15px;margin-bottom:3px}.cfbox span{display:block}.cfbox small{display:block;margin-top:6px;color:var(--mute);font-size:12.5px}
 
 /* cadre « Laurier d'or » : réservé aux gagnants des concours Tribune (offert, aucune valeur) */
-.fr-f18{overflow:visible!important;box-shadow:0 0 0 2px var(--bg),0 0 0 4px #ffd23f,0 0 16px #ffd23f88;animation:frlaur 3s ease-in-out infinite}.fr-f18,.fr-f18 img{border-radius:50%!important}
-.mcard .fr-f18{margin:0 16px 0 18px}
-.fr-f18::after{content:"";position:absolute;inset:-40%;z-index:2;pointer-events:none;background:url("laurier.webp?v=1") center/100% 100% no-repeat}
-@keyframes frlaur{0%,100%{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #ffd23f,0 0 12px #ffd23f66}50%{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #fff0a0,0 0 22px #ffd23fcc}}
+.fr-f18{overflow:visible!important;box-shadow:0 0 0 2px #ffd23f,0 0 14px #ffd23f88;animation:frlaur 3s ease-in-out infinite}.fr-f18,.fr-f18 img{border-radius:50%!important}
+.mcard .fr-f18{margin:0 12px 0 14px}
+.fr-f18::after{content:"";position:absolute;left:-23.2%;top:-11.5%;right:-24.3%;bottom:-36%;z-index:2;pointer-events:none;background:url("laurier.webp?v=1") center/100% 100% no-repeat}
+@keyframes frlaur{0%,100%{box-shadow:0 0 0 2px #ffd23f,0 0 10px #ffd23f66}50%{box-shadow:0 0 0 2px #fff0a0,0 0 20px #ffd23fcc}}
 @media (prefers-reduced-motion:reduce){.fr-f18{animation:none}}
