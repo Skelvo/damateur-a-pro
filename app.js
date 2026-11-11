@@ -1122,6 +1122,8 @@ const CARD_T=[[90,"LÉGENDE",["#2a0d5c","#7a3cff","#ffd23f"],"#ffe680"],[80,"ÉL
   [60,"ARGENT",["#5f6b74","#c9d3dc","#f4f7f9"],"#1f262b"],[0,"BRONZE",["#5a3417","#b0753c","#e8b27a"],"#2a1608"]];
 // palettes « métal » par rang : fond (4 teintes), encre, liseré (3 teintes), holographique
 // textures dessinées par rang (images), posées sur la forme de la carte
+// encre adaptée quand la texture dessinée est sombre
+const CARD_INK={"BRONZE":"#ffe8cf","OR":"#fff3d0"};
 const CARD_TEX={"BRONZE":"card-bronze.webp?v=3","ARGENT":"card-argent.webp?v=1","OR":"card-or.webp?v=3","ÉLITE":"card-elite.webp?v=1","LÉGENDE":"card-legende.webp?v=1"};
 const CARD_P={"BRONZE":{bg:["#4a2710","#a8682f","#e6a868","#7a4520"],ink:"#2a1406",trim:["#ffd9b0","#8a4f24","#f3c79a"],holo:0},
   "ARGENT":{bg:["#59626b","#c3ccd5","#f5f8fb","#8a949e"],ink:"#1a2026",trim:["#ffffff","#7d8892","#e6ebf0"],holo:0},
@@ -1129,7 +1131,7 @@ const CARD_P={"BRONZE":{bg:["#4a2710","#a8682f","#e6a868","#7a4520"],ink:"#2a140
   "ÉLITE":{bg:["#03070f","#0f2b55","#0a1c38","#020509"],ink:"#ffd23f",trim:["#fff1a8","#a87b00","#ffd23f"],holo:1},
   "LÉGENDE":{bg:["#14042e","#5b1fb0","#2a0a5c","#0b0219"],ink:"#ffe9a0",trim:["#fff6c8","#c7952a","#ffd23f"],holo:2}};
 async function playerCard(p,o){o=o||{};const C=cardStats(p.bets||[],p.xp),T=CARD_T.find(x=>C.note>=x[0]),BNK=o.d==="bn"&&p.cos&&p.cos.b&&p.cos.b!=="b0"?p.cos.b:"",BC=BNK&&BN_COL[BNK];
-  const P=BC?{bg:[BC[0],BC[1],BC[0],BC[1]],ink:"#fff8ec",trim:["#ffffff","#9a9a9a","#f0f0f0"],holo:1,glow:[BC[2],BC[3]]}:CARD_P[T[1]];
+  const P=BC?{bg:[BC[0],BC[1],BC[0],BC[1]],ink:"#fff8ec",trim:["#ffffff","#9a9a9a","#f0f0f0"],holo:1,glow:[BC[2],BC[3]]}:(CARD_TEX[T[1]]&&CARD_INK[T[1]]?{...CARD_P[T[1]],ink:CARD_INK[T[1]]}:CARD_P[T[1]]);
   const W=720,H=1000,K=o.scale||1,cv=document.createElement("canvas");cv.width=W*K;cv.height=H*K;const c=cv.getContext("2d"),ink=P.ink;c.scale(K,K);
   try{await Promise.all([document.fonts.load('800 80px "Barlow Condensed"'),document.fonts.load('700 30px Barlow'),document.fonts.load('600 30px Barlow')])}catch(e){}
   let sd=0;for(const ch of String(p.name||"x"))sd=(sd*31+ch.charCodeAt(0))>>>0;const rnd=()=>(sd=(sd*1664525+1013904223)>>>0)/4294967296;
@@ -1168,10 +1170,12 @@ async function playerCard(p,o){o=o||{};const C=cardStats(p.bets||[],p.xp),T=CARD
   let img=null;try{const src=p.me&&S.avatar?S.avatar:p.av?avUrl(p.id,p.av):"";if(src)img=await loadImg(src)}catch(e){}
   {const px=262,py=66,pw=390,ph=440,o2=document.createElement("canvas");o2.width=pw;o2.height=ph;const oc=o2.getContext("2d");
     if(img){const s=Math.max(pw/img.width,ph/img.height),iw=img.width*s,ih=img.height*s;oc.drawImage(img,(pw-iw)/2,(ph-ih)/2.6,iw,ih)}
-    else{oc.fillStyle=ink;oc.globalAlpha=.9;oc.textAlign="center";oc.font='800 300px "Barlow Condensed"';oc.fillText((p.name||"?")[0].toUpperCase(),pw/2,ph*.78)}
+    else if(!TX){oc.fillStyle=ink;oc.globalAlpha=.9;oc.textAlign="center";oc.font='800 300px "Barlow Condensed"';oc.fillText((p.name||"?")[0].toUpperCase(),pw/2,ph*.78)}
     oc.globalCompositeOperation="destination-in";const fg=oc.createLinearGradient(0,0,0,ph);fg.addColorStop(0,"rgba(0,0,0,0)");fg.addColorStop(.07,"rgba(0,0,0,1)");fg.addColorStop(.68,"rgba(0,0,0,1)");fg.addColorStop(1,"rgba(0,0,0,0)");oc.fillStyle=fg;oc.fillRect(0,0,pw,ph);
     const sg=oc.createLinearGradient(0,0,pw,0);sg.addColorStop(0,"rgba(0,0,0,0)");sg.addColorStop(.14,"rgba(0,0,0,1)");sg.addColorStop(.9,"rgba(0,0,0,1)");sg.addColorStop(1,"rgba(0,0,0,0)");oc.fillStyle=sg;oc.fillRect(0,0,pw,ph);
-    c.drawImage(o2,px,py)}
+    c.drawImage(o2,px,py);
+    // initiale en relief (sans photo, sur une carte en métal)
+    if(!img&&TX){c.save();c.fillStyle=ink;c.textAlign="center";c.font='800 300px "Barlow Condensed"';c.fillText((p.name||"?")[0].toUpperCase(),px+pw/2,py+ph*.78);c.restore()}}
   // bandeau du nom
   g=c.createLinearGradient(0,500,0,640);g.addColorStop(0,"rgba(0,0,0,0)");g.addColorStop(.5,ink===P.ink&&!["#ffd23f","#ffe9a0","#fff8ec"].includes(ink)?"rgba(255,255,255,.18)":"rgba(0,0,0,.28)");g.addColorStop(1,"rgba(0,0,0,0)");c.fillStyle=g;c.fillRect(0,500,W,140);
   // reflet du haut + vignette
@@ -2656,7 +2660,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.52";
+const VERSION="2.53";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
