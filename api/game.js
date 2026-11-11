@@ -1435,7 +1435,9 @@ const ACTIONS = {
   async admin_social_video(s, b) {
     admin(b);
     const c = await SOCIAL.creds(s);
-    return await SOCIAL.call(SOCIAL.G(String(b.id || "").replace(/[^0-9]/g, "")), { access_token: c.tok, fields: "status,permalink_url,published" }, "GET");
+    const id = b.id === "page" ? c.page : String(b.id || "").replace(/[^0-9]/g, "");
+    const fields = b.id === "page" ? "name,username,link,is_published,is_webhooks_subscribed,followers_count,fan_count,category,verification_status" : "status,permalink_url,published";
+    return await SOCIAL.call(SOCIAL.G(id), { access_token: c.tok, fields }, "GET");
   },
   async admin_social_list(s, b) {
     admin(b);
