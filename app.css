@@ -1015,3 +1015,5 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 .wseg.hot{transform:scale(1.07);filter:brightness(1.3) drop-shadow(0 0 6px #fff8)}
 .wseg.win{transform:scale(1.07);filter:brightness(1.25) drop-shadow(0 0 8px #ffd23f);animation:wwin 1s ease-in-out 3}
 @keyframes wwin{50%{filter:brightness(1.6) drop-shadow(0 0 14px #ffd23f)}}
+
+.wheel text{paint-order:stroke;stroke:#0005;stroke-width:1.2px}
