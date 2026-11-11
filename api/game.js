@@ -1294,7 +1294,8 @@ const ACTIONS = {
   async gifts_claim(s, b) {
     const p = await me(s, b.token);
     try { await refCheck(s, p.id); } catch (e) { console.error(e); }
-    const r = await s.query(`update gifts set claimed = true where player = $1 and not claimed returning kind, ref, amount, label`, [p.id]);
+    // les corrections négatives ne partent que vers les versions de l'appli qui savent les afficher
+    const r = await s.query(`update gifts set claimed = true where player = $1 and not claimed and (amount >= 0 or $2) returning kind, ref, amount, label`, [p.id, !!b.neg]);
     for (const x of r) await credit(s, p.id, x.amount, x.kind, x.ref);
     return { gifts: r.map((x) => ({ amount: x.amount, label: x.label })) };
   },
@@ -1749,6 +1750,18 @@ const ACTIONS = {
     const r = await s.query(`update players set recovery_hash = $2 where id = $1 returning id`, [Number(b.id), hashToken("rc:" + code)]);
     if (!r[0]) throw fail(404, "unknown");
     return { code: code.slice(0, 4) + "-" + code.slice(4, 8) + "-" + code.slice(8) };
+  },
+  // correction de solde (ex. jetons gagnés par erreur) : passe par les cadeaux, appliquée à la prochaine ouverture de l'appli
+  async admin_adjust(s, b) {
+    admin(b);
+    const amount = Math.round(Number(b.amount));
+    if (!amount || Math.abs(amount) > 100000) throw fail(400, "amount");
+    const p = (await s.query(`select id, name, bal::float8 as bal from players where lower(name) = lower($1)`, [String(b.name || "")]))[0];
+    if (!p) throw fail(404, "unknown");
+    const ref = cleanName(b.ref, 40) || "adj-" + Date.now();
+    const r = await s.query(`insert into gifts (player, kind, ref, amount, label) values ($1, 'adjust', $2, $3, $4) on conflict do nothing returning ref`,
+      [p.id, ref, amount, cleanName(b.label, 60) || "Correction du solde"]);
+    return { ok: !!r[0], id: p.id, name: p.name, bal: p.bal, ref };
   },
   async admin_transfer(s, b) {
     admin(b);

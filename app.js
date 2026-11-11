@@ -73,9 +73,19 @@ async function loadFeed(sp,lv){const paths=SP[sp].feeds[lv],key=sp+lv,now=Date.n
   const qs=sp==="tennis"?[`${ymd(now-4*DAY)}-${ymd(now+8*DAY)}`]:[...new Set([ymd(now-4*DAY).slice(0,6),ymd(now+8*DAY).slice(0,6),ymd(now+22*DAY).slice(0,6)])];
   try{const res=await Promise.all(paths.flatMap(p=>qs.map(q=>getJSON(`${ESPN}${p}/scoreboard?dates=${q}&limit=500`).then(j=>[p,j]))));
     const list=[],seen=new Set();for(const[p,j]of res)for(const ev of j.events||[]){if(seen.has(p+ev.id))continue;seen.add(p+ev.id);if(sp==="tennis")list.push(...parseTennis(ev,lv,p));else{const m=parseTeamEvent(ev,sp,lv,p);if(m&&m.t>now-5*DAY&&m.t<now+22*DAY)list.push(m)}}
-    FEED[key]={ok:true,list,at:now};list.forEach(m=>{const old=REG.get(m.id);try{liveDiff(old,m)}catch(e){}if(old&&old.st&&m.st)for(const k in old.st)if(!(k in m.st))m.st[k]=old.st[k];REG.set(m.id,m)})}
-  catch(e){FEED[key]={ok:false,list:[],at:now}}}
-async function loadSport(sp){const jobs=Object.keys(SP[sp].feeds).filter(l=>!FEED[sp+l]).map(l=>loadFeed(sp,+l));if(!jobs.length)return;await Promise.all(jobs);
+    FEED[key]={ok:true,list,at:now};feedSave();list.forEach(m=>{const old=REG.get(m.id);try{if(!old||!old._c)liveDiff(old,m)}catch(e){}if(old&&old.st&&m.st)for(const k in old.st)if(!(k in m.st))m.st[k]=old.st[k];REG.set(m.id,m)})}
+  catch(e){const o=FEED[key];FEED[key]=o&&o.stale&&o.list.length?{...o,at:now}:{ok:false,list:[],at:now}}}
+// matchs gardés sur le téléphone : à l'ouverture on affiche tout de suite les derniers connus, puis on les met à jour en fond
+const FCACHE="dap-feed-1";
+function feedSave(){if(!("caches"in window))return;clearTimeout(feedSave.t);feedSave.t=setTimeout(async()=>{try{const o={};
+  for(const k in FEED){const f=FEED[k];if(f&&f.ok&&f.list.length)o[k]={at:f.at,list:f.list}}
+  await (await caches.open(FCACHE)).put("./__feeds",new Response(JSON.stringify({v:1,o}),{headers:{"content-type":"application/json"}}))}catch(e){}},2500)}
+async function feedLoadCache(){try{if(!("caches"in window))return false;const r=await (await caches.open(FCACHE)).match("./__feeds");if(!r)return false;
+  const j=await r.json(),now=Date.now();let n=0;
+  for(const k in j.o||{}){const f=j.o[k],cur=FEED[k];if(!f||!Array.isArray(f.list)||now-f.at>36*36e5||(cur&&(cur.ok!==null||cur.list.length)))continue;
+    const list=f.list.filter(m=>m&&m.id&&m.t>now-5*DAY);list.forEach(m=>{m._c=1;if(!REG.has(m.id))REG.set(m.id,m)});FEED[k]={ok:true,list,at:f.at,stale:true};if(list.length)n++}
+  return n>0}catch(e){return false}}
+async function loadSport(sp){const jobs=Object.keys(SP[sp].feeds).filter(l=>!FEED[sp+l]||FEED[sp+l].stale).map(l=>loadFeed(sp,+l));if(!jobs.length)return;await Promise.all(jobs);
   if(sp===U.sp){if(!U.open||U.open==="slip")render()}else renderSoon();settle()}
 const idle=ms=>new Promise(ok=>"requestIdleCallback"in window?requestIdleCallback(()=>ok(),{timeout:ms}):setTimeout(ok,ms));
 let FIRST=null;async function loadFeeds(){await (FIRST=loadSport(U.sp));await idle(1500);for(const sp in SP)if(sp!==U.sp){await loadSport(sp);await idle(800)}for(const sp in SP)if(sp!==U.sp)await warmSport(sp)}
@@ -1284,8 +1294,9 @@ const WE=()=>weekendOf(today());
 function weBanner(){const w=WE();if(!w.on&&!w.soon)return"";
   return`<div class="webox${w.on?"":" soon"}"><span class="wee">${w.e}</span><div><small>${w.on?(w.last?"Week-end spécial · dernier jour !":"Week-end spécial · jusqu’à dimanche minuit"):"Demain, week-end spécial"}</small><b>${w.n}</b><p>${w.d}</p></div></div>`}
 let gfAt=0;
-async function claimGifts(){if(!S.tok||Date.now()-gfAt<6e4)return;gfAt=Date.now();try{const j=await api("gifts_claim",{});if(!j.gifts||!j.gifts.length)return;
-  const t=j.gifts.reduce((a,x)=>a+x.amount,0);S.bal+=t;S.peak=Math.max(S.peak,S.bal);save();render();bump();confetti();
+async function claimGifts(){if(!S.tok||Date.now()-gfAt<6e4)return;gfAt=Date.now();try{const j=await api("gifts_claim",{neg:1});if(!j.gifts||!j.gifts.length)return;
+  const t=j.gifts.reduce((a,x)=>a+x.amount,0);S.bal=Math.max(0,S.bal+t);S.peak=Math.max(S.peak,S.bal);save();render();
+  if(t<0){toast(`🔧 ${esc(j.gifts[0].label||"Correction du solde")} : −${tok(-t)} jetons`);return}bump();confetti();
   toast(j.gifts.length===1?`🧾 ${esc(j.gifts[0].label)} : +${tok(t)} jetons !`:`🧾 Bonus du week-end : +${tok(t)} jetons !`,"win")}catch(e){}}
 
 /* ---------- ticket à partager (image) ---------- */
@@ -2708,7 +2719,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.70";
+const VERSION="2.71";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -2722,10 +2733,11 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkUpdat
 function hideSplash(){const s=$("#splash");if(!s)return;s.classList.add("gone");setTimeout(()=>s.remove(),350)}
 async function boot(){if(GATE||!S.name){hideSplash();setTimeout(afterBoot,300);return}
   const msg=["Chargement des matchs…","Les cotes du jour…","Ta guilde…","Presque prêt…"];let k=0;const mt=setInterval(()=>{const e=$("#spt");if(e)e.textContent=msg[Math.min(++k,msg.length-1)]},1300);
-  const jobs=[(async()=>{for(let i=0;i<20&&!FIRST;i++)await new Promise(r=>setTimeout(r,20));await FIRST})(),loadEvents(),
+  const hit=await FEEDHIT;
+  const jobs=[(async()=>{if(hit)return;for(let i=0;i<20&&!FIRST;i++)await new Promise(r=>setTimeout(r,20));await FIRST})(),loadEvents(),
     (async()=>{if(!(await ensureSession()))return;await Promise.allSettled([loadGuide(true),(async()=>{await loadBoards();const L0=U.lg.data&&U.lg.data.leagues[0];
       if(L0)await Promise.allSettled([loadProno(),loadLm(U.lg.code||L0.code)])})()])})()];
-  await Promise.race([Promise.allSettled(jobs),new Promise(r=>setTimeout(r,6500))]);
+  await Promise.race([Promise.allSettled(jobs),new Promise(r=>setTimeout(r,hit?1200:6500))]);
   clearInterval(mt);U.lg.loading=false;render();hideSplash();setTimeout(afterBoot,400)}
 refFromLink();pariFromLink();matchFromLink();setTimeout(igPopup,0);getTmp("dap.pari",30);getTmp("dap.ref",24*60);
 // coincé dans le navigateur d'Instagram, Facebook… : on tente tout de suite de rouvrir le lien dans Safari ou Chrome (une seule fois)
@@ -2735,7 +2747,9 @@ function inAppArrow(){if(!GATE||!INAPP_NAME||document.querySelector(".iaarrow"))
 (function escapeInApp(){const inIOS=IOS&&!IOS_SAFARI&&INAPP_NAME,inAnd=ANDROID&&INAPP;if(!GATE||!(inIOS||inAnd))return;
   try{if(sessionStorage.getItem("dap.esc"))return;sessionStorage.setItem("dap.esc","1")}catch(e){}
   const u=shareableUrl();setTimeout(()=>{location.href=inIOS?"x-safari-"+u:"intent://"+u.replace(/^https?:\/\//,"")+"#Intent;scheme=https;package=com.android.chrome;end"},350)})();
+const FEEDHIT=GATE?Promise.resolve(false):feedLoadCache();
 if(GATE){hideSplash();renderGate();inAppArrow()}else{
+FEEDHIT.then(h=>{if(h&&(!U.open||U.open==="slip"))render()});
 render();
 if(!S.name){hideSplash();U.open="welcome";layer(viewWelcome(false));setTimeout(wrefFill,300)}else{syncSoon();joinFromLink()}
 loadFeeds();boot();

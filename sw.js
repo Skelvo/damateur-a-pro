@@ -1,7 +1,7 @@
 // Service worker : réseau d'abord (toujours revérifié auprès du serveur), cache en secours hors ligne.
-const C="dap-v117",IMG="dap-img-1",SHELL=["./","index.html","manifest.webmanifest","icon-192.png","icon-180.png","icon-512.png","logo-tribune.png","engine.js","app.js","app.css"];
+const C="dap-v118",IMG="dap-img-1",SHELL=["./","index.html","manifest.webmanifest","icon-192.png","icon-180.png","icon-512.png","logo-tribune.png","engine.js?v=2.71","app.js?v=2.71","app.css?v=2.71"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()))});
-self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C&&x!==IMG).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
+self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C&&x!==IMG&&!x.startsWith("dap-feed")).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
 // logos des équipes, drapeaux et photos de profil : gardés sur le téléphone (plus rapide, moins de données), 500 au plus
 let imgPuts=0;
 async function trimImg(c){const k=await c.keys();for(let i=0;i<k.length-500;i++)await c.delete(k[i])}
@@ -13,6 +13,8 @@ self.addEventListener("fetch",e=>{const u=new URL(e.request.url);if(e.request.me
   // images du site (bannières, cadres, logos de guilde…) : versionnées (?v=), donc chargées une seule fois puis servies depuis le téléphone
   if(e.request.destination==="image"&&u.origin===location.origin&&/\.(png|webp|jpe?g|svg|gif)$/i.test(u.pathname)){e.respondWith(imgFetch(e,u));return}
   if(u.origin!==location.origin||u.pathname.includes("/api/")||u.pathname.startsWith("/media/"))return;   // vidéos : lues en direct (requêtes partielles)
+  // code de l'appli versionné (?v=) : jamais modifié sous le même nom, donc servi directement depuis le téléphone
+  if(/\.(js|css)$/.test(u.pathname)&&u.searchParams.has("v")){e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(r=>{if(r.ok){const cp=r.clone();caches.open(C).then(c=>c.put(e.request,cp))}return r})));return}
   const fresh=e.request.mode==="navigate"||/\.(html|txt|webmanifest)$/.test(u.pathname)||u.pathname.endsWith("/");
   const net=fetch(e.request,fresh?{cache:"no-cache"}:undefined).then(r=>{if(r.ok&&!u.pathname.endsWith("version.txt")){const cp=r.clone();caches.open(C).then(c=>c.put(e.request,cp))}return r});
   // ouverture de l'appli : si le réseau traîne plus de 2,5 s, on affiche la version déjà sur le téléphone

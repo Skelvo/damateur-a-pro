@@ -129,7 +129,8 @@ const mt=(d,m)=>typeof d.t==="function"?d.t(m):d.t;
 // En direct : on part du score actuel et on simule seulement la fin du match
 // (chaque but / essai / pénalité d'un match complet simulé est conservé avec la probabilité « temps restant »).
 const liveOK=m=>m.src==="espn"&&m.sp!=="tennis"&&m.sp!=="basket"&&m.state==="in"&&m.st&&m.min!=null&&m.min<(m.sp==="foot"?85:72);
-const canBet=m=>status(m)==="pre"||liveOK(m);
+// match encore « en cache » (pas revérifié depuis l'ouverture) : seulement s'il n'a pas commencé
+const canBet=m=>(!m._c||(m.state!=="in"&&m.state!=="post"&&m.t>Date.now()+6e4))&&(status(m)==="pre"||liveOK(m));
 function liveSims(m){const key=m.id+"|L|"+m.min+"|"+JSON.stringify(m.st.g||m.st.pts);let S_=MCC.get(key);if(S_)return S_;
   const r=rng(hash(key)),full=m.sp==="foot"?90:80,f=cl((full-m.min)/full,0,1),now=m.st.g||m.st.pts,k=m.sp==="foot"?"g":"pts";S_={[k]:[new Int16Array(N),new Int16Array(N)]};
   for(let i=0;i<N;i++){const o=SIM[m.sp](r,m);for(const p of [0,1]){const add=m.sp==="foot"?binom(r,o.g[p],f):5*binom(r,o.tr[p],f)+2*binom(r,o.cv[p],f)+3*binom(r,o.pm[p]+o.dr[p],f);S_[k][p][i]=now[p]+add}}
