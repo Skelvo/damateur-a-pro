@@ -530,7 +530,7 @@ async function pronoCredit(s, pid, week) {
 }
 
 // ---- Guildes : emblème, devise, accès (ouverte / sur demande / privée), rôles (chef, adjoints, membres) ----
-const cardOpts = (k) => { const o = {}, ok = { d: ["rang", "bn"], bd: ["fav", "emo", "none"], sub: ["t", "lvl"], sp: ["auto", "foot", "rugby", "tennis", "nba", "none"] };
+const cardOpts = (k) => { const o = {}, ok = { d: ["rang", "bn"], bd: ["fav", "emo", "none"], sub: ["t", "lvl"], sp: ["auto", "foot", "rugby", "tennis", "nba", "none"], rk: ["auto", "BRONZE", "ARGENT", "OR", "ÉLITE", "LÉGENDE"] };
   for (const [x, vals] of Object.entries(ok)) if (k && vals.includes(k[x])) o[x] = k[x]; return o; };
 // copie des messages « Nous écrire » dans la boîte de contact (si une clé Resend est configurée sur Vercel)
 const CONTACT_MAIL = "contact.tribuneps@gmail.com";
