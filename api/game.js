@@ -848,9 +848,11 @@ const ACTIONS = {
     await s.query(`insert into bal_hist (player, day, bal) values ($1, to_char(now() at time zone 'Europe/Paris', 'YYYYMMDD'), $2::numeric)
        on conflict (player, day) do update set bal = excluded.bal`, [p.id, num(b.bal, 0, MAX_BAL)]);
     const day = (v) => (/^\d{8}$/.test(String(v || "")) ? String(v) : "");
-    const wr = (await s.query(`update players set wheel = jsonb_build_object(
-        'b', greatest(coalesce(wheel->>'b', ''), $2::text), 'x', greatest(coalesce(wheel->>'x', ''), $3::text))
-      where id = $1 returning wheel, avatar_v`, [p.id, day(b.wb), day(b.wx)]))[0];
+    // roue remise à zéro par les organisateurs (clé r) : tant que l'appli ne l'a pas prise en compte, on ignore ses anciennes dates
+    const wr = (await s.query(`update players set wheel = case when coalesce(wheel->>'r', '') <> '' and coalesce(wheel->>'r', '') <> $4::text
+          then wheel
+          else jsonb_build_object('b', greatest(coalesce(wheel->>'b', ''), $2::text), 'x', greatest(coalesce(wheel->>'x', ''), $3::text), 'r', coalesce(wheel->>'r', '')) end
+      where id = $1 returning wheel, avatar_v`, [p.id, day(b.wb), day(b.wx), String(b.wr || "").slice(0, 20)]))[0];
     if (b.profits && typeof b.profits === "object") {
       const P = Object.entries(b.profits).filter(([k]) => /^\d{4}-\d{2}(-\d{2})?$/.test(k) && k >= "2026-10").slice(0, 40);
       for (const [per, g] of P) await s.query(`insert into profits (player, per, gain) values ($1, $2, $3::numeric) on conflict (player, per) do update set gain = excluded.gain`,

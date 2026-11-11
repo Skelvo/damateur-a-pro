@@ -872,8 +872,8 @@ let askedName=false;
 function askNewName(bad){if(GATE||askedName||U.open==="welcome"||U.open==="tos")return;askedName=true;U.open="welcome";layer(viewWelcome(true,bad?`Le pseudo « ${esc(S.name)} » n’est pas accepté (mot interdit ou signalé par plusieurs joueurs). Choisis-en un autre.`:`Le pseudo « ${esc(S.name)} » est déjà pris par un autre joueur. Choisis-en un autre pour apparaître dans les classements.`))}
 let syncT=0;
 function syncSoon(){if(!S.name)return;clearTimeout(syncT);syncT=setTimeout(async()=>{if(!(await ensureSession()))return;
-  try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,wb:S.bonus,wx:S.extraSpin,tos:S.tosV||"",so:!S.socialOff,...myStats(),...betsPayload()});wheelSync(j);applyCancel(j);xpUpdate(j.xp);if(j.name_taken)askNewName();if(j.name_bad)askNewName(true);backupSoon()}catch(e){if(e.code==="no_session"&&await ensureSession())syncSoon()}},2000)}
-async function syncNow(){clearTimeout(syncT);if(!(await ensureSession()))return false;try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,wb:S.bonus,wx:S.extraSpin,tos:S.tosV||"",so:!S.socialOff,...myStats(),...betsPayload()});wheelSync(j);applyCancel(j);xpUpdate(j.xp);if(j.name_bad)askNewName(true);return true}catch(e){return false}}
+  try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,wb:S.bonus,wx:S.extraSpin,wr:S.wheelR||"",tos:S.tosV||"",so:!S.socialOff,...myStats(),...betsPayload()});wheelSync(j);applyCancel(j);xpUpdate(j.xp);if(j.name_taken)askNewName();if(j.name_bad)askNewName(true);backupSoon()}catch(e){if(e.code==="no_session"&&await ensureSession())syncSoon()}},2000)}
+async function syncNow(){clearTimeout(syncT);if(!(await ensureSession()))return false;try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,wb:S.bonus,wx:S.extraSpin,wr:S.wheelR||"",tos:S.tosV||"",so:!S.socialOff,...myStats(),...betsPayload()});wheelSync(j);applyCancel(j);xpUpdate(j.xp);if(j.name_bad)askNewName(true);return true}catch(e){return false}}
 const pickKey=s=>s.mk+(s.line!=null?s.line:"");
 function sendPicks(sel){const picks=sel.filter(s=>!PMK[s.mk]).map(s=>({mid:s.mid,mk:pickKey(s),k:s.k}));if(!picks.length)return;ensureSession().then(ok=>ok&&api("picks",{picks}).catch(()=>{}));
   for(const p of picks){const c=CROWD[p.mid];if(c&&c.data){const m=((c.data[p.mk]??={}));m[p.k]=(m[p.k]||0)+1}}}
@@ -2708,7 +2708,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.69";
+const VERSION="2.70";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
