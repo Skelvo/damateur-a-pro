@@ -1466,6 +1466,22 @@ const ACTIONS = {
     return { posts, now: Date.now() };
   },
   // depuis le tableau de bord : valider / annuler un brouillon, cocher « c'est fait » une publication à faire soi-même
+  // couverture d'un Reel choisie depuis le tableau de bord (image de la vidéo ou image importée), JPEG
+  async social_cover(s, b) {
+    await boardKey(s, b);
+    const id = String(int(b.id, 0, 1e15)), img = String(b.image || "");
+    if (!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(img) || img.length > 3e6) throw fail(400, "image");
+    const url = `https://damateur-a-pro.vercel.app/api/scover/${id}-${Date.now().toString(36)}.jpg`;
+    const r = await s.query(`update social_posts set cover_img = $2, cover = $3 where id = $1 and kind = 'reel' and status in ('draft', 'approved', 'planned', 'error') returning id`, [id, img, url]);
+    return { ok: !!r[0], cover: r[0] ? url : null };
+  },
+  // couverture changée par Claude (adresse d'une image en ligne)
+  async admin_social_cover(s, b) {
+    admin(b);
+    if (!/^https:\/\/[^\s]+\.(png|jpe?g)$/i.test(String(b.cover || ""))) throw fail(400, "cover");
+    const r = await s.query(`update social_posts set cover = $2, cover_img = null where id = $1 and status <> 'published' returning id`, [String(int(b.id, 0, 1e15)), String(b.cover)]);
+    return { ok: !!r[0] };
+  },
   async social_act(s, b) {
     await boardKey(s, b);
     const id = String(int(b.id, 0, 1e15)), op = String(b.op || "");
@@ -2416,6 +2432,16 @@ export default async function handler(req, res) {
         res.setHeader("Content-Type", "image/jpeg");
         res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
         return res.status(200).end(buf);
+      } catch (e) { return res.status(500).json({ error: "server" }); }
+    }
+    if (q.scover) {
+      try {
+        const s = await db();
+        const r = (await s.query(`select cover_img from social_posts where id = $1`, [String(int(String(q.scover).split("-")[0], 0, 1e15))]))[0];
+        if (!r || !r.cover_img) return res.status(404).json({ error: "none" });
+        res.setHeader("Content-Type", "image/jpeg");
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        return res.status(200).end(Buffer.from(r.cover_img.slice(r.cover_img.indexOf(",") + 1), "base64"));
       } catch (e) { return res.status(500).json({ error: "server" }); }
     }
     if (q.glogo) {

@@ -87,6 +87,14 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .link{color:var(--acc);font:700 13px Barlow;margin-top:18px}
 .upd{position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top) + 8px);max-width:616px;margin:0 auto;display:none;align-items:center;gap:10px;background:var(--sel);color:#1b1400;border-radius:16px;padding:10px 10px 10px 16px;font:700 14px Barlow;box-shadow:0 10px 30px #0008;z-index:9}
 .upd.on{display:flex}.upd span{flex:1}.upd button{background:#1b1400;color:var(--sel);border-radius:10px;padding:8px 12px;font:800 14px "Barlow Condensed";letter-spacing:.04em;text-transform:uppercase}
+.cov{margin-top:10px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;gap:12px;align-items:flex-start}
+.cov img{width:84px;aspect-ratio:9/16;object-fit:cover;border-radius:10px;border:1px solid var(--line2);background:#000;flex:none}
+.cov .ct{flex:1;min-width:0}.cov h4{font:700 12px Barlow;color:var(--mute);text-transform:uppercase;letter-spacing:.05em}
+.cov p{font-size:13px;color:#cfdad4;margin:4px 0 8px}.cov .acts{margin-top:0;flex-wrap:wrap}.cov .btn{font-size:14px;padding:9px 8px}
+.modal{position:fixed;inset:0;background:#000d;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 14px);gap:12px}
+.modal video{max-height:62vh;max-width:100%;border-radius:14px;background:#000;aspect-ratio:9/16}
+.modal input[type=range]{width:100%;max-width:420px;accent-color:#ffd23f}
+.modal .acts{width:100%;max-width:420px}.modal p{color:var(--mute);font-size:13px;text-align:center}
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%);background:var(--card2);border:1px solid var(--line2);border-radius:14px;padding:10px 16px;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
 .toast.on{opacity:1}
 </style>
@@ -98,7 +106,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 <div class="upd" id="updb"><span>Nouvelle version du programme</span><button onclick="location.reload()">Recharger</button></div>
 <script>
 const $=s=>document.querySelector(s);
-const TZ="Europe/Paris",PV="3";
+const TZ="Europe/Paris",PV="4";
 // nouvelle version en ligne ? (vérifié à l'ouverture et toutes les 2 minutes)
 async function checkV(){try{const v=(await (await fetch("version.txt?t="+Date.now(),{cache:"no-store"})).text()).trim();if(v&&v!==PV)$("#updb").classList.add("on")}catch(e){}}
 let KEY="",DATA=null,TAB="next",OPEN=new Set(),PIN="";
@@ -169,12 +177,13 @@ function card(p){const o=OPEN.has(p.id),nets=(p.networks||[]);
     :p.status==="approved"?`<div class="acts"><button class="btn gh" data-op="unapprove" data-id="${p.id}">Remettre en brouillon</button></div>`
     :p.status==="manual"?`<div class="acts"><button class="btn y" data-op="done" data-id="${p.id}">✓ C’est posté</button></div>`
     :p.status==="manual_done"?`<div class="acts"><button class="btn gh" data-op="undone" data-id="${p.id}">Pas encore fait</button></div>`:"";
+  const cov=p.kind!=="reel"?"":`<div class="cov">${p.cover?`<img src="${esc(p.cover)}" alt="">`:`<img alt="">`}<div class="ct"><h4>Couverture</h4><p>${p.cover?"L’image affichée sur ton profil avant qu’on lance la vidéo. Garde l’essentiel au centre.":"Pas encore choisie : Instagram prendra la 1re image de la vidéo."}</p>${["draft","approved","planned","error"].includes(p.status)?`<div class="acts"><button class="btn gh" data-cov="${p.id}" data-mode="frame">Image de la vidéo</button><button class="btn gh" data-cov="${p.id}" data-mode="file">Importer</button></div>`:""}</div></div>`;
   return`<div class="it${o?" open":""}${p.status==="error"?" err":""}" data-it="${p.id}"><button class="row" data-tog="${p.id}">${thumb(p)}
     <div class="mid"><div class="t">${fmt(p.at,{hour:"2-digit",minute:"2-digit"})}<small ${p.status==="published"&&p.published_at?`data-rel="${p.published_at}" data-pub="1"`:`data-rel="${p.at}"`}>${p.status==="published"&&p.published_at?"publié "+rel(p.published_at):rel(p.at)}</small></div>
       <div class="l">${esc(p.label||KIND[p.kind])}</div>
       <div class="tags"><span class="st ${p.status}">${ST[p.status]||p.status}</span><span class="tag">${KIND[p.kind]||p.kind}</span>${nets.includes("instagram")?`<span class="net ig">${IG}</span>`:""}${nets.includes("facebook")?`<span class="net fb">${FB}</span>`:""}</div></div>
     <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg></button>
-    <div class="body">${p.status==="error"&&p.error?`<div class="note e">⚠️ ${esc(p.error)}</div>`:""}${o?media(p):""}${note}${caps}${acts}</div></div>`}
+    <div class="body">${p.status==="error"&&p.error?`<div class="note e">⚠️ ${esc(p.error)}</div>`:""}${o?media(p):""}${note}${cov}${caps}${acts}</div></div>`}
 function render(){if(!DATA)return;const now=Date.now(),t0=new Date(fmt(now,{year:"numeric",month:"2-digit",day:"2-digit"}).split("/").reverse().join("-")+"T00:00:00").getTime()-36e5*3;
   const P=DATA.posts.map(p=>({...p,id:String(p.id),at:+p.at,published_at:p.published_at&&+p.published_at}));
   const done=p=>["published","manual_done"].includes(p.status)||(p.status==="external"&&p.at<now-36e5);
@@ -188,12 +197,25 @@ function render(){if(!DATA)return;const now=Date.now(),t0=new Date(fmt(now,{year
       const n=L.filter(x=>dayKey(x.at)===k).length;h+=`<div class="day${k===today?" today":""}"><span>${lab}</span><span>${n}</span></div>`}h+=card(p)}
   h+=`<div class="foot">Heure de Paris · mis à jour à <span id="upd">${fmt(now,{hour:"2-digit",minute:"2-digit"})}</span><br><button class="link" id="chg">Changer mon code</button> · <button class="link" id="lock">Verrouiller</button></div>`;
   $("#app").innerHTML=h;$("#chg").onclick=()=>pinPad("old");$("#lock").onclick=()=>{setPin("");pinPad("enter")};$("#sub").textContent=c("error")?`⚠️ ${c("error")} erreur${c("error")>1?"s":""} à regarder`:"Instagram et Facebook"}
-document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab],[data-tog],[data-op],[data-copy]");if(!t)return;
+document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab],[data-tog],[data-op],[data-copy],[data-cov]");if(!t)return;
   if(t.dataset.tab){TAB=t.dataset.tab;render();return}
   if(t.dataset.copy){const[id,i]=t.dataset.copy.split(":"),p=DATA.posts.find(x=>String(x.id)===id);try{await navigator.clipboard.writeText(i==="0"?p.caption_ig:p.caption_fb);toast("Texte copié")}catch(x){toast("Copie impossible")}return}
   if(t.dataset.tog){const id=t.dataset.tog;OPEN.has(id)?OPEN.delete(id):OPEN.add(id);render();return}
+  if(t.dataset.cov){const p=DATA.posts.find(x=>String(x.id)===t.dataset.cov);if(t.dataset.mode==="file")pickFile(p);else pickFrame(p);return}
   if(t.dataset.op){const op=t.dataset.op;if(op==="cancel"&&!confirm("Annuler cette publication ?"))return;t.disabled=true;
     try{const j=await api("social_act",{id:t.dataset.id,op});SIG="";toast(j.ok?{approve:"Validé : ça partira tout seul ✓",unapprove:"Remis en brouillon",cancel:"Annulé",done:"Noté, merci !",undone:"Remis à faire"}[op]:"Déjà changé, je recharge");await load()}catch(x){toast("Erreur, réessaie");t.disabled=false}}});
+// ---- couverture des Reels ----
+function toJpeg(src,sw,sh){const c=document.createElement("canvas");c.width=1080;c.height=1920;const x=c.getContext("2d");
+  const r=Math.max(1080/sw,1920/sh),w=sw*r,h=sh*r;x.fillStyle="#000";x.fillRect(0,0,1080,1920);x.drawImage(src,(1080-w)/2,(1920-h)/2,w,h);return c.toDataURL("image/jpeg",.9)}
+async function saveCover(p,data){try{const j=await api("social_cover",{id:p.id,image:data});if(!j.ok)throw 0;toast("Couverture enregistrée ✓");SIG="";load()}catch(e){toast("Impossible d’enregistrer la couverture")}}
+function pickFile(p){const i=document.createElement("input");i.type="file";i.accept="image/*";i.onchange=()=>{const f=i.files[0];if(!f)return;const u=URL.createObjectURL(f),im=new Image();
+  im.onload=()=>{const d=toJpeg(im,im.naturalWidth,im.naturalHeight);URL.revokeObjectURL(u);saveCover(p,d)};im.src=u};i.click()}
+function pickFrame(p){const m=document.createElement("div");m.className="modal";
+  m.innerHTML=`<p>Fais glisser pour choisir l’image de couverture</p><video src="${esc(p.image)}" playsinline muted preload="auto"></video><input type="range" min="0" max="100" step="0.1" value="0"><div class="acts"><button class="btn gh" data-x="no">Annuler</button><button class="btn y" data-x="ok">Utiliser cette image</button></div>`;
+  document.body.appendChild(m);const v=m.querySelector("video"),r=m.querySelector("input");
+  v.addEventListener("loadedmetadata",()=>{r.max=v.duration;v.play().then(()=>v.pause()).catch(()=>{});v.currentTime=Math.min(1,v.duration/10);r.value=v.currentTime});
+  r.oninput=()=>{v.currentTime=+r.value};
+  m.onclick=e=>{const b=e.target.closest("[data-x]");if(!b)return;if(b.dataset.x==="ok"){if(!v.videoWidth){toast("La vidéo charge encore…");return}saveCover(p,toJpeg(v,v.videoWidth,v.videoHeight))}m.remove()}}
 $("#rf").onclick=()=>load(true);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden){checkV();if(KEY)load()}});setInterval(()=>{if(KEY&&!document.hidden)load()},60000);setInterval(checkV,120000);checkV();
 if(KEY)load();else renderKey(false);

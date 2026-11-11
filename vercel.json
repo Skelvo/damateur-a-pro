@@ -34,5 +34,11 @@
       "path": "/api/game?cron=1&slot=recap",
       "schedule": "0 20 * * 0"
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/scover/:file",
+      "destination": "/api/game?scover=:file"
+    }
   ]
 }
