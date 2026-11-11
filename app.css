@@ -961,18 +961,18 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 .mcard.mt-legende:not(.bnr){background:linear-gradient(90deg,#0000004d,#0000 75%),url(card-legende.webp?v=1) center 35%/cover!important}.mcard.mt-legende:not(.bnr) .hfx{opacity:.35}
 
 /* cadres dessinés (images) : le trou du cadre épouse la photo */
-.fr-f1{box-shadow:none!important;animation:none!important;overflow:visible!important}.fr-f1,.fr-f1 img{border-radius:50%!important}.fr-f1::after{content:"";position:absolute;inset:-15.92%;z-index:2;pointer-events:none;background:url(fr/f1.webp?v=1) center/100% 100% no-repeat}
-.fr-f2{box-shadow:none!important;animation:none!important;overflow:visible!important}.fr-f2,.fr-f2 img{border-radius:50%!important}.fr-f2::after{content:"";position:absolute;inset:-16.23%;z-index:2;pointer-events:none;background:url(fr/f2.webp?v=1) center/100% 100% no-repeat}
-.fr-f3{box-shadow:none!important;animation:none!important;overflow:visible!important}.fr-f3,.fr-f3 img{border-radius:50%!important}.fr-f3::after{content:"";position:absolute;inset:-13.61%;z-index:2;pointer-events:none;background:url(fr/f3.webp?v=1) center/100% 100% no-repeat}
-.fr-f4{box-shadow:none!important;animation:none!important;overflow:visible!important}.fr-f4,.fr-f4 img{border-radius:50%!important}.fr-f4::after{content:"";position:absolute;inset:-15.09%;z-index:2;pointer-events:none;background:url(fr/f4.webp?v=1) center/100% 100% no-repeat}
-.fr-f5{box-shadow:none!important;animation:none!important;overflow:visible!important}.fr-f5,.fr-f5 img{border-radius:50%!important}.fr-f5::after{content:"";position:absolute;inset:-22.27%;z-index:2;pointer-events:none;background:url(fr/f5.webp?v=1) center/100% 100% no-repeat}
-.fr-f6{box-shadow:none!important;animation:none!important;overflow:visible!important}.fr-f6,.fr-f6 img{border-radius:50%!important}.fr-f6::after{content:"";position:absolute;inset:-17.1%;z-index:2;pointer-events:none;background:url(fr/f6.webp?v=1) center/100% 100% no-repeat}
-.fr-f7{box-shadow:none!important;animation:none!important;overflow:visible!important}.fr-f7,.fr-f7 img{border-radius:50%!important}.fr-f7::after{content:"";position:absolute;inset:-24.84%;z-index:2;pointer-events:none;background:url(fr/f7.webp?v=1) center/100% 100% no-repeat}
-.fr-f8{box-shadow:none!important;animation:none!important;overflow:visible!important}.fr-f8,.fr-f8 img{border-radius:50%!important}.fr-f8::after{content:"";position:absolute;inset:-19.65%;z-index:2;pointer-events:none;background:url(fr/f8.webp?v=1) center/100% 100% no-repeat}
-.fr-f9{box-shadow:none!important;animation:none!important;overflow:visible!important}.fr-f9,.fr-f9 img{border-radius:50%!important}.fr-f9::after{content:"";position:absolute;inset:-19.38%;z-index:2;pointer-events:none;background:url(fr/f9.webp?v=1) center/100% 100% no-repeat}
-.fr-f10{box-shadow:none!important;animation:none!important;overflow:visible!important}.fr-f10,.fr-f10 img{border-radius:50%!important}.fr-f10::after{content:"";position:absolute;inset:-16.45%;z-index:2;pointer-events:none;background:url(fr/f10.webp?v=1) center/100% 100% no-repeat}
-.fr-f11{box-shadow:none!important;animation:none!important;overflow:visible!important}.fr-f11,.fr-f11 img{border-radius:50%!important}.fr-f11::after{content:"";position:absolute;inset:-19.4%;z-index:2;pointer-events:none;background:url(fr/f11.webp?v=1) center/100% 100% no-repeat}
-.fr-f12{box-shadow:none!important;animation:none!important;overflow:visible!important}.fr-f12,.fr-f12 img{border-radius:50%!important}.fr-f12::after{content:"";position:absolute;inset:-22.49%;z-index:2;pointer-events:none;background:url(fr/f12.webp?v=1) center/100% 100% no-repeat}
+.fr-f1{box-shadow:none!important;animation:none!important;overflow:visible!important}.fr-f1,.fr-f1 img{border-radius:50%!important}.fr-f1::after{content:"";position:absolute;inset:-21.4%;z-index:2;pointer-events:none;background:url(fr/f1.webp?v=2) center/100% 100% no-repeat}
+.fr-f2{box-shadow:none!important;animation:none!important;overflow:visible!important}.fr-f2,.fr-f2 img{border-radius:50%!important}.fr-f2::after{content:"";position:absolute;inset:-21.4%;z-index:2;pointer-events:none;background:url(fr/f2.webp?v=2) center/100% 100% no-repeat}
+.fr-f3{box-shadow:none!important;animation:none!important;overflow:visible!important}.fr-f3,.fr-f3 img{border-radius:50%!important}.fr-f3::after{content:"";position:absolute;inset:-19.66%;z-index:2;pointer-events:none;background:url(fr/f3.webp?v=2) center/100% 100% no-repeat}
+.fr-f4{box-shadow:none!important;animation:none!important;overflow:visible!important}.fr-f4,.fr-f4 img{border-radius:50%!important}.fr-f4::after{content:"";position:absolute;inset:-20.52%;z-index:2;pointer-events:none;background:url(fr/f4.webp?v=2) center/100% 100% no-repeat}
+.fr-f5{box-shadow:none!important;animation:none!important;overflow:visible!important}.fr-f5,.fr-f5 img{border-radius:50%!important}.fr-f5::after{content:"";position:absolute;inset:-25.15%;z-index:2;pointer-events:none;background:url(fr/f5.webp?v=2) center/100% 100% no-repeat}
+.fr-f6{box-shadow:none!important;animation:none!important;overflow:visible!important}.fr-f6,.fr-f6 img{border-radius:50%!important}.fr-f6::after{content:"";position:absolute;inset:-22.91%;z-index:2;pointer-events:none;background:url(fr/f6.webp?v=2) center/100% 100% no-repeat}
+.fr-f7{box-shadow:none!important;animation:none!important;overflow:visible!important}.fr-f7,.fr-f7 img{border-radius:50%!important}.fr-f7::after{content:"";position:absolute;inset:-22.3%;z-index:2;pointer-events:none;background:url(fr/f7.webp?v=2) center/100% 100% no-repeat}
+.fr-f8{box-shadow:none!important;animation:none!important;overflow:visible!important}.fr-f8,.fr-f8 img{border-radius:50%!important}.fr-f8::after{content:"";position:absolute;inset:-23.86%;z-index:2;pointer-events:none;background:url(fr/f8.webp?v=2) center/100% 100% no-repeat}
+.fr-f9{box-shadow:none!important;animation:none!important;overflow:visible!important}.fr-f9,.fr-f9 img{border-radius:50%!important}.fr-f9::after{content:"";position:absolute;inset:-21.7%;z-index:2;pointer-events:none;background:url(fr/f9.webp?v=2) center/100% 100% no-repeat}
+.fr-f10{box-shadow:none!important;animation:none!important;overflow:visible!important}.fr-f10,.fr-f10 img{border-radius:50%!important}.fr-f10::after{content:"";position:absolute;inset:-22.0%;z-index:2;pointer-events:none;background:url(fr/f10.webp?v=2) center/100% 100% no-repeat}
+.fr-f11{box-shadow:none!important;animation:none!important;overflow:visible!important}.fr-f11,.fr-f11 img{border-radius:50%!important}.fr-f11::after{content:"";position:absolute;inset:-22.0%;z-index:2;pointer-events:none;background:url(fr/f11.webp?v=2) center/100% 100% no-repeat}
+.fr-f12{box-shadow:none!important;animation:none!important;overflow:visible!important}.fr-f12,.fr-f12 img{border-radius:50%!important}.fr-f12::after{content:"";position:absolute;inset:-22.91%;z-index:2;pointer-events:none;background:url(fr/f12.webp?v=2) center/100% 100% no-repeat}
 
 /* divisions de guilde */
 .gdis{height:1.35em;width:auto;vertical-align:-.35em}
@@ -989,3 +989,6 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 /* chat : place pour les cadres autour des photos (sinon coupés par le bord de la liste) */
 .chbox{padding:10px 14px 10px 14px}
 .chm{gap:12px}.chm>span{display:inline-block;padding:9px 2px 4px 4px;flex:none}
+
+.gldl .gdi{width:46px;height:46px;max-width:none;object-fit:contain}
+.gldl div{justify-content:flex-start}
