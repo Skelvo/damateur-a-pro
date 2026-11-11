@@ -2518,10 +2518,7 @@ function wheelSvg(){const n=WHEEL.length,R=140,c=150,pt=d=>{const r=(d-90)*Math.
     <text x="150" y="60" text-anchor="middle" font-family="Barlow,sans-serif" font-weight="800" font-size="10.5" fill="${col}" opacity=".9">${WP[i]} %</text>`}</g>`}).join("")}
     <path d="M150 150L${pt(j0)}A${R} ${R} 0 0 1 ${pt(j1)}Z" fill="#0a110f" stroke="#ffd23f" stroke-width="1.5"/>
     <g transform="rotate(${(j0+j1)/2} 150 150)"><text transform="translate(150 50) rotate(-90)" text-anchor="middle" dominant-baseline="central" font-family="Barlow Condensed,sans-serif" font-weight="800" font-size="14" fill="url(#jg)" letter-spacing=".3">1 000 000</text></g>
-    <circle cx="150" cy="150" r="141" fill="none" stroke="#ffd23f" stroke-width="6"/>
-    ${WA.map(([a0])=>{const r=(a0-90)*Math.PI/180;return`<circle cx="${(150+141*Math.cos(r)).toFixed(1)}" cy="${(150+141*Math.sin(r)).toFixed(1)}" r="4.5" fill="#fff"/>`}).join("")}
-    <circle cx="150" cy="9" r="4.5" fill="#fff"/>
-    <circle cx="150" cy="150" r="26" fill="#0a110f" stroke="#ffd23f" stroke-width="5"/></svg>`}
+</svg>`}
 function wheelMini(){return`<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">${WCOL.map((col,i)=>{const a0=(i*45-112.5)*Math.PI/180,a1=a0+Math.PI/4;
   return`<path d="M12 12L${(12+11*Math.cos(a0)).toFixed(2)} ${(12+11*Math.sin(a0)).toFixed(2)}A11 11 0 0 1 ${(12+11*Math.cos(a1)).toFixed(2)} ${(12+11*Math.sin(a1)).toFixed(2)}Z" fill="${col}"/>`}).join("")}<circle cx="12" cy="12" r="11" fill="none" stroke="#2a1d00" stroke-width="1.5"/><circle cx="12" cy="12" r="3" fill="#2a1d00"/></svg>`}
 function nextReset(){const d=new Date();d.setHours(24,0,0,0);const m=Math.round((d-Date.now())/6e4);return(m>=60?Math.floor(m/60)+" h "+String(m%60).padStart(2,"0"):m+" min")}
@@ -2537,7 +2534,7 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden)autoWheel(
 function viewWheel(){const done=!wheelAvail();
   return`<div class="grab"><h3>Roue de la chance</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   ${WE().on&&WE().k==="roue"?`<div class="webox mini"><span class="wee">🎡</span><div><b>Week-end de la roue</b><p>Ton gain sera doublé (×2) !</p></div></div>`:""}
-  <div class="wheelbox"><div class="pointer"></div>${wheelSvg()}</div>
+  <div class="wheelbox"><div class="pointer"></div>${wheelSvg()}<img class="wring" src="roue-anneau.webp?v=1" alt=""><img class="whub" src="roue-centre.webp?v=1" alt=""></div>
   <div id="wres" class="wres">${done&&S.wheel&&S.wheel.d===today()?`Aujourd’hui : <b>+${tok(S.wheel.v)} jetons</b>`:extraAvail()?"🎁 Tour bonus offert à tout le monde aujourd’hui !":"Un tour gratuit par jour"}</div>
   <button class="btn gold wide" data-act="spin" id="spin" ${done||U.wheelOk===false?"disabled":""}>${done?"Prochain tour dans "+nextReset():U.wheelOk===false?"Un instant…":extraAvail()?"Lancer le tour bonus":"Lancer la roue"}</button>
   <div class="info">${ic("info")}<span><b style="color:var(--ink)">100 % hasard.</b> Plus le gain est gros, plus il est rare : ${WHEEL.map((v,i)=>`<b style="color:var(--ink)">${v}</b> ${WP[i]} %`).join(" · ")}. Les cases rapetissent avec le gain ; la vraie chance est écrite sur chacune. Les jetons de la roue <b style="color:var(--ink)">ne comptent pas</b> dans les classements. La fine case dorée <b style="color:var(--sel)">JACKPOT 1 000 000</b> est tirée à part : <b style="color:var(--ink)">1 chance sur 10 millions</b> à chaque tour. Le tirage utilise le générateur aléatoire sécurisé du téléphone, sans aucun réglage caché.</span></div>`}
@@ -2678,7 +2675,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.61";
+const VERSION="2.62";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

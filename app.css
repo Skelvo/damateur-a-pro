@@ -992,3 +992,10 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 
 .gldl .gdi{width:46px;height:46px;max-width:none;object-fit:contain}
 .gldl div{justify-content:flex-start}
+
+/* roue : anneau doré à ampoules et moyeu dessinés (fixes), seules les cases tournent */
+.wheelbox .wring{position:absolute;left:50%;top:50%;width:117%;height:117%;transform:translate(-50%,-50%);pointer-events:none;z-index:2;filter:drop-shadow(0 8px 20px #000a)}
+.wheelbox .whub{position:absolute;left:50%;top:50%;width:22%;height:auto;transform:translate(-50%,-50%);pointer-events:none;z-index:3;filter:drop-shadow(0 4px 10px #000c)}
+.wheelbox .pointer{z-index:4}
+.wheelbox{margin:26px auto 30px}
+.wheelbox .pointer{top:-30px}
