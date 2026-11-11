@@ -1,5 +1,6 @@
 // Seule fonction serveur de Tribune : comptes anonymes, guildes entre amis, classements,
 // et « ce que parient les autres ». Tout passe par POST /api/game {action, ...}.
+import * as SOCIAL from "./_social.js";
 import { db, hashToken, newToken, ipKey, overLimit } from "./_db.js";
 import { timingSafeEqual, randomInt } from "node:crypto";
 import { buildWeek, refreshResults, points, todayMatches, bestOfDay } from "./_prono.js";
@@ -413,6 +414,7 @@ async function tick(s) {
   let settled = 0;
   try { settled = (await settleOpen(s, { budget: 25e3 })).length; } catch (e) { console.error("settle", e); }
   await s.query(`delete from sent_notes where at < now() - interval '30 days'`);
+  try { await SOCIAL.publishDue(s); } catch (e) { console.error("social", e); }
   // match où tu as un pari en cours (foot et rugby réels) : buts, cartons, essais… regroupés en une notification par passage
   try {
     const now = Date.now(), open = await s.query(`select player, legs from bets where status = 'open' and at > now() - interval '3 days'`), seen = {}, M = {};
@@ -1391,6 +1393,35 @@ const ACTIONS = {
         out.push({ id: L.id, slug: L.slug, name: L.name, abbr: L.abbreviation, season: L.season && L.season.year });
     }
     return { count: refs.length, leagues: out };
+  },
+  // ---- Programmateur Instagram + Facebook (organisateurs seulement) ----
+  async admin_social_setup(s, b) {
+    admin(b);
+    const tok = String(b.user_token || process.env.META_USER_TOKEN || "");
+    if (!tok) throw fail(400, "token");
+    try { return { ok: true, ...(await SOCIAL.setup(s, tok)) }; } catch (e) { return { ok: false, error: e.message }; }
+  },
+  async admin_social_add(s, b) {
+    admin(b);
+    const kind = b.kind === "story" ? "story" : "post", nets = (Array.isArray(b.networks) ? b.networks : ["instagram", "facebook"]).filter((x) => x === "instagram" || x === "facebook");
+    const at = new Date(String(b.at || "")); if (isNaN(at)) throw fail(400, "date");
+    if (!/^https:\/\/[^\s]+\.(png|jpe?g)$/i.test(String(b.image || ""))) throw fail(400, "image");
+    const r = await s.query(`insert into social_posts (at, kind, networks, image, caption_ig, caption_fb, label, status) values ($1, $2, $3::jsonb, $4, $5, $6, $7, $8) returning id`,
+      [at.toISOString(), kind, JSON.stringify(nets), String(b.image), b.caption_ig ? String(b.caption_ig).slice(0, 2200) : null, b.caption_fb ? String(b.caption_fb).slice(0, 5000) : null, b.label ? String(b.label).slice(0, 80) : null, b.approve ? "approved" : "draft"]);
+    return { ok: true, id: r[0].id };
+  },
+  async admin_social_list(s, b) {
+    admin(b);
+    return { posts: await s.query(`select id, label, kind, networks, image, status, error, result, to_char(at at time zone 'Europe/Paris', 'DD/MM HH24:MI') as quand, published_at
+      from social_posts where at > now() - interval '14 days' or status <> 'published' order by at`),
+      configured: !!(await SOCIAL.kvGet(s, "meta_page_token")) };
+  },
+  async admin_social_set(s, b) {
+    admin(b);
+    const st = ["draft", "approved", "cancelled"].includes(b.status) ? b.status : null;
+    if (!st) throw fail(400, "status");
+    const r = await s.query(`update social_posts set status = $2, error = null where id = $1 and status <> 'published' returning id, status`, [String(int(b.id, 0, 1e15)), st]);
+    return { ok: !!r[0] };
   },
   async admin_cos_all(s, b) {
     admin(b);

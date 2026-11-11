@@ -1,9 +1,9 @@
-# Réveille le serveur toutes les 10 minutes pour les notifications de paris
+# Réveille le serveur toutes les 5 minutes : notifications de paris et publications Instagram/Facebook programmées
 # (« ton match commence », « pari gagné / perdu »). L'offre gratuite de Vercel ne permet qu'une tâche par jour.
 name: Notifications de paris
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 jobs:
   tick:
