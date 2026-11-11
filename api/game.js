@@ -1414,9 +1414,9 @@ const ACTIONS = {
   },
   async admin_social_add(s, b) {
     admin(b);
-    const kind = ["story", "carousel"].includes(b.kind) ? b.kind : "post", nets = (Array.isArray(b.networks) ? b.networks : ["instagram", "facebook"]).filter((x) => x === "instagram" || x === "facebook");
+    const kind = ["story", "carousel", "reel"].includes(b.kind) ? b.kind : "post", nets = (Array.isArray(b.networks) ? b.networks : ["instagram", "facebook"]).filter((x) => x === "instagram" || x === "facebook");
     const at = new Date(String(b.at || "")); if (isNaN(at)) throw fail(400, "date");
-    const okImg = (u) => /^https:\/\/[^\s]+\.(png|jpe?g)$/i.test(String(u || ""));
+    const okImg = (u) => (kind === "reel" ? /^https:\/\/[^\s]+\.mp4$/i : /^https:\/\/[^\s]+\.(png|jpe?g)$/i).test(String(u || ""));
     const imgs = kind === "carousel" ? (Array.isArray(b.images) ? b.images.map(String) : []) : null;
     if (imgs && (imgs.length < 2 || imgs.length > 10 || !imgs.every(okImg))) throw fail(400, "images");
     const img = imgs ? imgs[0] : String(b.image || "");
@@ -1424,6 +1424,18 @@ const ACTIONS = {
     const r = await s.query(`insert into social_posts (at, kind, networks, image, images, caption_ig, caption_fb, label, status) values ($1, $2, $3::jsonb, $4, $9::jsonb, $5, $6, $7, $8) returning id`,
       [at.toISOString(), kind, JSON.stringify(nets), img, b.caption_ig ? String(b.caption_ig).slice(0, 2200) : null, b.caption_fb ? String(b.caption_fb).slice(0, 5000) : null, b.label ? String(b.label).slice(0, 80) : null, b.approve ? "approved" : "draft", imgs ? JSON.stringify(imgs) : null]);
     return { ok: true, id: r[0].id };
+  },
+  // publier tout de suite ce qui est validé et dû (sans attendre le passage automatique)
+  async admin_social_run(s, b) {
+    admin(b);
+    const n = await SOCIAL.publishDue(s);
+    return { published: n, posts: await s.query(`select id, label, status, error, result from social_posts where published_at > now() - interval '10 minutes' or status in ('error', 'publishing') order by id desc limit 5`) };
+  },
+  // état d'une vidéo Facebook (Reel) après publication
+  async admin_social_video(s, b) {
+    admin(b);
+    const c = await SOCIAL.creds(s);
+    return await SOCIAL.call(SOCIAL.G(String(b.id || "").replace(/[^0-9]/g, "")), { access_token: c.tok, fields: "status,permalink_url,published" }, "GET");
   },
   async admin_social_list(s, b) {
     admin(b);

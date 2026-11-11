@@ -42,8 +42,8 @@ async function creds(s) {
 }
 
 // attend qu'Instagram ait traité un conteneur (image, élément ou carrousel)
-async function igReady(c, id) {
-  for (let i = 0; i < 12; i++) {
+async function igReady(c, id, tries = 12) {
+  for (let i = 0; i < tries; i++) {
     const st = await call(G(id), { access_token: c.tok, fields: "status_code" }, "GET");
     if (st.status_code === "FINISHED") return;
     if (st.status_code === "ERROR") throw new Error("Instagram a refusé l'image");
@@ -53,6 +53,12 @@ async function igReady(c, id) {
 
 async function igPublish(c, p) {
   let box;
+  if (p.kind === "reel") {   // vidéo : traitement plus long côté Instagram
+    box = await call(G(`${c.ig}/media`), { access_token: c.tok, media_type: "REELS", video_url: p.image, caption: p.caption_ig || "", share_to_feed: "true" });
+    await igReady(c, box.id, 40);
+    const pub = await call(G(`${c.ig}/media_publish`), { access_token: c.tok, creation_id: box.id });
+    return pub.id;
+  }
   if (p.kind === "carousel") {
     const kids = [];
     for (const url of p.images) {
@@ -76,6 +82,17 @@ async function fbPublish(c, p) {
     const ph = await call(G(`${c.page}/photos`), { access_token: c.tok, url: p.image, published: "false" });
     const st = await call(G(`${c.page}/photo_stories`), { access_token: c.tok, photo_id: ph.id });
     return st.post_id || st.id || ph.id;
+  }
+  if (p.kind === "reel") {   // Reel Facebook : début → envoi de la vidéo par son adresse → publication
+    const st = await call(G(`${c.page}/video_reels`), { access_token: c.tok, upload_phase: "start" });
+    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 60000);
+    try {
+      const r = await fetch(`https://rupload.facebook.com/video-upload/${GV()}/${st.video_id}`, { method: "POST", signal: ctl.signal, headers: { Authorization: "OAuth " + c.tok, file_url: p.image } });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.success) throw new Error("envoi de la vidéo refusé : " + ((j.debug_info && j.debug_info.message) || (j.error && j.error.message) || r.status));
+    } finally { clearTimeout(t); }
+    await call(G(`${c.page}/video_reels`), { access_token: c.tok, upload_phase: "finish", video_id: st.video_id, video_state: "PUBLISHED", description: p.caption_fb || "" });
+    return st.video_id;
   }
   if (p.kind === "carousel") {   // sur Facebook : une publication avec plusieurs photos
     const params = { access_token: c.tok, message: p.caption_fb || "" };
@@ -125,4 +142,4 @@ async function check(s) {
   return out;
 }
 
-export { setup, publishDue, kvGet, check };
+export { setup, publishDue, kvGet, check, call, G, creds };
