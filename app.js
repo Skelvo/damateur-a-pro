@@ -1450,6 +1450,7 @@ async function ticketImage(b,link){
   c.fillStyle="#6b7a72";c.font='500 26px Barlow';c.fillText("Paris gratuits entre potes · jetons fictifs",W/2,fy+92);
   return new Promise(ok=>cv.toBlob(ok,"image/png"))}
 const APP_URL="https://damateur-a-pro.vercel.app/",IG_URL="https://www.instagram.com/tribune.pronos/",FB_URL="https://www.facebook.com/tribune.pronos";
+const FB_ICON=`<svg class="igic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#fff"/><path d="M13.4 21.9v-7.2h2.4l.4-2.8h-2.8v-1.8c0-.8.2-1.4 1.4-1.4h1.5V6.2c-.3 0-1.1-.1-2.1-.1-2.1 0-3.6 1.3-3.6 3.7v2.1H8.2v2.8h2.4v7.2" fill="#1877f2"/></svg>`;
 const IG_ICON=`<svg class="igic" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.3" cy="6.7" r="1.2" fill="currentColor"/></svg>`;
 async function shareTicket(id){const b=S.bets.find(x=>x.id===id);if(!b)return;toast("Préparation du ticket…");
   try{let link=APP_URL;if(b.sid){try{const j=await api("share_bet",{cid:b.id});if(j.code)link=APP_URL+"?pari="+j.code}catch(e){}}
@@ -2783,7 +2784,8 @@ function renderGate(){const lg=new URLSearchParams(location.search).get("guilde"
     <div id="gref"></div><div id="gmatch"></div>${pc?`<div id="gpari"><div class="skel" style="height:120px"></div></div>`:""}
     ${lg?`<div class="xcode" style="margin-bottom:12px"><small>Invitation à une guilde : une fois dans l’app, va dans Guildes › Rejoindre et entre ce code</small><b>${esc(lg.toUpperCase().slice(0,8))}</b></div>`:""}
     <div id="ginst">${viewInstall(true)}</div>
-    <a class="igban gig" href="${IG_URL}" target="_blank" rel="noopener">${IG_ICON}<span><b>@tribune.pronos</b><small>Suis-nous sur Instagram</small></span><span class="arr">›</span></a></div>`}
+    <a class="igban gig" href="${IG_URL}" target="_blank" rel="noopener">${IG_ICON}<span><b>@tribune.pronos</b><small>Suis-nous sur Instagram</small></span><span class="arr">›</span></a>
+    <a class="igban gig fbban" href="${FB_URL}" target="_blank" rel="noopener">${FB_ICON}<span><b>Tribune Pronos</b><small>Aime notre page Facebook 👍</small></span><span class="arr">›</span></a></div>`}
 // Code de transfert : on envoie tout l'état du jeu (sauf le jeton) au serveur, valable 48 h
 async function transferOut(){const box=$("#xbox");if(box)box.innerHTML=`<div class="skel" style="height:70px"></div>`;
   try{if(!(await ensureSession()))throw{code:"offline"};await syncNow();const st={...S};delete st.tok;delete st.pid;
@@ -2816,7 +2818,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.90";
+const VERSION="2.91";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

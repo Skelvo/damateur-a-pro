@@ -1094,3 +1094,4 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 @keyframes tvpulse{0%,100%{box-shadow:0 0 0 0 #ff3b3f66}50%{box-shadow:0 0 0 6px #ff3b3f00}}
 .vh{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .gate .ghero{margin-top:calc(-116px - var(--safe-t,0px))}
+.igban.fbban{margin-top:8px;background:linear-gradient(120deg,#0b5fd6,#1877f2 55%,#3b9bff);box-shadow:0 8px 24px #1877f233}
