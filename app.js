@@ -140,11 +140,12 @@ function playersBlock(m){if(m.sp!=="foot"||m.src!=="espn"||status(m)!=="pre")ret
     <div class="seg" style="margin-bottom:8px"><button data-act="pside" data-v="0" aria-pressed="${side===0}">${esc(m.h)}</button><button data-act="pside" data-v="1" aria-pressed="${side===1}">${esc(m.a)}</button></div>
     <div class="phead"><span></span><span>Buteur</span><span>Doublé</span><span>Carton</span></div>
     ${list.map(x=>`<div class="prow2"><div><b>${esc(x.name)}</b><small>${{F:"Attaquant",M:"Milieu",D:"Défenseur"}[x.pos]||""}</small></div>
-      ${["psc","p2","pyc"].map(mk=>{const o=x.o[mk],on=!!U.sel.find(s=>s.mid===m.id&&s.mk===mk&&s.k===x.id);
+      ${["psc","p2","pyc"].map(mk=>{const o=x.o[mk],on=!!U.sel.find(s=>s.mid===m.id&&s.mk===mk&&s.k===x.id),tk=slotTaken(m.id,mk,null,x.id);
+        if(tk)return`<button class="odd sm mine" data-act="mybet" data-mid="${esc(m.id)}" data-bid="${esc(tk.b.id)}"><b>🎟️ ${o?fr(o):"—"}</b></button>`;
         return`<button class="odd sm" data-act="ppick" data-mid="${esc(m.id)}" data-mk="${mk}" data-pid="${esc(x.id)}" data-name="${esc(x.name)}" aria-pressed="${on}" ${o?"":"disabled"}><b>${o?fr(o):"—"}</b></button>`}).join("")}</div>`).join("")}
     ${P[side].length>10?`<button class="more" data-act="pmore">${U.pmore?"Moins de joueurs":"Tous les joueurs ("+P[side].length+")"}</button>`:""}
     <p class="note" style="margin:8px 0 0">${m.lineup?"Compositions officielles.":"Effectif de la saison : compositions officielles environ 1 h avant le match."} Si le joueur ne joue pas, le pari est remboursé. Carton : jaune ou rouge.</p></div>`}
-function pickPlayer(mid,mk,pid,name){const m=findMatch(mid);if(!m||status(m)!=="pre")return;const P=playerOdds(m);if(!P)return;
+function pickPlayer(mid,mk,pid,name){const m=findMatch(mid);if(!m||status(m)!=="pre")return;if(slotTaken(mid,mk,null,pid)){toast("🎟️ Tu as déjà parié sur ce joueur pour ce pari.");return}const P=playerOdds(m);if(!P)return;
   const x=P[0].concat(P[1]).find(y=>y.id===pid);if(!x||!x.o[mk])return;
   const i=U.sel.findIndex(s=>s.mid===mid&&s.mk===mk&&s.k===pid);if(i>=0){U.sel.splice(i,1);return}
   if(U.sel.length>=12){toast("12 sélections maximum par ticket.");return}
@@ -225,11 +226,15 @@ function fieldSvg(sp){
 
 /* ---------- rendu : matchs ---------- */
 function selOf(mid,mk,k){return U.sel.find(s=>s.mid===mid&&s.mk===mk&&s.k===k)}
-// un seul ticket par match : le pari déjà posé sur ce match (s'il y en a un)
+// plusieurs tickets par match, mais un seul pari par « case » (résultat, nombre de buts 2,5, buteur X…) : jamais deux paris contradictoires
+const slotKey=(mk,line,k)=>mk+"|"+(line??"")+(PMK[mk]?"|"+k:"");
 function myBet(mid){for(let i=S.bets.length-1;i>=0;i--){const b=S.bets[i];if(b.st!=="void"&&b.legs.some(L=>L.mid===mid))return b}return null}
-const myLeg=(mid,mk,k)=>{const b=myBet(mid);return b&&b.legs.find(L=>L.mid===mid&&L.mk===mk&&L.k===k)};
-function oddBtn(m,mk,k,s,short){const mb=myBet(m.id),mine=mb&&myLeg(m.id,mk.id,k);if(mb)return`<button class="odd${mine?" mine":" taken"}" data-act="mybet" data-mid="${esc(m.id)}">
-    <span>${mine?"🎟️ "+esc(short??s.l):esc(short??s.l)}</span><b>${s.o?fr(s.o):"—"}</b></button>`;
+function myBets(mid){return S.bets.filter(b=>b.st!=="void"&&b.legs.some(L=>L.mid===mid))}
+// le pari déjà posé sur cette case de ce match (s'il y en a un)
+function slotTaken(mid,mk,line,k){const key=slotKey(mk,line,k);for(let i=S.bets.length-1;i>=0;i--){const b=S.bets[i];if(b.st==="void")continue;
+  const L=b.legs.find(L=>L.mid===mid&&slotKey(L.mk,L.line,L.k)===key);if(L)return{b,L}}return null}
+function oddBtn(m,mk,k,s,short){const tk=slotTaken(m.id,mk.id,mk.line,k);if(tk){const mine=tk.L.k===k;return`<button class="odd${mine?" mine":" taken"}" data-act="mybet" data-mid="${esc(m.id)}" data-bid="${esc(tk.b.id)}">
+    <span>${mine?"🎟️ "+esc(short??s.l):esc(short??s.l)}</span><b>${s.o?fr(s.o):"—"}</b></button>`}
   const on=!!selOf(m.id,mk.id,k),st=status(m);
   let hit="";const rs=realStats(m);if(rs){const w=outcome(mk.d,m,rs,mk.line);if(w===k)hit=" hit"}
   return`<button class="odd${hit}" data-act="pick" data-mid="${esc(m.id)}" data-mk="${mk.id}" data-k="${k}" aria-pressed="${on}" ${!canBet(m)||!s.o?"disabled":""}>
@@ -245,8 +250,8 @@ function card(m,showLv){const st=status(m),res=resMarket(m),defs=marketInfo(m);
   const nm=defs.length-1,icons=[...new Set(defs.slice(1).map(d=>d.ic+"|"+(d.cls||"")))].slice(0,4);
   const short=m.sp==="tennis"||m.sp==="basket"?["1","2"]:["1","N","2"];
   const fl=FLASH[m.id]&&Date.now()-FLASH[m.id].at<9e4?FLASH[m.id]:null;
-  const mb=myBet(m.id);
-  return`<article class="mc${fl?" mcflash":""}${mb?" mcbet":""}" data-act="open" data-mid="${esc(m.id)}" tabindex="0">${mb?`<span class="mcbetc">🎟️ Parié${mb.legs.length>1?" · combiné":""}</span>`:""}${fl?`<span class="mcfl">${{g:"⚽ BUT !",og:"⚽ CSC !",yc:"🟨 Carton",rc:"🟥 Rouge",try:"🏉 Essai !",try7:"🏉 Essai !",pen:"🎯 Pénalité",conv:"🎯 Transfo",pts:"🏉 Points"}[fl.k]||"⚽"}</span>`:""}
+  const mbs=myBets(m.id),mb=mbs[0];
+  return`<article class="mc${fl?" mcflash":""}${mb?" mcbet":""}" data-act="open" data-mid="${esc(m.id)}" tabindex="0">${mb?`<span class="mcbetc">🎟️ ${mbs.length>1?mbs.length+" tickets":"Parié"+(mb.legs.length>1?" · combiné":"")}</span>`:""}${fl?`<span class="mcfl">${{g:"⚽ BUT !",og:"⚽ CSC !",yc:"🟨 Carton",rc:"🟥 Rouge",try:"🏉 Essai !",try7:"🏉 Essai !",pen:"🎯 Pénalité",conv:"🎯 Transfo",pts:"🏉 Points"}[fl.k]||"⚽"}</span>`:""}
     <div class="mc-top">${st==="live"?`<span class="chip live">Direct${liveOK(m)?" · paris ouverts":""}</span>`:""}${srcChip(m)}<span class="comp">${esc(showLv?m.comp:(m.dep||m.comp))}</span></div>
     <div class="teams"><div class="tm">${crestOf(m,0)}<b>${esc(m.h)}</b>${m.hs?`<small>${esc(m.hs)}</small>`:""}</div>${mid(m)}<div class="tm">${crestOf(m,1)}<b>${esc(m.a)}</b>${m.as?`<small>${esc(m.as)}</small>`:""}</div></div>
     ${res?`<div class="pbar">${res.sels.map(s=>`<i style="width:${(s.p*100).toFixed(1)}%"></i>`).join("")}</div>
@@ -304,8 +309,9 @@ function viewDetail(m){const st=status(m),mks=markets(m),res=mks.find(x=>x.id===
     <div class="teams"><div class="tm">${crestOf(m,0)}<b>${esc(m.h)}</b>${m.hs?`<small>${esc(m.hs)}</small>`:""}</div>${mid(m)}<div class="tm">${crestOf(m,1)}<b>${esc(m.a)}</b>${m.as?`<small>${esc(m.as)}</small>`:""}</div></div>
     ${res?`<div class="prob">${res.sels.map(s=>`<span>${Math.round(s.p*100)} %</span>`).join("")}</div><div class="pbar">${res.sels.map(s=>`<i style="width:${(s.p*100).toFixed(1)}%"></i>`).join("")}</div>`:""}
     <div class="note" style="text-align:center;color:#ffffffa0;margin-top:6px">${esc(fDay(m.t))} · ${fTime(m.t)}</div></div>`;
-  {const mb=myBet(m.id);if(mb){const L=mb.legs.filter(x=>x.mid===m.id);h+=`<button class="mybet" data-act="mybet" data-mid="${esc(m.id)}"><span>🎟️</span><div><b>Tu as déjà parié sur ce match</b>
-    <small>${L.map(x=>esc(x.l)+(x.mt&&x.mk!=="res"?" ("+esc(x.mt)+")":"")).join(" + ")} · ${tok(mb.stake)} jetons${mb.legs.length>1?` · combiné de ${mb.legs.length}`:""} · un seul ticket par match</small></div><i>›</i></button>`}}
+  {const mbs=myBets(m.id);if(mbs.length){h+=`<button class="mybet" data-act="mybet" data-mid="${esc(m.id)}"><span>🎟️</span><div><b>${mbs.length>1?`Tes ${mbs.length} tickets sur ce match`:"Ton ticket sur ce match"}</b>
+    ${mbs.slice(0,4).map(mb=>`<small>• ${mb.legs.filter(x=>x.mid===m.id).map(x=>esc(x.l)+(x.mt&&x.mk!=="res"?" ("+esc(x.mt)+")":"")).join(" + ")} · ${tok(mb.stake)} jetons${mb.legs.length>1?` · combiné de ${mb.legs.length}`:""}</small>`).join("")}
+    <small class="mut2">Tu peux parier sur d’autres paris de ce match, pas deux fois sur le même.</small></div><i>›</i></button>`}}
   const hasStats=st!=="pre";
   if(hasStats)h+=`<div class="seg"><button data-act="dtab" data-t="p" aria-pressed="${U.dtab==="p"}">Paris</button><button data-act="dtab" data-t="s" aria-pressed="${U.dtab==="s"}">Stats du match</button></div>`;
   if(m.src==="am")h+=amBlock(m,st);
@@ -618,7 +624,7 @@ function confetti(){if(matchMedia("(prefers-reduced-motion: reduce)").matches)re
   document.body.appendChild(c);setTimeout(()=>c.remove(),3800)}
 
 /* ---------- actions ---------- */
-function pick(mid,mkId,k){const m=findMatch(mid);if(!m||!canBet(m))return;if(myBet(mid)){toast("🎟️ Tu as déjà un pari sur ce match : un seul ticket par match.");return}const mk=markets(m).find(x=>x.id===mkId);if(!mk)return;const s=mk.sels[k];if(!s.o)return;
+function pick(mid,mkId,k){const m=findMatch(mid);if(!m||!canBet(m))return;{const mk0=markets(m).find(x=>x.id===mkId),tk=mk0&&slotTaken(mid,mkId,mk0.line,k);if(tk){toast(`🎟️ Tu as déjà parié « ${esc(tk.L.l)} » sur ce pari : pas deux paris sur le même.`);return}}const mk=markets(m).find(x=>x.id===mkId);if(!mk)return;const s=mk.sels[k];if(!s.o)return;
   const i=U.sel.findIndex(x=>x.mid===mid&&x.mk===mkId);const same=i>=0&&U.sel[i].k===k;if(i>=0)U.sel.splice(i,1);
   if(!same){if(U.sel.length>=12){toast("12 sélections maximum par ticket.");return}
     U.sel.push({mid,mk:mkId,k,line:mk.line,o:s.o,live:liveOK(m),l:s.l,mt:mk.title,ml:m.h+" – "+m.a,ic:mk.d.ic,cls:mk.d.cls,sp:m.sp,t:m.t,
@@ -632,8 +638,7 @@ async function place(){const n=U.sel.length;if(!n||U.placing)return;const stake=
   if(moved&&!gone.length){toast("Le score a bougé : cotes mises à jour, vérifie et valide à nouveau.");refreshLayer();renderSlipBar();return}
   if(gone.length){U.sel=U.sel.filter(s=>!gone.includes(s));toast("Un match a commencé : sélection retirée.","bad");refreshLayer();renderSlipBar();return}
   const combo=U.combo&&n>1&&!comboBlocked(),cost=combo?stake:stake*n;
-  {const al=U.sel.find(x=>myBet(x.mid));if(al){U.sel=U.sel.filter(x=>!myBet(x.mid));toast("🎟️ Tu avais déjà parié sur un de ces matchs : sélection retirée.","bad");refreshLayer();renderSlipBar();return}}
-  if(!combo&&new Set(U.sel.map(x=>x.mid)).size<n){toast("Un seul ticket par match : en simples, garde une seule sélection par match (ou passe en combiné).","bad");return}if(cost>S.bal){toast("Solde insuffisant.","bad");return}
+  {const al=U.sel.filter(x=>slotTaken(x.mid,x.mk,x.line,x.k));if(al.length){U.sel=U.sel.filter(x=>!al.includes(x));toast("🎟️ Tu avais déjà parié sur ce pari : sélection retirée.","bad");refreshLayer();renderSlipBar();return}}if(cost>S.bal){toast("Solde insuffisant.","bad");return}
   const leg=s=>({mid:s.mid,mk:s.mk,k:s.k,line:s.line,o:s.o,live:!!s.live,l:s.l,mt:s.mt,ml:s.ml,ic:s.ic,sp:s.sp,t:s.t,snap:s.snap});
   const at=Date.now();
   // le serveur vérifie chaque pari (match pas commencé, vraie cote) et l'enregistre avant qu'on le garde ici
@@ -647,7 +652,7 @@ async function place(){const n=U.sel.length;if(!n||U.placing)return;const stake=
   if(!j||!j.ok){const E_=j&&j.error;
     if(E_==="odds_changed"){(j.changed||[]).forEach(c=>{const s=U.sel.find(x=>x.mid===c.mid&&x.mk===c.mk&&x.k===c.k);if(!s)return;if(c.o)s.o=c.o;else U.sel=U.sel.filter(x=>x!==s)});
       CIK="";toast("Les cotes ont bougé : vérifie et valide à nouveau.");refreshLayer();renderSlipBar();return}
-    if(E_==="already"||E_==="same_match"){toast(E_==="already"?"🎟️ Tu as déjà un pari sur ce match : un seul ticket par match.":"Un seul ticket par match : garde une seule sélection par match en simples.","bad");if(E_==="already"){U.sel=U.sel.filter(x=>x.mid!==j.mid);refreshLayer();renderSlipBar()}return}
+    if(E_==="already"||E_==="same_match"){toast(E_==="already"?"🎟️ Tu as déjà parié sur ce pari de ce match : pas deux paris sur le même.":"Deux sélections sur le même pari : garde-en une seule.","bad");if(E_==="already"){U.sel=U.sel.filter(x=>!(x.mid===j.mid&&x.mk===j.mk));refreshLayer();renderSlipBar()}return}
     if(E_==="started"||E_==="unknown_match"){U.sel=U.sel.filter(x=>x.mid!==j.mid);toast("Un match a commencé : sélection retirée.","bad");refreshLayer();renderSlipBar();return}
     toast(E_==="balance"?"Solde insuffisant.":E_==="combo_impossible"?"Ce combiné est impossible.":E_==="slow"?"Doucement ! Réessaie dans un instant.":E_==="offline"?"Pas de connexion : pari non enregistré.":"Pari refusé, réessaie.","bad");return}
   const sid={};(j.bets||[]).forEach(x=>sid[x.cid]=x);
@@ -812,7 +817,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"delgo":delAccount();break;
     case"dtab":U.dtab=d.t;refreshLayer();break;
     case"btab":U.btab=d.t;render();break;
-    case"mybet":{const b=myBet(d.mid);document.querySelectorAll(".scrim").forEach(x=>x.remove());U.open=null;layer("");U.tab="b";if(b)U.btab=b.st==="open"?"o":"c";render();window.scrollTo(0,0);
+    case"mybet":{const b=(d.bid&&S.bets.find(x=>String(x.id)===d.bid))||myBet(d.mid);document.querySelectorAll(".scrim").forEach(x=>x.remove());U.open=null;layer("");U.tab="b";if(b)U.btab=b.st==="open"?"o":"c";render();window.scrollTo(0,0);
       if(b)setTimeout(()=>{const e=document.querySelector(`[data-bid="${b.id}"]`);if(e){e.scrollIntoView({block:"center",behavior:"smooth"});e.classList.add("flashb");setTimeout(()=>e.classList.remove("flashb"),1600)}},250);break}
     case"pick":pick(d.mid,d.mk,+d.k);if(U.open)refreshLayer();render();break;
     case"ppick":pickPlayer(d.mid,d.mk,d.pid,d.name);if(U.open)refreshLayer();render();break;
@@ -925,7 +930,7 @@ function loadCrowd(mid){const c=CROWD[mid];if(c&&Date.now()-c.at<3e3)return;CROW
 function crowd(m,mk){const c=CROWD[m.id],d=c&&c.data&&c.data[mk.id+(mk.line!=null?mk.line:"")];if(!d)return"";
   const n=mk.sels.map((_,k)=>d[k]||0),tot=n.reduce((a,b)=>a+b,0);if(!tot)return"";const mx=Math.max(...n);
   const short=s=>s.l.replace(/^(Plus|Moins) de .*/,x=>x.split(" ")[0]);
-  return`<div class="crowd"><div class="cb">${n.map(v=>`<i class="${v===mx?"top":""}" style="flex:${v||.0001}"></i>`).join("")}</div>
+  return`<div class="crowd"><div class="cb">${n.map(v=>`<i class="${v===mx?"ctop":""}" style="flex:${v||.0001}"></i>`).join("")}</div>
     ${ic("group")} ${tot} joueur${tot>1?"s":""} : ${mk.sels.map((s,k)=>`${esc(short(s))} ${Math.round(n[k]/tot*100)} %`).join(" · ")}</div>`}
 
 /* ---------- matchs amateurs ajoutés par les joueurs ---------- */
@@ -2767,7 +2772,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.78";
+const VERSION="2.79";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

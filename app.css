@@ -140,7 +140,7 @@ img.crest{object-fit:contain}
 .pbar i{display:block;height:100%}
 .pbar i:nth-child(1){background:var(--acc)}.pbar i:nth-child(2){background:var(--mute2)}.pbar i:last-child{background:#d9e4de}
 .odds{display:grid;gap:8px}
-.odds.c2{grid-template-columns:repeat(2,1fr)}.odds.c3{grid-template-columns:repeat(3,1fr)}
+.odds.c2{grid-template-columns:repeat(2,minmax(0,1fr))}.odds.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .odd{position:relative;display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:46px;padding:7px 10px;border-radius:10px;
   border:1px solid var(--line2);background:var(--card2);text-align:left;transition:background .15s,border-color .15s,transform .1s}
 .odd:active{transform:scale(.96)}
@@ -275,7 +275,7 @@ img.crest{object-fit:contain}
 .prow .v{font:800 20px "Barlow Condensed";font-variant-numeric:tabular-nums;text-align:right}
 .crowd{margin-top:9px;font-size:12.5px;color:var(--mute)}
 .crowd .cb{display:flex;height:4px;border-radius:3px;overflow:hidden;gap:2px;margin-bottom:5px}
-.crowd .cb i{display:block;background:var(--mute2)}.crowd .cb i.top{background:var(--sel)}
+.crowd .cb i{display:block;background:var(--mute2)}.crowd .cb i.ctop{background:var(--sel)}
 /* écran bloquant (navigateur sur téléphone) */
 body.gated .nav,body.gated #slipbar,body.gated .top{display:none}
 body.gated #main{padding-top:calc(44px + var(--safe-t))}
@@ -1058,9 +1058,10 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 .mybet small{display:block;color:#e8dcb8;font-size:12.5px;margin-top:2px;line-height:1.35}.mybet i{font-style:normal;font-size:24px;color:#ffd23f}
 .ticket.flashb{animation:flashb 1.6s ease}
 @keyframes flashb{0%,60%{box-shadow:0 0 0 3px #ffd23f}100%{box-shadow:0 0 0 0 #ffd23f00}}
-.mybet~* [data-act="pick"]{opacity:.38}
+.mybet small.mut2{color:#bfb38f;margin-top:5px;font-size:11.5px}
 /* ticket : solde du joueur */
 .balln{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0 10px;padding:9px 12px;border-radius:12px;background:#ffffff0a;border:1px solid var(--line);font-size:13px;color:var(--mute)}
 .balln span{display:flex;align-items:center;gap:6px}.balln .i{width:16px;height:16px;color:var(--sel)}
 .balln b{font:800 17px "Barlow Condensed";color:var(--ink,#fff);margin-left:2px}
 .balln.low{border-color:#ff5a5a66;background:#ff5a5a12}.balln.low #s3{color:var(--loss)}
+.odd{min-width:0}.odd b{flex:none}
