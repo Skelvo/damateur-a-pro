@@ -301,7 +301,7 @@ async function reminders(s, slot) {
   const min = slot === "midi" ? 1 : 2;
   const ppl = await s.query(`select p.id, p.name, p.fav, extract(epoch from now() - p.seen_at) / 86400 as idle, to_char(p.seen_at, 'YYYYMMDD') as sday from players p where p.remind >= $1 and p.seen_at < now() - interval '45 minutes'
       and exists (select 1 from push_subs x where x.player = p.id)`, [min]);
-  if (!ppl.length) return { sent: 0 };
+  if (!ppl.length) { await s.query(`update meta set value = $2 where key = $1`, [key, JSON.stringify({ at: new Date().toISOString(), eligible: 0 })]).catch(() => {}); return { sent: 0 }; }
   const now = Date.now(), M = await todayMatches(t.ymd, now + 20 * 60e3, Math.round(Number(t.eod)));
   const top = M[0], more = M.length - 1;
   const tonight = top ? `${top.h} – ${top.a} à ${hhmm(top.t)}${more > 0 ? ` et ${more} autre${more > 1 ? "s" : ""} match${more > 1 ? "s" : ""}` : ""}` : "";
@@ -358,6 +358,10 @@ async function reminders(s, slot) {
     return 0;
   });
   const n = (await Promise.all(jobs)).reduce((a, x) => a + x, 0);
+  // résumé gardé pour le diagnostic (qui était éligible, qui a été écarté car actif dans l'appli)
+  const active = (await s.query(`select string_agg(name, ', ') as n from players p where p.remind >= $1 and p.seen_at >= now() - interval '45 minutes'
+      and exists (select 1 from push_subs x where x.player = p.id)`, [min]))[0].n;
+  await s.query(`update meta set value = $2 where key = $1`, [key, JSON.stringify({ at: new Date().toISOString(), eligible: ppl.length, sent: n, matches: M.length, active: active || "" })]).catch(() => {});
   return { sent: n, matches: M.length };
 }
 
@@ -1461,9 +1465,14 @@ const ACTIONS = {
   // diagnostic des rappels : passages des tâches planifiées et état des notifications d'un joueur
   async admin_push_diag(s, b) {
     admin(b);
-    const keys = await s.query(`select key from meta where key like 'remind:%' or key like 'morning:%' or key like 'recap:%' order by key desc limit 20`);
+    const keys = await s.query(`select key, value from meta where key like 'remind:%' or key like 'morning:%' or key like 'recap:%' order by key desc limit 20`);
     const pl = await s.query(`select p.id, p.name, p.remind, p.seen_at, (select count(*)::int from push_subs x where x.player = p.id) as subs from players p where lower(p.name) like lower($1) limit 5`, ["%" + String(b.name || "") + "%"]);
-    return { keys: keys.map((k) => k.key), players: pl, now: new Date().toISOString() };
+    const log = pl[0] ? await s.query(`select at, tag, title, ok, fail, err from push_log where player = $1 order by at desc limit 25`, [pl[0].id]) : [];
+    // envoi d'essai immédiat (test=1)
+    let test = null;
+    if (b.test && pl[0]) { await notify(s, [pl[0].id], { title: "🔔 Test Tribune", body: "Si tu lis ceci, les notifications marchent sur ce téléphone.", url: "./", tag: "test" });
+      test = (await s.query(`select ok, fail, err from push_log where player = $1 and tag = 'test' order by at desc limit 1`, [pl[0].id]))[0] || null; }
+    return { keys: keys.map((k) => k.key + (k.value && k.value !== "1" ? " " + k.value : "")), players: pl, log, test, now: new Date().toISOString() };
   },
   // remet la roue du jour à zéro pour un joueur (tests)
   async admin_wheel_reset(s, b) {
