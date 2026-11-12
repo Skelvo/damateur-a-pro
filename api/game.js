@@ -1616,6 +1616,24 @@ const ACTIONS = {
     const r = await s.query(`update players set cos_all = $2 where lower(name) = lower($1) returning id, name`, [String(b.name || ""), b.on !== false]);
     return { ok: !!r[0], players: r };
   },
+  // ticket d'un pari vu dans le fil de guilde (« Parier pareil ») : code de partage créé sans repost dans le fil
+  async act_ticket(s, b) {
+    const p = await me(s, b.token);
+    const a = (await s.query(`select a.player, a.data from activity a where a.id = $1 and a.kind = 'bet'
+       and exists (select 1 from league_members x join league_members y on y.code = x.code where x.player = $2 and y.player = a.player)`, [String(int(b.id, 0, 1e15)), p.id]))[0];
+    if (!a || !a.data || !a.data.cid) throw fail(404, "unknown");
+    const bt = (await s.query(`select id from bets where player = $1 and cid = $2`, [a.player, cleanName(a.data.cid, 40)]))[0];
+    if (!bt) throw fail(404, "unknown");
+    const old = (await s.query(`select code from shared_bets where bet = $1`, [bt.id]))[0];
+    if (old) return { code: old.code };
+    for (let i = 0; i < 6; i++) {
+      let code = "";
+      for (let k = 0; k < 7; k++) code += CODE_CHARS[randomInt(CODE_CHARS.length)];
+      const r = await s.query(`insert into shared_bets (code, bet) values ($1, $2) on conflict do nothing returning code`, [code, bt.id]);
+      if (r[0]) return { code };
+    }
+    throw fail(500, "code");
+  },
   async share_bet(s, b) {
     const p = await me(s, b.token);
     const bt = (await s.query(`select id from bets where player = $1 and cid = $2`, [p.id, cleanName(b.cid, 40)]))[0];

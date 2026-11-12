@@ -686,7 +686,7 @@ async function place(){const n=U.sel.length;if(!n||U.placing)return;const stake=
   if(combo)S.bets.push({id:"b"+at,sid:(sid["b"+at]||{}).id,at,stake,odds:(sid["b"+at]||{}).odds||slipOdds(),groups:comboInfo().groups,legs:U.sel.map(leg),st:"open"});
   else U.sel.forEach((s,i)=>{const r=sid["b"+at+"-"+i]||{};S.bets.push({id:"b"+at+"-"+i,sid:r.id,at,stake,odds:r.odds||s.o,legs:[leg(s)],st:"open"})});
   {const placed=combo?[S.bets[S.bets.length-1]]:S.bets.slice(-n);
-    postAct("bet",{legs:U.sel.slice(0,4).map(s=>s.l+(s.mk==="res"||PMK[s.mk]?"":" ("+s.mt+")")),stake:cost,odds:combo?slipOdds():(n===1?U.sel[0].o:null),n:combo?n:1})}
+    postAct("bet",{legs:U.sel.slice(0,4).map(s=>s.l+(s.mk==="res"||PMK[s.mk]?"":" ("+s.mt+")")),stake:cost,odds:combo?slipOdds():(n===1?U.sel[0].o:null),n:combo?n:1,cid:placed.length===1?placed[0].id:undefined})}
   sendPicks(U.sel);U.sel=[];save();setTimeout(checkDefis,900);U.open=null;layer("");U.tab="b";U.btab="o";render();bump();window.scrollTo({top:0,behavior:"smooth"});
   toast(`${ic("ticket")} Pari validé ! Bonne chance.`,"win")}
 
@@ -801,6 +801,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"stpick":{const x=d.v,ty=x.startsWith("tm:")?"t":x[0];if(!U.cosD.unlocked.includes(x)){const c=COS.find(y=>y[0]===x);toast("🔒 "+(c?c[4]:"Pas encore débloqué"));break}U.cosEdit[ty]=x;styleRender();if(ty==="v")winFx(x);break}
     case"stsave":saveStyle();break;
     case"shopen":openShared(d.c);break;
+    case"actfollow":api("act_ticket",{id:d.id}).then(j=>{if(j&&j.code)openShared(j.code);else toast("Ce ticket n’est plus disponible.")}).catch(()=>toast("Ce ticket n’est plus disponible."));break;
     case"divs":openDivs();break;
     case"succ":openSucc();break;
     case"fxdemo":{const k=d.v,ru=k==="try";FXQ.push({k,team:ru?"Toulouse":k==="g"?"Rennes":"Lille",who:ru?"":k==="g"?"B. Dia":k==="yc"?"C. Verdonk":"M. Kjaergaard",min:67,m:ru?{h:"Toulouse",a:"Toulon",sc:[17,10]}:{h:"Rennes",a:"Lille",sc:k==="g"?[2,1]:[1,1]}});fxNext();break}
@@ -1836,7 +1837,7 @@ function wheelAct(d){const v=d.v||0,b=v/(d.d?2:1),t=d.x?"au tour bonus":"à la r
     :`😅 seulement <b>+${tok(v)}</b> ${t}… pas de chance${x2}`}
 function actText(a){const d=a.data||{};const legs=(d.legs||[]).map(esc).join(" + ");
   switch(a.kind){
-    case"bet":return`a parié <b>${tok(d.stake||0)}</b> sur ${legs||"un match"}${d.n>1&&d.odds?` <span class="mut">(combiné · cote ${fr(+d.odds)})</span>`:d.odds?` <span class="mut">@ ${fr(+d.odds)}</span>`:""}`;
+    case"bet":return`a parié <b>${tok(d.stake||0)}</b> sur ${legs||"un match"}${d.n>1&&d.odds?` <span class="mut">(combiné · cote ${fr(+d.odds)})</span>`:d.odds?` <span class="mut">@ ${fr(+d.odds)}</span>`:""}${d.cid&&String(a.who)!==String(U.lg.data&&U.lg.data.me)&&Date.now()-a.at<3*DAY?` <button class="btn gold shbtn" data-act="actfollow" data-id="${esc(a.id)}">🎟️ Parier pareil</button>`:""}`;
     case"won":return d.big?`<span class="bigtag">🔥 Gros coup</span> a gagné <b class="pos">+${tok(d.pay||0)}</b>${d.n>1?` avec un combiné de ${d.n}`:""}${d.odds?` à <b>${fr(+d.odds)}</b>`:""}${legs?` <span class="mut">${legs}</span>`:""}`
       :`a gagné <b class="pos">+${tok(d.pay||0)}</b> ${ic("trophy")}${legs?` <span class="mut">${legs}</span>`:""}`;
     case"lost":return d.one?`💀 a perdu son combiné de ${d.n}… <b>à une seule sélection près</b>${d.last?` <span class="mut">(${esc(d.last)})</span>`:""}`
@@ -2803,7 +2804,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.86";
+const VERSION="2.87";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
