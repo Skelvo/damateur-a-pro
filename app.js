@@ -420,13 +420,23 @@ async function cashOut(id){const b=S.bets.find(x=>x.id===id);const v=b&&cashValu
   else{v2=cashValue(b);if(!v2){toast("Le match a bougé : encaissement plus possible.","bad");render();return}}
   b.st="cashed";b.pay=v2;postAct("cash",{pay:v2,stake:b.stake});b.done=Date.now();S.bal+=v2;S.peak=Math.max(S.peak,S.bal);save();render();bump();toast(`${ic("coin")} Encaissé : +${tok(v2)} jetons`,"win")}
 // date du match, direct (minute et score) ou score final, pour chaque sélection d'un pari
+// pendant le match : la sélection tient-elle ? (déjà gagnée, en bonne voie, perdante pour l'instant, déjà perdue)
+function liveLeg(L,m){if(!m||L.r||PMK[L.mk]||!m.st||status(m)!=="live")return null;const d=(MK[m.sp]||[]).find(x=>x.id===L.mk);if(!d)return null;
+  let w;try{w=outcome(d,m,m.st,L.line)}catch(e){return null}if(w==null)return null;const k=+L.k;
+  if(d.ty==="res")return w===k?{c:"ok",t:"🟢 Gagnant pour l’instant"}:{c:"ko",t:"🟠 Perdant pour l’instant"};
+  if(d.ty==="ou"){const v=d.val(x=>m.st[x],m),need=Math.floor(L.line)+1-v;
+    if(k===0)return w===0?{c:"sure",t:"✅ Déjà gagné"}:{c:"wait",t:`⏳ Il en faut encore ${need}`};
+    return w===1?{c:"ok",t:`🟢 Ça tient (${v} pour l’instant)`}:{c:"dead",t:"❌ Perdu"}}
+  if(d.ty==="yn"){if(k===0)return w===0?{c:"sure",t:"✅ Déjà gagné"}:{c:"wait",t:"⏳ Pas encore"};return w===1?{c:"ok",t:"🟢 Ça tient"}:{c:"dead",t:"❌ Perdu"}}
+  return null}
 function legWhen(L){const m=L.mid&&findMatch(L.mid),t=(m&&m.t)||L.t;if(!t)return"";const st=m?status(m):(t>Date.now()?"pre":null);
-  if(st==="live"){const I=liveInfo(m);return`<small class="lw live">🔴 En direct${I.clock?" · "+esc(I.clock):""}${I.sc?` · <span class="lws">${I.sc[0]} – ${I.sc[1]}</span>`:""}</small>`}
+  if(st==="live"){const I=liveInfo(m),ll=liveLeg(L,m);return`<small class="lw live">🔴 En direct${I.clock?" · "+esc(I.clock):""}${I.sc?` · <span class="lws">${I.sc[0]} – ${I.sc[1]}</span>`:""}</small>${ll?`<small class="ll ll-${ll.c}">${ll.t}</small>`:""}`}
   if(st==="post"){const sc=finalScore(m);return`<small class="lw">🏁 Terminé${sc?` · <span class="lws">${sc[0]} – ${sc[1]}</span>`:""} · ${esc(fShort(t))}</small>`}
   if(st==="wait")return`<small class="lw">⏳ Match fini, résultat attendu · ${esc(fShort(t))}</small>`;
   if(st==="cancel")return`<small class="lw">Reporté</small>`;
   return`<small class="lw">📅 ${esc(fShort(t))} à ${fTime(t)}</small>`}
-function legStatus(L){return L.r==="w"?`<span class="st w">✓</span>`:L.r==="l"?`<span class="st l">✗</span>`:L.r==="v"?`<span class="st v">↺</span>`:`<span class="st p"></span>`}
+function legStatus(L){if(L.r==="w")return`<span class="st w">✓</span>`;if(L.r==="l")return`<span class="st l">✗</span>`;if(L.r==="v")return`<span class="st v">↺</span>`;
+  const ll=liveLeg(L,L.mid&&findMatch(L.mid));return ll?`<span class="st p ls-${ll.c}">${ll.c==="sure"?"✓":ll.c==="dead"?"✗":""}</span>`:`<span class="st p"></span>`}
 function viewBets(){const B=S.bets.slice().reverse(),op=B.filter(b=>b.st==="open"),cl_=B.filter(b=>b.st!=="open");
   const W=cl_.filter(b=>b.st==="won").length,Lo=cl_.filter(b=>b.st==="lost").length,rate=W+Lo?W/(W+Lo):0;
   const net=cl_.reduce((a,b)=>a+(b.st==="won"||b.st==="cashed"?b.pay-b.stake:b.st==="lost"?-b.stake:0),0);
@@ -442,6 +452,8 @@ function viewBets(){const B=S.bets.slice().reverse(),op=B.filter(b=>b.st==="open
   h+=list.map(b=>{const tag=b.st==="won"?`<span class="tag won">+${tok(b.pay)}</span>`:b.st==="lost"?`<span class="tag lost">Perdu</span>`:b.st==="void"?`<span class="tag void">Remboursé</span>`:b.st==="cashed"?`<span class="tag cashed">Encaissé +${tok(b.pay)}</span>`:`<span class="tag open">En cours</span>`;
     const cv=b.st==="open"?cashValue(b):0;
     return`<div class="ticket ${b.st}" data-bid="${esc(b.id)}"><div class="th"><b>${b.legs.length>1?"Combiné · "+b.legs.length:"Simple"}</b><span>Parié le ${new Date(b.at).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})} · ${fTime(b.at)}</span></div>
+    ${(()=>{if(b.st!=="open")return"";const S_=b.legs.map(L=>L.r==="w"?"sure":L.r==="l"?"dead":(liveLeg(L,L.mid&&findMatch(L.mid))||{}).c);
+      return S_.includes("dead")?`<div class="tdead">❌ Une sélection est déjà tombée : ${b.legs.length>1?"ce combiné":"ce pari"} est perdu</div>`:S_.every(x=>x==="sure")?`<div class="tsure">✅ Tout est déjà bon : gagné à la fin du match</div>`:""})()}
     <div class="tl">${b.legs.map(L=>`<div class="leg">${legStatus(L)}<div><b>${esc(L.l)} <span style="color:var(--mute);font-weight:500">@ ${fr(L.o)}</span></b><small>${esc(L.mt)}</small><small>${esc(L.ml)}</small>${legWhen(L)}</div></div>`).join("")}</div>
     <div class="tf"><div><small>Mise</small><b>${tok(b.stake)}</b></div><div style="text-align:center"><small>Cote</small><b>${fr(b.odds)}</b></div><div style="text-align:right"><small>${b.st==="won"?"Gain":b.st==="cashed"?"Encaissé":"Gain possible"}</small>${b.st==="open"?`<b>${tok(b.stake*b.odds)}</b>`:tag}</div></div>
     ${cv?`<button class="cashbtn" data-act="cash" data-id="${esc(b.id)}">${ic("coin")} Encaisser maintenant <b>${tok(cv)}</b></button>`:""}
@@ -2777,7 +2789,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.83";
+const VERSION="2.84";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

@@ -1067,3 +1067,12 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 .odd{min-width:0}.odd b{flex:none}
 /* case déjà pariée : petit ticket dans le coin au lieu de prendre la place du nom */
 .odd.mine::before{content:"🎟️";position:absolute;top:-8px;left:-5px;font-size:15px;line-height:1;filter:drop-shadow(0 1px 2px #0008)}
+/* paris en direct : état de chaque sélection */
+.leg small.ll,.ll{display:inline-block;width:auto;margin-top:4px;padding:2px 8px;border-radius:8px;font:700 12.5px Barlow;background:#ffffff0d}
+.leg small.ll-ok{color:#5be39a;background:#35d07f1a}.leg small.ll-sure{color:#04130b;background:var(--win)}
+.leg small.ll-ko,.leg small.ll-wait{color:#ffb35c;background:#ff9f3a1a}.leg small.ll-dead{color:#ff6b6b;background:#ff5a5a1f}
+.tdead{margin:2px 16px 0;padding:8px 12px;border-radius:10px;background:#ff5a5a1a;color:#ff8a8a;font:700 13px Barlow;text-align:center}.tsure{margin:2px 16px 0;padding:8px 12px;border-radius:10px;background:#35d07f1a;color:#5be39a;font:700 13px Barlow;text-align:center}
+.st.p.ls-ok{border-color:var(--win)!important;box-shadow:0 0 0 3px #35d07f22}
+.st.p.ls-sure{background:var(--win);border-color:var(--win)!important;color:#04130b;display:grid;place-items:center;font-weight:800}
+.st.p.ls-ko,.st.p.ls-wait{border-color:#ffb35c!important}
+.st.p.ls-dead{background:#ff5a5a;border-color:#ff5a5a!important;color:#fff;display:grid;place-items:center;font-weight:800}
