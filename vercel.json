@@ -40,5 +40,12 @@
       "source": "/api/scover/:file",
       "destination": "/api/game?scover=:file"
     }
-  ]
+  ],
+  "schedules": {
+    "tick": {
+      "schedule": "*/5 * * * *",
+      "path": "/api/game?cron=1&slot=tick",
+      "requestMethod": "GET"
+    }
+  }
 }
