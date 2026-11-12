@@ -156,8 +156,11 @@ async function espnRefetch(snap){ // match hors fenêtre : on va le rechercher �
     for(const ev of j.events||[]){const ms=snap.sp==="tennis"?parseTennis(ev,snap.lv,snap.path):[parseTeamEvent(ev,snap.sp,snap.lv,snap.path)];
       for(const m of ms)if(m&&!REG.has(m.id))REG.set(m.id,m)}}catch(e){}}
 
+// horloge ESPN en anglais → français (HT = mi-temps, FT = terminé, ET = prolongation…)
+function frClock(c){c=String(c||"").trim();const M={HT:"Mi-temps",FT:"Terminé","FT-Pens":"Terminé (t.a.b.)",AET:"Terminé (a.p.)",ET:"Prolongation",Pens:"Tirs au but",Halftime:"Mi-temps","End of 1st Half":"Mi-temps","Full Time":"Terminé",Final:"Terminé",Delayed:"Retardé",Postponed:"Reporté",Suspended:"Suspendu",Abandoned:"Arrêté",Canceled:"Annulé",Scheduled:"À venir"};
+  if(M[c])return M[c];return c.replace(/^(\d+)(st|nd|rd|th) Half$/i,(x,n)=>n==="1"?"1re mi-temps":"2e mi-temps").replace(/^End of (\d)(st|nd|rd|th) Quarter$/i,"Fin du $1e quart-temps").replace(/^(\d)(st|nd|rd|th) Quarter/i,"$1e quart-temps").replace(/^OT$/,"Prolongation")}
 function liveInfo(m){const el=(Date.now()-m.t)/6e4;
-  if(m.src==="espn")return{sc:m.st&&(m.st.g||m.st.pts||m.st.sets),clock:m.clock};
+  if(m.src==="espn")return{sc:m.st&&(m.st.g||m.st.pts||m.st.sets),clock:frClock(m.clock)};
   const o=simOne(m);
   if(m.sp==="foot"){const mn=el<=47?Math.max(1,Math.floor(el)):el<62?"MT":Math.min(90,Math.floor(el-15));const cur=mn==="MT"?45:mn;
     return{sc:o._min.map(a=>a.filter(x=>x<=cur).length),clock:mn==="MT"?"Mi-temps":mn+"’"}}
@@ -2812,7 +2815,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.92";
+const VERSION="2.93";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
