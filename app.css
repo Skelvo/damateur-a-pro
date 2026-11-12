@@ -1092,3 +1092,4 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 .tvc.on{background:#e3262a;border-color:#ff5a5a;color:#fff;animation:tvpulse 1.6s ease-in-out infinite}
 .tvc.big{margin:0;padding:6px 14px;font-size:13.5px}
 @keyframes tvpulse{0%,100%{box-shadow:0 0 0 0 #ff3b3f66}50%{box-shadow:0 0 0 6px #ff3b3f00}}
+.vh{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}

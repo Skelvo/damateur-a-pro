@@ -2777,7 +2777,7 @@ function renderGate(){const lg=new URLSearchParams(location.search).get("guilde"
     <div class="gpgo">📲 <b>Tu as déjà l’app ?</b> Ouvre maintenant <b>Tribune</b> depuis ton écran d’accueil : <b>le ticket s’ouvrira tout seul</b> (dans les 20 minutes), avec le bouton « Je suis ce pari ».</div>
     <p class="note">Pas encore l’app ? Installe-la ci-dessous : le ticket t’attendra.</p>`}catch(e){}},50);
   document.body.classList.add("gated");
-  $("#main")._html=null;$("#main").innerHTML=`<div class="gate"><div class="ghero"><img src="img/gate.webp?v=1" alt=""></div><h1 class="glogo"><img src="logo-tribune.png?v=2" alt="Tribune"></h1><small style="color:var(--mute2)">v${VERSION}</small><p class="gsub">Le jeu se joue <b>uniquement depuis l’app</b> sur ton écran d’accueil. C’est gratuit, sans store, et ça prend 10 secondes.</p>
+  $("#main")._html=null;$("#main").innerHTML=`<div class="gate"><div class="ghero"><img src="img/gate.webp?v=2" alt="Tribune"></div><h1 class="glogo vh"><img src="logo-tribune.png?v=2" alt="Tribune"></h1><small style="color:var(--mute2)">v${VERSION}</small><p class="gsub">Le jeu se joue <b>uniquement depuis l’app</b> sur ton écran d’accueil. C’est gratuit, sans store, et ça prend 10 secondes.</p>
     <div id="gref"></div><div id="gmatch"></div>${pc?`<div id="gpari"><div class="skel" style="height:120px"></div></div>`:""}
     ${lg?`<div class="xcode" style="margin-bottom:12px"><small>Invitation à une guilde : une fois dans l’app, va dans Guildes › Rejoindre et entre ce code</small><b>${esc(lg.toUpperCase().slice(0,8))}</b></div>`:""}
     <div id="ginst">${viewInstall(true)}</div>
@@ -2814,7 +2814,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.88";
+const VERSION="2.89";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
