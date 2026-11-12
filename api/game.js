@@ -466,10 +466,16 @@ async function tick(s) {
   const now = Date.now(), out = { ko: 0, end: 0, fetched: 0, settled, battles };
   const open = [];
   for (const p of ppl) for (const b of (p.bets.list || [])) if (b.st === "open" && b.id && Array.isArray(b.legs) && b.legs.length && b.legs.every((L) => L.e && L.p && L.t)) open.push({ pid: p.id, b });
-  // 1) coup d'envoi imminent (une fois par joueur et par match)
+  // 1) coup d'envoi imminent (une fois par joueur et par match), avec la chaîne télé : la notification ouvre le direct gratuit
+  let TVO = {};
+  try { const r = (await s.query(`select value from meta where key = 'tv'`))[0]; TVO = r ? JSON.parse(r.value || "{}") : {}; } catch (e) {}
   for (const { pid, b } of open) for (const L of b.legs) {
     if (L.t - now > 0 && L.t - now <= 20 * 60e3 && await sentOnce(s, `ko:${pid}:${L.p}:${L.e}`)) {
-      await notify(s, [pid], { title: `⏱️ ${L.ml || "Ton match"} commence à ${hhmm(L.t)}`, body: `Ton pari : ${L.l}${b.legs.length > 1 ? ` (combiné de ${b.legs.length})` : ""} · mise ${b.stake}`, url: "./?go=bets", tag: "ko-" + L.e });
+      const tm = String(L.ml || "").split(" – "), ch = EG.tvFor({ id: "e-" + String(L.p).replace(/\W/g, "") + "-" + L.e, src: "espn", sp: L.sp, lv: EG.lvOfPath(L.sp, L.p), h: tm[0], a: tm[1] }, TVO);
+      const C = ch && EG.TVCH[ch], free = C && C.free === 1;
+      await notify(s, [pid], { title: `⏱️ ${L.ml || "Ton match"} commence à ${hhmm(L.t)}${ch ? " · 📺 " + ch : ""}`,
+        body: `Ton pari : ${L.l}${b.legs.length > 1 ? ` (combiné de ${b.legs.length})` : ""} · mise ${b.stake}${free ? ` · Touche pour regarder en direct sur ${ch}` : ""}`,
+        url: free ? C.u : "./?go=bets", tag: "ko-" + L.e });
       out.ko++;
     }
   }

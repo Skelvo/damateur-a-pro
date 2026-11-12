@@ -399,5 +399,14 @@ function cosUnlocked(f){f=f||{};const ok=r=>!r||f.all||(r.startsWith("lv")?(f.lv
 function cosTitle(id){if(!id)return"";if(id.startsWith("tm:")){const m=id.slice(3);return"👑 Champion de "+(MONTHS_FR[+m.slice(5,7)-1]||m)+" "+m.slice(0,4)}const x=COS.find(c=>c[0]===id&&c[1]==="t");return x&&id!=="t0"?x[2]:""}
 function defisFor(day){const r=rng(hash("defis|"+day));return DEFIS.map(L=>L[Math.floor(r()*L.length)])}
 
-if(typeof globalThis!=="undefined")globalThis.ENGINE={COS,COS_SECRET,COS_SEASON,cosUnlocked,cosTitle,cosEmoji,TIERS,xpFor,levelOf,resMarket,marketInfo,mkOne,WEEKENDS,COMBO_BOOST,weekendOf,fr,strength,SP,SIM,MK,N,ALLSTATS,STATL,ESPN,MCC,MKC,ONE,cl,hash,rng,pois,binom,H,DAY,lvA,sims,simOne,tot,cmp3,avail,odd,mt,liveOK,canBet,liveSims,marketSims,markets,outcome,
+// ---- chaîne télé (France) : matchs posés par les organisateurs (ovr), sinon diffuseur confirmé de la compétition (saison 2026-2027) ----
+const TVCH={"TF1":{u:"https://www.tf1.fr/tf1/direct",free:1},"M6":{u:"https://www.m6.fr/m6/direct",free:1},"W9":{u:"https://www.m6.fr/w9/direct",free:1},
+  "France 2":{u:"https://www.france.tv/france-2/direct.html",free:1},"France 3":{u:"https://www.france.tv/france-3/direct.html",free:1},"France 4":{u:"https://www.france.tv/france-4/direct.html",free:1},
+  "L'Équipe":{u:"https://www.lequipe.fr/tv/",free:1},"Canal+":{u:"https://www.canalplus.com/"},"beIN":{u:"https://www.beinsports.com/fr-fr"},"Ligue 1+":{u:"https://www.ligue1plus.fr/"},"DAZN":{u:"https://www.dazn.com/fr-FR"},"Prime Video":{u:"https://www.primevideo.com/"}};
+function tvFor(m,ovr){if(!m)return null;const o=ovr&&ovr[m.id];if(o)return o==="-"?null:o;if(m.src!=="espn")return null;const fr=m.h==="France"||m.a==="France";
+  if(m.sp==="foot"){if(fr&&m.lv>=24)return"TF1";if(m.lv===11)return"Ligue 1+";if(m.lv===14)return"Canal+";if(m.lv===15)return"beIN"}
+  return null}
+// niveau d'une compétition d'après son flux ESPN (ex. "soccer/fra.1" → 11)
+function lvOfPath(sp,path){const F=SP[sp]&&SP[sp].feeds;if(F)for(const l in F)if(F[l].includes(path))return+l;return null}
+if(typeof globalThis!=="undefined")globalThis.ENGINE={TVCH,tvFor,lvOfPath,COS,COS_SECRET,COS_SEASON,cosUnlocked,cosTitle,cosEmoji,TIERS,xpFor,levelOf,resMarket,marketInfo,mkOne,WEEKENDS,COMBO_BOOST,weekendOf,fr,strength,SP,SIM,MK,N,ALLSTATS,STATL,ESPN,MCC,MKC,ONE,cl,hash,rng,pois,binom,H,DAY,lvA,sims,simOne,tot,cmp3,avail,odd,mt,liveOK,canBet,liveSims,marketSims,markets,outcome,
   SOCSTAT,recStrength,amer,bookDiff,footProbs,TEAM_FR,frTeam,parseTeamEvent,parseTennis,status,realStats,PMK,legIdx,jointP,comboCalc,readLineup,applySummary,playerLegResult,legResultM,betResult,cashValueM,WHEEL,WP,JACKPOT,JACK_ODDS,EXTRA_DAY,DEFIS,DEFI_BONUS,defisFor,legsOf};
