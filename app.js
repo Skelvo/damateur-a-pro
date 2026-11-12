@@ -141,7 +141,7 @@ function playersBlock(m){if(m.sp!=="foot"||m.src!=="espn"||status(m)!=="pre")ret
     <div class="phead"><span></span><span>Buteur</span><span>Doublé</span><span>Carton</span></div>
     ${list.map(x=>`<div class="prow2"><div><b>${esc(x.name)}</b><small>${{F:"Attaquant",M:"Milieu",D:"Défenseur"}[x.pos]||""}</small></div>
       ${["psc","p2","pyc"].map(mk=>{const o=x.o[mk],on=!!U.sel.find(s=>s.mid===m.id&&s.mk===mk&&s.k===x.id),tk=slotTaken(m.id,mk,null,x.id);
-        if(tk)return`<button class="odd sm mine" data-act="mybet" data-mid="${esc(m.id)}" data-bid="${esc(tk.b.id)}"><b>🎟️ ${o?fr(o):"—"}</b></button>`;
+        if(tk)return`<button class="odd sm mine" data-act="mybet" data-mid="${esc(m.id)}" data-bid="${esc(tk.b.id)}"><b>${o?fr(o):"—"}</b></button>`;
         return`<button class="odd sm" data-act="ppick" data-mid="${esc(m.id)}" data-mk="${mk}" data-pid="${esc(x.id)}" data-name="${esc(x.name)}" aria-pressed="${on}" ${o?"":"disabled"}><b>${o?fr(o):"—"}</b></button>`}).join("")}</div>`).join("")}
     ${P[side].length>10?`<button class="more" data-act="pmore">${U.pmore?"Moins de joueurs":"Tous les joueurs ("+P[side].length+")"}</button>`:""}
     <p class="note" style="margin:8px 0 0">${m.lineup?"Compositions officielles.":"Effectif de la saison : compositions officielles environ 1 h avant le match."} Si le joueur ne joue pas, le pari est remboursé. Carton : jaune ou rouge.</p></div>`}
@@ -234,7 +234,7 @@ function myBets(mid){return S.bets.filter(b=>b.st!=="void"&&b.legs.some(L=>L.mid
 function slotTaken(mid,mk,line,k){const key=slotKey(mk,line,k);for(let i=S.bets.length-1;i>=0;i--){const b=S.bets[i];if(b.st==="void")continue;
   const L=b.legs.find(L=>L.mid===mid&&slotKey(L.mk,L.line,L.k)===key);if(L)return{b,L}}return null}
 function oddBtn(m,mk,k,s,short){const tk=slotTaken(m.id,mk.id,mk.line,k);if(tk){const mine=tk.L.k===k;return`<button class="odd${mine?" mine":" taken"}" data-act="mybet" data-mid="${esc(m.id)}" data-bid="${esc(tk.b.id)}">
-    <span>${mine?"🎟️ "+esc(short??s.l):esc(short??s.l)}</span><b>${s.o?fr(s.o):"—"}</b></button>`}
+    <span>${esc(short??s.l)}</span><b>${s.o?fr(s.o):"—"}</b></button>`}
   const on=!!selOf(m.id,mk.id,k),st=status(m);
   let hit="";const rs=realStats(m);if(rs){const w=outcome(mk.d,m,rs,mk.line);if(w===k)hit=" hit"}
   return`<button class="odd${hit}" data-act="pick" data-mid="${esc(m.id)}" data-mk="${mk.id}" data-k="${k}" aria-pressed="${on}" ${!canBet(m)||!s.o?"disabled":""}>
@@ -2772,7 +2772,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.79";
+const VERSION="2.80";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

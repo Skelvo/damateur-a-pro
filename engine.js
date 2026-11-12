@@ -165,6 +165,9 @@ function outcome(d,m,st,line){ // index de la sélection gagnante, null si stats
   if(d.ty==="ou")return v>line?0:1;if(d.ty==="yn")return v?0:1;return v}
 const ESPN="https://site.api.espn.com/apis/site/v2/sports/";
 const SOCSTAT={yellowCards:"yc",redCards:"rc",offsides:"of",wonCorners:"co",foulsCommitted:"fo",shotsOnTarget:"sot",penaltyKickShots:"pk"};
+// clubs pros français (identifiants ESPN, saison 2026-2027) : 1 = Ligue 1, 2 = Ligue 2
+const FR_TIER={172:1,174:1,7868:1,6997:1,3236:1,2697:1,175:1,166:1,273:1,167:1,176:1,2502:1,6851:1,160:1,169:1,180:1,179:1,170:1,
+  3267:2,18066:2,7869:2,3171:2,3170:2,7732:2,6994:2,171:2,177:2,274:2,165:2,10678:2,11884:2,7719:2,178:2,272:2,3266:2,3243:2};
 const strength=(name,sp,lv)=>((hash(name+"|"+sp)%2001)/1000-1)*(lv<3?1.1:.9);
 // rugby : niveau de base (≈ classement mondial / Top 14) + forme récente (ESPN donne « WWLWT », pas « v-n-d »)
 const RUGBY_BASE={"afrique du sud":1.3,"nouvelle-zelande":1.15,"irlande":1.1,"france":1.05,"angleterre":.9,"argentine":.75,"ecosse":.6,"australie":.6,"fidji":.35,"italie":.3,"pays de galles":.1,"japon":.05,"georgie":0,"samoa":-.25,"tonga":-.35,"uruguay":-.45,"espagne":-.45,"portugal":-.45,"etats-unis":-.6,"roumanie":-.65,"chili":-.65,"canada":-.7,"namibie":-.85,"pays-bas":-1,"belgique":-1,"bresil":-1.1,"zimbabwe":-1,"hong kong":-1,"paraguay":-1.3,
@@ -199,7 +202,9 @@ function parseTeamEvent(ev,sp,lv,path){const c=ev.competitions&&ev.competitions[
     state,clock:ty.shortDetail||"",done:!!ty.completed,cancel:state==="post"&&!ty.completed};
   {const st_=ev.status||{},dc=parseInt(st_.displayClock,10);m.min=/^(HT|MT)/i.test(ty.shortDetail||"")||ty.name==="STATUS_HALFTIME"?(sp==="foot"?45:40):!isNaN(dc)?dc:Math.round((st_.clock||0)/60)}
   m.s=[recStrength(Hc,m.h,sp,lv),recStrength(Ac,m.a,sp,lv)];
-  if(sp==="foot"){const d=bookDiff(c);if(d!=null)m.s=[d/2,-d/2]}
+  if(sp==="foot"){const d=bookDiff(c);if(d!=null)m.s=[d/2,-d/2];else if(FR_TIER[m.hid]||FR_TIER[m.aid]||/coupe_de_france/.test(path)){
+    // coupe sans cotes de bookmaker : niveau du club (Ligue 1, Ligue 2, sinon amateur) plutôt qu'un niveau au hasard
+    const tv=(id,n)=>({1:2.1,2:1.1}[FR_TIER[id]]??-.3)+strength(n,sp,lv)*.15;m.s=[tv(m.hid,m.h),tv(m.aid,m.a)]}}
   if(state!=="pre"){const k=sp==="foot"?"g":"pts";m.st={[k]:[+Hc.score||0,+Ac.score||0]};
     if(sp==="foot")[Hc,Ac].forEach((x,p)=>(x.statistics||[]).forEach(s=>{const k2=SOCSTAT[s.name];if(k2){(m.st[k2]||(m.st[k2]=[null,null]))[p]=parseFloat(s.displayValue)}}));
     if(sp==="basket"){const BK={threePointFieldGoalsMade:"tp",rebounds:"reb",assists:"ast"};

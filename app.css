@@ -1065,3 +1065,5 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 .balln b{font:800 17px "Barlow Condensed";color:var(--ink,#fff);margin-left:2px}
 .balln.low{border-color:#ff5a5a66;background:#ff5a5a12}.balln.low #s3{color:var(--loss)}
 .odd{min-width:0}.odd b{flex:none}
+/* case déjà pariée : petit ticket dans le coin au lieu de prendre la place du nom */
+.odd.mine::before{content:"🎟️";position:absolute;top:-8px;left:-5px;font-size:15px;line-height:1;filter:drop-shadow(0 1px 2px #0008)}
