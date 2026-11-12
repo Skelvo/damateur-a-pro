@@ -1723,6 +1723,20 @@ const ACTIONS = {
 
   // ---- Administration (clé ADMIN_KEY dans les réglages Vercel ; désactivé sans elle) ----
   // paris d'un joueur (pour en annuler un à sa demande)
+  // diagnostic d'un joueur : registre des jetons, point de départ du contrôle, soldes par jour, gains de la semaine
+  async admin_ledger(s, b) {
+    admin(b);
+    const p = (await s.query(`select id, name, bal::float8 as bal, seen_at from players where lower(name) = lower($1)`, [String(b.name || "")]))[0];
+    if (!p) throw fail(404, "unknown");
+    return { p,
+      base: (await s.query(`select bal::float8 as bal, at from audit_base where player = $1`, [p.id]))[0] || null,
+      ledger: await s.query(`select kind, ref, delta, at from ledger where player = $1 order by at desc limit 60`, [p.id]),
+      hist: await s.query(`select day, bal::float8 as bal from bal_hist where player = $1 order by day desc limit 14`, [p.id]),
+      profits: await s.query(`select per, gain::float8 as gain from profits where player = $1 order by per desc limit 6`, [p.id]),
+      sprofits: await s.query(`select per, gain::float8 as gain from sprofits where player = $1 order by per desc limit 6`, [p.id]),
+      bets: await s.query(`select cid, stake, odds::float8 as odds, status, pay::float8 as pay, cancelled, at, settled_at, legs from bets where player = $1 order by at desc limit 25`, [p.id]),
+      gifts: await s.query(`select kind, ref, amount, claimed, at from gifts where player = $1 order by at desc limit 20`, [p.id]) };
+  },
   async admin_bets(s, b) {
     admin(b);
     return { bets: await s.query(`select b.id, p.name, b.cid, b.stake, b.odds::float8 as odds, b.status, b.legs, b.at from bets b join players p on p.id = b.player

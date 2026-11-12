@@ -1059,3 +1059,8 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 .ticket.flashb{animation:flashb 1.6s ease}
 @keyframes flashb{0%,60%{box-shadow:0 0 0 3px #ffd23f}100%{box-shadow:0 0 0 0 #ffd23f00}}
 .mybet~* [data-act="pick"]{opacity:.38}
+/* ticket : solde du joueur */
+.balln{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0 10px;padding:9px 12px;border-radius:12px;background:#ffffff0a;border:1px solid var(--line);font-size:13px;color:var(--mute)}
+.balln span{display:flex;align-items:center;gap:6px}.balln .i{width:16px;height:16px;color:var(--sel)}
+.balln b{font:800 17px "Barlow Condensed";color:var(--ink,#fff);margin-left:2px}
+.balln.low{border-color:#ff5a5a66;background:#ff5a5a12}.balln.low #s3{color:var(--loss)}

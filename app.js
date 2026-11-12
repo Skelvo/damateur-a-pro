@@ -375,11 +375,14 @@ function renderSlipBar(){const el=$("#slipbar");if(!U.sel.length||U.open==="slip
   const n=U.sel.length,combo=U.combo&&n>1&&!comboBlocked();
   const cost=combo?U.stake:U.stake*n,gain=combo?U.stake*slipOdds():U.sel.reduce((a,s)=>a+U.stake*s.o,0);
   el.innerHTML=`<button class="slipbar" data-act="slip"><span class="n">${n}</span><div><b>Mon ticket${combo?" · cote "+fr(slipOdds()):""}</b><small>Mise ${tok(cost)} → gain possible ${tok(gain)}</small></div><span class="go">Valider ›</span></button>`}
+// solde affiché sur le ticket : ce qu'on a, et ce qu'il reste après ce pari
+const balLine=cost=>`<div class="balln${cost>S.bal?" low":""}"><span>${ic("coin")} Ton solde <b>${tok(S.bal)}</b></span><span>Après ce pari <b id="s3">${tok(Math.max(0,S.bal-cost))}</b></span></div>`;
 function slipPanel(){const n=U.sel.length,blocked=comboBlocked(),combo=U.combo&&n>1&&!blocked,cost=combo?U.stake:U.stake*n,
     gain=combo?U.stake*slipOdds():U.sel.reduce((a,s)=>a+U.stake*s.o,0),last=U.sel[n-1];
   return`<div class="dslip"><div class="dl"><span class="n">${n}</span><div><b>${n===1?esc(last.l):n+" sélections"}</b><small>${n===1?esc(last.mt):combo?"Combiné · cote "+fr(slipOdds()):"Paris simples"+(blocked?" (combinaison impossible)":"")}</small></div>
     <button class="link" data-act="slip">Détails</button></div>
     ${n>1&&!blocked?`<div class="seg mini"><button data-act="combo" data-v="0" aria-pressed="${!combo}">Simples</button><button data-act="combo" data-v="1" aria-pressed="${combo}">Combiné</button></div>`:""}
+    ${balLine(cost)}
     <div class="chips mini">${[10,20,50,100].map(v=>`<button data-act="stake" data-v="${v}" aria-pressed="${U.stake===v}">${v}</button>`).join("")}<input id="stk" type="number" min="1" inputmode="numeric" value="${U.stake}" aria-label="Mise${combo||n===1?"":" par pari"}"></div>
     <div class="dl2"><span>${combo||n===1?"Mise":"Total misé"} <b id="s1">${tok(cost)}</b></span><span>Gain possible <b id="s2" class="g">${tok(gain)}</b></span></div>
     ${cost>S.bal?`<p class="warn">Il te manque ${tok(cost-S.bal)} jetons.</p>`:""}
@@ -393,6 +396,7 @@ function viewSlip(){const n=U.sel.length;if(!n)return`<div class="grab"><h3>Mon 
   ${WE().on&&WE().k==="combo"?(combo&&n>=3?`<p class="webadge">🧾 Week-end des combinés : si ça passe, <b>+25 %</b> de bonus sur ton bénéfice !</p>`:`<p class="webadge dim">🧾 Week-end des combinés : fais un combiné de 3 sélections ou plus pour toucher +25 % de bonus.</p>`):""}
   <div class="chips">${[10,20,50,100,250].map(v=>`<button data-act="stake" data-v="${v}" aria-pressed="${U.stake===v}">${v}</button>`).join("")}<button data-act="stake" data-v="max">Max</button></div>
   <div class="stake"><label for="stk">Mise${combo||n===1?"":" par pari"}</label><input id="stk" type="number" min="1" inputmode="numeric" value="${U.stake}"></div>
+  ${balLine(cost)}
   <div class="sum"><div><small>${combo?"Cote totale":"Total misé"}</small><b id="s1">${combo?fr(slipOdds()):tok(cost)}</b></div><div class="g"><small>Gain possible</small><b id="s2">${tok(gain)}</b></div></div>
   ${cost>S.bal?`<p class="warn">Solde insuffisant : il te manque ${tok(cost-S.bal)} jetons.</p>`:""}
   <button class="btn gold wide" data-act="place" ${cost>S.bal?"disabled":""}>${ic("ticket")} Valider · ${tok(cost)} jetons</button>
@@ -875,6 +879,7 @@ document.addEventListener("change",e=>{if(e.target.id==="dep"){U.dep=e.target.va
 document.addEventListener("input",e=>{if(e.target.id!=="stk")return;U.stakeTouched=true;U.stake=Math.max(1,Math.floor(+e.target.value)||1);
   const n=U.sel.length,combo=U.combo&&n>1&&!comboBlocked(),cost=combo?U.stake:U.stake*n,gain=combo?U.stake*slipOdds():U.sel.reduce((a,s)=>a+U.stake*s.o,0);
   if($("#s1")&&!(combo&&U.open==="slip"))$("#s1").textContent=tok(cost);if($("#s2"))$("#s2").textContent=tok(gain);
+  if($("#s3")){$("#s3").textContent=tok(Math.max(0,S.bal-cost));const bl=$(".balln");if(bl)bl.classList.toggle("low",cost>S.bal)}
   const b=$("[data-act=place]");if(b){b.disabled=cost>S.bal;b.innerHTML=`${ic("ticket")} Valider · ${tok(cost)} jetons`}
   document.querySelectorAll("[data-act=stake]").forEach(x=>x.setAttribute("aria-pressed",+x.dataset.v===U.stake));renderSlipBar()});
 
@@ -2756,7 +2761,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.76";
+const VERSION="2.77";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
