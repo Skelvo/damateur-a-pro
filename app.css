@@ -1087,3 +1087,8 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 .tle.aw{flex-direction:row-reverse;text-align:right}
 .tle .tm{font:800 16px "Barlow Condensed";color:var(--sel);min-width:34px;text-align:center}.tle .ic{font-size:18px}
 .tle b{display:block;font-size:14px}.tle small{color:var(--mute);font-size:12px}
+/* chaîne télé du match : grise avant, rouge clignotante en direct, lien vers le direct gratuit */
+.tvc{margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;border:1px solid #ffffff22;background:#ffffff10;color:var(--ink,#fff);font:700 11.5px Barlow;letter-spacing:.02em;cursor:pointer;white-space:nowrap}
+.tvc.on{background:#e3262a;border-color:#ff5a5a;color:#fff;animation:tvpulse 1.6s ease-in-out infinite}
+.tvc.big{margin:0;padding:6px 14px;font-size:13.5px}
+@keyframes tvpulse{0%,100%{box-shadow:0 0 0 0 #ff3b3f66}50%{box-shadow:0 0 0 6px #ff3b3f00}}

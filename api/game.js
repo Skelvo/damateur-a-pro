@@ -1619,10 +1619,13 @@ const ACTIONS = {
   // ticket d'un pari vu dans le fil de guilde (« Parier pareil ») : code de partage créé sans repost dans le fil
   async act_ticket(s, b) {
     const p = await me(s, b.token);
-    const a = (await s.query(`select a.player, a.data from activity a where a.id = $1 and a.kind = 'bet'
+    const a = (await s.query(`select a.player, a.data, a.at from activity a where a.id = $1 and a.kind = 'bet'
        and exists (select 1 from league_members x join league_members y on y.code = x.code where x.player = $2 and y.player = a.player)`, [String(int(b.id, 0, 1e15)), p.id]))[0];
-    if (!a || !a.data || !a.data.cid) throw fail(404, "unknown");
-    const bt = (await s.query(`select id from bets where player = $1 and cid = $2`, [a.player, cleanName(a.data.cid, 40)]))[0];
+    if (!a || !a.data) throw fail(404, "unknown");
+    // anciens messages sans identifiant : le pari du même joueur enregistré dans les 2 minutes autour du message
+    const bt = a.data.cid ? (await s.query(`select id from bets where player = $1 and cid = $2`, [a.player, cleanName(a.data.cid, 40)]))[0]
+      : (await s.query(`select id from bets where player = $1 and not cancelled and at between $2::timestamptz - interval '2 minutes' and $2::timestamptz + interval '1 minute'
+           and jsonb_array_length(legs) = $3 order by abs(extract(epoch from at - $2::timestamptz)) limit 1`, [a.player, a.at, Math.max(1, int(a.data.n, 1, 20))]))[0];
     if (!bt) throw fail(404, "unknown");
     const old = (await s.query(`select code from shared_bets where bet = $1`, [bt.id]))[0];
     if (old) return { code: old.code };
@@ -1817,6 +1820,20 @@ const ACTIONS = {
     const r = await s.query(`insert into gifts (player, kind, ref, amount, label) values ($1, 'adjust', $2, $3, $4) on conflict do nothing returning ref`,
       [p.id, ref, amount, cleanName(b.label, 60) || "Correction du solde"]);
     return { ok: !!r[0], id: p.id, name: p.name, bal: p.bal, ref };
+  },
+  // chaîne télé d'un match (prioritaire sur les règles automatiques de l'appli) ; ch vide = retirer
+  async admin_tv(s, b) {
+    admin(b);
+    const cur = (await s.query(`select value from meta where key = 'tv'`))[0];
+    const tv = cur ? JSON.parse(cur.value || "{}") : {};
+    const key = cleanName(b.mid, 80);
+    if (key) { if (b.ch) tv[key] = cleanName(b.ch, 20); else delete tv[key]; }
+    await s.query(`insert into meta (key, value) values ('tv', $1) on conflict (key) do update set value = excluded.value`, [JSON.stringify(tv)]);
+    return { tv };
+  },
+  async tv_list(s) {
+    const cur = (await s.query(`select value from meta where key = 'tv'`))[0];
+    return { tv: cur ? JSON.parse(cur.value || "{}") : {} };
   },
   async admin_transfer(s, b) {
     admin(b);

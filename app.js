@@ -253,6 +253,15 @@ function mid(m){const st=status(m),gl=ghostLive(m);
   if(st==="cancel")return`<div class="mid"><div class="ko">—</div><small>Reporté</small></div>`;
   if(st==="wait")return`<div class="mid"><div class="ko">—</div><small>Score attendu</small></div>`;
   const sc=finalScore(m);return`<div class="mid"><div class="score">${sc?sc[0]+"–"+sc[1]:"—"}</div><small>Terminé</small></div>`}
+// ---- chaîne télé (France) : règles simples + chaînes posées par les organisateurs (prioritaires) ----
+const TVCH={"TF1":{u:"https://www.tf1.fr/tf1/direct",free:1},"M6":{u:"https://www.m6.fr/m6/direct",free:1},"W9":{u:"https://www.m6.fr/w9/direct",free:1},
+  "France 2":{u:"https://www.france.tv/france-2/direct.html",free:1},"France 3":{u:"https://www.france.tv/france-3/direct.html",free:1},"France 4":{u:"https://www.france.tv/france-4/direct.html",free:1},
+  "L'Équipe":{u:"https://www.lequipe.fr/tv/",free:1},"Canal+":{u:"https://www.canalplus.com/"},"beIN":{u:"https://www.beinsports.com/fr-fr"},"Ligue 1+":{u:"https://www.ligue1plus.fr/"},"DAZN":{u:"https://www.dazn.com/fr-FR"},"Prime Video":{u:"https://www.primevideo.com/"}};
+let TVO={},tvAt=0;async function loadTv(){if(Date.now()-tvAt<15*6e4)return;tvAt=Date.now();try{const j=await api("tv_list",{});TVO=j.tv||{};if(!U.open)renderSoon()}catch(e){tvAt=0}}
+function tvOf(m){if(!m)return null;const o=TVO[m.id];if(o)return o==="-"?null:o;if(m.src!=="espn")return null;const fr=m.h==="France"||m.a==="France";
+  if(m.sp==="foot"&&fr&&m.lv>=24)return"TF1";if(m.sp==="rugby"&&fr)return m.lv===13?"France 2":"TF1";return null}
+function tvChip(m,big){const ch=tvOf(m);if(!ch)return"";const C=TVCH[ch]||{},live=status(m)==="live"||!!ghostLive(m)&&!ghostLive(m).done;
+  return`<button class="tvc${live?" on":""}${big?" big":""}" data-act="tv" data-ch="${esc(ch)}" aria-label="Regarder sur ${esc(ch)}">📺 ${esc(ch)}${live?" · EN DIRECT":C.free===1?"":" · payant"}</button>`}
 function srcChip(m){return m.src==="espn"?`<span class="chip feed">Réel</span>`:m.src==="am"?`<span class="chip org">Réel · joueurs</span>`:m.src==="org"?`<span class="chip org">Organisateur</span>`:`<span class="chip">Simulation</span>`}
 function card(m,showLv){const st=status(m),res=resMarket(m),defs=marketInfo(m);
   const nm=defs.length-1,icons=[...new Set(defs.slice(1).map(d=>d.ic+"|"+(d.cls||"")))].slice(0,4);
@@ -260,7 +269,7 @@ function card(m,showLv){const st=status(m),res=resMarket(m),defs=marketInfo(m);
   const fl=FLASH[m.id]&&Date.now()-FLASH[m.id].at<9e4?FLASH[m.id]:null;
   const mbs=myBets(m.id),mb=mbs[0];
   return`<article class="mc${fl?" mcflash":""}${mb?" mcbet":""}" data-act="open" data-mid="${esc(m.id)}" tabindex="0">${mb?`<span class="mcbetc">🎟️ ${mbs.length>1?mbs.length+" tickets":"Parié"+(mb.legs.length>1?" · combiné":"")}</span>`:""}${fl?`<span class="mcfl">${{g:"⚽ BUT !",og:"⚽ CSC !",yc:"🟨 Carton",rc:"🟥 Rouge",try:"🏉 Essai !",try7:"🏉 Essai !",pen:"🎯 Pénalité",conv:"🎯 Transfo",pts:"🏉 Points"}[fl.k]||"⚽"}</span>`:""}
-    <div class="mc-top">${st==="live"?`<span class="chip live">Direct${liveOK(m)?" · paris ouverts":""}</span>`:""}${srcChip(m)}<span class="comp">${esc(showLv?m.comp:(m.dep||m.comp))}</span></div>
+    <div class="mc-top">${st==="live"?`<span class="chip live">Direct${liveOK(m)?" · paris ouverts":""}</span>`:""}${srcChip(m)}<span class="comp">${esc(showLv?m.comp:(m.dep||m.comp))}</span>${tvChip(m)}</div>
     <div class="teams"><div class="tm">${crestOf(m,0)}<b>${esc(m.h)}</b>${m.hs?`<small>${esc(m.hs)}</small>`:""}</div>${mid(m)}<div class="tm">${crestOf(m,1)}<b>${esc(m.a)}</b>${m.as?`<small>${esc(m.as)}</small>`:""}</div></div>
     ${res?`<div class="pbar">${res.sels.map(s=>`<i style="width:${(s.p*100).toFixed(1)}%"></i>`).join("")}</div>
     <div class="odds c${res.sels.length}">${res.sels.map((s,k)=>oddBtn(m,res,k,s,short[k])).join("")}</div>`:""}
@@ -316,7 +325,7 @@ function viewDetail(m){const st=status(m),mks=markets(m),res=mks.find(x=>x.id===
   <div class="hero">${fieldSvg(m.sp)}<div class="mc-top">${st==="live"?`<span class="chip live">Direct${liveOK(m)?" · paris ouverts":""}</span>`:""}${srcChip(m)}<span class="comp">${esc(m.comp)}</span></div>
     <div class="teams"><div class="tm">${crestOf(m,0)}<b>${esc(m.h)}</b>${m.hs?`<small>${esc(m.hs)}</small>`:""}</div>${mid(m)}<div class="tm">${crestOf(m,1)}<b>${esc(m.a)}</b>${m.as?`<small>${esc(m.as)}</small>`:""}</div></div>
     ${res?`<div class="prob">${res.sels.map(s=>`<span>${Math.round(s.p*100)} %</span>`).join("")}</div><div class="pbar">${res.sels.map(s=>`<i style="width:${(s.p*100).toFixed(1)}%"></i>`).join("")}</div>`:""}
-    <div class="note" style="text-align:center;color:#ffffffa0;margin-top:6px">${esc(fDay(m.t))} · ${fTime(m.t)}</div></div>`;
+    <div class="note" style="text-align:center;color:#ffffffa0;margin-top:6px">${esc(fDay(m.t))} · ${fTime(m.t)}</div>${tvChip(m,true)?`<div style="text-align:center;margin-top:8px">${tvChip(m,true)}</div>`:""}</div>`;
   {const mbs=myBets(m.id);if(mbs.length){h+=`<button class="mybet" data-act="mybet" data-mid="${esc(m.id)}"><span>🎟️</span><div><b>${mbs.length>1?`Tes ${mbs.length} tickets sur ce match`:"Ton ticket sur ce match"}</b>
     ${mbs.slice(0,4).map(mb=>`<small>• ${mb.legs.filter(x=>x.mid===m.id).map(x=>esc(x.l)+(x.mt&&x.mk!=="res"?" ("+esc(x.mt)+")":"")).join(" + ")} · ${tok(mb.stake)} jetons${mb.legs.length>1?` · combiné de ${mb.legs.length}`:""}</small>`).join("")}
     <small class="mut2">Tu peux reparier, mais pas sur le choix opposé (ex. l’autre équipe).</small></div><i>›</i></button>`}}
@@ -846,6 +855,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"btab":U.btab=d.t;render();break;
     case"mybet":{const b=(d.bid&&S.bets.find(x=>String(x.id)===d.bid))||myBet(d.mid);document.querySelectorAll(".scrim").forEach(x=>x.remove());U.open=null;layer("");U.tab="b";if(b)U.btab=b.st==="open"?"o":"c";render();window.scrollTo(0,0);
       if(b)setTimeout(()=>{const e=document.querySelector(`[data-bid="${b.id}"]`);if(e){e.scrollIntoView({block:"center",behavior:"smooth"});e.classList.add("flashb");setTimeout(()=>e.classList.remove("flashb"),1600)}},250);break}
+    case"tv":{const C=TVCH[d.ch];if(C&&C.u)window.open(C.u,"_blank","noopener");else toast(`📺 Sur ${esc(d.ch)}`);break}
     case"legopen":{const m=findMatch(d.mid);if(!m){toast("Ce match n’est plus disponible dans l’appli.");break}const st=status(m);U.dtab=st==="live"||st==="post"?"s":"p";openDetail(d.mid);break}
     case"pick":pick(d.mid,d.mk,+d.k);if(U.open)refreshLayer();render();break;
     case"ppick":pickPlayer(d.mid,d.mk,d.pid,d.name);if(U.open)refreshLayer();render();break;
@@ -1837,7 +1847,7 @@ function wheelAct(d){const v=d.v||0,b=v/(d.d?2:1),t=d.x?"au tour bonus":"à la r
     :`😅 seulement <b>+${tok(v)}</b> ${t}… pas de chance${x2}`}
 function actText(a){const d=a.data||{};const legs=(d.legs||[]).map(esc).join(" + ");
   switch(a.kind){
-    case"bet":return`a parié <b>${tok(d.stake||0)}</b> sur ${legs||"un match"}${d.n>1&&d.odds?` <span class="mut">(combiné · cote ${fr(+d.odds)})</span>`:d.odds?` <span class="mut">@ ${fr(+d.odds)}</span>`:""}${d.cid&&String(a.who)!==String(U.lg.data&&U.lg.data.me)&&Date.now()-a.at<3*DAY?` <button class="btn gold shbtn" data-act="actfollow" data-id="${esc(a.id)}">🎟️ Parier pareil</button>`:""}`;
+    case"bet":return`a parié <b>${tok(d.stake||0)}</b> sur ${legs||"un match"}${d.n>1&&d.odds?` <span class="mut">(combiné · cote ${fr(+d.odds)})</span>`:d.odds?` <span class="mut">@ ${fr(+d.odds)}</span>`:""}${String(a.who)!==String(U.lg.data&&U.lg.data.me)&&Date.now()-a.at<3*DAY?` <button class="btn gold shbtn" data-act="actfollow" data-id="${esc(a.id)}">🎟️ Parier pareil</button>`:""}`;
     case"won":return d.big?`<span class="bigtag">🔥 Gros coup</span> a gagné <b class="pos">+${tok(d.pay||0)}</b>${d.n>1?` avec un combiné de ${d.n}`:""}${d.odds?` à <b>${fr(+d.odds)}</b>`:""}${legs?` <span class="mut">${legs}</span>`:""}`
       :`a gagné <b class="pos">+${tok(d.pay||0)}</b> ${ic("trophy")}${legs?` <span class="mut">${legs}</span>`:""}`;
     case"lost":return d.one?`💀 a perdu son combiné de ${d.n}… <b>à une seule sélection près</b>${d.last?` <span class="mut">(${esc(d.last)})</span>`:""}`
@@ -2804,7 +2814,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.87";
+const VERSION="2.88";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -2837,7 +2847,7 @@ if(GATE){hideSplash();renderGate();inAppArrow()}else{
 FEEDHIT.then(h=>{if(h&&(!U.open||U.open==="slip"))render()});
 render();
 if(!S.name){hideSplash();U.open="welcome";layer(viewWelcome(false));setTimeout(wrefFill,300)}else{syncSoon();joinFromLink()}
-loadFeeds();boot();
+loadFeeds();boot();setTimeout(loadTv,1500);setInterval(loadTv,15*6e4);
 setTimeout(()=>{if(S.dk&&Object.values(S.dk).some(x=>!x.settled))checkDarkAll()},5000);
 goFrom(location.href);
 function preloadArt(){const L=["roue-anneau.webp?v=1","roue-centre.webp?v=1",...WTEX.map((x,i)=>x?`img/w${i}.webp?v=1`:"").filter(Boolean)];
