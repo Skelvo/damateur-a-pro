@@ -115,7 +115,10 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 <div class="upd" id="updb"><span>Nouvelle version du programme</span><button onclick="location.reload()">Recharger</button></div>
 <script>
 const $=s=>document.querySelector(s);
-const TZ="Europe/Paris",PV="6";
+const TZ="Europe/Paris",PV="7";
+// réveille le serveur pour faire partir les publications à l'heure (au plus une fois toutes les 4 minutes, le serveur filtre)
+function wakeServer(){if(document.hidden)return;fetch("/api/game?cron=1&slot=tick",{keepalive:true}).catch(()=>{})}
+setTimeout(wakeServer,5000);setInterval(wakeServer,5*6e4);document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(wakeServer,2000)});
 // nouvelle version en ligne ? (vérifié à l'ouverture et toutes les 2 minutes)
 async function checkV(){try{const v=(await (await fetch("version.txt?t="+Date.now(),{cache:"no-store"})).text()).trim();if(v&&v!==PV)$("#updb").classList.add("on")}catch(e){}}
 let KEY="",DATA=null,TAB="next",OPEN=new Set(),PIN="";

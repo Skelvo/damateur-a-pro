@@ -2618,6 +2618,10 @@ function autoWheel(){if(window.__gate||GATE||!S.name||S.tosV!==TOS_V||S.introSee
   const k=today()+(extraAvail()?"x":"");if(S.wheelAuto===k)return;
   setTimeout(()=>{if(U.open||!wheelAvail()||S.wheelAuto===k)return;S.wheelAuto=k;saveLocal();openWheel()},1500)}
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)autoWheel()});
+// réveil du serveur (publications programmées, règlement des paris, notifications de but) : les tâches GitHub sont souvent en retard,
+// donc chaque appli ouverte le réveille aussi, au plus une fois toutes les 4 minutes pour tout le monde (le serveur filtre)
+function wakeServer(){if(document.hidden)return;try{fetch(API+"?cron=1&slot=tick",{keepalive:true}).catch(()=>{})}catch(e){}}
+setTimeout(wakeServer,8000);setInterval(wakeServer,5*6e4);document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(wakeServer,3000)});
 function viewWheel(){const done=!wheelAvail();
   return`<div class="grab"><h3>Roue de la chance</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   ${WE().on&&WE().k==="roue"?`<div class="webox mini"><span class="wee">🎡</span><div><b>Week-end de la roue</b><p>Ton gain sera doublé (×2) !</p></div></div>`:""}
@@ -2773,7 +2777,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.82";
+const VERSION="2.83";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
