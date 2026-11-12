@@ -259,7 +259,9 @@ const TVCH={"TF1":{u:"https://www.tf1.fr/tf1/direct",free:1},"M6":{u:"https://ww
   "L'Équipe":{u:"https://www.lequipe.fr/tv/",free:1},"Canal+":{u:"https://www.canalplus.com/"},"beIN":{u:"https://www.beinsports.com/fr-fr"},"Ligue 1+":{u:"https://www.ligue1plus.fr/"},"DAZN":{u:"https://www.dazn.com/fr-FR"},"Prime Video":{u:"https://www.primevideo.com/"}};
 let TVO={},tvAt=0;async function loadTv(){if(Date.now()-tvAt<15*6e4)return;tvAt=Date.now();try{const j=await api("tv_list",{});TVO=j.tv||{};if(!U.open)renderSoon()}catch(e){tvAt=0}}
 function tvOf(m){if(!m)return null;const o=TVO[m.id];if(o)return o==="-"?null:o;if(m.src!=="espn")return null;const fr=m.h==="France"||m.a==="France";
-  if(m.sp==="foot"&&fr&&m.lv>=24)return"TF1";if(m.sp==="rugby"&&fr)return m.lv===13?"France 2":"TF1";return null}
+  // diffuseurs confirmés pour la saison 2026-2027 (les matchs précis posés par les organisateurs passent avant)
+  if(m.sp==="foot"){if(fr&&m.lv>=24)return"TF1";if(m.lv===11)return"Ligue 1+";if(m.lv===14)return"Canal+";if(m.lv===15)return"beIN"}
+  return null}
 function tvChip(m,big){const ch=tvOf(m);if(!ch)return"";const C=TVCH[ch]||{},live=status(m)==="live"||!!ghostLive(m)&&!ghostLive(m).done;
   return`<button class="tvc${live?" on":""}${big?" big":""}" data-act="tv" data-ch="${esc(ch)}" aria-label="Regarder sur ${esc(ch)}">📺 ${esc(ch)}${live?" · EN DIRECT":C.free===1?"":" · payant"}</button>`}
 function srcChip(m){return m.src==="espn"?`<span class="chip feed">Réel</span>`:m.src==="am"?`<span class="chip org">Réel · joueurs</span>`:m.src==="org"?`<span class="chip org">Organisateur</span>`:`<span class="chip">Simulation</span>`}
@@ -2814,7 +2816,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.89";
+const VERSION="2.90";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
