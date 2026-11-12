@@ -43,7 +43,7 @@
   ],
   "schedules": {
     "tick": {
-      "schedule": "*/5 * * * *",
+      "schedule": "*/15 * * * *",
       "path": "/api/game?cron=1&slot=tick",
       "requestMethod": "GET"
     }
