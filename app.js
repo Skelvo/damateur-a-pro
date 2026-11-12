@@ -2653,7 +2653,7 @@ function autoWheel(){if(window.__gate||GATE||!S.name||S.tosV!==TOS_V||S.introSee
   setTimeout(()=>{if(U.open||!wheelAvail()||S.wheelAuto===k)return;S.wheelAuto=k;saveLocal();openWheel()},1500)}
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)autoWheel()});
 // réveil du serveur (publications programmées, règlement des paris, notifications de but) : les tâches GitHub sont souvent en retard,
-// donc chaque appli ouverte le réveille aussi, au plus une fois toutes les 4 minutes pour tout le monde (le serveur filtre)
+// donc chaque appli ouverte le réveille aussi, au plus une fois par minute pour tout le monde (le serveur filtre)
 function wakeServer(){if(document.hidden)return;try{fetch(API+"?cron=1&slot=tick",{keepalive:true}).catch(()=>{})}catch(e){}}
 setTimeout(wakeServer,8000);setInterval(wakeServer,5*6e4);document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(wakeServer,3000)});
 function viewWheel(){const done=!wheelAvail();

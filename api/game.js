@@ -423,7 +423,7 @@ const FAV_PATHS = ["soccer/fra.1", "soccer/fra.2", "rugby/270559", "soccer/eng.1
 async function espnJSON(u) { const c = new AbortController(), t = setTimeout(() => c.abort(), 7000); try { const r = await fetch(u, { signal: c.signal }); if (!r.ok) throw new Error(r.status); return await r.json(); } finally { clearTimeout(t); } }
 const sentOnce = async (s, key) => !!(await s.query(`insert into sent_notes (key) values ($1) on conflict do nothing returning key`, [key]))[0];
 async function tick(s) {
-  if (await overLimit("tick:global", 1, 100)) return { skipped: "trop tôt" };
+  if (await overLimit("tick:global", 1, 50)) return { skipped: "trop tôt" };
   let settled = 0;
   try { settled = (await settleOpen(s, { budget: 25e3 })).length; } catch (e) { console.error("settle", e); }
   await s.query(`delete from sent_notes where at < now() - interval '30 days'`);
