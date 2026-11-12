@@ -141,11 +141,10 @@ function playersBlock(m){if(m.sp!=="foot"||m.src!=="espn"||status(m)!=="pre")ret
     <div class="phead"><span></span><span>Buteur</span><span>Doublé</span><span>Carton</span></div>
     ${list.map(x=>`<div class="prow2"><div><b>${esc(x.name)}</b><small>${{F:"Attaquant",M:"Milieu",D:"Défenseur"}[x.pos]||""}</small></div>
       ${["psc","p2","pyc"].map(mk=>{const o=x.o[mk],on=!!U.sel.find(s=>s.mid===m.id&&s.mk===mk&&s.k===x.id),tk=slotTaken(m.id,mk,null,x.id);
-        if(tk)return`<button class="odd sm mine" data-act="mybet" data-mid="${esc(m.id)}" data-bid="${esc(tk.b.id)}"><b>${o?fr(o):"—"}</b></button>`;
-        return`<button class="odd sm" data-act="ppick" data-mid="${esc(m.id)}" data-mk="${mk}" data-pid="${esc(x.id)}" data-name="${esc(x.name)}" aria-pressed="${on}" ${o?"":"disabled"}><b>${o?fr(o):"—"}</b></button>`}).join("")}</div>`).join("")}
+        return`<button class="odd sm${tk?" mine":""}" data-act="ppick" data-mid="${esc(m.id)}" data-mk="${mk}" data-pid="${esc(x.id)}" data-name="${esc(x.name)}" aria-pressed="${on}" ${o?"":"disabled"}><b>${o?fr(o):"—"}</b></button>`}).join("")}</div>`).join("")}
     ${P[side].length>10?`<button class="more" data-act="pmore">${U.pmore?"Moins de joueurs":"Tous les joueurs ("+P[side].length+")"}</button>`:""}
     <p class="note" style="margin:8px 0 0">${m.lineup?"Compositions officielles.":"Effectif de la saison : compositions officielles environ 1 h avant le match."} Si le joueur ne joue pas, le pari est remboursé. Carton : jaune ou rouge.</p></div>`}
-function pickPlayer(mid,mk,pid,name){const m=findMatch(mid);if(!m||status(m)!=="pre")return;if(slotTaken(mid,mk,null,pid)){toast("🎟️ Tu as déjà parié sur ce joueur pour ce pari.");return}const P=playerOdds(m);if(!P)return;
+function pickPlayer(mid,mk,pid,name){const m=findMatch(mid);if(!m||status(m)!=="pre")return;const P=playerOdds(m);if(!P)return;
   const x=P[0].concat(P[1]).find(y=>y.id===pid);if(!x||!x.o[mk])return;
   const i=U.sel.findIndex(s=>s.mid===mid&&s.mk===mk&&s.k===pid);if(i>=0){U.sel.splice(i,1);return}
   if(U.sel.length>=12){toast("12 sélections maximum par ticket.");return}
@@ -233,11 +232,13 @@ function myBets(mid){return S.bets.filter(b=>b.st!=="void"&&b.legs.some(L=>L.mid
 // le pari déjà posé sur cette case de ce match (s'il y en a un)
 function slotTaken(mid,mk,line,k){const key=slotKey(mk,line,k);for(let i=S.bets.length-1;i>=0;i--){const b=S.bets[i];if(b.st==="void")continue;
   const L=b.legs.find(L=>L.mid===mid&&slotKey(L.mk,L.line,L.k)===key);if(L)return{b,L}}return null}
-function oddBtn(m,mk,k,s,short){const tk=slotTaken(m.id,mk.id,mk.line,k);if(tk){const mine=tk.L.k===k;return`<button class="odd${mine?" mine":" taken"}" data-act="mybet" data-mid="${esc(m.id)}" data-bid="${esc(tk.b.id)}">
-    <span>${esc(short??s.l)}</span><b>${s.o?fr(s.o):"—"}</b></button>`}
+// choix opposé déjà parié (ex. victoire Turquie alors qu'on a déjà parié Belgique) : seul cas refusé
+function oppTaken(mid,mk,line,k){const t=slotTaken(mid,mk,line,k);return t&&String(t.L.k)!==String(k)?t:null}
+function oddBtn(m,mk,k,s,short){const tk=slotTaken(m.id,mk.id,mk.line,k);if(tk&&String(tk.L.k)!==String(k))return`<button class="odd taken" data-act="mybet" data-mid="${esc(m.id)}" data-bid="${esc(tk.b.id)}">
+    <span>${esc(short??s.l)}</span><b>${s.o?fr(s.o):"—"}</b></button>`;const mineCls=tk?" mine":"";
   const on=!!selOf(m.id,mk.id,k),st=status(m);
   let hit="";const rs=realStats(m);if(rs){const w=outcome(mk.d,m,rs,mk.line);if(w===k)hit=" hit"}
-  return`<button class="odd${hit}" data-act="pick" data-mid="${esc(m.id)}" data-mk="${mk.id}" data-k="${k}" aria-pressed="${on}" ${!canBet(m)||!s.o?"disabled":""}>
+  return`<button class="odd${hit}${mineCls}" data-act="pick" data-mid="${esc(m.id)}" data-mk="${mk.id}" data-k="${k}" aria-pressed="${on}" ${!canBet(m)||!s.o?"disabled":""}>
     <span>${esc(short??s.l)}</span><b>${s.o?fr(s.o):"—"}</b></button>`}
 function mid(m){const st=status(m);
   if(st==="pre")return`<div class="mid"><div class="ko">${fTime(m.t)}</div><small>${fShort(m.t)}</small></div>`;
@@ -311,7 +312,7 @@ function viewDetail(m){const st=status(m),mks=markets(m),res=mks.find(x=>x.id===
     <div class="note" style="text-align:center;color:#ffffffa0;margin-top:6px">${esc(fDay(m.t))} · ${fTime(m.t)}</div></div>`;
   {const mbs=myBets(m.id);if(mbs.length){h+=`<button class="mybet" data-act="mybet" data-mid="${esc(m.id)}"><span>🎟️</span><div><b>${mbs.length>1?`Tes ${mbs.length} tickets sur ce match`:"Ton ticket sur ce match"}</b>
     ${mbs.slice(0,4).map(mb=>`<small>• ${mb.legs.filter(x=>x.mid===m.id).map(x=>esc(x.l)+(x.mt&&x.mk!=="res"?" ("+esc(x.mt)+")":"")).join(" + ")} · ${tok(mb.stake)} jetons${mb.legs.length>1?` · combiné de ${mb.legs.length}`:""}</small>`).join("")}
-    <small class="mut2">Tu peux parier sur d’autres paris de ce match, pas deux fois sur le même.</small></div><i>›</i></button>`}}
+    <small class="mut2">Tu peux reparier, mais pas sur le choix opposé (ex. l’autre équipe).</small></div><i>›</i></button>`}}
   const hasStats=st!=="pre";
   if(hasStats)h+=`<div class="seg"><button data-act="dtab" data-t="p" aria-pressed="${U.dtab==="p"}">Paris</button><button data-act="dtab" data-t="s" aria-pressed="${U.dtab==="s"}">Stats du match</button></div>`;
   if(m.src==="am")h+=amBlock(m,st);
@@ -609,7 +610,7 @@ async function settle(){if(settling)return;settling=true;
       if(won){toast(`${ic("trophy")} ${won} pari${won>1?"s":""} gagné${won>1?"s":""} : +${tok(gain)} jetons !`,"win");winFx()}
       if(lost)toast(`${lost} pari${lost>1?"s":""} perdu${lost>1?"s":""}. La revanche ?`);
       setTimeout(checkDefis,1200);
-      if(voids)toast(`${voids} pari${voids>1?"s":""} remboursé${voids>1?"s":""}.`)}}
+      if(voids)toast(`↺ ${voids} pari${voids>1?"s":""} remboursé${voids>1?"s":""} (match annulé ou résultat indisponible).`)}}
   finally{settling=false}}
 
 /* ---------- effets ---------- */
@@ -624,7 +625,7 @@ function confetti(){if(matchMedia("(prefers-reduced-motion: reduce)").matches)re
   document.body.appendChild(c);setTimeout(()=>c.remove(),3800)}
 
 /* ---------- actions ---------- */
-function pick(mid,mkId,k){const m=findMatch(mid);if(!m||!canBet(m))return;{const mk0=markets(m).find(x=>x.id===mkId),tk=mk0&&slotTaken(mid,mkId,mk0.line,k);if(tk){toast(`🎟️ Tu as déjà parié « ${esc(tk.L.l)} » sur ce pari : pas deux paris sur le même.`);return}}const mk=markets(m).find(x=>x.id===mkId);if(!mk)return;const s=mk.sels[k];if(!s.o)return;
+function pick(mid,mkId,k){const m=findMatch(mid);if(!m||!canBet(m))return;{const mk0=markets(m).find(x=>x.id===mkId),tk=mk0&&oppTaken(mid,mkId,mk0.line,k);if(tk){toast(`🎟️ Tu as déjà parié « ${esc(tk.L.l)} » sur ce pari : pas de choix opposés sur le même match.`);return}}const mk=markets(m).find(x=>x.id===mkId);if(!mk)return;const s=mk.sels[k];if(!s.o)return;
   const i=U.sel.findIndex(x=>x.mid===mid&&x.mk===mkId);const same=i>=0&&U.sel[i].k===k;if(i>=0)U.sel.splice(i,1);
   if(!same){if(U.sel.length>=12){toast("12 sélections maximum par ticket.");return}
     U.sel.push({mid,mk:mkId,k,line:mk.line,o:s.o,live:liveOK(m),l:s.l,mt:mk.title,ml:m.h+" – "+m.a,ic:mk.d.ic,cls:mk.d.cls,sp:m.sp,t:m.t,
@@ -638,7 +639,7 @@ async function place(){const n=U.sel.length;if(!n||U.placing)return;const stake=
   if(moved&&!gone.length){toast("Le score a bougé : cotes mises à jour, vérifie et valide à nouveau.");refreshLayer();renderSlipBar();return}
   if(gone.length){U.sel=U.sel.filter(s=>!gone.includes(s));toast("Un match a commencé : sélection retirée.","bad");refreshLayer();renderSlipBar();return}
   const combo=U.combo&&n>1&&!comboBlocked(),cost=combo?stake:stake*n;
-  {const al=U.sel.filter(x=>slotTaken(x.mid,x.mk,x.line,x.k));if(al.length){U.sel=U.sel.filter(x=>!al.includes(x));toast("🎟️ Tu avais déjà parié sur ce pari : sélection retirée.","bad");refreshLayer();renderSlipBar();return}}if(cost>S.bal){toast("Solde insuffisant.","bad");return}
+  {const al=U.sel.filter(x=>oppTaken(x.mid,x.mk,x.line,x.k));if(al.length){U.sel=U.sel.filter(x=>!al.includes(x));toast("🎟️ Tu avais déjà parié le choix opposé : sélection retirée.","bad");refreshLayer();renderSlipBar();return}}if(cost>S.bal){toast("Solde insuffisant.","bad");return}
   const leg=s=>({mid:s.mid,mk:s.mk,k:s.k,line:s.line,o:s.o,live:!!s.live,l:s.l,mt:s.mt,ml:s.ml,ic:s.ic,sp:s.sp,t:s.t,snap:s.snap});
   const at=Date.now();
   // le serveur vérifie chaque pari (match pas commencé, vraie cote) et l'enregistre avant qu'on le garde ici
@@ -652,7 +653,7 @@ async function place(){const n=U.sel.length;if(!n||U.placing)return;const stake=
   if(!j||!j.ok){const E_=j&&j.error;
     if(E_==="odds_changed"){(j.changed||[]).forEach(c=>{const s=U.sel.find(x=>x.mid===c.mid&&x.mk===c.mk&&x.k===c.k);if(!s)return;if(c.o)s.o=c.o;else U.sel=U.sel.filter(x=>x!==s)});
       CIK="";toast("Les cotes ont bougé : vérifie et valide à nouveau.");refreshLayer();renderSlipBar();return}
-    if(E_==="already"||E_==="same_match"){toast(E_==="already"?"🎟️ Tu as déjà parié sur ce pari de ce match : pas deux paris sur le même.":"Deux sélections sur le même pari : garde-en une seule.","bad");if(E_==="already"){U.sel=U.sel.filter(x=>!(x.mid===j.mid&&x.mk===j.mk));refreshLayer();renderSlipBar()}return}
+    if(E_==="already"||E_==="same_match"){toast(E_==="already"?"🎟️ Tu as déjà parié le choix opposé sur ce match.":"Deux choix opposés sur le même pari : garde-en un seul.","bad");if(E_==="already"){U.sel=U.sel.filter(x=>!(x.mid===j.mid&&x.mk===j.mk));refreshLayer();renderSlipBar()}return}
     if(E_==="started"||E_==="unknown_match"){U.sel=U.sel.filter(x=>x.mid!==j.mid);toast("Un match a commencé : sélection retirée.","bad");refreshLayer();renderSlipBar();return}
     toast(E_==="balance"?"Solde insuffisant.":E_==="combo_impossible"?"Ce combiné est impossible.":E_==="slow"?"Doucement ! Réessaie dans un instant.":E_==="offline"?"Pas de connexion : pari non enregistré.":"Pari refusé, réessaie.","bad");return}
   const sid={};(j.bets||[]).forEach(x=>sid[x.cid]=x);
@@ -2772,7 +2773,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.80";
+const VERSION="2.81";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

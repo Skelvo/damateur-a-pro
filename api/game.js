@@ -941,15 +941,16 @@ const ACTIONS = {
       if (!r.ok) return { ...r, index: i };
       ok.push(r);
     }
-    // plusieurs tickets par match, mais un seul pari par « case » (même marché, même ligne, même joueur) : jamais deux paris contradictoires
+    // plusieurs tickets par match, mais jamais deux choix opposés sur la même « case » (même marché, même ligne, même joueur)
     const PL = ["psc", "p2", "pyc"], slot = (L) => `${L.mid}|${L.mk}|${L.line ?? ""}${PL.includes(String(L.mk)) ? "|" + L.k : ""}`;
-    const slots = ok.map((r) => [...new Set(r.legs.map(slot))]).flat();
-    if (new Set(slots).size < slots.length) return { error: "same_match" };
+    const pick_ = {};
+    for (const L of ok.flatMap((r) => r.legs)) { const k = slot(L); if (k in pick_ && pick_[k] !== String(L.k)) return { error: "same_match" }; pick_[k] = String(L.k); }
     const mids = [...new Set(ok.flatMap((r) => r.legs.map((L) => String(L.mid))))];
     const prev = await s.query(`select l->>'mid' as mid, l->>'mk' as mk, l->'line' as line, l->'k' as k from bets x, jsonb_array_elements(x.legs) l
        where x.player = $1 and not x.cancelled and x.at > now() - interval '60 days' and l->>'mid' = any($2::text[])`, [p.id, mids]);
-    const have = new Set(prev.map((L) => slot({ mid: L.mid, mk: L.mk, line: L.line, k: L.k })));
-    const dupL = ok.flatMap((r) => r.legs).find((L) => have.has(slot(L)));
+    const have = {};
+    for (const L of prev) have[slot({ mid: L.mid, mk: L.mk, line: L.line, k: L.k })] = String(L.k);
+    const dupL = ok.flatMap((r) => r.legs).find((L) => { const k = slot(L); return k in have && have[k] !== String(L.k); });
     if (dupL) return { error: "already", mid: String(dupL.mid), mk: String(dupL.mk) };
     const out = [];
     for (let i = 0; i < list.length; i++) {

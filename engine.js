@@ -270,8 +270,9 @@ function playerLegResult(L,m){if(!m.lineup||!m.ev){const late=Date.now()-L.t>SP.
   return(L.mk==="p2"?n>=2:n>=1)?"w":"l"}
 // résultat d'une sélection : "w" gagné, "l" perdu, "v" remboursé, null pas encore connu
 function legResultM(L,m){const age=Date.now()-L.t;
-  if(!m)return age>7*DAY?"v":null;
-  const st=status(m);if(st==="cancel")return"v";if(st!=="post")return((m.src==="org"||m.src==="am")&&age>14*DAY)?"v":null;
+  // match sans résultat 3 jours après le coup d'envoi (reporté, données absentes…) : sélection remboursée
+  if(!m)return age>3*DAY?"v":null;
+  const st=status(m);if(st==="cancel")return"v";if(st!=="post")return(m.src==="org"||m.src==="am"?age>14*DAY:age>3*DAY)?"v":null;
   if(PMK[L.mk])return playerLegResult(L,m);
   const d=MK[m.sp].find(x=>x.id===L.mk);if(!d)return"v";
   const w=outcome(d,m,realStats(m),L.line);
@@ -285,6 +286,7 @@ function betResult(b){const live=b.legs.filter(L=>L.r==="w");if(!live.length)ret
 // Encaisser avant la fin : valeur = gain possible × probabilité actuelle que le pari passe × 0,9.
 function cashValueM(b,getM){if(b.st!=="open"||b.legs.some(L=>L.r==="l"||L.r==="v"))return 0;const by={};
   for(const L of b.legs.filter(L=>!L.r)){if(PMK[L.mk])return 0;const m=getM(L.mid);if(!m)return 0;const st=status(m);if(st!=="pre"&&!liveOK(m))return 0;
+    if(st==="pre"&&Date.now()>Math.max(m.t,L.t)+15*6e4)return 0;   // devrait avoir commencé (reporté, données en retard) : pas d'encaissement
     const d=MK[m.sp].find(x=>x.id===L.mk);if(!d)return 0;if(liveOK(m)&&d.need.some(k=>k!==(m.sp==="foot"?"g":"pts")))return 0;
     (by[L.mid]=by[L.mid]||[]).push(L)}
   if(!Object.keys(by).length)return 0;let p=1;for(const mid in by)p*=jointP(getM(mid),by[mid]);
