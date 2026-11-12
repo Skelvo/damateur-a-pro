@@ -1047,3 +1047,15 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 .act>.startag{flex:0 0 100%;width:100%;font:800 12.5px "Barlow Condensed";letter-spacing:.08em;text-transform:uppercase;color:var(--sel,#ffd23f);margin-bottom:6px}
 .bigtag{display:inline-block;margin-right:4px;padding:1px 7px;border-radius:8px;background:#ffd23f;color:#1b1400;font:800 12px "Barlow Condensed";text-transform:uppercase;letter-spacing:.04em;vertical-align:1px}
 .act.star .reacts{flex-wrap:wrap}
+/* match déjà parié : marqué sur l'accueil, un seul ticket par match */
+.mc.mcbet{position:relative;border-color:#ffd23f80!important;box-shadow:0 0 0 1px #ffd23f40,0 8px 26px #ffd23f14}
+.mcbetc{position:absolute;top:-1px;right:14px;z-index:2;padding:3px 10px 4px;border-radius:0 0 10px 10px;background:#ffd23f;color:#1b1400;font:800 12.5px "Barlow Condensed";letter-spacing:.05em;text-transform:uppercase}
+.odd.mine{background:linear-gradient(160deg,#ffd23f,#e0a800)!important;color:#1b1400!important;border-color:#ffd23f!important}
+.odd.mine span,.odd.mine b{color:#1b1400!important}
+.odd.taken{opacity:.38}
+.mybet{display:flex;align-items:center;gap:12px;width:100%;margin:12px 0 4px;padding:12px 14px;border-radius:16px;border:1px solid #ffd23f66;background:linear-gradient(150deg,#3a2e0a,#1a1608);color:inherit;text-align:left;font:inherit;cursor:pointer}
+.mybet>span{font-size:26px}.mybet>div{flex:1;min-width:0}.mybet b{display:block;color:#ffd23f;font:800 17px "Barlow Condensed";text-transform:uppercase;letter-spacing:.03em}
+.mybet small{display:block;color:#e8dcb8;font-size:12.5px;margin-top:2px;line-height:1.35}.mybet i{font-style:normal;font-size:24px;color:#ffd23f}
+.ticket.flashb{animation:flashb 1.6s ease}
+@keyframes flashb{0%,60%{box-shadow:0 0 0 3px #ffd23f}100%{box-shadow:0 0 0 0 #ffd23f00}}
+.mybet~* [data-act="pick"]{opacity:.38}

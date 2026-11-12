@@ -935,6 +935,13 @@ const ACTIONS = {
       if (!r.ok) return { ...r, index: i };
       ok.push(r);
     }
+    // un seul ticket par match : pas deux paris de cette demande sur le même match, ni un match déjà parié
+    const mids = ok.map((r) => [...new Set(r.legs.map((L) => String(L.mid)))]);
+    const flat = mids.flat();
+    if (new Set(flat).size < flat.length) return { error: "same_match" };
+    const dup = (await s.query(`select l->>'mid' as mid from bets x, jsonb_array_elements(x.legs) l
+       where x.player = $1 and not x.cancelled and x.at > now() - interval '60 days' and l->>'mid' = any($2::text[]) limit 1`, [p.id, flat]))[0];
+    if (dup) return { error: "already", mid: dup.mid };
     const out = [];
     for (let i = 0; i < list.length; i++) {
       const x = list[i], r = ok[i], cid = cleanName(x.cid, 40) || "b" + Date.now() + "-" + i;

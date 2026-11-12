@@ -225,7 +225,12 @@ function fieldSvg(sp){
 
 /* ---------- rendu : matchs ---------- */
 function selOf(mid,mk,k){return U.sel.find(s=>s.mid===mid&&s.mk===mk&&s.k===k)}
-function oddBtn(m,mk,k,s,short){const on=!!selOf(m.id,mk.id,k),st=status(m);
+// un seul ticket par match : le pari déjà posé sur ce match (s'il y en a un)
+function myBet(mid){for(let i=S.bets.length-1;i>=0;i--){const b=S.bets[i];if(b.st!=="void"&&b.legs.some(L=>L.mid===mid))return b}return null}
+const myLeg=(mid,mk,k)=>{const b=myBet(mid);return b&&b.legs.find(L=>L.mid===mid&&L.mk===mk&&L.k===k)};
+function oddBtn(m,mk,k,s,short){const mb=myBet(m.id),mine=mb&&myLeg(m.id,mk.id,k);if(mb)return`<button class="odd${mine?" mine":" taken"}" data-act="mybet" data-mid="${esc(m.id)}">
+    <span>${mine?"🎟️ "+esc(short??s.l):esc(short??s.l)}</span><b>${s.o?fr(s.o):"—"}</b></button>`;
+  const on=!!selOf(m.id,mk.id,k),st=status(m);
   let hit="";const rs=realStats(m);if(rs){const w=outcome(mk.d,m,rs,mk.line);if(w===k)hit=" hit"}
   return`<button class="odd${hit}" data-act="pick" data-mid="${esc(m.id)}" data-mk="${mk.id}" data-k="${k}" aria-pressed="${on}" ${!canBet(m)||!s.o?"disabled":""}>
     <span>${esc(short??s.l)}</span><b>${s.o?fr(s.o):"—"}</b></button>`}
@@ -240,7 +245,8 @@ function card(m,showLv){const st=status(m),res=resMarket(m),defs=marketInfo(m);
   const nm=defs.length-1,icons=[...new Set(defs.slice(1).map(d=>d.ic+"|"+(d.cls||"")))].slice(0,4);
   const short=m.sp==="tennis"||m.sp==="basket"?["1","2"]:["1","N","2"];
   const fl=FLASH[m.id]&&Date.now()-FLASH[m.id].at<9e4?FLASH[m.id]:null;
-  return`<article class="mc${fl?" mcflash":""}" data-act="open" data-mid="${esc(m.id)}" tabindex="0">${fl?`<span class="mcfl">${{g:"⚽ BUT !",og:"⚽ CSC !",yc:"🟨 Carton",rc:"🟥 Rouge",try:"🏉 Essai !",try7:"🏉 Essai !",pen:"🎯 Pénalité",conv:"🎯 Transfo",pts:"🏉 Points"}[fl.k]||"⚽"}</span>`:""}
+  const mb=myBet(m.id);
+  return`<article class="mc${fl?" mcflash":""}${mb?" mcbet":""}" data-act="open" data-mid="${esc(m.id)}" tabindex="0">${mb?`<span class="mcbetc">🎟️ Parié${mb.legs.length>1?" · combiné":""}</span>`:""}${fl?`<span class="mcfl">${{g:"⚽ BUT !",og:"⚽ CSC !",yc:"🟨 Carton",rc:"🟥 Rouge",try:"🏉 Essai !",try7:"🏉 Essai !",pen:"🎯 Pénalité",conv:"🎯 Transfo",pts:"🏉 Points"}[fl.k]||"⚽"}</span>`:""}
     <div class="mc-top">${st==="live"?`<span class="chip live">Direct${liveOK(m)?" · paris ouverts":""}</span>`:""}${srcChip(m)}<span class="comp">${esc(showLv?m.comp:(m.dep||m.comp))}</span></div>
     <div class="teams"><div class="tm">${crestOf(m,0)}<b>${esc(m.h)}</b>${m.hs?`<small>${esc(m.hs)}</small>`:""}</div>${mid(m)}<div class="tm">${crestOf(m,1)}<b>${esc(m.a)}</b>${m.as?`<small>${esc(m.as)}</small>`:""}</div></div>
     ${res?`<div class="pbar">${res.sels.map(s=>`<i style="width:${(s.p*100).toFixed(1)}%"></i>`).join("")}</div>
@@ -298,6 +304,8 @@ function viewDetail(m){const st=status(m),mks=markets(m),res=mks.find(x=>x.id===
     <div class="teams"><div class="tm">${crestOf(m,0)}<b>${esc(m.h)}</b>${m.hs?`<small>${esc(m.hs)}</small>`:""}</div>${mid(m)}<div class="tm">${crestOf(m,1)}<b>${esc(m.a)}</b>${m.as?`<small>${esc(m.as)}</small>`:""}</div></div>
     ${res?`<div class="prob">${res.sels.map(s=>`<span>${Math.round(s.p*100)} %</span>`).join("")}</div><div class="pbar">${res.sels.map(s=>`<i style="width:${(s.p*100).toFixed(1)}%"></i>`).join("")}</div>`:""}
     <div class="note" style="text-align:center;color:#ffffffa0;margin-top:6px">${esc(fDay(m.t))} · ${fTime(m.t)}</div></div>`;
+  {const mb=myBet(m.id);if(mb){const L=mb.legs.filter(x=>x.mid===m.id);h+=`<button class="mybet" data-act="mybet" data-mid="${esc(m.id)}"><span>🎟️</span><div><b>Tu as déjà parié sur ce match</b>
+    <small>${L.map(x=>esc(x.l)+(x.mt&&x.mk!=="res"?" ("+esc(x.mt)+")":"")).join(" + ")} · ${tok(mb.stake)} jetons${mb.legs.length>1?` · combiné de ${mb.legs.length}`:""} · un seul ticket par match</small></div><i>›</i></button>`}}
   const hasStats=st!=="pre";
   if(hasStats)h+=`<div class="seg"><button data-act="dtab" data-t="p" aria-pressed="${U.dtab==="p"}">Paris</button><button data-act="dtab" data-t="s" aria-pressed="${U.dtab==="s"}">Stats du match</button></div>`;
   if(m.src==="am")h+=amBlock(m,st);
@@ -422,7 +430,7 @@ function viewBets(){const B=S.bets.slice().reverse(),op=B.filter(b=>b.st==="open
   if(!list.length)h+=`<div class="empty">${ic("ticket")}<b>${U.btab==="o"?"Aucun pari en cours":"Pas encore de résultat"}</b>${U.btab==="o"?"Choisis un match et touche une cote.":"Tes tickets réglés apparaîtront ici."}<br><button class="btn" style="margin-top:12px" data-act="tab" data-tab="m">Voir les matchs</button></div>`;
   h+=list.map(b=>{const tag=b.st==="won"?`<span class="tag won">+${tok(b.pay)}</span>`:b.st==="lost"?`<span class="tag lost">Perdu</span>`:b.st==="void"?`<span class="tag void">Remboursé</span>`:b.st==="cashed"?`<span class="tag cashed">Encaissé +${tok(b.pay)}</span>`:`<span class="tag open">En cours</span>`;
     const cv=b.st==="open"?cashValue(b):0;
-    return`<div class="ticket ${b.st}"><div class="th"><b>${b.legs.length>1?"Combiné · "+b.legs.length:"Simple"}</b><span>Parié le ${new Date(b.at).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})} · ${fTime(b.at)}</span></div>
+    return`<div class="ticket ${b.st}" data-bid="${esc(b.id)}"><div class="th"><b>${b.legs.length>1?"Combiné · "+b.legs.length:"Simple"}</b><span>Parié le ${new Date(b.at).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})} · ${fTime(b.at)}</span></div>
     <div class="tl">${b.legs.map(L=>`<div class="leg">${legStatus(L)}<div><b>${esc(L.l)} <span style="color:var(--mute);font-weight:500">@ ${fr(L.o)}</span></b><small>${esc(L.mt)}</small><small>${esc(L.ml)}</small>${legWhen(L)}</div></div>`).join("")}</div>
     <div class="tf"><div><small>Mise</small><b>${tok(b.stake)}</b></div><div style="text-align:center"><small>Cote</small><b>${fr(b.odds)}</b></div><div style="text-align:right"><small>${b.st==="won"?"Gain":b.st==="cashed"?"Encaissé":"Gain possible"}</small>${b.st==="open"?`<b>${tok(b.stake*b.odds)}</b>`:tag}</div></div>
     ${cv?`<button class="cashbtn" data-act="cash" data-id="${esc(b.id)}">${ic("coin")} Encaisser maintenant <b>${tok(cv)}</b></button>`:""}
@@ -606,7 +614,7 @@ function confetti(){if(matchMedia("(prefers-reduced-motion: reduce)").matches)re
   document.body.appendChild(c);setTimeout(()=>c.remove(),3800)}
 
 /* ---------- actions ---------- */
-function pick(mid,mkId,k){const m=findMatch(mid);if(!m||!canBet(m))return;const mk=markets(m).find(x=>x.id===mkId);if(!mk)return;const s=mk.sels[k];if(!s.o)return;
+function pick(mid,mkId,k){const m=findMatch(mid);if(!m||!canBet(m))return;if(myBet(mid)){toast("🎟️ Tu as déjà un pari sur ce match : un seul ticket par match.");return}const mk=markets(m).find(x=>x.id===mkId);if(!mk)return;const s=mk.sels[k];if(!s.o)return;
   const i=U.sel.findIndex(x=>x.mid===mid&&x.mk===mkId);const same=i>=0&&U.sel[i].k===k;if(i>=0)U.sel.splice(i,1);
   if(!same){if(U.sel.length>=12){toast("12 sélections maximum par ticket.");return}
     U.sel.push({mid,mk:mkId,k,line:mk.line,o:s.o,live:liveOK(m),l:s.l,mt:mk.title,ml:m.h+" – "+m.a,ic:mk.d.ic,cls:mk.d.cls,sp:m.sp,t:m.t,
@@ -619,7 +627,9 @@ async function place(){const n=U.sel.length;if(!n||U.placing)return;const stake=
     if(!mk||mk.line!==s.line){gone.push(s);return}const o=mk.sels[s.k].o;if(o&&o!==s.o){s.o=o;moved++}});
   if(moved&&!gone.length){toast("Le score a bougé : cotes mises à jour, vérifie et valide à nouveau.");refreshLayer();renderSlipBar();return}
   if(gone.length){U.sel=U.sel.filter(s=>!gone.includes(s));toast("Un match a commencé : sélection retirée.","bad");refreshLayer();renderSlipBar();return}
-  const combo=U.combo&&n>1&&!comboBlocked(),cost=combo?stake:stake*n;if(cost>S.bal){toast("Solde insuffisant.","bad");return}
+  const combo=U.combo&&n>1&&!comboBlocked(),cost=combo?stake:stake*n;
+  {const al=U.sel.find(x=>myBet(x.mid));if(al){U.sel=U.sel.filter(x=>!myBet(x.mid));toast("🎟️ Tu avais déjà parié sur un de ces matchs : sélection retirée.","bad");refreshLayer();renderSlipBar();return}}
+  if(!combo&&new Set(U.sel.map(x=>x.mid)).size<n){toast("Un seul ticket par match : en simples, garde une seule sélection par match (ou passe en combiné).","bad");return}if(cost>S.bal){toast("Solde insuffisant.","bad");return}
   const leg=s=>({mid:s.mid,mk:s.mk,k:s.k,line:s.line,o:s.o,live:!!s.live,l:s.l,mt:s.mt,ml:s.ml,ic:s.ic,sp:s.sp,t:s.t,snap:s.snap});
   const at=Date.now();
   // le serveur vérifie chaque pari (match pas commencé, vraie cote) et l'enregistre avant qu'on le garde ici
@@ -633,6 +643,7 @@ async function place(){const n=U.sel.length;if(!n||U.placing)return;const stake=
   if(!j||!j.ok){const E_=j&&j.error;
     if(E_==="odds_changed"){(j.changed||[]).forEach(c=>{const s=U.sel.find(x=>x.mid===c.mid&&x.mk===c.mk&&x.k===c.k);if(!s)return;if(c.o)s.o=c.o;else U.sel=U.sel.filter(x=>x!==s)});
       CIK="";toast("Les cotes ont bougé : vérifie et valide à nouveau.");refreshLayer();renderSlipBar();return}
+    if(E_==="already"||E_==="same_match"){toast(E_==="already"?"🎟️ Tu as déjà un pari sur ce match : un seul ticket par match.":"Un seul ticket par match : garde une seule sélection par match en simples.","bad");if(E_==="already"){U.sel=U.sel.filter(x=>x.mid!==j.mid);refreshLayer();renderSlipBar()}return}
     if(E_==="started"||E_==="unknown_match"){U.sel=U.sel.filter(x=>x.mid!==j.mid);toast("Un match a commencé : sélection retirée.","bad");refreshLayer();renderSlipBar();return}
     toast(E_==="balance"?"Solde insuffisant.":E_==="combo_impossible"?"Ce combiné est impossible.":E_==="slow"?"Doucement ! Réessaie dans un instant.":E_==="offline"?"Pas de connexion : pari non enregistré.":"Pari refusé, réessaie.","bad");return}
   const sid={};(j.bets||[]).forEach(x=>sid[x.cid]=x);
@@ -797,6 +808,8 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"delgo":delAccount();break;
     case"dtab":U.dtab=d.t;refreshLayer();break;
     case"btab":U.btab=d.t;render();break;
+    case"mybet":{const b=myBet(d.mid);document.querySelectorAll(".scrim").forEach(x=>x.remove());U.open=null;layer("");U.tab="b";if(b)U.btab=b.st==="open"?"o":"c";render();window.scrollTo(0,0);
+      if(b)setTimeout(()=>{const e=document.querySelector(`[data-bid="${b.id}"]`);if(e){e.scrollIntoView({block:"center",behavior:"smooth"});e.classList.add("flashb");setTimeout(()=>e.classList.remove("flashb"),1600)}},250);break}
     case"pick":pick(d.mid,d.mk,+d.k);if(U.open)refreshLayer();render();break;
     case"ppick":pickPlayer(d.mid,d.mk,d.pid,d.name);if(U.open)refreshLayer();render();break;
     case"pside":U.pside=+d.v;U.pmore=false;refreshLayer();break;
@@ -2743,7 +2756,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.75";
+const VERSION="2.76";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
