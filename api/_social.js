@@ -121,7 +121,7 @@ async function fbPublish(c, p) {
 // Publie les publications validées dont l'heure est passée (au plus 3 par passage ; un carrousel compte pour une).
 async function publishDue(s) {
   const due = await s.query(`update social_posts set status = 'publishing', tries = tries + 1
-      where id in (select id from social_posts where status = 'approved' and at <= now() order by at limit 3)
+      where id in (select id from social_posts where status = 'approved' and at <= now() + interval '8 minutes' order by at limit 3)
       returning id, kind, at, image, images, cover, caption_ig, caption_fb, networks, result`);
   if (!due.length) return 0;
   let c; try { c = await creds(s); } catch (e) {
