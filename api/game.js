@@ -1471,7 +1471,7 @@ const ACTIONS = {
   // diagnostic des rappels : passages des tâches planifiées et état des notifications d'un joueur
   async admin_push_diag(s, b) {
     admin(b);
-    const keys = await s.query(`select key, value from meta where key like 'remind:%' or key like 'morning:%' or key like 'recap:%' order by key desc limit 20`);
+    const keys = await s.query(`select key, value from meta where key like 'remind:%' or key like 'morning:%' or key like 'recap:%' or key like 'wake:%' order by key desc limit 24`);
     const pl = await s.query(`select p.id, p.name, p.remind, p.seen_at, (select count(*)::int from push_subs x where x.player = p.id) as subs from players p where lower(p.name) like lower($1) limit 5`, ["%" + String(b.name || "") + "%"]);
     const log = pl[0] ? await s.query(`select at, tag, title, ok, fail, err from push_log where player = $1 order by at desc limit 25`, [pl[0].id]) : [];
     // envoi d'essai immédiat (test=1)
@@ -2565,7 +2565,12 @@ export default async function handler(req, res) {
       } catch (e) { return res.status(502).json({ error: "espn" }); }
     }
     if (q.cron && q.slot === "tick") {
-      try { return res.status(200).json(await tick(await db())); } catch (e) { console.error(e); return res.status(500).json({ error: "server" }); }
+      try {
+        const s = await db(), ua = String(req.headers["user-agent"] || ""), src = /vercel/i.test(ua) ? "vercel" : /cron-job/i.test(ua) ? "cronjob" : /^curl/i.test(ua) ? "github" : "appli";
+        // dernier réveil par source (diagnostic) + nombre de réveils du jour
+        await s.query(`insert into meta (key, value) values ($1, $2) on conflict (key) do update set value = excluded.value`, ["wake:" + src, new Date().toISOString()]).catch(() => {});
+        return res.status(200).json(await tick(s));
+      } catch (e) { console.error(e); return res.status(500).json({ error: "server" }); }
     }
     if (q.cron) {
       const want = process.env.CRON_SECRET || "", got = String(req.headers.authorization || "");
