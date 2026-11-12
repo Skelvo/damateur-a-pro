@@ -1011,7 +1011,7 @@ function viewLeagues(){const L=U.lg,d=L.data;
     h+=`<div class="lgcard gcomp gd-${gdv}" style="--gc:${esc((cur.emblem&&cur.emblem.c)||"#35d07f")}"><div class="gtop">${emb(cur,"lg")}<div class="gti"><h3>${esc(cur.name)}</h3>
     ${cur.motto?`<em class="gmotto">« ${esc(cur.motto)} »</em>`:""}<small><button class="link" data-act="gmem">${cur.n} membre${cur.n>1?"s":""}</button> · tu es ${R}</small><button class="gdvb" data-act="gwr">${gdivImg(gdivI(cur.elo||1000),"gdis")} Guilde ${GDIV[gdivI(cur.elo||1000)][0]} ›</button></div>
     <button class="btn gold gsm" data-act="lginv" aria-label="Inviter">${ic("share")}</button><button class="gdots" data-act="gmenu" aria-label="Menu de la guilde">•••${boss&&cur.nreq?`<i class="tdd"></i>`:""}</button></div></div>`}
-  else h+=`<div class="lgcard"><h3>Classement général</h3><small>Tous les joueurs${d.rank?` · tu es <b style="color:var(--sel)">${d.rank}<sup>e</sup></b> sur ${d.total}`:""}</small></div>`;
+  else h+=`<div class="lgcard"><h3>Classement général</h3><small>Tous les joueurs${d.rank?` · tu es <b style="color:var(--sel)">${d.rank}<sup>${d.rank===1?"er":"e"}</sup></b> sur ${d.total} en jetons`:""}</small></div>`;
   if(cur&&d.last)h+=`<div class="champ">${ic("trophy")}<div><small>Vainqueur${d.last.winners.length>1?"s":""} de la semaine dernière</small><b>${d.last.winners.map(w=>esc(w.name)+` <span class="pos">+${tok(w.gain)}</span>`).join(" · ")}</b></div></div>`;
   if(cur){const nd=(L.duels||[]).filter(x=>x.status==="open"&&String(x.a)!==String(d.me)).length;
     const nc=chatUnread(cur.code);
@@ -2820,7 +2820,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.94";
+const VERSION="2.95";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
