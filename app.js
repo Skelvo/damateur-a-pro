@@ -95,7 +95,7 @@ async function warmSport(sp){const ms=matchesFor(sp,-1).filter(m=>["pre","live"]
 // plusieurs mises à jour d'affilée = un seul affichage
 let rsT=0;function renderSoon(ms=250){clearTimeout(rsT);rsT=setTimeout(()=>{if(!U.open||U.open==="slip")render()},ms)}
 async function espnStats(m){ // complète les stats foot (cartons, corners…) et les compositions via le résumé du match
-  if(m.sp!=="foot"||m.src!=="espn"||m._sum===m.state)return;m._sum=m.state;
+  if(m.sp!=="foot"||m.src!=="espn")return;if(m.state!=="in"&&m._sum===m.state)return;if(m.state==="in"&&m._sumAt&&Date.now()-m._sumAt<9e4)return;m._sum=m.state;m._sumAt=Date.now();
   try{applySummary(m,await getJSON(`${ESPN}${m.path}/summary?event=${m.eid}`))}
   catch(e){m._sum=0}}
 async function loadLineup(m){if(m.sp!=="foot"||m.src!=="espn"||status(m)!=="pre"||m.t-Date.now()>100*6e4||(m.lineupAt&&Date.now()-m.lineupAt<4*6e4)||m._luBusy)return;
@@ -311,7 +311,7 @@ function foot(){return`<p class="foot">Jeu 100 % gratuit : jetons fictifs sans a
 
 /* ---------- rendu : fiche match ---------- */
 function viewDetail(m){const st=status(m),mks=markets(m),res=mks.find(x=>x.id==="res"),rs=realStats(m)||(st==="live"&&m.src!=="espn"?null:m.st);
-  if(m.src==="espn"&&st!=="pre"&&m.sp==="foot"&&m._sum!==m.state)espnStats(m).then(()=>{MKC.clear();if(U.open===m.id)openDetail(m.id,true)});
+  if(m.src==="espn"&&st!=="pre"&&m.sp==="foot"&&(m._sum!==m.state||(m.state==="in"&&Date.now()-(m._sumAt||0)>9e4)))espnStats(m).then(()=>{MKC.clear();if(U.open===m.id)openDetail(m.id,true)});
   let h=`<div class="grab"><h3>${esc(SP[m.sp].n)}</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   <div class="hero">${fieldSvg(m.sp)}<div class="mc-top">${st==="live"?`<span class="chip live">Direct${liveOK(m)?" · paris ouverts":""}</span>`:""}${srcChip(m)}<span class="comp">${esc(m.comp)}</span></div>
     <div class="teams"><div class="tm">${crestOf(m,0)}<b>${esc(m.h)}</b>${m.hs?`<small>${esc(m.hs)}</small>`:""}</div>${mid(m)}<div class="tm">${crestOf(m,1)}<b>${esc(m.a)}</b>${m.as?`<small>${esc(m.as)}</small>`:""}</div></div>
@@ -334,11 +334,16 @@ function viewDetail(m){const st=status(m),mks=markets(m),res=mks.find(x=>x.id===
   if(U.sel.length&&canBet(m))h+=slipPanel();
   return h}
 function statsBlock(m,st){if(!st)return`<div class="empty">${ic("chart")}<b>Stats à venir</b>Elles s’affichent à la fin du match.</div>`;
-  const keys=ALLSTATS[m.sp].filter(k=>k!=="s1"&&Array.isArray(st[k])&&st[k].every(v=>v!=null&&!isNaN(v)));
+  const keys=(m.sp==="foot"?["pos","sh"]:[]).concat(ALLSTATS[m.sp]).filter(k=>k!=="s1"&&Array.isArray(st[k])&&st[k].every(v=>v!=null&&!isNaN(v)));
   if(!keys.length)return`<div class="empty">${ic("chart")}<b>Stats indisponibles</b>Le flux n’a pas encore publié les statistiques.</div>`;
   return`<div class="cmp">${keys.map(k=>{const[a,b]=st[k],[lb,i2,c2]=STATL[k];
     if(k==="tb")return`<div class="r"><div class="l"><b></b><span>${ic(i2)}${lb}</span><b>${a+b}</b></div></div>`;
-    const mx=Math.max(a,b,1);return`<div class="r"><div class="l"><b>${a}</b><span>${ic(i2,c2||"")}${lb}</span><b>${b}</b></div><div class="bb"><i><b style="width:${a/mx*100}%"></b></i><i><b style="width:${b/mx*100}%"></b></i></div></div>`}).join("")}</div>`}
+    if(k==="pos")return`<div class="r"><div class="l"><b>${Math.round(a)} %</b><span>${ic(i2)}${lb}</span><b>${Math.round(b)} %</b></div><div class="posb"><i style="flex:${a||1}"></i><i style="flex:${b||1}"></i></div></div>`;
+    const mx=Math.max(a,b,1);return`<div class="r"><div class="l"><b>${a}</b><span>${ic(i2,c2||"")}${lb}</span><b>${b}</b></div><div class="bb"><i><b style="width:${a/mx*100}%"></b></i><i><b style="width:${b/mx*100}%"></b></i></div></div>`}).join("")}</div>${timeline(m)}`}
+// temps forts (buts, cartons) dans l'ordre du match
+function timeline(m){if(m.sp!=="foot"||!Array.isArray(m.ev)||!m.ev.length)return"";const E={g:"⚽",og:"⚽",yc:"🟨",rc:"🟥",pk:"🎯"},N={g:"But",og:"CSC",yc:"Carton jaune",rc:"Carton rouge",pk:"Penalty"};
+  const L=m.ev.filter(e=>E[e.ty]).slice().sort((a,b)=>(parseInt(a.min)||0)-(parseInt(b.min)||0));if(!L.length)return"";
+  return`<div class="h3t">Temps forts</div><div class="tln">${L.map(e=>{const side=e.s==null?-1:e.ty==="og"?1-e.s:e.s;return`<div class="tle${side===1?" aw":""}"><span class="tm">${esc(String(e.min||""))}’</span><span class="ic">${E[e.ty]}</span><span><b>${esc(e.n||N[e.ty])}</b><small>${N[e.ty]}${side>=0?" · "+esc(side?m.a:m.h):""}</small></span></div>`}).join("")}</div>`}
 
 /* ---------- ballons illustrés ---------- */
 function ballArt(sp,cls){
@@ -462,7 +467,7 @@ function viewBets(){const B=S.bets.slice().reverse(),op=B.filter(b=>b.st==="open
     return`<div class="ticket ${b.st}" data-bid="${esc(b.id)}"><div class="th"><b>${b.legs.length>1?"Combiné · "+b.legs.length:"Simple"}</b><span>Parié le ${new Date(b.at).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})} · ${fTime(b.at)}</span></div>
     ${(()=>{if(b.st!=="open")return"";const S_=b.legs.map(L=>L.r==="w"?"sure":L.r==="l"?"dead":(liveLeg(L,L.mid&&findMatch(L.mid))||{}).c);
       return S_.includes("dead")?`<div class="tdead">❌ Une sélection est déjà tombée : ${b.legs.length>1?"ce combiné":"ce pari"} est perdu</div>`:S_.every(x=>x==="sure")?`<div class="tsure">✅ Tout est déjà bon : gagné à la fin du match</div>`:""})()}
-    <div class="tl">${b.legs.map(L=>`<div class="leg">${legStatus(L)}<div><b>${esc(L.l)} <span style="color:var(--mute);font-weight:500">@ ${fr(L.o)}</span></b><small>${esc(L.mt)}</small><small>${esc(L.ml)}</small>${legWhen(L)}</div></div>`).join("")}</div>
+    <div class="tl">${b.legs.map(L=>`<div class="leg legx" data-act="legopen" data-mid="${esc(L.mid)}">${legStatus(L)}<div><b>${esc(L.l)} <span style="color:var(--mute);font-weight:500">@ ${fr(L.o)}</span></b><small>${esc(L.mt)}</small><small>${esc(L.ml)}</small>${legWhen(L)}</div></div>`).join("")}</div>
     <div class="tf"><div><small>Mise</small><b>${tok(b.stake)}</b></div><div style="text-align:center"><small>Cote</small><b>${fr(b.odds)}</b></div><div style="text-align:right"><small>${b.st==="won"?"Gain":b.st==="cashed"?"Encaissé":"Gain possible"}</small>${b.st==="open"?`<b>${tok(b.stake*b.odds)}</b>`:tag}</div></div>
     ${cv?`<button class="cashbtn" data-act="cash" data-id="${esc(b.id)}">${ic("coin")} Encaisser maintenant <b>${tok(cv)}</b></button>`:""}
     <button class="tshare" data-act="tshare" data-id="${esc(b.id)}">${ic("share")} Partager le ticket</button></div>`}).join("");
@@ -840,6 +845,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"btab":U.btab=d.t;render();break;
     case"mybet":{const b=(d.bid&&S.bets.find(x=>String(x.id)===d.bid))||myBet(d.mid);document.querySelectorAll(".scrim").forEach(x=>x.remove());U.open=null;layer("");U.tab="b";if(b)U.btab=b.st==="open"?"o":"c";render();window.scrollTo(0,0);
       if(b)setTimeout(()=>{const e=document.querySelector(`[data-bid="${b.id}"]`);if(e){e.scrollIntoView({block:"center",behavior:"smooth"});e.classList.add("flashb");setTimeout(()=>e.classList.remove("flashb"),1600)}},250);break}
+    case"legopen":{const m=findMatch(d.mid);if(!m){toast("Ce match n’est plus disponible dans l’appli.");break}const st=status(m);U.dtab=st==="live"||st==="post"?"s":"p";openDetail(d.mid);break}
     case"pick":pick(d.mid,d.mk,+d.k);if(U.open)refreshLayer();render();break;
     case"ppick":pickPlayer(d.mid,d.mk,d.pid,d.name);if(U.open)refreshLayer();render();break;
     case"pside":U.pside=+d.v;U.pmore=false;refreshLayer();break;
@@ -2797,7 +2803,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.85";
+const VERSION="2.86";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

@@ -117,7 +117,7 @@ const MK={
     {id:"as",grp:"Jeu",ic:"group",t:"Passes décisives",ty:"ou",need:["ast"],val:g=>tot(g,"ast")}]
 };
 const ALLSTATS={foot:["g","sot","co","of","fo","yc","rc","pk"],rugby:["pts","tr","cv","pm","px","dr","yc","rc"],tennis:["sets","gm","ac","df","brk","tb","rk","s1"],basket:["pts","tp","reb","ast","ot"]};
-const STATL={g:["Buts","goal"],sot:["Tirs cadrés","target"],co:["Corners","corner"],of:["Hors-jeux","flag"],fo:["Fautes","whistle"],yc:["Cartons jaunes","card","yc"],rc:["Cartons rouges","card","rc"],pk:["Penalties","whistle"],
+const STATL={pos:["Possession","ball"],sh:["Tirs","target"],g:["Buts","goal"],sot:["Tirs cadrés","target"],co:["Corners","corner"],of:["Hors-jeux","flag"],fo:["Fautes","whistle"],yc:["Cartons jaunes","card","yc"],rc:["Cartons rouges","card","rc"],pk:["Penalties","whistle"],
   pts:["Points","chart"],tr:["Essais","rugby"],cv:["Transformations","posts"],pm:["Pénalités réussies","posts"],px:["Pénalités ratées","miss"],dr:["Drops","drop"],
   tp:["Paniers à 3 points","basket"],reb:["Rebonds","chart"],ast:["Passes décisives","group"],ot:["Prolongations","whistle"],
   sets:["Sets","tennis"],gm:["Jeux","chart"],ac:["Aces","bolt"],df:["Doubles fautes","df"],brk:["Breaks","break"],tb:["Tie-breaks","tb"],rk:["Raquettes cassées","broken"]};
@@ -165,7 +165,7 @@ function outcome(d,m,st,line){ // index de la sélection gagnante, null si stats
   const g=k=>st[k],v=d.val(g,m);
   if(d.ty==="ou")return v>line?0:1;if(d.ty==="yn")return v?0:1;return v}
 const ESPN="https://site.api.espn.com/apis/site/v2/sports/";
-const SOCSTAT={yellowCards:"yc",redCards:"rc",offsides:"of",wonCorners:"co",foulsCommitted:"fo",shotsOnTarget:"sot",penaltyKickShots:"pk"};
+const SOCSTAT={yellowCards:"yc",redCards:"rc",offsides:"of",wonCorners:"co",foulsCommitted:"fo",shotsOnTarget:"sot",penaltyKickShots:"pk",possessionPct:"pos",totalShots:"sh"};
 // clubs pros français (identifiants ESPN, saison 2026-2027) : 1 = Ligue 1, 2 = Ligue 2
 const FR_TIER={172:1,174:1,7868:1,6997:1,3236:1,2697:1,175:1,166:1,273:1,167:1,176:1,2502:1,6851:1,160:1,169:1,180:1,179:1,170:1,
   3267:2,18066:2,7869:2,3171:2,3170:2,7732:2,6994:2,171:2,177:2,274:2,165:2,10678:2,11884:2,7719:2,178:2,272:2,3266:2,3243:2};

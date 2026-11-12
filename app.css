@@ -1076,3 +1076,14 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 .st.p.ls-sure{background:var(--win);border-color:var(--win)!important;color:#04130b;display:grid;place-items:center;font-weight:800}
 .st.p.ls-ko,.st.p.ls-wait{border-color:#ffb35c!important}
 .st.p.ls-dead{background:#ff5a5a;border-color:#ff5a5a!important;color:#fff;display:grid;place-items:center;font-weight:800}
+/* ticket : sélection cliquable → fiche du match ; possession et temps forts */
+.leg.legx{cursor:pointer;position:relative;border-radius:12px;transition:background .15s}
+.leg.legx:active{background:#ffffff0a}
+.leg.legx::after{content:"›";position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:22px;color:var(--mute2)}
+.posb{display:flex;gap:3px;height:8px;border-radius:6px;overflow:hidden;margin-top:6px}.posb i{display:block;background:var(--acc)}.posb i+i{background:#d9e4de}
+.h3t{margin:16px 2px 8px;font:800 14px "Barlow Condensed";letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+.tln{display:flex;flex-direction:column;gap:6px}
+.tle{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:var(--card)}
+.tle.aw{flex-direction:row-reverse;text-align:right}
+.tle .tm{font:800 16px "Barlow Condensed";color:var(--sel);min-width:34px;text-align:center}.tle .ic{font-size:18px}
+.tle b{display:block;font-size:14px}.tle small{color:var(--mute);font-size:12px}
