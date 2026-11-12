@@ -1220,7 +1220,8 @@ async function playerCard(p,o){o=o||{};const C=cardStats(p.bets||[],p.xp),T=(()=
   // colonne de gauche : note, sport, écusson, rang
   const txt=(t,x,y,f,col=ink,al="center")=>{c.font=f;c.textAlign=al;c.fillStyle=col;c.fillText(t,x,y)};
   c.save();c.shadowColor="rgba(0,0,0,.25)";c.shadowBlur=6;c.shadowOffsetY=3;
-  txt(String(C.note),160,232,'800 150px "Barlow Condensed"');const spL=o.sp==="none"?"":o.sp&&o.sp!=="auto"?{foot:"FOOT",rugby:"RUGBY",tennis:"TENNIS",nba:"NBA"}[o.sp]:(C.sport||"MULTI");if(spL)txt(spL,160,284,'800 44px "Barlow Condensed"');c.restore();const up=spL?0:-50;c.save();c.translate(0,up);
+  txt(String(C.note),160,232,'800 150px "Barlow Condensed"');// sous la note : le titre de niveau (Habitué, Ultra, Capo…), réduit s'il est long
+  const spL=String(C.tier||"").toUpperCase();if(spL){let fs=44;c.font=`800 ${fs}px "Barlow Condensed"`;while(fs>26&&c.measureText(spL).width>200){fs-=2;c.font=`800 ${fs}px "Barlow Condensed"`}txt(spL,160,284,`800 ${fs}px "Barlow Condensed"`)}c.restore();const up=spL?0:-50;c.save();c.translate(0,up);
   c.fillStyle=ink;c.globalAlpha=.6;c.fillRect(118,304,84,3);c.globalAlpha=1;
   let by=320;if(o.bd==="fav"&&p.fav&&p.fav.logo){const L=await loadImgX(p.fav.logo);if(L){c.drawImage(L,122,by,76,76);by+=92}}
   else if(o.bd==="emo"){const em=p.cos&&p.cos.e&&cosEmoji(p.cos.e);if(em){txt(em,160,by+64,'66px serif');by+=92}}
@@ -1231,7 +1232,7 @@ async function playerCard(p,o){o=o||{};const C=cardStats(p.bets||[],p.xp),T=(()=
   c.save();c.shadowColor="rgba(0,0,0,.3)";c.shadowBlur=8;c.shadowOffsetY=3;txt(nm,W/2,590,`800 ${fs}px "Barlow Condensed"`);c.restore();
   // ornement
   c.fillStyle=ink;c.globalAlpha=.75;c.fillRect(130,614,205,2.5);c.fillRect(W-335,614,205,2.5);c.beginPath();c.moveTo(W/2,603);c.lineTo(W/2+12,615);c.lineTo(W/2,627);c.lineTo(W/2-12,615);c.closePath();c.fill();c.globalAlpha=1;
-  const tt=o.sub!=="lvl"&&p.cos&&p.cos.t&&cosTitle(p.cos.t);txt(tt?tt:`${C.tier} · niveau ${C.lvl}`,W/2,664,'600 29px Barlow');
+  const tt=o.sub!=="lvl"&&p.cos&&p.cos.t&&cosTitle(p.cos.t);txt(tt?tt:`Niveau ${C.lvl}`,W/2,664,'600 29px Barlow');
   // statistiques
   const ks=Object.keys(C.stats);ks.forEach((k,i)=>{const col=i<3?0:1,row=i%3,x=col?W/2+58:178,y=730+row*62;
     txt(String(C.stats[k]),x+30,y,'800 60px "Barlow Condensed"',ink,"right");c.globalAlpha=.85;txt(k,x+44,y,'700 34px "Barlow Condensed"',ink,"left");c.globalAlpha=1});
@@ -1280,8 +1281,7 @@ async function openCard(p){U.open="card";U.cardP=p;const head=`<div class="grab"
       <b>Sous le pseudo</b><div>${ch("sub","t","🏷️ Mon titre")}${ch("sub","lvl","⭐ Mon niveau")}</div>
       <b>Rang affiché</b><div>${(()=>{const real=CARD_T.find(x=>C.note>=x[0]);return[["auto","✨ Mon rang"],["BRONZE","🥉 Bronze"],["ARGENT","🥈 Argent"],["OR","🥇 Or"],["ÉLITE","💎 Élite"],["LÉGENDE","👑 Légende"]].map(([v,n])=>{const t=CARD_T.find(x=>x[1]===v),lock=t&&t[0]>real[0];
         return lock?`<button data-act="cardlock" data-v="${t[0]}" class="lk" aria-disabled="true">🔒 ${n.split(" ")[1]}</button>`:`<button data-act="cardopt" data-k="rk" data-v="${v}" aria-pressed="${(o.rk||"auto")===v}">${n}</button>`}).join("")})()}</div>
-      <small class="rkn">Tu peux afficher ton rang ou un rang inférieur. Les rangs au-dessus se débloquent avec ta note.</small>
-      <b>Sport</b><div>${ch("sp","auto","✨ Auto")}${ch("sp","foot","⚽ Foot")}${ch("sp","rugby","🏉 Rugby")}${ch("sp","tennis","🎾 Tennis")}${ch("sp","nba","🏀 NBA")}${ch("sp","none","Aucun")}</div></div>`:"";
+      <small class="rkn">Tu peux afficher ton rang ou un rang inférieur. Les rangs au-dessus se débloquent avec ta note.</small></div>`:"";
     layer(head+`<div class="pcardimg"><div class="tilt" id="tilt"><img src="${url}" alt="Carte de ${esc(p.name)}"><i class="glare" style="-webkit-mask-image:url(${url});mask-image:url(${url})"></i></div></div><p class="tilthint">👆 Fais glisser ton doigt sur la carte pour la faire bouger</p>${opts}
     <p class="note">Note <b>${C.note}</b> (${T[1].toLowerCase()}) : précision, flair, audace, gestion, régularité et expérience, calculés sur les vrais paris.${p.me?" Ta bannière et ton style se changent dans « Mon style ».":""}</p>
     <button class="btn gold wide" data-act="cardshare">${ic("share")} Partager la carte</button>`);U.cardSk=0;cardTilt()}
@@ -2743,7 +2743,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.73";
+const VERSION="2.74";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
