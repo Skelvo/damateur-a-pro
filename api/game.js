@@ -299,7 +299,7 @@ async function reminders(s, slot) {
   const key = `remind:${slot}:${t.ymd}`;
   if (!(await s.query(`insert into meta (key, value) values ($1, '1') on conflict do nothing returning key`, [key]))[0]) return { skipped: "déjà fait" };
   const min = slot === "midi" ? 1 : 2;
-  const ppl = await s.query(`select p.id, p.name, p.fav, extract(epoch from now() - p.seen_at) / 86400 as idle, to_char(p.seen_at, 'YYYYMMDD') as sday from players p where p.remind >= $1 and p.seen_at < now() - interval '45 minutes'
+  const ppl = await s.query(`select p.id, p.name, p.fav, extract(epoch from now() - p.seen_at) / 86400 as idle, to_char(p.seen_at, 'YYYYMMDD') as sday from players p where p.remind >= $1 and p.seen_at < now() - interval '15 minutes'
       and exists (select 1 from push_subs x where x.player = p.id)`, [min]);
   if (!ppl.length) { await s.query(`update meta set value = $2 where key = $1`, [key, JSON.stringify({ at: new Date().toISOString(), eligible: 0 })]).catch(() => {}); return { sent: 0 }; }
   const now = Date.now(), M = await todayMatches(t.ymd, now + 20 * 60e3, Math.round(Number(t.eod)));
@@ -359,7 +359,7 @@ async function reminders(s, slot) {
   });
   const n = (await Promise.all(jobs)).reduce((a, x) => a + x, 0);
   // résumé gardé pour le diagnostic (qui était éligible, qui a été écarté car actif dans l'appli)
-  const active = (await s.query(`select string_agg(name, ', ') as n from players p where p.remind >= $1 and p.seen_at >= now() - interval '45 minutes'
+  const active = (await s.query(`select string_agg(name, ', ') as n from players p where p.remind >= $1 and p.seen_at >= now() - interval '15 minutes'
       and exists (select 1 from push_subs x where x.player = p.id)`, [min]))[0].n;
   await s.query(`update meta set value = $2 where key = $1`, [key, JSON.stringify({ at: new Date().toISOString(), eligible: ppl.length, sent: n, matches: M.length, active: active || "" })]).catch(() => {});
   return { sent: n, matches: M.length };
