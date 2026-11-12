@@ -1732,7 +1732,7 @@ const ACTIONS = {
   // diagnostic d'un joueur : registre des jetons, point de départ du contrôle, soldes par jour, gains de la semaine
   async admin_ledger(s, b) {
     admin(b);
-    const p = (await s.query(`select id, name, bal::float8 as bal, seen_at from players where lower(name) = lower($1)`, [String(b.name || "")]))[0];
+    const p = (await s.query(`select id, name, bal::float8 as bal, seen_at, cos from players where lower(name) = lower($1)`, [String(b.name || "")]))[0];
     if (!p) throw fail(404, "unknown");
     return { p,
       base: (await s.query(`select bal::float8 as bal, at from audit_base where player = $1`, [p.id]))[0] || null,
