@@ -261,6 +261,10 @@ let TVO={},tvAt=0;async function loadTv(){if(Date.now()-tvAt<15*6e4)return;tvAt=
 const tvOf=m=>tvFor(m,TVO);
 function tvChip(m,big){const ch=tvOf(m);if(!ch)return"";const C=TVCH[ch]||{},live=status(m)==="live"||!!ghostLive(m)&&!ghostLive(m).done;
   return`<button class="tvc${live?" on":""}${big?" big":""}" data-act="tv" data-ch="${esc(ch)}" aria-label="Regarder sur ${esc(ch)}">📺 ${esc(ch)}${live?" · EN DIRECT":C.free===1?"":" · payant"}</button>`}
+// nombre de joueurs qui ont parié sur chaque match (accueil), rafraîchi toutes les 2 minutes au plus
+let CCN={},ccAt=0,ccBusy=0;function crowdCounts(){if(ccBusy||Date.now()-ccAt<12e4)return;const mids=[...REG.values()].filter(m=>m.t>Date.now()-4*36e5&&m.t<Date.now()+9*864e5).map(m=>m.id).slice(0,300);if(!mids.length)return;
+  ccBusy=1;api("crowd_counts",{mids}).then(j=>{CCN=j.n||{};ccAt=Date.now();if(U.tab==="m"&&!U.open)renderSoon()}).catch(()=>{}).finally(()=>{ccBusy=0})}
+function crowdLine(m){const n=CCN[m.id]||0;return n?`<div class="ccn">👥 <b>${n}</b> joueur${n>1?"s ont":" a"} parié sur ce match</div>`:""}
 function srcChip(m){return m.src==="espn"?`<span class="chip feed">Réel</span>`:m.src==="am"?`<span class="chip org">Réel · joueurs</span>`:m.src==="org"?`<span class="chip org">Organisateur</span>`:`<span class="chip">Simulation</span>`}
 function card(m,showLv){const st=status(m),res=resMarket(m),defs=marketInfo(m);
   const nm=defs.length-1,icons=[...new Set(defs.slice(1).map(d=>d.ic+"|"+(d.cls||"")))].slice(0,4);
@@ -272,6 +276,7 @@ function card(m,showLv){const st=status(m),res=resMarket(m),defs=marketInfo(m);
     <div class="teams"><div class="tm">${crestOf(m,0)}<b>${esc(m.h)}</b>${m.hs?`<small>${esc(m.hs)}</small>`:""}</div>${mid(m)}<div class="tm">${crestOf(m,1)}<b>${esc(m.a)}</b>${m.as?`<small>${esc(m.as)}</small>`:""}</div></div>
     ${res?`<div class="pbar">${res.sels.map(s=>`<i style="width:${(s.p*100).toFixed(1)}%"></i>`).join("")}</div>
     <div class="odds c${res.sels.length}">${res.sels.map((s,k)=>oddBtn(m,res,k,s,short[k])).join("")}</div>`:""}
+    ${crowdLine(m)}
     ${nm>0?`<button class="more" data-act="open" data-mid="${esc(m.id)}"><span class="ics">${icons.map(x=>{const[a,b]=x.split("|");return ic(a,b)}).join("")}</span>+${nm} paris : ${m.sp==="foot"?"cartons, corners, hors-jeux…":m.sp==="rugby"?"essais, pénalités, cartons…":m.sp==="basket"?"points, 3 points, rebonds…":"aces, doubles fautes, raquettes…"}</button>`:""}
   </article>`}
 function resRow(m){const sc=finalScore(m)||["–","–"],w=typeof sc[0]==="number"?(sc[0]>sc[1]?0:sc[1]>sc[0]?1:-1):-1;
@@ -285,7 +290,7 @@ function ladder(){const cfg=SP[U.sp],now=Date.now();
     return`<button class="lvl${c?"":" zero"}" data-act="lv" data-lv="${l}" aria-pressed="${U.lv===l}"><span class="bars">${bars}</span><span>${esc(cfg.lv[l])}<em>${c?c+" match"+(c>1?"s":""):(cfg.feeds[l]&&FEED[U.sp+l]&&FEED[U.sp+l].ok===false?"Hors ligne":"—")}</em></span></button>`};
   return`<div class="ladder" id="ladder"><div class="tier"><small>Tous</small><div><button class="lvl star" data-act="lv" data-lv="-1" aria-pressed="${U.lv<0}">${ic("fire")}<span>À la une<em>Prochains</em></span></button></div></div>
     ${cfg.tiers.map(([t,ix])=>[t,ix.filter(l=>cfg.feeds[l])]).filter(([,ix])=>ix.length).map(([t,ix])=>`<div class="tier"><small>${t}</small><div>${ix.map(chip).join("")}</div></div>`).join("")}</div>`}
-function viewMatches(){const cfg=SP[U.sp];let h=`<div class="sbar">${Object.entries(SP).map(([k,s])=>`<button style="--c:${s.c}" data-act="sp" data-sp="${k}" aria-pressed="${U.sp===k}">${ballArt(k,"ball")}<span>${{foot:"Foot",basket:"NBA"}[k]||s.n}</span></button>`).join("")}</div>`;
+function viewMatches(){setTimeout(crowdCounts,0);const cfg=SP[U.sp];let h=`<div class="sbar">${Object.entries(SP).map(([k,s])=>`<button style="--c:${s.c}" data-act="sp" data-sp="${k}" aria-pressed="${U.sp===k}">${ballArt(k,"ball")}<span>${{foot:"Foot",basket:"NBA"}[k]||s.n}</span></button>`).join("")}</div>`;
   if(U.ev){const e=EVENTS.find(x=>x.id===U.ev);if(e)return h+viewEvent(e)+foot();U.ev=null}
   h+=todayRow()+ladder();
   let list=matchesFor(U.sp,U.lv);
@@ -2815,7 +2820,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.93";
+const VERSION="2.94";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

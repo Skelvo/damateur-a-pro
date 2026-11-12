@@ -2459,6 +2459,13 @@ const ACTIONS = {
   },
 
   // Enregistre les choix du joueur (un par match et par marché) pour « ce que parient les autres »
+  // nombre de joueurs ayant parié sur chaque match (accueil) : une seule requête pour toute la liste
+  async crowd_counts(s, b) {
+    const mids = (Array.isArray(b.mids) ? b.mids : []).slice(0, 300).map((x) => cleanName(x, 80)).filter(Boolean);
+    if (!mids.length) return { n: {} };
+    const r = await s.query(`select mid, count(distinct player)::int as n from picks where mid = any($1::text[]) group by mid`, [mids]);
+    return { n: Object.fromEntries(r.map((x) => [x.mid, x.n])) };
+  },
   async picks(s, b) {
     const p = await me(s, b.token);
     const list = Array.isArray(b.picks) ? b.picks.slice(0, 20) : [];

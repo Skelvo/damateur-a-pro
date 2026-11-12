@@ -1096,3 +1096,5 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 .gate .ghero{margin-top:calc(-116px - var(--safe-t,0px))}
 .igban.fbban{margin-top:8px;background:linear-gradient(120deg,#0b5fd6,#1877f2 55%,#3b9bff);box-shadow:0 8px 24px #1877f233}
 .mc.mcbet{padding-top:34px}.mc.mcbet .mcbetc{top:0}
+/* accueil : nombre de joueurs ayant parié sur le match */
+.ccn{margin:8px 2px 0;font-size:12.5px;color:var(--mute);text-align:center}.ccn b{color:var(--ink,#fff);font-weight:800}
