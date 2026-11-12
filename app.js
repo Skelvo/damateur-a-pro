@@ -1221,7 +1221,7 @@ async function playerCard(p,o){o=o||{};const C=cardStats(p.bets||[],p.xp),T=(()=
   const txt=(t,x,y,f,col=ink,al="center")=>{c.font=f;c.textAlign=al;c.fillStyle=col;c.fillText(t,x,y)};
   c.save();c.shadowColor="rgba(0,0,0,.25)";c.shadowBlur=6;c.shadowOffsetY=3;
   txt(String(C.note),160,232,'800 150px "Barlow Condensed"');// sous la note : le titre de niveau (Habitué, Ultra, Capo…), réduit s'il est long
-  const spL=String(C.tier||"").toUpperCase();if(spL){let fs=44;c.font=`800 ${fs}px "Barlow Condensed"`;while(fs>26&&c.measureText(spL).width>200){fs-=2;c.font=`800 ${fs}px "Barlow Condensed"`}txt(spL,160,284,`800 ${fs}px "Barlow Condensed"`)}c.restore();const up=spL?0:-50;c.save();c.translate(0,up);
+  const spL=String(C.tier||"").toUpperCase();if(spL){let fs=44;c.font=`800 ${fs}px "Barlow Condensed"`;while(fs>24&&c.measureText(spL).width>150){fs-=2;c.font=`800 ${fs}px "Barlow Condensed"`}txt(spL,160,284,`800 ${fs}px "Barlow Condensed"`)}c.restore();const up=spL?0:-50;c.save();c.translate(0,up);
   c.fillStyle=ink;c.globalAlpha=.6;c.fillRect(118,304,84,3);c.globalAlpha=1;
   let by=320;if(o.bd==="fav"&&p.fav&&p.fav.logo){const L=await loadImgX(p.fav.logo);if(L){c.drawImage(L,122,by,76,76);by+=92}}
   else if(o.bd==="emo"){const em=p.cos&&p.cos.e&&cosEmoji(p.cos.e);if(em){txt(em,160,by+64,'66px serif');by+=92}}
@@ -2743,7 +2743,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.74";
+const VERSION="2.75";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
