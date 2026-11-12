@@ -768,7 +768,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"ref":openRef();break;
     case"refshare":refShare();break;
     case"mycard":openCard({id:S.pid,name:S.name,av:S.avv,me:true,bets:S.bets,xp:S.xp,cos:S.cos,fav:S.fav});break;
-    case"pcard":if(U.prof)openCard(U.prof);break;
+    case"pcard":if(U.prof)openCard(U.prof.me?{...U.prof,cos:S.cos,bets:S.bets,xp:S.xp,fav:S.fav}:U.prof);break;
     case"cardlock":toast(`🔒 Débloqué avec une note de ${d.v} ou plus.`);break;
     case"cardopt":{S.cardOpt={...(S.cardOpt||{}),[d.k]:d.v};S.cos={...(S.cos||{}),k:{...((S.cos&&S.cos.k)||{}),[d.k]:d.v}};saveLocal();refreshCard(d.k,d.v);clearTimeout(U.cardT);U.cardT=setTimeout(()=>api("card_set",{k:S.cos.k}).catch(()=>{}),700);break}
     case"cardshare":shareCard();break;
@@ -1864,7 +1864,7 @@ function betsPayload(){const B=S.bets.slice(-40).reverse().map(b=>({id:b.id,at:b
 /* ---------- fiche d'un joueur ---------- */
 async function openProfile(id){const me=U.lg.data&&String(id)===String(U.lg.data.me)||String(id)===String(S.pid);
   U.open="prof";layerLater(`<div class="grab"><h3>Profil</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div><div class="skel" style="height:140px"></div><div class="skel"></div>`);
-  if(me){const p={id:S.pid,name:S.name,bal:S.bal,peak:S.peak,xp:S.xp||0,...myStats(),...betsPayload(),av:S.avv,me:true,fav:S.fav};layer(viewProfile(p));
+  if(me){const p={id:S.pid,name:S.name,bal:S.bal,peak:S.peak,xp:S.xp||0,...myStats(),...betsPayload(),av:S.avv,me:true,fav:S.fav,cos:S.cos};layer(viewProfile(p));
     if(S.pid)api("profile",{id:S.pid}).then(r=>{if(U.open==="prof"){p.hist=r.hist;p.pal=r.pal;layer(viewProfile(p))}}).catch(()=>{});return}
   try{const p=await api("profile",{id});if(U.open==="prof")layer(viewProfile(p))}
   catch(e){if(U.open==="prof")layer(`<div class="grab"><h3>Profil</h3><button class="x" data-act="close">${ic("x")}</button></div><div class="empty">${ic("info")}<b>${e.code==="not_friend"?"Profil privé":"Pas de connexion"}</b>${e.code==="not_friend"?"Tu ne vois que les joueurs de tes guildes.":"Réessaie dans un instant."}</div>`)}}
@@ -2773,7 +2773,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.81";
+const VERSION="2.82";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
