@@ -898,7 +898,9 @@ const ACTIONS = {
     if (pk && pk.xp_seed == null) { const D = [0, 1300, 1700, 2200, 3000, 4000, 5500, 7500, 10000, 14000, 20000, 30000, 50000]; let di = 0; D.forEach((v, i) => { if (pk.peak >= v) di = i; });
       await s.query(`update players set xp_seed = $2 where id = $1 and xp_seed is null`, [p.id, EG.xpFor(EG.TIERS[Math.min(di, 5)][1])]); }
     const xp = (await s.query(`select xp from pxp where player = $1`, [p.id]))[0];
-    return { ok: true, name: name || p.name, wheel: wr && wr.wheel, av: wr ? wr.avatar_v || 0 : null, cancel, xp: xp ? xp.xp : 0 };
+    // gains de roue des derniers jours : le téléphone récupère ceux qu'il n'a pas reçus (réponse perdue pendant une coupure)
+    const wgot = await s.query(`select ref, delta from ledger where player = $1 and kind = 'wheel' and at > now() - interval '3 days'`, [p.id]);
+    return { ok: true, name: name || p.name, wheel: wr && wr.wheel, av: wr ? wr.avatar_v || 0 : null, cancel, xp: xp ? xp.xp : 0, wgot };
   },
 
   // Code de transfert : emporter son compte (jetons, paris, défis…) dans l'app installée ou sur un

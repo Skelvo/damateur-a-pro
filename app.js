@@ -892,7 +892,13 @@ async function api(action,data={}){const c=new AbortController(),t=setTimeout(()
     if(r.status===401&&action!=="session"&&S.tok){S.tok="";saveLocal()}   // compte inconnu du serveur : on en recrée un
     if(!r.ok)throw Object.assign(new Error(j.error||r.status),{code:j.error||String(r.status)});return j}
   finally{clearTimeout(t)}}
-function wheelSync(j){if(j&&j.av!=null&&j.av!==(S.avv||0)){S.avv=j.av;S.avatar=null;saveLocal();if(!U.open)render()}   // photo du compte (après reconnexion, autre téléphone…)
+// gains de roue reçus par ce téléphone (pour récupérer un tirage dont la réponse s'est perdue)
+function wGotInit(){if(S.wGot)return;const d=today();S.wGot=S.wheel&&S.wheel.d===d?[d,d+"x"]:[];S.wGotFrom=d}
+function wGotMark(r){wGotInit();if(!S.wGot.includes(r))S.wGot=[...S.wGot,r].slice(-12)}
+function wheelRecover(list){if(spinning||!Array.isArray(list)||!list.length)return;wGotInit();let t=0;
+  for(const x of list){const r=String(x.ref||""),v=+x.delta||0;if(!v||S.wGot.includes(r)||r.slice(0,8)<S.wGotFrom)continue;wGotMark(r);t+=v}
+  if(t){S.bal+=t;S.peak=Math.max(S.peak,S.bal);save();render();bump();toast(`🎡 Gain de roue récupéré : +${tok(t)} jetons (le tirage avait eu lieu pendant une coupure).`,"win")}}
+function wheelSync(j){wheelRecover(j&&j.wgot);if(j&&j.av!=null&&j.av!==(S.avv||0)){S.avv=j.av;S.avatar=null;saveLocal();if(!U.open)render()}   // photo du compte (après reconnexion, autre téléphone…)
   const w=j&&j.wheel;if(!w)return;let ch=false;if(w.r&&w.r!==S.wheelR){S.wheelR=w.r;S.bonus=w.b||"";S.extraSpin=w.x||"";S.wheelAuto="";ch=true}if(w.b&&w.b>(S.bonus||"")){S.bonus=w.b;ch=true}if(w.x&&w.x>(S.extraSpin||"")){S.extraSpin=w.x;ch=true}if(ch){saveLocal();if(!U.open)render()}}
 // paris annulés par les organisateurs : remboursés et marqués « Remboursé »
 function applyCancel(j){if(!j||!Array.isArray(j.cancel))return;let n=0;for(const c of j.cancel){const b=S.bets.find(x=>x.id===c.cid&&x.st==="open");if(!b)continue;b.st="void";b.pay=b.stake;b.done=Date.now();S.bal+=b.stake;n++}
@@ -2621,7 +2627,7 @@ async function spin(){if(spinning||!wheelAvail()||U.wheelOk===false)return;spinn
   if(!j.ok){spinning=false;if(j.error==="done"){S.bonus=today();saveLocal();if(U.open==="wheel")layer(viewWheel());toast("Tu as déjà tourné la roue aujourd’hui.");render()}
     else{if(b0){b0.disabled=false;b0.textContent="Lancer la roue"}toast("Pas de connexion : réessaie dans un instant.","bad")}return}
   const jack=j.jack,i=j.i,v=j.v;
-  gAt=0;if(j.extra)S.extraSpin=j.day;else S.bonus=j.day;S.wheel={d:today(),v};S.bal+=v;S.peak=Math.max(S.peak,S.bal);if(jack)S.jackpot=(S.jackpot||0)+1;save();
+  gAt=0;if(j.extra)S.extraSpin=j.day;else S.bonus=j.day;S.wheel={d:today(),v};wGotMark(j.day+(j.extra?"x":""));S.bal+=v;S.peak=Math.max(S.peak,S.bal);if(jack)S.jackpot=(S.jackpot||0)+1;save();
   const w=$("#wheel"),b=$("#spin"),jit=(Math.random()-.5)*(jack?JW:WA[i][1]-WA[i][0])*.7,deg=360*7-wCenter(i)+jit;
   if(b){b.disabled=true;b.textContent="Ça tourne…"}
   const end=()=>{spinning=false;$("#bal").textContent=tok(S.bal);bump();
@@ -2761,7 +2767,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.77";
+const VERSION="2.78";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
