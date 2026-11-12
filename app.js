@@ -240,7 +240,14 @@ function oddBtn(m,mk,k,s,short){const tk=slotTaken(m.id,mk.id,mk.line,k);if(tk&&
   let hit="";const rs=realStats(m);if(rs){const w=outcome(mk.d,m,rs,mk.line);if(w===k)hit=" hit"}
   return`<button class="odd${hit}${mineCls}" data-act="pick" data-mid="${esc(m.id)}" data-mk="${mk.id}" data-k="${k}" aria-pressed="${on}" ${!canBet(m)||!s.o?"disabled":""}>
     <span>${esc(short??s.l)}</span><b>${s.o?fr(s.o):"—"}</b></button>`}
-function mid(m){const st=status(m);
+// match commencé d'après l'horaire, mais sans direct (ESPN ne suit pas ce match en temps réel) : minute estimée
+function ghostLive(m){if(!m||m.src!=="espn"||m.state!=="pre")return null;const e=(Date.now()-m.t)/6e4;if(e<1)return null;
+  const end=(SP[m.sp]?SP[m.sp].dur:105)+25;if(e>end)return{t:"⏳ Match sans doute fini, résultat attendu",done:1};
+  if(m.sp==="foot")return{t:e<=47?`⏱️ En cours · ~${Math.floor(e)}’`:e<=62?"⏱️ Mi-temps (estimée)":`⏱️ En cours · ~${Math.min(90,Math.floor(e-17))}’${e-17>90?"+":""}`};
+  if(m.sp==="rugby")return{t:e<=42?`⏱️ En cours · ~${Math.floor(e)}’`:e<=57?"⏱️ Mi-temps (estimée)":`⏱️ En cours · ~${Math.min(80,Math.floor(e-15))}’`};
+  return{t:"⏱️ En cours"}}
+function mid(m){const st=status(m),gl=ghostLive(m);
+  if(gl)return`<div class="mid"><div class="ko">${gl.done?"—":"⏱️"}</div><small class="live-t">${esc(gl.t.replace(/^⏱️ |^⏳ /,""))}</small></div>`;
   if(st==="pre")return`<div class="mid"><div class="ko">${fTime(m.t)}</div><small>${fShort(m.t)}</small></div>`;
   if(st==="live"){const L=liveInfo(m);return`<div class="mid">${L.sc?`<div class="score">${L.sc[0]}–${L.sc[1]}</div>`:`<div class="ko">—</div>`}<small class="live-t">${esc(L.clock)}</small></div>`}
   if(st==="cancel")return`<div class="mid"><div class="ko">—</div><small>Reporté</small></div>`;
@@ -430,6 +437,7 @@ function liveLeg(L,m){if(!m||L.r||PMK[L.mk]||!m.st||status(m)!=="live")return nu
   if(d.ty==="yn"){if(k===0)return w===0?{c:"sure",t:"✅ Déjà gagné"}:{c:"wait",t:"⏳ Pas encore"};return w===1?{c:"ok",t:"🟢 Ça tient"}:{c:"dead",t:"❌ Perdu"}}
   return null}
 function legWhen(L){const m=L.mid&&findMatch(L.mid),t=(m&&m.t)||L.t;if(!t)return"";const st=m?status(m):(t>Date.now()?"pre":null);
+  {const gl=ghostLive(m);if(gl)return`<small class="lw${gl.done?"":" live"}">${gl.t} <span class="mut">· pas de direct pour ce match</span></small>`}
   if(st==="live"){const I=liveInfo(m),ll=liveLeg(L,m);return`<small class="lw live">🔴 En direct${I.clock?" · "+esc(I.clock):""}${I.sc?` · <span class="lws">${I.sc[0]} – ${I.sc[1]}</span>`:""}</small>${ll?`<small class="ll ll-${ll.c}">${ll.t}</small>`:""}`}
   if(st==="post"){const sc=finalScore(m);return`<small class="lw">🏁 Terminé${sc?` · <span class="lws">${sc[0]} – ${sc[1]}</span>`:""} · ${esc(fShort(t))}</small>`}
   if(st==="wait")return`<small class="lw">⏳ Match fini, résultat attendu · ${esc(fShort(t))}</small>`;
@@ -2789,7 +2797,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.84";
+const VERSION="2.85";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
