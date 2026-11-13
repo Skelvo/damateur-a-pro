@@ -440,7 +440,9 @@ async function tick(s) {
       if (!(L.mid in M)) M[L.mid] = await loadMatch(L).catch(() => null);
       const m = M[L.mid];
       if (!m || m.state !== "in" || !m.st) continue;
-      const sc = m.st.g || m.st.pts || [0, 0], lines = [];
+      const sc = (m.st.g || m.st.pts || [0, 0]).slice(), lines = [];
+      // le score du flux est parfois en retard sur la liste des buts : on prend le plus grand des deux
+      if (m.sp === "foot" && Array.isArray(m.ev)) { const n = [0, 0]; for (const e of m.ev) if (e.s != null && (e.ty === "g" || e.ty === "og")) n[e.ty === "og" ? 1 - e.s : e.s]++; sc[0] = Math.max(sc[0], n[0]); sc[1] = Math.max(sc[1], n[1]); }
       if (m.sp === "foot" && Array.isArray(m.ev)) {
         for (const e of m.ev) if (EVT[e.ty] && await sentOnce(s, `ev:${x.player}:${L.mid}:${e.ty}:${e.id}:${e.min}`))
           lines.push(`${e.min}’ ${EVT[e.ty]}${e.n ? " " + e.n : ""}${e.s != null ? " (" + ((e.ty === "og" ? 1 - e.s : e.s) ? m.a : m.h) + ")" : ""}`);

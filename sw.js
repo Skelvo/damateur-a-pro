@@ -1,5 +1,5 @@
 // Service worker : réseau d'abord (toujours revérifié auprès du serveur), cache en secours hors ligne.
-const C="dap-v153",IMG="dap-img-1",SHELL=["./","index.html","manifest.webmanifest","icon-192.png","icon-180.png","icon-512.png","logo-tribune.png","engine.js?v=3.06","app.js?v=3.06","app.css?v=3.06"];
+const C="dap-v154",IMG="dap-img-1",SHELL=["./","index.html","manifest.webmanifest","icon-192.png","icon-180.png","icon-512.png","logo-tribune.png","engine.js?v=3.07","app.js?v=3.07","app.css?v=3.07"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C&&x!==IMG&&!x.startsWith("dap-feed")).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
 // logos des équipes, drapeaux et photos de profil : gardés sur le téléphone (plus rapide, moins de données), 500 au plus

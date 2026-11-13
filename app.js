@@ -68,7 +68,7 @@ function simById(id){const p=id.split("-");if(p.length<4)return null;const [sp,l
   const mon=new Date(+d.slice(0,4),+d.slice(4,6)-1,+d.slice(6,8));return simFixtures(sp,lv,mon).find(m=>m.id===id)||null}
 
 /* ---------- flux live (pros) ---------- */
-async function getJSON(u,ms=9000){const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);try{const r=await fetch(u,{signal:c.signal});if(!r.ok)throw new Error(r.status);return await r.json()}finally{clearTimeout(t)}}
+async function getJSON(u,ms=9000){const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);try{const r=await fetch(u,{signal:c.signal,cache:"no-cache"});if(!r.ok)throw new Error(r.status);return await r.json()}finally{clearTimeout(t)}}
 async function loadFeed(sp,lv){const paths=SP[sp].feeds[lv],key=sp+lv,now=Date.now();FEED[key]=FEED[key]||{ok:null,list:[]};
   const qs=sp==="tennis"?[`${ymd(now-4*DAY)}-${ymd(now+8*DAY)}`]:[...new Set([ymd(now-4*DAY).slice(0,6),ymd(now+8*DAY).slice(0,6),ymd(now+22*DAY).slice(0,6)])];
   try{const res=await Promise.all(paths.flatMap(p=>qs.map(q=>getJSON(`${ESPN}${p}/scoreboard?dates=${q}&limit=500`).then(j=>[p,j]))));
@@ -2853,7 +2853,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.06";
+const VERSION="3.07";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -2899,6 +2899,10 @@ setInterval(()=>{if(!document.hidden&&S.duel&&Object.values(S.duel).some(x=>!x.s
 // matchs en direct qui te concernent (regardé, parié, équipe de cœur) : leur compétition est rafraîchie toutes les 20 s pour les animations
 setInterval(()=>{if(document.hidden)return;const hot=new Set([...REG.values()].filter(m=>m.src==="espn"&&m.state==="in"&&(m.sp==="foot"||m.sp==="rugby")&&fxMine(m)).map(m=>m.sp+"|"+m.lv));
   for(const k of hot){const[sp,lv]=k.split("|");const f=FEED[sp+lv];if(f&&f.at&&Date.now()-f.at>18e3&&!f.busy){f.busy=1;loadFeed(sp,+lv).then(()=>{if(!U.open)renderSoon();else if(U.open&&REG.get(U.open))openDetail(U.open,true);settle()})}}},20000);
+// retour dans l'appli (déjà ouverte en arrière-plan) : on rafraîchit tout de suite les matchs en direct, sans attendre
+document.addEventListener("visibilitychange",()=>{if(document.hidden)return;const now=Date.now(),keys=new Set();
+  for(const m of REG.values())if(m.src==="espn"&&(m.state==="in"||(m.state==="pre"&&m.t<now)))keys.add(m.sp+"|"+m.lv);
+  for(const k of keys){const[sp,lv]=k.split("|"),f=FEED[sp+lv];if(f&&!f.busy&&now-(f.at||0)>8e3){f.busy=1;loadFeed(sp,+lv).then(()=>{if(!U.open)render();else if(REG.get(U.open))openDetail(U.open,true);settle()})}}});
 setInterval(()=>{if(document.hidden)return;
   const anyLive=[...REG.values()].some(m=>m.src==="espn"&&m.state==="in");const stale=Object.values(FEED).some(f=>f.at&&Date.now()-f.at>(anyLive?6e4:5*6e4));
   if(stale){for(const sp in SP)for(const lv in SP[sp].feeds)if(FEED[sp+lv]&&Date.now()-FEED[sp+lv].at>(anyLive?6e4:5*6e4))loadFeed(sp,+lv).then(()=>{if(!U.open)render();settle()})}
