@@ -72,7 +72,7 @@ async function getJSON(u,ms=9000){const c=new AbortController(),t=setTimeout(()=
 async function loadFeed(sp,lv){const paths=SP[sp].feeds[lv],key=sp+lv,now=Date.now();FEED[key]=FEED[key]||{ok:null,list:[]};
   const qs=sp==="tennis"?[`${ymd(now-4*DAY)}-${ymd(now+8*DAY)}`]:[...new Set([ymd(now-4*DAY).slice(0,6),ymd(now+8*DAY).slice(0,6),ymd(now+22*DAY).slice(0,6)])];
   try{const res=await Promise.all(paths.flatMap(p=>qs.map(q=>getJSON(`${ESPN}${p}/scoreboard?dates=${q}&limit=500`).then(j=>[p,j]))));
-    const list=[],seen=new Set();for(const[p,j]of res)for(const ev of j.events||[]){if(seen.has(p+ev.id))continue;seen.add(p+ev.id);if(sp==="tennis")list.push(...parseTennis(ev,lv,p).filter(m=>!/^(TBD|TBA|Qualifier|Bye|\?)$/i.test(String(m.h).trim())&&!/^(TBD|TBA|Qualifier|Bye|\?)$/i.test(String(m.a).trim())));else{const m=parseTeamEvent(ev,sp,lv,p);if(m&&m.t>now-5*DAY&&m.t<now+22*DAY)list.push(m)}}
+    const list=[],seen=new Set();for(const[p,j]of res)for(const ev of j.events||[]){if(seen.has(p+ev.id))continue;seen.add(p+ev.id);if(sp==="tennis")list.push(...parseTennis(ev,lv,p).filter(m=>!/^(TBD|TBA|Qualifier|Bye|\?)$/i.test(String(m.h).trim())&&!/^(TBD|TBA|Qualifier|Bye|\?)$/i.test(String(m.a).trim())));else{const m=parseTeamEvent(ev,sp,lv,p),tbd=x=>/^(TBD|TBA|\?)$/i.test(String(x||"").trim());if(m&&!tbd(m.h)&&!tbd(m.a)&&m.t>now-5*DAY&&m.t<now+22*DAY)list.push(m)}}
     FEED[key]={ok:true,list,at:now};feedSave();list.forEach(m=>{const old=REG.get(m.id);try{if(!old||!old._c)liveDiff(old,m)}catch(e){}if(old&&old.st&&m.st)for(const k in old.st)if(!(k in m.st))m.st[k]=old.st[k];REG.set(m.id,m)})}
   catch(e){const o=FEED[key];FEED[key]=o&&o.stale&&o.list.length?{...o,at:now}:{ok:false,list:[],at:now}}}
 // matchs gardés sur le téléphone : à l'ouverture on affiche tout de suite les derniers connus, puis on les met à jour en fond
@@ -2846,7 +2846,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.01";
+const VERSION="3.02";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
