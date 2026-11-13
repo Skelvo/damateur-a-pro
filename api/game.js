@@ -2394,10 +2394,27 @@ const ACTIONS = {
       `insert into duels (code, a, mid, mlabel, opts, t, ka, stake, path) values ($1, $2, $3, $4, $5::jsonb, to_timestamp($6::float8 / 1000), $7, $8, $9) returning id`,
       [code, p.id, cleanName(b.mid, 80), cleanName(b.mlabel, 80), JSON.stringify(opts), t, ka, stake, /^[a-z]+\/[\w.]+$/.test(String(b.path || "")) ? String(b.path) : null]);
     await credit(s, p.id, -stake, "duel", r[0].id + ":a");
-    await notify(s, await members(s, code), { title: `⚔️ ${p.name} lance un duel`, body: `${opts[ka] || ""} sur ${cleanName(b.mlabel, 80)} · ${stake} jetons. Qui relève ?`, url: go("duels", code), tag: "duel-" + r[0].id }, p.id);
+    await s.query(`insert into duel_entries (duel, player, k, stake) values ($1, $2, $3, $4) on conflict do nothing`, [r[0].id, p.id, ka, stake]);
+    await notify(s, await members(s, code), { title: `⚔️ ${p.name} lance un défi de guilde`, body: `${opts[ka] || ""} sur ${cleanName(b.mlabel, 80)} · ${stake} jetons chacun. Tout le monde peut entrer, le pot va aux bons pronostics !`, url: go("duels", code), tag: "duel-" + r[0].id }, p.id);
     return { id: r[0].id };
   },
 
+  // défi à plusieurs : chaque membre entre avec le pronostic de son choix et la même mise, avant le coup d'envoi
+  async duel_join(s, b) {
+    const p = await me(s, b.token);
+    const id = int(b.id, 0, 1e15), k = int(b.k, 0, 2);
+    const d = (await s.query(`select d.id, d.code, d.a, d.stake, d.mlabel, d.opts, d.t, d.status from duels d join league_members m on m.code = d.code and m.player = $2
+       where d.id = $1`, [id, p.id]))[0];
+    if (!d || d.status !== "open" || new Date(d.t).getTime() <= Date.now()) throw fail(400, "unavailable");
+    if (!(await s.query(`select 1 from duel_entries where duel = $1 limit 1`, [id]))[0]) throw fail(400, "unavailable");   // ancien duel 1 contre 1
+    const r = await s.query(`insert into duel_entries (duel, player, k, stake) values ($1, $2, $3, $4) on conflict do nothing returning player`, [id, p.id, k, d.stake]);
+    if (!r[0]) throw fail(400, "already");
+    await credit(s, p.id, -d.stake, "duel", id + ":" + p.id);
+    const others = (await s.query(`select player from duel_entries where duel = $1 and player <> $2`, [id, p.id])).map((x) => x.player);
+    const n = others.length + 1;
+    await notify(s, others, { title: `⚔️ ${p.name} entre dans le défi !`, body: `${d.mlabel} : « ${(d.opts || [])[k] || ""} » · ${n} participants, pot de ${n * d.stake} jetons.`, url: go("duels", d.code), tag: "duel-" + id });
+    return { ok: true, stake: d.stake };
+  },
   async duel_accept(s, b) {
     const p = await me(s, b.token);
     const kb = int(b.kb, 0, 2);
@@ -2427,6 +2444,22 @@ const ACTIONS = {
         if (!v) return { ok: true, pending: true };
         rr = m.sp === "tennis" || m.sp === "basket" ? (v[0] > v[1] ? 0 : 1) : EG.cmp3(v);
       }
+      const E = await s.query(`select player, k, stake from duel_entries where duel = $1`, [id]);
+      if (E.length) {   // défi à plusieurs : le pot est partagé entre les bons pronostics (sinon tout le monde est remboursé)
+        const pot = E.reduce((a, x) => a + x.stake, 0), W = E.filter((x) => x.k === rr), share = W.length ? Math.floor(pot / W.length) : 0;
+        const u = await s.query(`update duels set status = 'done', res = $2, winner = $3 where id = $1 and status = 'live' returning id`, [id, rr, W[0] ? W[0].player : null]);
+        if (u[0]) {
+          for (const x of E) {
+            const pay = W.length ? (x.k === rr ? share : 0) : x.stake;
+            await s.query(`update duel_entries set payout = $3 where duel = $1 and player = $2`, [id, x.player, pay]);
+            if (pay) await credit(s, x.player, pay, W.length ? "duel_win" : "duel_ref", id + ":" + x.player);
+          }
+          await notify(s, E.map((x) => x.player), { title: "⚔️ Défi terminé · " + d.mlabel,
+            body: W.length ? `${W.length} bon${W.length > 1 ? "s" : ""} pronostic${W.length > 1 ? "s" : ""} : +${share} jetons chacun (pot de ${pot}).` : "Personne n'a vu juste : mises remboursées.", url: go("duels", d.code), tag: "duel-" + id });
+        }
+        const f = (await s.query(`select status, res, winner from duels where id = $1`, [id]))[0];
+        return { ok: true, status: f.status, res: f.res, winner: f.winner };
+      }
       const winner = d.ka === rr ? d.a : d.kb === rr ? d.b : null;
       const u = await s.query(`update duels set status = 'done', res = $2, winner = $3 where id = $1 and status = 'live' returning id`, [id, rr, winner]);
       if (u[0]) {
@@ -2445,8 +2478,17 @@ const ACTIONS = {
     const p = await me(s, b.token);
     const code = cleanName(b.code, 8).toUpperCase();
     // les duels jamais relevés avant le coup d'envoi expirent
-    const exp = await s.query(`update duels set status = 'expired' where status = 'open' and t < now() returning id, a, stake`);
-    for (const x of exp) await credit(s, x.a, x.stake, "duel_ref", x.id + ":a");   // duel jamais relevé : mise rendue
+    // au coup d'envoi : défi à plusieurs lancé s'il y a au moins 2 pronostics différents, sinon tout le monde est remboursé
+    for (const x of await s.query(`select d.id, d.a, d.stake, (select count(*)::int from duel_entries e where e.duel = d.id) as n,
+         (select count(distinct k)::int from duel_entries e where e.duel = d.id) as nk from duels d where d.status = 'open' and d.t < now()`)) {
+      if (x.n && x.nk >= 2) { await s.query(`update duels set status = 'live' where id = $1 and status = 'open'`, [x.id]); continue; }
+      const u = await s.query(`update duels set status = 'expired' where id = $1 and status = 'open' returning id`, [x.id]);
+      if (!u[0]) continue;
+      if (x.n) for (const e of await s.query(`select player, stake from duel_entries where duel = $1`, [x.id])) {
+        await s.query(`update duel_entries set payout = $3 where duel = $1 and player = $2`, [x.id, e.player, e.stake]);
+        await credit(s, e.player, e.stake, "duel_ref", x.id + ":" + e.player);
+      } else await credit(s, x.a, x.stake, "duel_ref", x.id + ":a");   // ancien duel jamais relevé : mise rendue
+    }
     const rows = await s.query(
       `select d.id, d.code, d.a, pa.name as aname, pa.avatar_v as aav, d.b, pb.name as bname, pb.avatar_v as bav, d.mid, d.mlabel, d.opts, extract(epoch from d.t) * 1000 as tms,
          d.ka, d.kb, d.stake, d.status, d.res, d.winner
@@ -2455,7 +2497,11 @@ const ACTIONS = {
          and (d.a = $1 or d.b = $1 or d.status = 'open' or d.created_at > now() - interval '3 days')
          and exists (select 1 from league_members m where m.code = d.code and m.player = $1)
        order by d.created_at desc limit 40`, code ? [p.id, code] : [p.id]);
-    return { me: p.id, duels: rows.map((d) => ({ ...d, t: Math.round(Number(d.tms)), tms: undefined })) };
+    const ent = rows.length ? await s.query(`select e.duel, e.player, pl.name, pl.avatar_v as av, e.k, e.stake, e.payout from duel_entries e join players pl on pl.id = e.player
+       where e.duel = any($1::bigint[]) order by e.at`, [rows.map((d) => d.id)]) : [];
+    const byD = {};
+    for (const e of ent) (byD[e.duel] ||= []).push({ who: e.player, name: e.name, av: e.av || 0, k: e.k, stake: e.stake, payout: e.payout });
+    return { me: p.id, duels: rows.map((d) => ({ ...d, t: Math.round(Number(d.tms)), tms: undefined, entries: byD[d.id] || null })) };
   },
 
   // Enregistre les choix du joueur (un par match et par marché) pour « ce que parient les autres »

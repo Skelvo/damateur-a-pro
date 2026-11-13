@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "44";
+const SCHEMA_VERSION = "45";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -389,6 +389,9 @@ const STATEMENTS = [
   // journal des notifications envoyées (diagnostic), gardé 14 jours
   `create table if not exists push_log (id bigserial primary key, player bigint not null, at timestamptz not null default now(), tag text, title text, ok int not null default 0, fail int not null default 0, err text)`,
   `create index if not exists push_log_player on push_log (player, at desc)`,
+  // défis de guilde à plusieurs (pot commun) : une ligne par participant
+  `create table if not exists duel_entries (duel bigint not null references duels(id) on delete cascade, player bigint not null references players(id) on delete cascade,
+     k int not null, stake int not null, payout int, at timestamptz not null default now(), primary key (duel, player))`,
 ];
 
 let sql = null;

@@ -1866,7 +1866,7 @@ function actText(a){const d=a.data||{};const legs=(d.legs||[]).map(esc).join(" +
     case"defis":return`a réussi les 3 défis du jour`;
     case"duel":if(d.acc)return`relève le duel de ${esc(d.opp||"?")} : <b>${esc(d.pick||"")}</b> sur ${esc(d.mlabel||"")} <span class="mut">(${tok(d.stake||0)} jetons)</span>`;
       return`lance un duel : <b>${esc(d.pick||"")}</b> sur ${esc(d.mlabel||"")} <span class="mut">(${tok(d.stake||0)} jetons)</span>`;
-    case"duelwin":return`remporte son duel${d.opp?` contre ${esc(d.opp)}`:""} : <b class="pos">+${tok(d.pay||0)}</b>`;
+    case"duelwin":return d.n?`remporte le défi de guilde (${d.n} participants) : <b class="pos">+${tok(d.pay||0)}</b>`:`remporte son duel${d.opp?` contre ${esc(d.opp)}`:""} : <b class="pos">+${tok(d.pay||0)}</b>`;
     case"join":return`a rejoint la guilde`;
     case"share":return`partage son ticket : ${d.n>1?`combiné de ${d.n} · cote <b>${fr(+d.odds||1)}</b>`:`${esc(d.l||"")} @ <b>${fr(+d.odds||1)}</b>`} <button class="btn gold shbtn" data-act="shopen" data-c="${esc(d.code)}">🎟️ Voir / suivre</button>`;
   }return""}
@@ -2504,6 +2504,12 @@ async function checkDuels(D,me){let changed=false;S.duel=S.duel||{};
         if(r&&r.status==="done"){x.status="done";x.res=r.res;x.winner=r.winner}else if(!r){x.status="done";x.res=res;x.winner=x.ka===res?x.a:x.kb===res?x.b:null}}
       else if(m&&(m.cancel||status(m)==="cancel")){x.status="done";x.winner=null}}
     if(mine.settled)continue;
+    if(x.entries&&(x.status==="done"||x.status==="expired")){const e=x.entries.find(y=>String(y.who)===String(me));if(!e||e.payout==null){if(x.status==="done")U.lg.duelsAt=0;continue}
+      mine.settled=1;changed=true;S.bal+=e.payout;
+      if(x.status==="expired")toast(`Défi ${esc(x.mlabel)} : pas assez de pronostics différents, ${tok(e.payout)} jetons remboursés.`);
+      else if(e.payout>mine.stake||(e.payout&&e.k===x.res)){toast(`${ic("trophy")} Défi gagné : +${tok(e.payout)} jetons !`,"win");confetti();S.dwin=(S.dwin||0)+1;postAct("duelwin",{mlabel:x.mlabel,pay:e.payout,n:x.entries.length})}
+      else if(e.payout)toast(`Défi ${esc(x.mlabel)} : personne n’a vu juste, mise remboursée.`);
+      else toast(`Défi perdu sur ${esc(x.mlabel)}. La revanche ?`);continue}
     if(x.status==="done"){mine.settled=1;changed=true;
       if(x.winner==null){S.bal+=mine.stake;toast(`Duel ${esc(x.mlabel)} : personne n’a vu juste, mise remboursée.`)}
       else if(String(x.winner)===String(me)){S.bal+=2*mine.stake;toast(`${ic("trophy")} Duel gagné : +${tok(2*mine.stake)} jetons !`,"win");confetti();
@@ -2515,9 +2521,9 @@ function duelPick(x,k){return(x.opts||[])[k]||["1","N","2"][k]}
 function viewDuels(cur){const D=(U.lg.duels||[]).filter(x=>x.code===cur.code),me=String(U.lg.data.me);
   if(!U.lg.duels){loadDuels();return`<div class="skel" style="height:90px"></div>`}
   if(Date.now()-(U.lg.duelsAt||0)>3e4)setTimeout(loadDuels,0);
-  let h=`<div class="info">${ic("info")}<span>Ouvre un match à venir et touche <b style="color:var(--ink)">Défier ma guilde</b> : tu choisis ton pronostic et ta mise. Le premier qui relève avec un autre pronostic mise autant, et le gagnant empoche tout.</span></div>`;
+  let h=`<div class="info">${ic("info")}<span>Ouvre un match à venir et touche <b style="color:var(--ink)">Défier ma guilde</b>. Tout le monde peut entrer avec son pronostic et la même mise : à la fin, <b style="color:var(--ink)">le pot est partagé entre ceux qui ont vu juste</b>.</span></div>`;
   if(!D.length)return h+`<div class="empty">${ic("target")}<b>Aucun duel</b>Lance le premier !</div>`;
-  return h+D.map(x=>{const iA=String(x.a)===me,iB=String(x.b)===me,start=Date.now()<x.t;
+  return h+D.map(x=>{if(x.entries)return groupDuel(x,me);const iA=String(x.a)===me,iB=String(x.b)===me,start=Date.now()<x.t;
     let st="",act="";
     if(x.status==="open"){st=`<span class="tag open">En attente</span>`;
       if(!iA&&start)act=`<div class="dacc"><small>Relever le défi (${tok(x.stake)} jetons) :</small>${(x.opts||[]).map((o,k)=>k===x.ka?"":`<button class="btn ghost" data-act="daccept" data-id="${esc(x.id)}" data-k="${k}">${esc(o)}</button>`).join("")}</div>`}
@@ -2528,12 +2534,25 @@ function viewDuels(cur){const D=(U.lg.duels||[]).filter(x=>x.code===cur.code),me
       <div class="vs"><div class="${x.status==="done"&&String(x.winner)===String(x.a)?"w":""}"><span data-act="prof" data-id="${esc(x.a)}">${avatar(x.a,x.aname,x.aav,"av")}</span><b>${esc(x.aname)}${iA?" (toi)":""}</b><em>${esc(duelPick(x,x.ka))}</em></div>
       <span class="vsx">VS</span>
       <div class="${x.status==="done"&&String(x.winner)===String(x.b)?"w":""}">${x.b?`<span data-act="prof" data-id="${esc(x.b)}">${avatar(x.b,x.bname||"?",x.bav,"av")}</span><b>${esc(x.bname||"?")}${iB?" (toi)":""}</b><em>${esc(duelPick(x,x.kb))}</em>`:`<span class="av q">?</span><b>Qui relève ?</b>`}</div></div>${act}</div>`}).join("")}
+// défi à plusieurs : participants regroupés par pronostic, pot commun
+function groupDuel(x,me){const E=x.entries,mineE=E.find(y=>String(y.who)===me),start=Date.now()<x.t,pot=E.reduce((a,y)=>a+y.stake,0),opts=x.opts&&x.opts.length?x.opts:["1","N","2"];
+  const st=x.status==="open"?`<span class="tag open">${start?"Ouvert":"Lancement…"}</span>`:x.status==="live"?`<span class="tag open">En cours</span>`:x.status==="expired"?`<span class="tag void">Annulé</span>`
+    :mineE?`<span class="tag ${mineE.payout>0&&mineE.k===x.res?"won":mineE.payout?"void":"lost"}">${mineE.k===x.res&&mineE.payout?"Gagné +"+tok(mineE.payout):mineE.payout?"Remboursé":"Perdu"}</span>`:`<span class="tag cashed">Terminé</span>`;
+  const col=opts.map((o,k)=>{const P=E.filter(y=>y.k===k),win=x.status==="done"&&x.res===k;
+    return`<div class="gdc${win?" w":""}"><div class="gdh"><b>${esc(o)}</b><small>${P.length} joueur${P.length>1?"s":""}</small></div>
+      <div class="gdp">${P.map(y=>`<span data-act="prof" data-id="${esc(y.who)}" title="${esc(y.name)}">${avatar(y.who,y.name,y.av,"av")}</span>`).join("")||`<span class="mut" style="font-size:12px">personne</span>`}</div>
+      ${x.status==="open"&&start&&!mineE?`<button class="btn ghost gdj" data-act="daccept" data-id="${esc(x.id)}" data-k="${k}">Je rejoins</button>`:""}</div>`}).join("");
+  return`<div class="duel gduel"><div class="dh2"><b>${esc(x.mlabel)}</b>${st}</div>
+    <small>${fDay(x.t)} · ${fTime(x.t)} · ${tok(x.stake)} jetons chacun · lancé par ${esc(x.aname)}</small>
+    <div class="gpot">💰 Pot : <b>${tok(pot)}</b> jetons · ${E.length} participant${E.length>1?"s":""}${mineE?` · toi : <b>${esc(opts[mineE.k]||"")}</b>`:""}</div>
+    <div class="gdcols c${opts.length}">${col}</div>
+    ${x.status==="open"&&start?`<small class="mut" style="display:block;margin-top:6px">Il faut au moins 2 pronostics différents au coup d’envoi, sinon tout le monde est remboursé.</small>`:""}</div>`}
 async function acceptDuel(id,k){const x=(U.lg.duels||[]).find(y=>String(y.id)===String(id));if(!x)return;
   if(x.stake>S.bal){toast("Pas assez de jetons pour relever ce duel.","bad");return}
-  if(!confirm(`Relever le duel ${x.mlabel} avec « ${duelPick(x,k)} » pour ${tok(x.stake)} jetons ?`))return;
-  try{await api("duel_accept",{id,kb:k});S.bal-=x.stake;S.duel=S.duel||{};S.duel[id]={stake:x.stake,snap:null};const m=REG.get(x.mid);if(m&&m.src==="espn")S.duel[id].snap={path:m.path,sp:m.sp,lv:m.lv};
+  if(!confirm(`${x.entries?"Rejoindre le défi":"Relever le duel"} ${x.mlabel} avec « ${duelPick(x,k)} » pour ${tok(x.stake)} jetons ?`))return;
+  try{await api(x.entries?"duel_join":"duel_accept",x.entries?{id,k}:{id,kb:k});S.bal-=x.stake;S.duel=S.duel||{};S.duel[id]={stake:x.stake,snap:null};const m=REG.get(x.mid);if(m&&m.src==="espn")S.duel[id].snap={path:m.path,sp:m.sp,lv:m.lv};
     save();bump();toast(`${ic("target")} Défi relevé ! Que le meilleur gagne.`,"win");postAct("duel",{mlabel:x.mlabel,pick:duelPick(x,k),stake:x.stake,acc:1,opp:x.aname});await loadDuels()}
-  catch(e){toast(e.code==="unavailable"?"Trop tard : ce duel a déjà été relevé ou le match a commencé.":"Pas de connexion au serveur.","bad");loadDuels()}}
+  catch(e){toast(e.code==="already"?"Tu participes déjà à ce défi.":e.code==="unavailable"?"Trop tard : le match a commencé.":"Pas de connexion au serveur.","bad");loadDuels()}}
 // création depuis la fiche d'un match
 function duelButton(m){if(m.src!=="espn"||status(m)!=="pre"||m.t-Date.now()<2*6e4||!U.lg.data||!U.lg.data.leagues.length)return"";
   return`<button class="btn ghost wide" data-act="dnew" data-mid="${esc(m.id)}" style="margin:6px 0 4px">${ic("target")} Défier ma guilde sur ce match</button>`}
@@ -2543,15 +2562,15 @@ function viewDuelNew(m){const L=U.lg.data.leagues,res=markets(m).find(x=>x.id===
   ${L.length>1?`<div class="lgchips">${L.map(l=>`<button data-act="dset" data-f="code" data-v="${esc(l.code)}" aria-pressed="${U.dn.code===l.code}">${esc(l.name)}</button>`).join("")}</div>`:""}
   <div class="grp" style="margin-top:4px">Ton pronostic</div><div class="odds c${opts.length}">${opts.map((o,k)=>`<button class="odd" data-act="dset" data-f="k" data-v="${k}" aria-pressed="${U.dn.k===k}"><span>${esc(o)}</span></button>`).join("")}</div>
   <div class="grp">Mise (chacun)</div><div class="chips">${[20,50,100,250].map(v=>`<button data-act="dset" data-f="stake" data-v="${v}" aria-pressed="${U.dn.stake===v}">${v}</button>`).join("")}</div>
-  <p class="note">Le premier membre qui relève avec un autre pronostic mise ${tok(U.dn.stake)} jetons aussi. Le gagnant prend les ${tok(2*U.dn.stake)}. Si personne ne relève avant le coup d’envoi, ou si personne n’a vu juste, ta mise est remboursée.</p>
-  <button class="btn gold wide" data-act="dgo" data-mid="${esc(m.id)}" ${U.dn.stake>S.bal?"disabled":""}>${ic("target")} Lancer le duel · ${tok(U.dn.stake)} jetons</button>`}
+  <p class="note">Tous les membres peuvent entrer jusqu’au coup d’envoi, avec le pronostic de leur choix et la même mise (${tok(U.dn.stake)} jetons). À la fin, <b>le pot est partagé entre ceux qui ont vu juste</b>. S’il n’y a pas au moins 2 pronostics différents au coup d’envoi, ou si personne n’a vu juste, tout le monde est remboursé.</p>
+  <button class="btn gold wide" data-act="dgo" data-mid="${esc(m.id)}" ${U.dn.stake>S.bal?"disabled":""}>${ic("target")} Lancer le défi · ${tok(U.dn.stake)} jetons</button>`}
 async function createDuel(mid){const m=findMatch(mid);if(!m||status(m)!=="pre")return;const res=markets(m).find(x=>x.id==="res"),opts=res.sels.map(x=>x.l),q=U.dn;
   if(q.stake>S.bal){toast("Pas assez de jetons.","bad");return}const b=$("[data-act=dgo]");b.disabled=true;
   try{if(!(await ensureSession()))throw{code:"offline"};
     const j=await api("duel_create",{code:q.code,mid:m.id,path:m.path,mlabel:m.h+" – "+m.a,opts,t:m.t,ka:q.k,stake:q.stake});
     S.bal-=q.stake;S.duel=S.duel||{};S.duel[j.id]={stake:q.stake,snap:{path:m.path,sp:m.sp,lv:m.lv}};save();bump();
     postAct("duel",{mlabel:m.h+" – "+m.a,pick:opts[q.k],stake:q.stake});U.lg.code=q.code;U.lg.view="duels";U.lg.duels=null;U.open=null;layer("");U.tab="l";render();loadBoards();loadDuels();
-    toast(`${ic("target")} Duel lancé ! Tes potes peuvent le relever dans Guildes › Duels.`,"win")}
+    toast(`${ic("target")} Défi lancé ! Tes potes peuvent entrer dans Guildes › Combats › Duels.`,"win")}
   catch(e){b.disabled=false;toast(e.code==="started"?"Le match commence trop tôt pour un duel.":e.code==="slow_down"?"Beaucoup de duels aujourd’hui !":"Pas de connexion au serveur.","bad")}}
 function viewLgForm(kind){const nw=kind==="new";
   return`<div class="grab"><h3>${nw?"Nouvelle guilde":"Rejoindre une guilde"}</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
@@ -2823,7 +2842,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.96";
+const VERSION="2.97";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
