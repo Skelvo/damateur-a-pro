@@ -1359,7 +1359,7 @@ async function openCard(p){U.open="card";U.cardP=p;const head=`<div class="grab"
       <b>Rang affiché</b><div>${(()=>{const real=CARD_T.find(x=>C.note>=x[0]);return[["auto","✨ Mon rang"],["BRONZE","🥉 Bronze"],["ARGENT","🥈 Argent"],["OR","🥇 Or"],["ÉLITE","💎 Élite"],["LÉGENDE","👑 Légende"]].map(([v,n])=>{const t=CARD_T.find(x=>x[1]===v),lock=t&&t[0]>real[0];
         return lock?`<button data-act="cardlock" data-v="${t[0]}" class="lk" aria-disabled="true">🔒 ${n.split(" ")[1]}</button>`:`<button data-act="cardopt" data-k="rk" data-v="${v}" aria-pressed="${(o.rk||"auto")===v}">${n}</button>`}).join("")})()}</div>
       <small class="rkn">Tu peux afficher ton rang ou un rang inférieur. Les rangs au-dessus se débloquent avec ta note.</small></div>`:"";
-    layer(head+`<div class="pcardimg${p.me?" mycd":""}"><div class="tilt" id="tilt"><img src="${url}" alt="Carte de ${esc(p.name)}"><i class="glare" style="-webkit-mask-image:url(${url});mask-image:url(${url})"></i></div></div><p class="tilthint">👆 Fais glisser ton doigt sur la carte pour la faire bouger</p>${opts}
+    layer(head+`<div class="pcardimg"><div class="tilt" id="tilt"><img src="${url}" alt="Carte de ${esc(p.name)}"><i class="glare" style="-webkit-mask-image:url(${url});mask-image:url(${url})"></i></div></div><p class="tilthint">👆 Fais glisser ton doigt sur la carte pour la faire bouger</p>${opts}
     <p class="note">Note <b>${C.note}</b> (${T[1].toLowerCase()}) : précision, flair, audace, gestion, régularité et expérience, calculés sur les vrais paris.${p.me?" Ta bannière et ton style se changent dans « Mon style ».":""}</p>
     <button class="btn gold wide" data-act="cardshare">${ic("share")} Partager la carte</button>`);U.cardSk=0;cardTilt()}
   catch(e){U.cardSk=0;if(U.open==="card")layer(head+`<div class="empty">${ic("info")}<b>Impossible de créer la carte</b>Réessaie dans un instant.</div>`)}}
@@ -2846,7 +2846,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.00";
+const VERSION="3.01";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
