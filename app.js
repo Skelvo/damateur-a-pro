@@ -670,7 +670,14 @@ async function settle(){if(settling)return;settling=true;
 
 /* ---------- effets ---------- */
 function toast(html,cls=""){const box=$("#toasts");while(box.children.length>=3)box.firstChild.remove();
-  const t=document.createElement("div");t.className="toast "+cls;t.innerHTML=html;t.onclick=()=>t.remove();box.appendChild(t);setTimeout(()=>t.remove(),3800)}
+  const t=document.createElement("div");t.className="toast "+cls;t.innerHTML=html;box.appendChild(t);
+  // toucher ou glisser vers le haut pour la fermer tout de suite
+  const out=()=>{if(t._out)return;t._out=1;t.style.transition="transform .2s ease-in,opacity .2s";t.style.transform="translateY(-120%)";t.style.opacity="0";setTimeout(()=>t.remove(),200)};
+  let y0=null;t.addEventListener("pointerdown",e=>{y0=e.clientY;t.setPointerCapture&&t.setPointerCapture(e.pointerId)});
+  t.addEventListener("pointermove",e=>{if(y0==null)return;const dy=Math.min(0,e.clientY-y0);t.style.transform=`translateY(${dy}px)`;t.style.opacity=String(1+dy/120)});
+  t.addEventListener("pointerup",e=>{if(y0==null)return;const dy=e.clientY-y0;y0=null;if(dy<-25||Math.abs(dy)<8)out();else{t.style.transform="";t.style.opacity=""}});
+  t.addEventListener("pointercancel",()=>{y0=null;t.style.transform="";t.style.opacity=""});
+  setTimeout(out,3800)}
 function bump(){const b=$("#bank");b.classList.remove("bump");void b.offsetWidth;b.classList.add("bump")}
 function confetti(){if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;const c=document.createElement("div");c.className="confetti";
   const cols=["#ffd23f","#35d07f","#ff7a45","#d7f25a","#fff","#5fa8ff"];
@@ -2877,7 +2884,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.12";
+const VERSION="3.13";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

@@ -1132,3 +1132,6 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 .idlep>div{display:flex;flex-wrap:wrap;gap:6px}.idlep .av{width:30px!important;height:30px!important;border-radius:50%!important;display:grid;place-items:center;font:800 14px "Barlow Condensed";color:#0b1310;opacity:.75}
 .pzl:has(>span:nth-child(3):last-child){grid-template-columns:repeat(3,1fr)}
 .mid .nolive{display:block;margin-top:2px;font-size:10.5px;color:var(--mute);line-height:1.2;max-width:120px;text-align:center}
+/* notifications : glisser vers le haut pour fermer ; quand une fenêtre est ouverte (roue, fiche…), elles passent sous la croix */
+.toast{touch-action:none;user-select:none;-webkit-user-select:none}
+body:has(#layer .sheet) .toasts{top:calc(150px + var(--safe-t))}
