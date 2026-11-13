@@ -880,6 +880,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"tv":{const C=TVCH[d.ch];if(C&&C.u)window.open(C.u,"_blank","noopener");else toast(`📺 Sur ${esc(d.ch)}`);break}
     case"pleg":{const go=()=>{const m=findMatch(d.mid);if(!m)return false;const st=status(m);U.dtab=st==="live"||st==="post"?"s":"p";openDetail(d.mid);return true};
       if(go())break;toast("Chargement du match…");espnRefetch({path:d.p,sp:d.sp,lv:lvOfPath(d.sp,d.p),t:+d.t}).then(()=>{if(!go())toast("Ce match n’est plus disponible.")}).catch(()=>toast("Ce match n’est plus disponible."));break}
+    case"lgfull":{const k=d.k;U.lg.full=U.lg.full===k?null:k;const y=scrollY;render();if(U.lg.full!==k)window.scrollTo(0,Math.min(y,document.body.scrollHeight));break}
     case"legopen":{const m=findMatch(d.mid);if(!m){toast("Ce match n’est plus disponible dans l’appli.");break}const st=status(m);U.dtab=st==="live"||st==="post"?"s":"p";openDetail(d.mid);break}
     case"pick":pick(d.mid,d.mk,+d.k);if(U.open)refreshLayer();render();break;
     case"ppick":pickPlayer(d.mid,d.mk,d.pid,d.name);if(U.open)refreshLayer();render();break;
@@ -1062,9 +1063,12 @@ function viewLeagues(){const L=U.lg,d=L.data;
   if(rows.length>=3){const P=[rows[0],rows[1],rows[2]],H=[90,66,48];
     h+=`<div class="podium">${P.map((r,i)=>`<div class="pod" data-act="prof" data-id="${esc(r.id)}">${avatar(r.id,r.name,r.av,"av"+frC(r.cos))}<b>${nameH(r.name,r.cos)}${r.id===d.me?" (toi)":""}</b><span class="${cls(r)}">${val(r)}</span>
       <div class="blk" style="height:${H[i]}px;background:${["#ffd23f","#c9d3dc","#e0975a"][i]}">${i+1}</div></div>`).join("")}</div>`}
-  h+=rows.map((r,i)=>i<3&&rows.length>=3?"":`<div class="prow${r.id===d.me?" me":""}" data-act="prof" data-id="${esc(r.id)}"><span class="rk">${i+1}</span>${avatar(r.id,r.name,r.av,"av"+frC(r.cos))}
+  // liste raccourcie : les 10 premiers + ta place, le reste derrière « Voir tout »
+  const LIM=10,full=U.lg.full===(cur?cur.code:"gen"),meI=rows.findIndex(r=>r.id===d.me),showR=(r,i)=>full||i<LIM||i===meI;
+  h+=rows.map((r,i)=>(i<3&&rows.length>=3)||!showR(r,i)?"":`${!full&&i===meI&&i>LIM?`<div class="note" style="text-align:center;margin:2px 0">⋯</div>`:""}<div class="prow${r.id===d.me?" me":""}" data-act="prof" data-id="${esc(r.id)}"><span class="rk">${i+1}</span>${avatar(r.id,r.name,r.av,"av"+frC(r.cos))}
     <div><b>${nameH(r.name,r.cos)}${favCrest(r.fav)}${r.id===d.me?" (toi)":""}${r.sc?` <span class="trs crw">${ic("crown")}${r.sc>1?r.sc:""}</span>`:""}${r.tr?` <span class="trs">${ic("trophy")}${r.tr>1?r.tr:""}</span>`:""}</b><small>${r.cos&&r.cos.t&&cosTitle(r.cos.t)?esc(cosTitle(r.cos.t))+" · ":""}${levelOf(r.xp||0).ic} niv. ${levelOf(r.xp||0).lvl} · ${r.won} gagné${r.won>1?"s":""} · ${r.lost} perdu${r.lost>1?"s":""}</small></div>
     <span class="v ${cls(r)}">${val(r)}</span></div>`).join("");
+  if(rows.length>LIM+1)h+=`<button class="btn ghost wide" data-act="lgfull" data-k="${cur?esc(cur.code):"gen"}" style="margin:8px 0">${full?"Réduire le classement":`Voir tout le classement (${rows.length})`}</button>`;
   if(!cur&&d.rank&&!rows.some(r=>r.id===d.me))h+=`<div class="note" style="text-align:center">…</div>`;
   const note=M==="week"?`« Semaine » = jetons gagnés <b>en pariant</b> depuis lundi (la roue, les défis et les bonus ne comptent pas). Repart à zéro chaque lundi ; le meilleur gagne un trophée ${ic("trophy")}.`
     :M==="season"?`« Mois » = jetons gagnés <b>en pariant</b> depuis le 1er du mois : seuls les paris comptent (pas la roue, les défis, le prono ni le match de la guilde). Paris gagnés + encaissés − paris perdus. Repart à zéro chaque mois ; le premier est sacré champion ${ic("crown")}.`
@@ -2867,7 +2871,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.08";
+const VERSION="3.09";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
