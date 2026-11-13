@@ -1108,8 +1108,11 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 .gdj{padding:6px 4px;font-size:12.5px;min-height:0}
 .gdp>span{display:inline-flex}.gdp .av{width:26px!important;height:26px!important;min-width:26px;display:grid;place-items:center;flex:none;font:800 13px "Barlow Condensed";color:#0b1310;overflow:hidden}
 /* carte de joueur et « Mon style » : l'aperçu reste en haut pendant qu'on fait défiler les options */
-.sheet .pcardimg.stk{position:sticky;top:56px;z-index:3;margin:0 -16px;padding:6px 16px 14px;background:linear-gradient(var(--bg2) 88%,transparent)}
-.sheet .pcardimg.stk .tilt{width:min(62%,250px)}
+/* ma carte : un peu plus petite et options compactes, pour tout voir d'un coup d'œil */
+.sheet .pcardimg.mycd{padding:0 0 4px}.sheet .pcardimg.mycd .tilt{width:min(64%,250px)}
+.sheet .pcardimg.mycd+.tilthint{margin:2px 0 6px;font-size:12px}
+.sheet .pcardimg.mycd~.cdopt b{margin:8px 0 5px;font-size:12px}
+.sheet .pcardimg.mycd~.cdopt>div{gap:6px}.sheet .pcardimg.mycd~.cdopt button{padding:6px 11px;font-size:13px;min-height:0}
 .sheet .stprev{position:sticky;top:56px;z-index:3;box-shadow:0 10px 18px var(--bg2)}
 .sheet .stprev+.sttabs,.sheet .stprev~.sttabs{position:relative;z-index:1}
 /* « Mon style » : équipe de cœur */
