@@ -999,7 +999,11 @@ const ACTIONS = {
     if (needWin) await settleOpen(s, { player: p.id, budget: 5e3 });
     const rows = await s.query(`select legs, odds::float8 as odds, status, to_char(at at time zone 'Europe/Paris', 'YYYYMMDD') as d,
         to_char(settled_at at time zone 'Europe/Paris', 'YYYYMMDD') as sd from bets where player = $1 and (at > now() - interval '2 days' or settled_at > now() - interval '2 days')`, [p.id]);
-    const P = rows.filter((r) => r.d === day), W = rows.filter((r) => r.status === "won" && r.sd === day);
+    // pari gagné compté pour aujourd'hui : réglé aujourd'hui, ou dernier match commencé aujourd'hui / hier à partir de 18 h (heure de Paris)
+    const pd = (ms) => { const o = Object.fromEntries(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hourCycle: "h23" }).formatToParts(new Date(ms)).map((x) => [x.type, x.value])); return { d: o.year + o.month + o.day, h: +o.hour }; };
+    const yd = pd(Date.now() - 864e5).d;
+    const lateOk = (r) => { const lt = Math.max(...(r.legs || []).map((L) => Number(L.t) || 0)); if (!lt) return false; const x = pd(lt); return x.d === day || (x.d === yd && x.h >= 18); };
+    const P = rows.filter((r) => r.d === day), W = rows.filter((r) => r.status === "won" && (r.sd === day || lateOk(r)));
     const we = EG.weekendOf(day), mul = we.on && we.k === "defis" ? 2 : 1;
     const D = EG.defisFor(day).map((d) => ({ id: d.id, r: d.r * mul, ok: d.f(P, W) >= d.g }));
     if (b.all) {

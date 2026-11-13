@@ -72,7 +72,7 @@ async function getJSON(u,ms=9000){const c=new AbortController(),t=setTimeout(()=
 async function loadFeed(sp,lv){const paths=SP[sp].feeds[lv],key=sp+lv,now=Date.now();FEED[key]=FEED[key]||{ok:null,list:[]};
   const qs=sp==="tennis"?[`${ymd(now-4*DAY)}-${ymd(now+8*DAY)}`]:[...new Set([ymd(now-4*DAY).slice(0,6),ymd(now+8*DAY).slice(0,6),ymd(now+22*DAY).slice(0,6)])];
   try{const res=await Promise.all(paths.flatMap(p=>qs.map(q=>getJSON(`${ESPN}${p}/scoreboard?dates=${q}&limit=500`).then(j=>[p,j]))));
-    const list=[],seen=new Set();for(const[p,j]of res)for(const ev of j.events||[]){if(seen.has(p+ev.id))continue;seen.add(p+ev.id);if(sp==="tennis")list.push(...parseTennis(ev,lv,p));else{const m=parseTeamEvent(ev,sp,lv,p);if(m&&m.t>now-5*DAY&&m.t<now+22*DAY)list.push(m)}}
+    const list=[],seen=new Set();for(const[p,j]of res)for(const ev of j.events||[]){if(seen.has(p+ev.id))continue;seen.add(p+ev.id);if(sp==="tennis")list.push(...parseTennis(ev,lv,p).filter(m=>!/^(TBD|TBA|Qualifier|Bye|\?)$/i.test(String(m.h).trim())&&!/^(TBD|TBA|Qualifier|Bye|\?)$/i.test(String(m.a).trim())));else{const m=parseTeamEvent(ev,sp,lv,p);if(m&&m.t>now-5*DAY&&m.t<now+22*DAY)list.push(m)}}
     FEED[key]={ok:true,list,at:now};feedSave();list.forEach(m=>{const old=REG.get(m.id);try{if(!old||!old._c)liveDiff(old,m)}catch(e){}if(old&&old.st&&m.st)for(const k in old.st)if(!(k in m.st))m.st[k]=old.st[k];REG.set(m.id,m)})}
   catch(e){const o=FEED[key];FEED[key]=o&&o.stale&&o.list.length?{...o,at:now}:{ok:false,list:[],at:now}}}
 // matchs gardés sur le téléphone : à l'ouverture on affiche tout de suite les derniers connus, puis on les met à jour en fond
@@ -1188,12 +1188,15 @@ function viewStyle(){const j=U.cosD,E=U.cosEdit,un=new Set(j.unlocked),T=U.cosTa
   const vis=x=>!(COS_SECRET.includes(x[3])&&!un.has(x[0]));
   const items=COS.filter(x=>x[1]===T&&vis(x)).map(x=>({id:x[0],n:x[2],d:x[4],ok:un.has(x[0]),sec:COS_SECRET.includes(x[3]),pk:x[3]}));
   if(T==="t")for(const id of j.unlocked)if(id.startsWith("tm:"))items.splice(1,0,{id,n:cosTitle(id),d:"",ok:true});
-  const tm=ty=>ty==="t"?j.unlocked.filter(x=>x.startsWith("tm:")).length:0,cnt=ty=>`${COS.filter(x=>x[1]===ty&&un.has(x[0])).length+tm(ty)}/${COS.filter(x=>x[1]===ty&&vis(x)).length+tm(ty)}`;
+  const tm=ty=>ty==="t"?j.unlocked.filter(x=>x.startsWith("tm:")).length:0,cnt=ty=>ty==="h"?(S.fav?"choisie":"aucune"):`${COS.filter(x=>x[1]===ty&&un.has(x[0])).length+tm(ty)}/${COS.filter(x=>x[1]===ty&&vis(x)).length+tm(ty)}`;
   const prev={b:E.b,c:E.c,t:T==="y"&&(!E.t||E.t==="t0")?"t2":E.t,f:E.f,e:E.e,v:E.v,y:E.y};
   return`<div class="grab"><h3>Mon style</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   ${j.flags.all?`<p class="testr">🧪 Mode testeur : tout est débloqué pour toi.</p>`:""}
   ${(()=>{const MC=mcInfo(S.bets,S.xp);return`<div class="pcard chero stprev${MC.cls}${bnC(prev)}">${MC.fx}<div class="mctop">${MC.note()}<div class="who">${avatar(S.pid||"me",S.name||"?",S.avv,"av"+frC(prev),true)}<div><h2>${nameH(S.name||"Joueur",prev)}</h2>${ttlH(prev)}<span class="div">${LV.ic} ${esc(LV.tier)} · niveau ${LV.lvl}</span></div></div></div></div>`})()}
-  <div class="sttabs">${[["b","🖼️ Bannières"],["c","🎨 Couleurs"],["t","🏷️ Titres"],["y","✨ Style du titre"],["f","⭕ Cadres"],["e","😎 Emojis"],["v","🎉 Victoire"]].map(([k,n])=>`<button data-act="sttab" data-v="${k}" aria-pressed="${T===k}">${n}<small>${cnt(k)}</small></button>`).join("")}</div>
+  <div class="sttabs">${[["b","🖼️ Bannières"],["c","🎨 Couleurs"],["t","🏷️ Titres"],["y","✨ Style du titre"],["f","⭕ Cadres"],["e","😎 Emojis"],["v","🎉 Victoire"],["h","❤️ Équipe"]].map(([k,n])=>`<button data-act="sttab" data-v="${k}" aria-pressed="${T===k}">${n}<small>${cnt(k)}</small></button>`).join("")}</div>
+  ${T==="h"?`<div class="stfav">${S.fav?`<div class="stfavc">${S.fav.logo?`<img src="${esc(S.fav.logo)}" alt="">`:"❤️"}<div><b>${esc(S.fav.name)}</b><small>Ton équipe de cœur</small></div></div>`:`<p class="note" style="text-align:left">Pas encore d’équipe de cœur.</p>`}
+    <p class="note" style="text-align:left">Ses matchs remontent en premier sur l’accueil, tu reçois un rappel à midi quand elle joue, et son écusson peut s’afficher sur ta carte de joueur (Écusson › Mon équipe).</p>
+    <button class="btn gold wide" data-act="fav">❤️ ${S.fav?"Changer d’équipe":"Choisir mon équipe"}</button>${S.fav?`<button class="link" data-act="favnone" style="display:block;margin:10px auto 0">Retirer mon équipe de cœur</button>`:""}</div>`:""}
   ${T==="v"?`<p class="note" style="text-align:left">L’animation qui se lance quand un de tes paris passe. Touche un effet débloqué pour le voir.</p>`:T==="y"?`<p class="note" style="text-align:left">La couleur de ton titre (choisis aussi un titre dans 🏷️ Titres).</p>`:""}
   <div class="stgrid ${T}">${items.map(x=>`<button class="sti${x.ok?"":" lock"}${E[T]===x.id?" on":""}" data-act="stpick" data-v="${esc(x.id)}" ${x.ok?"":"aria-disabled=\"true\""}>
     ${T==="b"?`<span class="stsw bnr bn-${x.id}"></span>`:T==="c"?`<span class="stc nc-${x.id}">Aa</span>`:T==="f"?avatar(S.pid||"me",S.name||"?",S.avv,"av stav"+(x.id!=="f0"?" fr-"+x.id:""),true):T==="e"?`<span class="ste${x.pk==="corbeau"?" raven":""}">${x.id==="e0"?"∅":esc(x.n.split(" ")[0])}</span>`:T==="v"?`<span class="ste${x.pk==="corbeau"?" raven":""}">${x.id==="v0"?"🎊":esc(x.n.split(" ")[0])}</span>`:T==="y"?`<span class="ttl${x.id!=="y0"?" ty-"+x.id:""}">${esc(cosTitle(E.t&&E.t!=="t0"?E.t:"t2"))}</span>`:""}${x.sec?x.pk==="teckel"?`<span class="stsec tk">🐕 Exclusif</span>`:`<span class="stsec">🐦‍⬛ Exclusif</span>`:""}${COS_SEASON[(COS.find(y=>y[0]===x.id)||[])[3]]?`<span class="stsea">${COS_SEASON[COS.find(y=>y[0]===x.id)[3]]}</span>`:""}<b>${esc(T==="e"&&x.id!=="e0"?x.n.split(" ").slice(1).join(" "):T==="v"&&x.id!=="v0"?x.n.split(" ").slice(1).join(" "):x.n)}</b>${x.ok?"":`<small>🔒 ${esc(x.d)}</small>`}</button>`).join("")}</div>
@@ -1356,7 +1359,7 @@ async function openCard(p){U.open="card";U.cardP=p;const head=`<div class="grab"
       <b>Rang affiché</b><div>${(()=>{const real=CARD_T.find(x=>C.note>=x[0]);return[["auto","✨ Mon rang"],["BRONZE","🥉 Bronze"],["ARGENT","🥈 Argent"],["OR","🥇 Or"],["ÉLITE","💎 Élite"],["LÉGENDE","👑 Légende"]].map(([v,n])=>{const t=CARD_T.find(x=>x[1]===v),lock=t&&t[0]>real[0];
         return lock?`<button data-act="cardlock" data-v="${t[0]}" class="lk" aria-disabled="true">🔒 ${n.split(" ")[1]}</button>`:`<button data-act="cardopt" data-k="rk" data-v="${v}" aria-pressed="${(o.rk||"auto")===v}">${n}</button>`}).join("")})()}</div>
       <small class="rkn">Tu peux afficher ton rang ou un rang inférieur. Les rangs au-dessus se débloquent avec ta note.</small></div>`:"";
-    layer(head+`<div class="pcardimg"><div class="tilt" id="tilt"><img src="${url}" alt="Carte de ${esc(p.name)}"><i class="glare" style="-webkit-mask-image:url(${url});mask-image:url(${url})"></i></div></div><p class="tilthint">👆 Fais glisser ton doigt sur la carte pour la faire bouger</p>${opts}
+    layer(head+`<div class="pcardimg${p.me?" stk":""}"><div class="tilt" id="tilt"><img src="${url}" alt="Carte de ${esc(p.name)}"><i class="glare" style="-webkit-mask-image:url(${url});mask-image:url(${url})"></i></div></div><p class="tilthint">👆 Fais glisser ton doigt sur la carte pour la faire bouger</p>${opts}
     <p class="note">Note <b>${C.note}</b> (${T[1].toLowerCase()}) : précision, flair, audace, gestion, régularité et expérience, calculés sur les vrais paris.${p.me?" Ta bannière et ton style se changent dans « Mon style ».":""}</p>
     <button class="btn gold wide" data-act="cardshare">${ic("share")} Partager la carte</button>`);U.cardSk=0;cardTilt()}
   catch(e){U.cardSk=0;if(U.open==="card")layer(head+`<div class="empty">${ic("info")}<b>Impossible de créer la carte</b>Réessaie dans un instant.</div>`)}}
@@ -2602,7 +2605,8 @@ async function joinFromLink(){const c=new URLSearchParams(location.search).get("
    Progression calculée à partir des paris du jour : rien à tricher, rien à perdre si on ne joue pas. */
 function defisToday(){return defisFor(today())}
 function defisState(){if(!S.dch||S.dch.d!==today())S.dch={d:today(),got:[],seen:[],all:false};
-  const t=today(),P=S.bets.filter(b=>ymd(b.at)===t),W=S.bets.filter(b=>b.st==="won"&&b.done&&ymd(b.done)===t);
+  // pari gagné compté pour aujourd'hui : son dernier match a commencé aujourd'hui, ou hier à partir de 18 h (fini tard le soir) — même règle que le serveur
+  const t=today(),y=ymd(Date.now()-DAY),P=S.bets.filter(b=>ymd(b.at)===t),W=S.bets.filter(b=>{if(b.st!=="won")return false;const lt=Math.max(...b.legs.map(L=>L.t||0));if(!lt)return false;const d=ymd(lt);return d===t||(d===y&&new Date(lt).getHours()>=18)});
   const mul=WE().on&&WE().k==="defis"?2:1;
   return defisToday().map(d=>({...d,r:d.r*mul,n:Math.min(d.g,d.f(P,W)),got:S.dch.got.includes(d.id)}))}
 const defiBonus=()=>DEFI_BONUS*(WE().on&&WE().k==="defis"?2:1);
@@ -2842,7 +2846,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.98";
+const VERSION="2.99";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
