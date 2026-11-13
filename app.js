@@ -623,7 +623,9 @@ const legResult=L=>legResultM(L,findMatch(L.mid));
 const cashValue=b=>cashValueM(b,findMatch);
 let settling=false;
 async function settle(){if(settling)return;settling=true;
-  try{const pend=S.bets.filter(b=>b.st==="open").flatMap(b=>b.legs.filter(L=>!L.r));
+  // paris perdus récemment : on continue de vérifier les autres sélections, pour afficher leur résultat (✓ / ✗) même si le ticket est déjà perdu
+  const lostOpen=S.bets.filter(b=>b.st==="lost"&&b.legs.some(L=>!L.r)&&Date.now()-(b.done||b.at||0)<14*DAY);
+  try{const pend=S.bets.filter(b=>b.st==="open").concat(lostOpen).flatMap(b=>b.legs.filter(L=>!L.r));
     // matchs pros hors fenêtre ou stats manquantes : on va chercher les données
     const fetches=[];const seen=new Set();
     // matchs amateurs des joueurs : on rafraîchit ceux qui attendent leur score
@@ -644,6 +646,7 @@ async function settle(){if(settling)return;settling=true;
         else{const R=betResult(b);b.odds=R.odds;b.pay=R.pay;b.st="won";S.bal+=b.pay;gain+=b.pay;won++;
           if(won<=3)postAct("won",{pay:b.pay,odds:b.odds,n:b.legs.length,big:b.odds>=5||b.pay>=1000||b.legs.length>=4?1:0,legs:b.legs.slice(0,3).map(L=>L.l)})}}}
     if(won||lost){const s1=streakNow(),T=s1.w?[3,5,7,10,15]:[5,8,12],hit=T.filter(t=>s1.n>=t&&(s0.w!==s1.w||s0.n<t)).pop();if(hit)postAct("streak",{n:hit,w:s1.w?1:0})}
+    {let fill=0;for(const b of lostOpen)for(const L of b.legs)if(!L.r){const r=legResult(L),m=findMatch(L.mid);if(r&&(r!=="v"||(m&&status(m)==="cancel"))){L.r=r;fill++}}if(fill&&!won&&!lost&&!voids){save();if(U.tab==="b"&&!U.open)render()}}
     if(won||lost||voids){S.peak=Math.max(S.peak,S.bal);save();render();bump();
       if(won){toast(`${ic("trophy")} ${won} pari${won>1?"s":""} gagné${won>1?"s":""} : +${tok(gain)} jetons !`,"win");winFx()}
       if(lost)toast(`${lost} pari${lost>1?"s":""} perdu${lost>1?"s":""}. La revanche ?`);
@@ -2820,7 +2823,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="2.95";
+const VERSION="2.96";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
