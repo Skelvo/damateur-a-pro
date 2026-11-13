@@ -864,6 +864,8 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"mybet":{const b=(d.bid&&S.bets.find(x=>String(x.id)===d.bid))||myBet(d.mid);document.querySelectorAll(".scrim").forEach(x=>x.remove());U.open=null;layer("");U.tab="b";if(b)U.btab=b.st==="open"?"o":"c";render();window.scrollTo(0,0);
       if(b)setTimeout(()=>{const e=document.querySelector(`[data-bid="${b.id}"]`);if(e){e.scrollIntoView({block:"center",behavior:"smooth"});e.classList.add("flashb");setTimeout(()=>e.classList.remove("flashb"),1600)}},250);break}
     case"tv":{const C=TVCH[d.ch];if(C&&C.u)window.open(C.u,"_blank","noopener");else toast(`📺 Sur ${esc(d.ch)}`);break}
+    case"pleg":{const go=()=>{const m=findMatch(d.mid);if(!m)return false;const st=status(m);U.dtab=st==="live"||st==="post"?"s":"p";openDetail(d.mid);return true};
+      if(go())break;toast("Chargement du match…");espnRefetch({path:d.p,sp:d.sp,lv:lvOfPath(d.sp,d.p),t:+d.t}).then(()=>{if(!go())toast("Ce match n’est plus disponible.")}).catch(()=>toast("Ce match n’est plus disponible."));break}
     case"legopen":{const m=findMatch(d.mid);if(!m){toast("Ce match n’est plus disponible dans l’appli.");break}const st=status(m);U.dtab=st==="live"||st==="post"?"s":"p";openDetail(d.mid);break}
     case"pick":pick(d.mid,d.mk,+d.k);if(U.open)refreshLayer();render();break;
     case"ppick":pickPlayer(d.mid,d.mk,d.pid,d.name);if(U.open)refreshLayer();render();break;
@@ -1907,7 +1909,7 @@ function betProfits(){const out={},lim=Date.now()-75*DAY;
 // chaque sélection donne son match (compétition ESPN, identifiant, heure) et le choix fait
 function betsPayload(){const B=S.bets.slice(-40).reverse().map(b=>({id:b.id,at:b.at,done:b.done||0,st:b.st,stake:b.stake,odds:b.odds,pay:b.pay||0,
     legs:b.legs.slice(0,8).map(L=>{const o={l:String(L.l).slice(0,60),ml:String(L.ml||"").slice(0,60),mt:String(L.mt||"").slice(0,40),r:L.r||null};
-      if(b.st==="open"&&L.snap&&L.snap.path&&/^e-/.test(L.mid)){o.p=L.snap.path;o.e=L.mid.split("-").pop();o.t=L.t;o.mk=L.mk;o.k=L.k;o.sp=L.sp}return o})}));
+      if(L.snap&&L.snap.path&&/^e-/.test(L.mid)){o.p=L.snap.path;o.e=L.mid.split("-").pop();o.t=L.t;o.sp=L.sp;if(b.st==="open"){o.mk=L.mk;o.k=L.k;o.line=L.line}}return o})}));
   const W=S.bets.filter(b=>b.st==="won");return{bets:B,best:{odds:W.reduce((a,b)=>Math.max(a,b.odds),0),pay:W.reduce((a,b)=>Math.max(a,b.pay||0),0)},badges:succOn(),profits:betProfits()}}
 
 /* ---------- fiche d'un joueur ---------- */
@@ -1921,7 +1923,8 @@ function viewProfile(p){U.prof=p;const done=p.won+p.lost,rate=done?Math.round(p.
   const row=(U.lg.data&&U.lg.data.rows||[]).find(r=>String(r.id)===String(p.id)),tr=row?row.tr:0,sc=row?row.sc:0;
   const bet=b=>{const tag=b.st==="won"?`<span class="tag won">+${tok(b.pay)}</span>`:b.st==="lost"?`<span class="tag lost">Perdu</span>`:b.st==="void"?`<span class="tag void">Remboursé</span>`:b.st==="cashed"?`<span class="tag cashed">Encaissé +${tok(b.pay)}</span>`:`<span class="tag open">En cours</span>`;
     return`<div class="pbet"><div class="pbh"><b>${b.legs.length>1?"Combiné · "+b.legs.length:"Simple"}</b>${tag}</div>
-      ${b.legs.map(L=>`<div class="pleg">${L.r==="w"?`<span class="st w">✓</span>`:L.r==="l"?`<span class="st l">✗</span>`:L.r==="v"?`<span class="st v">↺</span>`:`<span class="st p"></span>`}<div><b>${esc(L.l)}</b><small>${esc(L.ml)}</small></div></div>`).join("")}
+      ${b.legs.map(L=>{const mid=L.p&&L.e?"e-"+String(L.p).replace(/\W/g,"")+"-"+L.e:"",LL={...L,mid};
+        return`<div class="pleg${mid?" legx":""}"${mid?` data-act="pleg" data-mid="${esc(mid)}" data-p="${esc(L.p)}" data-t="${+L.t||0}" data-sp="${esc(L.sp||"")}"`:""}>${mid&&!L.r?legStatus(LL):L.r==="w"?`<span class="st w">✓</span>`:L.r==="l"?`<span class="st l">✗</span>`:L.r==="v"?`<span class="st v">↺</span>`:`<span class="st p"></span>`}<div><b>${esc(L.l)}</b><small>${esc(L.ml)}</small>${mid&&!L.r&&L.mk?legWhen(LL):""}</div></div>`}).join("")}
       <small class="pbf">Mise ${tok(b.stake)} · cote ${fr(+b.odds||1)} · ${new Date(b.at).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})}</small></div>`};
   return`<div class="grab"><h3>Profil</h3><button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button></div>
   ${(()=>{const MC=mcInfo(p.me?S.bets:p.bets,p.xp);return`<div class="phero${MC.cls}${bnC(p.me?S.cos:p.cos)}">${MC.fx}${MC.note()}`})()}${avatar(p.id,p.name,p.av,"av big"+frC(p.me?S.cos:p.cos),p.me)}<div><h2>${nameH(p.name,p.me?S.cos:p.cos)}</h2>${ttlH(p.me?S.cos:p.cos)}<span class="div">${levelOf(p.xp||0).ic} ${esc(levelOf(p.xp||0).tier)} · niv. ${levelOf(p.xp||0).lvl}${sc?` · ${sc} mois gagné${sc>1?"s":""}`:""}${tr?` · ${tr} semaine${tr>1?"s":""} gagnée${tr>1?"s":""}`:""}</span>
@@ -2850,7 +2853,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.04";
+const VERSION="3.05";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
