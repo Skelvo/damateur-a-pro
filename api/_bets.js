@@ -97,7 +97,7 @@ export async function settleOpen(s, { limit = 300, budget = 40e3, player = null 
     let changed = false;
     for (const L of legs) {
       if (L.r) continue;
-      if (now < L.t + E.SP[L.sp].dur * 6e4) continue;   // match pas encore fini
+      if (now < L.t + (E.SP[L.sp].dur - 20) * 6e4) continue;   // match sûrement pas fini (on vérifie ensuite le statut réel du flux)
       if (!(L.mid in M)) {
         M[L.mid] = await loadMatch(L);
         const m = M[L.mid];
