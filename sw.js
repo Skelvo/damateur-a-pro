@@ -1,5 +1,5 @@
 // Service worker : réseau d'abord (toujours revérifié auprès du serveur), cache en secours hors ligne.
-const C="dap-v161",IMG="dap-img-1",SHELL=["./","index.html","manifest.webmanifest","icon-192.png","icon-180.png","icon-512.png","logo-tribune.png","engine.js?v=3.14","app.js?v=3.14","app.css?v=3.14"];
+const C="dap-v162",IMG="dap-img-1",SHELL=["./","index.html","manifest.webmanifest","icon-192.png","icon-180.png","icon-512.png","logo-tribune.png","engine.js?v=3.15","app.js?v=3.15","app.css?v=3.15"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C&&x!==IMG&&!x.startsWith("dap-feed")).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
 // logos des équipes, drapeaux et photos de profil : gardés sur le téléphone (plus rapide, moins de données), 500 au plus
@@ -16,10 +16,11 @@ self.addEventListener("fetch",e=>{const u=new URL(e.request.url);if(e.request.me
   // code de l'appli versionné (?v=) : jamais modifié sous le même nom, donc servi directement depuis le téléphone
   if(/\.(js|css)$/.test(u.pathname)&&u.searchParams.has("v")){e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(r=>{if(r.ok){const cp=r.clone();caches.open(C).then(c=>c.put(e.request,cp))}return r})));return}
   const fresh=e.request.mode==="navigate"||/\.(html|txt|webmanifest)$/.test(u.pathname)||u.pathname.endsWith("/");
-  const net=fetch(e.request,fresh?{cache:"no-cache"}:undefined).then(r=>{if(r.ok&&!u.pathname.endsWith("version.txt")){const cp=r.clone();caches.open(C).then(c=>c.put(e.request,cp))}return r});
+  const net=fetch(e.request,fresh?{cache:"no-cache"}:undefined).then(r=>{if(r.ok&&!u.pathname.endsWith("version.txt")){const cp=r.clone();caches.open(C).then(c=>c.put(u.searchParams.has("upd")?"./":e.request,cp))}return r});
   // ouverture de l'appli : si le réseau traîne plus de 2,5 s, on affiche la version déjà sur le téléphone
-  if(e.request.mode==="navigate"){e.respondWith(new Promise(res=>{let done=false;const fin=r=>{if(!done&&r){done=true;res(r)}};
-    const t=setTimeout(()=>caches.match(e.request).then(c=>c&&fin(c)),2500);
+  if(e.request.mode==="navigate"){const upd=u.searchParams.has("upd");e.respondWith(new Promise(res=>{let done=false;const fin=r=>{if(!done&&r){done=true;res(r)}};
+    // mise à jour demandée (bouton « Recharger ») : on attend vraiment le réseau, sans servir l'ancienne page au bout de 2,5 s
+    const t=upd?0:setTimeout(()=>caches.match(e.request).then(c=>c&&fin(c)),2500);
     net.then(r=>{clearTimeout(t);fin(r)}).catch(()=>caches.match(e.request).then(c=>c||caches.match("index.html")).then(c=>fin(c||Response.error())))}));return}
   // hors connexion : la page d'accueil seulement pour une navigation, jamais à la place d'un fichier (version.txt, script…)
   e.respondWith(net.catch(()=>caches.match(e.request).then(r=>r||(e.request.mode==="navigate"?caches.match("index.html"):new Response("",{status:503})))))});

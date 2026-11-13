@@ -2884,13 +2884,16 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.14";
+const VERSION="3.15";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
 async function checkUpdate(){try{const r=await fetch("version.txt?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const v=(await r.text()).trim();if(!/^\d+\.\d{1,3}$/.test(v))return;   // hors connexion : le service worker peut renvoyer une page à la place
   if(v&&v!==VERSION&&!$(".upd")){const b=document.createElement("button");b.className="upd";b.innerHTML=`<span>Nouvelle version ${esc(v)} disponible</span><b>Recharger</b>`;
-    b.onclick=()=>location.reload();document.body.appendChild(b)}}catch(e){}}
+    // mise à jour : on attend la nouvelle version du réseau (pas la copie du téléphone), sans repasser par le bandeau
+    b.onclick=async()=>{b.disabled=true;b.innerHTML=`<span>Mise à jour…</span>`;try{const r=navigator.serviceWorker&&await navigator.serviceWorker.getRegistration();if(r)await Promise.race([r.update(),new Promise(z=>setTimeout(z,4000))])}catch(e){}
+      location.replace(location.pathname+"?upd="+Date.now())};document.body.appendChild(b)}}catch(e){}}
+if(/[?&]upd=/.test(location.search))history.replaceState(null,"",location.pathname);
 showVersion();checkUpdate();
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkUpdate()});setInterval(checkUpdate,5*6e4);
 
