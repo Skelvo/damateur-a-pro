@@ -2853,11 +2853,11 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.05";
+const VERSION="3.06";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
-async function checkUpdate(){try{const r=await fetch("version.txt?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const v=(await r.text()).trim();
+async function checkUpdate(){try{const r=await fetch("version.txt?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const v=(await r.text()).trim();if(!/^\d+\.\d{1,3}$/.test(v))return;   // hors connexion : le service worker peut renvoyer une page à la place
   if(v&&v!==VERSION&&!$(".upd")){const b=document.createElement("button");b.className="upd";b.innerHTML=`<span>Nouvelle version ${esc(v)} disponible</span><b>Recharger</b>`;
     b.onclick=()=>location.reload();document.body.appendChild(b)}}catch(e){}}
 showVersion();checkUpdate();

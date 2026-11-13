@@ -1,5 +1,5 @@
 // Service worker : réseau d'abord (toujours revérifié auprès du serveur), cache en secours hors ligne.
-const C="dap-v152",IMG="dap-img-1",SHELL=["./","index.html","manifest.webmanifest","icon-192.png","icon-180.png","icon-512.png","logo-tribune.png","engine.js?v=3.05","app.js?v=3.05","app.css?v=3.05"];
+const C="dap-v153",IMG="dap-img-1",SHELL=["./","index.html","manifest.webmanifest","icon-192.png","icon-180.png","icon-512.png","logo-tribune.png","engine.js?v=3.06","app.js?v=3.06","app.css?v=3.06"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C&&x!==IMG&&!x.startsWith("dap-feed")).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
 // logos des équipes, drapeaux et photos de profil : gardés sur le téléphone (plus rapide, moins de données), 500 au plus
@@ -21,7 +21,8 @@ self.addEventListener("fetch",e=>{const u=new URL(e.request.url);if(e.request.me
   if(e.request.mode==="navigate"){e.respondWith(new Promise(res=>{let done=false;const fin=r=>{if(!done&&r){done=true;res(r)}};
     const t=setTimeout(()=>caches.match(e.request).then(c=>c&&fin(c)),2500);
     net.then(r=>{clearTimeout(t);fin(r)}).catch(()=>caches.match(e.request).then(c=>c||caches.match("index.html")).then(c=>fin(c||Response.error())))}));return}
-  e.respondWith(net.catch(()=>caches.match(e.request).then(r=>r||caches.match("index.html"))))});
+  // hors connexion : la page d'accueil seulement pour une navigation, jamais à la place d'un fichier (version.txt, script…)
+  e.respondWith(net.catch(()=>caches.match(e.request).then(r=>r||(e.request.mode==="navigate"?caches.match("index.html"):new Response("",{status:503})))))});
 
 // Notifications : affichage, et ouverture du bon écran quand on touche la notification
 self.addEventListener("push",e=>{let d={};try{d=e.data?e.data.json():{}}catch(x){d={title:"Tribune",body:e.data&&e.data.text()}}
