@@ -217,6 +217,8 @@ function parseTeamEvent(ev,sp,lv,path){const c=ev.competitions&&ev.competitions[
     const hid=String(Hc.id||(Hc.team&&Hc.team.id)||""),tid=String((x.team&&x.team.id)||"");
     return{ty:x.scoringPlay?(x.ownGoal?"og":"g"):/red/i.test(t)?"rc":/yellow/i.test(t)?"yc":"",id:a&&String(a.id),min:parseInt((x.clock&&x.clock.displayValue)||"0",10),
       s:tid?(tid===hid?0:1):null,n:a&&(a.shortName||a.displayName)||""}}).filter(e=>e.ty&&e.id);
+  // le score du flux est parfois en retard sur la liste des buts : on garde le plus grand des deux
+  if(m.ev&&m.st&&m.st.g){const n=[0,0];for(const e of m.ev)if(e.s!=null&&(e.ty==="g"||e.ty==="og"))n[e.ty==="og"?1-e.s:e.s]++;m.st.g=[Math.max(m.st.g[0],n[0]),Math.max(m.st.g[1],n[1])]}
   return m}
 function parseTennis(ev,lv,path){const out=[];const groups=ev.groupings||[{grouping:{slug:"singles"},competitions:ev.competitions||[]}];
   for(const g of groups){const slug=((g.grouping&&(g.grouping.slug||g.grouping.displayName))||"").toLowerCase();if(slug.includes("double"))continue;
