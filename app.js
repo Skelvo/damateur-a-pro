@@ -42,7 +42,7 @@ let S=(()=>{try{const x=JSON.parse(localStorage.getItem(LS));if(x&&x.v===2)retur
 let GONE=false;   // compte supprimé : plus rien n’est réécrit sur le téléphone
 const saveLocal=()=>{if(GONE)return;try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}};
 const save=()=>{saveLocal();syncSoon()};
-const U={lg:{code:"",data:null,err:null,loading:false,mode:"season",view:"rank"},tab:"m",sp:"foot",lv:-1,dep:"",sel:[],combo:true,stake:20,open:null,dtab:"p",btab:"o"};
+const U={lg:{code:"",data:null,err:null,loading:false,mode:"season",view:"rank"},tab:"m",sp:"all",lv:-1,dep:"",sel:[],combo:true,stake:20,open:null,dtab:"p",btab:"o"};
 const REG=new Map(),FEED={};
 
 /* ---------- fixtures simulées ---------- */
@@ -86,9 +86,9 @@ async function feedLoadCache(){try{if(!("caches"in window))return false;const r=
     const list=f.list.filter(m=>m&&m.id&&m.t>now-5*DAY);list.forEach(m=>{m._c=1;if(!REG.has(m.id))REG.set(m.id,m)});FEED[k]={ok:true,list,at:f.at,stale:true};if(list.length)n++}
   return n>0}catch(e){return false}}
 async function loadSport(sp){const jobs=Object.keys(SP[sp].feeds).filter(l=>!FEED[sp+l]||FEED[sp+l].stale).map(l=>loadFeed(sp,+l));if(!jobs.length)return;await Promise.all(jobs);
-  if(sp===U.sp){if(!U.open||U.open==="slip")render()}else renderSoon();settle()}
+  if(sp===U.sp||U.sp==="all"){if(!U.open||U.open==="slip")render()}else renderSoon();settle()}
 const idle=ms=>new Promise(ok=>"requestIdleCallback"in window?requestIdleCallback(()=>ok(),{timeout:ms}):setTimeout(ok,ms));
-let FIRST=null;async function loadFeeds(){await (FIRST=loadSport(U.sp));await idle(1500);for(const sp in SP)if(sp!==U.sp){await loadSport(sp);await idle(800)}for(const sp in SP)if(sp!==U.sp)await warmSport(sp)}
+let FIRST=null;async function loadFeeds(){const f0=SP[U.sp]?U.sp:"foot";await (FIRST=loadSport(f0));await idle(U.sp==="all"?300:1500);for(const sp in SP)if(sp!==f0){await loadSport(sp);await idle(U.sp==="all"?200:800)}for(const sp in SP)if(sp!==f0)await warmSport(sp)}
 // cotes des prochains matchs des autres sports calculées par petits paquets quand le téléphone ne fait rien : changer de sport devient instantané
 async function warmSport(sp){const ms=matchesFor(sp,-1).filter(m=>["pre","live"].includes(status(m))).sort((a,b)=>a.t-b.t).slice(0,24);
   for(let i=0;i<ms.length;i+=2){await idle(400);if(document.hidden)return;for(const m of ms.slice(i,i+2))try{resMarket(m)}catch(e){}}}
@@ -158,7 +158,7 @@ async function espnRefetch(snap){ // match hors fenêtre : on va le rechercher �
 
 // horloge ESPN en anglais → français (HT = mi-temps, FT = terminé, ET = prolongation…)
 function frClock(c){c=String(c||"").trim();const M={HT:"Mi-temps",FT:"Terminé","FT-Pens":"Terminé (t.a.b.)",AET:"Terminé (a.p.)",ET:"Prolongation",Pens:"Tirs au but",Halftime:"Mi-temps","End of 1st Half":"Mi-temps","Full Time":"Terminé",Final:"Terminé",Delayed:"Retardé",Postponed:"Reporté",Suspended:"Suspendu",Abandoned:"Arrêté",Canceled:"Annulé",Scheduled:"À venir"};
-  if(M[c])return M[c];return c.replace(/^(\d+)(st|nd|rd|th) Half$/i,(x,n)=>n==="1"?"1re mi-temps":"2e mi-temps").replace(/^End of (\d)(st|nd|rd|th) Quarter$/i,"Fin du $1e quart-temps").replace(/^(\d)(st|nd|rd|th) Quarter/i,"$1e quart-temps").replace(/^OT$/,"Prolongation")}
+  if(M[c])return M[c];return c.replace(/^(\d+)(st|nd|rd|th) Half$/i,(x,n)=>n==="1"?"1re mi-temps":"2e mi-temps").replace(/^End of (\d)(st|nd|rd|th) Quarter$/i,"Fin du $1e quart-temps").replace(/^(\d)(st|nd|rd|th) Quarter/i,"$1e quart-temps").replace(/^OT$/,"Prolongation").replace(/^(\d)(st|nd|rd|th)$/,(x,n)=>n==="1"?"1er set":n+"e set")}
 function liveInfo(m){const el=(Date.now()-m.t)/6e4;
   if(m.src==="espn")return{sc:m.st&&(m.st.g||m.st.pts||m.st.sets),clock:frClock(m.clock)};
   const o=simOne(m);
@@ -272,7 +272,7 @@ function card(m,showLv){const st=status(m),res=resMarket(m),defs=marketInfo(m);
   const fl=FLASH[m.id]&&Date.now()-FLASH[m.id].at<9e4?FLASH[m.id]:null;
   const mbs=myBets(m.id),mb=mbs[0];
   return`<article class="mc${fl?" mcflash":""}${mb?" mcbet":""}" data-act="open" data-mid="${esc(m.id)}" tabindex="0">${mb?`<span class="mcbetc">🎟️ ${mbs.length>1?mbs.length+" tickets":"Parié"+(mb.legs.length>1?" · combiné":"")}</span>`:""}${fl?`<span class="mcfl">${{g:"⚽ BUT !",og:"⚽ CSC !",yc:"🟨 Carton",rc:"🟥 Rouge",try:"🏉 Essai !",try7:"🏉 Essai !",pen:"🎯 Pénalité",conv:"🎯 Transfo",pts:"🏉 Points"}[fl.k]||"⚽"}</span>`:""}
-    <div class="mc-top">${st==="live"?`<span class="chip live">Direct${liveOK(m)?" · paris ouverts":""}</span>`:""}${srcChip(m)}<span class="comp">${esc(showLv?m.comp:(m.dep||m.comp))}</span>${tvChip(m)}</div>
+    <div class="mc-top">${U.sp==="all"&&U.tab==="m"?`<span class="chip sptag sp-${m.sp}">${SPTAG[m.sp]||""}</span>`:""}${st==="live"?`<span class="chip live">Direct${liveOK(m)?" · paris ouverts":""}</span>`:""}${U.sp==="all"?"":srcChip(m)}<span class="comp">${esc(showLv?m.comp:(m.dep||m.comp))}</span>${tvChip(m)}</div>
     <div class="teams"><div class="tm">${crestOf(m,0)}<b>${esc(m.h)}</b>${m.hs?`<small>${esc(m.hs)}</small>`:""}</div>${mid(m)}<div class="tm">${crestOf(m,1)}<b>${esc(m.a)}</b>${m.as?`<small>${esc(m.as)}</small>`:""}</div></div>
     ${res?`<div class="pbar">${res.sels.map(s=>`<i style="width:${(s.p*100).toFixed(1)}%"></i>`).join("")}</div>
     <div class="odds c${res.sels.length}">${res.sels.map((s,k)=>oddBtn(m,res,k,s,short[k])).join("")}</div>`:""}
@@ -290,8 +290,9 @@ function ladder(){const cfg=SP[U.sp],now=Date.now();
     return`<button class="lvl${c?"":" zero"}" data-act="lv" data-lv="${l}" aria-pressed="${U.lv===l}"><span class="bars">${bars}</span><span>${esc(cfg.lv[l])}<em>${c?c+" match"+(c>1?"s":""):(cfg.feeds[l]&&FEED[U.sp+l]&&FEED[U.sp+l].ok===false?"Hors ligne":"—")}</em></span></button>`};
   return`<div class="ladder" id="ladder"><div class="tier"><small>Tous</small><div><button class="lvl star" data-act="lv" data-lv="-1" aria-pressed="${U.lv<0}">${ic("fire")}<span>À la une<em>Prochains</em></span></button></div></div>
     ${cfg.tiers.map(([t,ix])=>[t,ix.filter(l=>cfg.feeds[l])]).filter(([,ix])=>ix.length).map(([t,ix])=>`<div class="tier"><small>${t}</small><div>${ix.map(chip).join("")}</div></div>`).join("")}</div>`}
-function viewMatches(){setTimeout(crowdCounts,0);const cfg=SP[U.sp];let h=`<div class="sbar">${Object.entries(SP).map(([k,s])=>`<button style="--c:${s.c}" data-act="sp" data-sp="${k}" aria-pressed="${U.sp===k}">${ballArt(k,"ball")}<span>${{foot:"Foot",basket:"NBA"}[k]||s.n}</span></button>`).join("")}</div>`;
+function viewMatches(){setTimeout(crowdCounts,0);const cfg=SP[U.sp];let h=`<div class="sbar sbar5"><button style="--c:#ffd23f" data-act="sp" data-sp="all" aria-pressed="${U.sp==="all"}"><span class="ball allb">🔥</span><span>Tout</span></button>${Object.entries(SP).map(([k,s])=>`<button style="--c:${s.c}" data-act="sp" data-sp="${k}" aria-pressed="${U.sp===k}">${ballArt(k,"ball")}<span>${{foot:"Foot",basket:"NBA",tennis:"Tennis",rugby:"Rugby"}[k]||s.n}</span></button>`).join("")}</div>`;
   if(U.ev){const e=EVENTS.find(x=>x.id===U.ev);if(e)return h+viewEvent(e)+foot();U.ev=null}
+  if(U.sp==="all")return h+todayRow()+viewAll()+foot();
   h+=todayRow()+ladder();
   let list=matchesFor(U.sp,U.lv);
   const isDep=U.lv>=0&&U.lv<cfg.dep;
@@ -316,6 +317,19 @@ function viewMatches(){setTimeout(crowdCounts,0);const cfg=SP[U.sp];let h=`<div 
     if(last)grp+="</div>";h+=grp}
   if(done.length)h+=`<div class="h2"><h2>Résultats</h2><span>${done.length}</span></div>`+done.slice(0,U.lv<0?8:20).map(resRow).join("");
   h+=foot();return h}
+// « Tout » : à la une de tous les sports réunis (vrais matchs : en direct, puis les prochains), chaque carte indique son sport
+const SPTAG={foot:"⚽ Foot",rugby:"🏉 Rugby",tennis:"🎾 Tennis",basket:"🏀 NBA"};
+function viewAll(){const now=Date.now();let h="";
+  const all=Object.keys(SP).flatMap(sp=>matchesFor(sp,-1).filter(m=>m.src!=="sim")),up=all.filter(m=>["pre","live","wait"].includes(status(m)));
+  let soon=up.filter(m=>m.t<now+2*DAY||status(m)==="live");if(soon.length<10)soon=soon.concat(up.filter(m=>!soon.includes(m)).sort((a,b)=>a.t-b.t).slice(0,14-soon.length));
+  // pas plus de 14 matchs de tennis ni de NBA pour ne pas noyer le foot et le rugby
+  const cap={tennis:14,basket:10},cnt={};soon=soon.sort((a,b)=>a.t-b.t).filter(m=>{cnt[m.sp]=(cnt[m.sp]||0)+1;return!cap[m.sp]||cnt[m.sp]<=cap[m.sp]}).slice(0,45);
+  const fm=favMatch();if(fm){soon=soon.filter(m=>m!==fm);h+=`<div class="h2"><h2>❤️ ${esc(S.fav.name)}</h2><span>Ton équipe</span></div><div class="mc-grid">${card(fm,true)}</div>`}
+  if(!soon.length){const busy=Object.keys(SP).some(sp=>loadingPro(sp,-1));return h+(busy?`<div class="skel"></div><div class="skel"></div>`:`<div class="empty">${ic("ball")}<b>Pas de match</b>Rien de prévu dans les prochains jours.</div>`)}
+  const ns=new Set(soon.map(m=>m.sp)).size;h+=`<div class="h2"><h2>À la une</h2><span>${soon.length} matchs · ${ns} sport${ns>1?"s":""}</span></div>`;
+  const live=soon.filter(m=>status(m)==="live");if(live.length)h+=`<div class="day">En direct</div><div class="mc-grid">${live.map(m=>card(m,true)).join("")}</div>`;
+  let last="",grp="";for(const m of soon.filter(m=>status(m)!=="live")){const d=fDay(m.t);if(d!==last){if(last)grp+="</div>";grp+=`<div class="day">${d}</div><div class="mc-grid">`;last=d}grp+=card(m,true)}
+  if(last)grp+="</div>";return h+grp}
 function emptyLevel(){const cfg=SP[U.sp],l=U.lv;
   if(l>=0&&cfg.feeds[l]&&FEED[U.sp+l]&&FEED[U.sp+l].ok===false)
     return`<div class="empty">${ic("info")}<b>Flux live indisponible</b>Impossible de joindre le flux des matchs pros pour l’instant.<br><button class="btn ghost" style="margin-top:12px" data-act="retry">Réessayer</button></div>`;
@@ -606,7 +620,7 @@ function refreshLayer(){if(!U.open)return;const sc=$(".sheet")?$(".sheet").scrol
 
 /* ---------- rendu global ---------- */
 function render(){if(window.__gate)return;   // page d'installation : on ne dessine jamais le jeu dans le navigateur
-  if(U.tab==="m"&&S.name&&!U.open)loadGuide();if(U.open&&U.open.startsWith("td:")){const v=U.open.slice(3),h=viewToday(v);if(h)layer(h)}document.body.dataset.sp=U.sp;document.body.classList.toggle("darkside",U.tab==="l"&&!!U.dark);$("#bal").textContent=tok(S.bal);{const st=pushState(),bd=$("#belldot"),bl=$("#bell");if(bd)bd.hidden=st==="on"||st==="na"&&!(IOS&&!STANDALONE);if(bl)bl.classList.toggle("on",st==="on")}
+  if(U.tab==="m"&&S.name&&!U.open)loadGuide();if(U.open&&U.open.startsWith("td:")){const v=U.open.slice(3),h=viewToday(v);if(h)layer(h)}document.body.dataset.sp=SP[U.sp]?U.sp:"foot";document.body.classList.toggle("darkside",U.tab==="l"&&!!U.dark);$("#bal").textContent=tok(S.bal);{const st=pushState(),bd=$("#belldot"),bl=$("#bell");if(bd)bd.hidden=st==="on"||st==="na"&&!(IOS&&!STANDALONE);if(bl)bl.classList.toggle("on",st==="on")}
   $("#hello").innerHTML=S.name?`<span class="hi">Salut </span>${esc(S.name)}<span class="dv"> · ${esc(myLv().tier)} niv. ${myLv().lvl}</span>`:"Paris gratuits · du district aux pros";
   document.querySelectorAll(".nav button").forEach(b=>b.dataset.tab===U.tab?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
   const op=S.bets.filter(b=>b.st==="open").length,nb=$("#nb");nb.hidden=!op;nb.textContent=op;
@@ -797,7 +811,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"gans":guildAct("guild_answer",{id:d.id,accept:d.v==="1"},null);break;
     case"lgleave":lgLeave();break;
     case"lgretry":U.lg.err=null;loadBoards();render();break;
-    case"sp":U.sp=d.sp;U.lv=-1;U.dep="";U.ev=null;render();loadSport(d.sp);break;
+    case"sp":U.sp=d.sp;U.lv=-1;U.dep="";U.ev=null;render();if(SP[d.sp])loadSport(d.sp);break;
     case"lv":U.lv=+d.lv;render();break;
     case"open":U.dtab="p";openDetail(d.mid);break;
     case"close":closeLayer();break;
@@ -882,7 +896,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"defi":claimDefi(d.id);break;
     case"defiall":claimAll();break;
     case"cash":cashOut(d.id);break;
-    case"retry":for(const l in SP[U.sp].feeds)FEED[U.sp+l]={ok:null,list:[]};render();Promise.all(Object.keys(SP[U.sp].feeds).map(l=>loadFeed(U.sp,+l))).then(()=>{render();settle()});break;
+    case"retry":if(!SP[U.sp])break;for(const l in SP[U.sp].feeds)FEED[U.sp+l]={ok:null,list:[]};render();Promise.all(Object.keys(SP[U.sp].feeds).map(l=>loadFeed(U.sp,+l))).then(()=>{render();settle()});break;
     case"tsim":S.sim=!S.sim;save();render();break;
     case"torg":S.orgMode=!S.orgMode;save();render();if(S.orgMode)toast("Mode organisateur activé : ajoute tes matchs depuis l’onglet Matchs.");break;
     case"rename":U.open="welcome";layer(viewWelcome(true));setTimeout(()=>$("#w-name")&&$("#w-name").focus(),50);break;
@@ -2853,7 +2867,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.07";
+const VERSION="3.08";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

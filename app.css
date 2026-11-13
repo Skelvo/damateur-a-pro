@@ -1119,3 +1119,10 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 .stfav{margin-top:6px}.stfavc{display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;background:var(--card);border:1px solid var(--line);margin-bottom:6px}
 .stfavc img{width:44px;height:44px;object-fit:contain}.stfavc b{display:block;font-size:16px}.stfavc small{color:var(--mute)}
 .gtabs button{position:relative}.gtabs button .tdd{top:4px;right:6px;width:10px;height:10px}
+/* accueil : « Tout » (tous les sports) et étiquette du sport sur chaque match */
+.sbar.sbar5{grid-template-columns:repeat(5,minmax(0,1fr))!important}
+.sbar .allb{display:grid;place-items:center;font-size:20px;line-height:1}
+.chip.sptag{font-weight:800;background:#ffffff12;color:var(--ink,#fff)}
+.chip.sp-foot{background:#35d07f22;color:#5be39a}.chip.sp-rugby{background:#ff7a4524;color:#ff9a6e}.chip.sp-tennis{background:#d7f25a22;color:#d7f25a}.chip.sp-basket{background:#ff9f3a24;color:#ffb35c}
+.sbar.sbar5{gap:5px}.sbar.sbar5 button{gap:4px;padding:0 4px;font-size:13px;letter-spacing:0}.sbar.sbar5 button .ball{width:18px;height:18px;flex:none}.sbar.sbar5 .allb{font-size:16px}
+.sbar.sbar5 button{flex-direction:column!important;height:54px!important;gap:3px!important;font-size:12.5px!important;letter-spacing:.02em!important;padding:0 2px!important}.sbar.sbar5 button .ball,.sbar.sbar5 .allb{width:19px;height:19px;font-size:16px}
