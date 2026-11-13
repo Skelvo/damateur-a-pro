@@ -1126,3 +1126,7 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 .chip.sp-foot{background:#35d07f22;color:#5be39a}.chip.sp-rugby{background:#ff7a4524;color:#ff9a6e}.chip.sp-tennis{background:#d7f25a22;color:#d7f25a}.chip.sp-basket{background:#ff9f3a24;color:#ffb35c}
 .sbar.sbar5{gap:5px}.sbar.sbar5 button{gap:4px;padding:0 4px;font-size:13px;letter-spacing:0}.sbar.sbar5 button .ball{width:18px;height:18px;flex:none}.sbar.sbar5 .allb{font-size:16px}
 .sbar.sbar5 button{flex-direction:column!important;height:54px!important;gap:3px!important;font-size:12.5px!important;letter-spacing:.02em!important;padding:0 2px!important}.sbar.sbar5 button .ball,.sbar.sbar5 .allb{width:19px;height:19px;font-size:16px}
+/* classement : joueurs sans pari terminé sur la période, à part */
+.idlep{margin:12px 0 6px;padding:10px 12px;border-radius:14px;border:1px dashed var(--line2,#2a3a33)}
+.idlep small{display:block;color:var(--mute);font-size:12.5px;margin-bottom:8px}
+.idlep>div{display:flex;flex-wrap:wrap;gap:6px}.idlep .av{width:30px!important;height:30px!important;border-radius:50%!important;display:grid;place-items:center;font:800 14px "Barlow Condensed";color:#0b1310;opacity:.75}

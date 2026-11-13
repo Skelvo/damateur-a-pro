@@ -1057,7 +1057,9 @@ function viewLeagues(){const L=U.lg,d=L.data;
       <div class="pzl">${["1er","2e","3e","Les autres"].map((r,i)=>`<span class="${i===0?"g":""}"><small>${r}</small><b>+${tok(P[i])}</b></span>`).join("")}</div>
       <small class="pzn">Créditées toutes seules le 1er du mois · mêmes montants dans toutes les guildes · il faut avoir au moins un pari terminé dans le mois</small></div>`}
     h+=`<div class="sncard">${ic("crown")}<div><b>Classement de ${esc(SN.label)}</b><small>${left<=1?"Dernier jour !":`Fin dans ${left} jours`} · le premier du mois est sacré champion</small></div></div>`}
-  const key=M==="week"?"week":M==="season"?"season":"bal",gainMode=M!=="total",rows=d.rows.slice().sort((a,b)=>b[key]-a[key]||b.bal-a.bal).slice(0,cur?60:50);
+  // ne sont classés que ceux qui ont au moins un pari terminé (sur la période en Mois / Semaine) ; les autres sont listés à part, en bas
+  const key=M==="week"?"week":M==="season"?"season":"bal",gainMode=M!=="total",played=r=>!r.on||r.on[key]||r.id===d.me&&(key==="bal"?S.bets.some(b=>["won","lost","cashed"].includes(b.st)):false),
+    idle=d.rows.filter(r=>!played(r)),rows=d.rows.filter(played).sort((a,b)=>b[key]-a[key]||b.bal-a.bal).slice(0,cur?60:50);
   const val=r=>gainMode?(r[key]>0?"+":"")+tok(r[key]):tok(r.bal),cls=r=>gainMode?(r[key]>=0?"pos":"neg"):"";
   if(!rows.length)h+=`<div class="empty">Personne pour l’instant.</div>`;
   if(rows.length>=3){const P=[rows[0],rows[1],rows[2]],H=[90,66,48];
@@ -1068,6 +1070,7 @@ function viewLeagues(){const L=U.lg,d=L.data;
   h+=rows.map((r,i)=>(i<3&&rows.length>=3)||!showR(r,i)?"":`${!full&&i===meI&&i>LIM?`<div class="note" style="text-align:center;margin:2px 0">⋯</div>`:""}<div class="prow${r.id===d.me?" me":""}" data-act="prof" data-id="${esc(r.id)}"><span class="rk">${i+1}</span>${avatar(r.id,r.name,r.av,"av"+frC(r.cos))}
     <div><b>${nameH(r.name,r.cos)}${favCrest(r.fav)}${r.id===d.me?" (toi)":""}${r.sc?` <span class="trs crw">${ic("crown")}${r.sc>1?r.sc:""}</span>`:""}${r.tr?` <span class="trs">${ic("trophy")}${r.tr>1?r.tr:""}</span>`:""}</b><small>${r.cos&&r.cos.t&&cosTitle(r.cos.t)?esc(cosTitle(r.cos.t))+" · ":""}${levelOf(r.xp||0).ic} niv. ${levelOf(r.xp||0).lvl} · ${r.won} gagné${r.won>1?"s":""} · ${r.lost} perdu${r.lost>1?"s":""}</small></div>
     <span class="v ${cls(r)}">${val(r)}</span></div>`).join("");
+  if(idle.length)h+=`<div class="idlep"><small>${M==="week"?"Pas encore de pari terminé cette semaine":M==="season"?"Pas encore de pari terminé ce mois-ci":"Pas encore de pari terminé"} · ${idle.length}</small><div>${idle.slice(0,40).map(r=>`<span data-act="prof" data-id="${esc(r.id)}" title="${esc(r.name)}">${avatar(r.id,r.name,r.av,"av"+frC(r.cos))}</span>`).join("")}</div></div>`;
   if(rows.length>LIM+1)h+=`<button class="btn ghost wide" data-act="lgfull" data-k="${cur?esc(cur.code):"gen"}" style="margin:8px 0">${full?"Réduire le classement":`Voir tout le classement (${rows.length})`}</button>`;
   if(!cur&&d.rank&&!rows.some(r=>r.id===d.me))h+=`<div class="note" style="text-align:center">…</div>`;
   const note=M==="week"?`« Semaine » = jetons gagnés <b>en pariant</b> depuis lundi (la roue, les défis et les bonus ne comptent pas). Repart à zéro chaque lundi ; le meilleur gagne un trophée ${ic("trophy")}.`
@@ -2871,7 +2874,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.09";
+const VERSION="3.10";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

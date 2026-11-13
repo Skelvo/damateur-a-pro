@@ -60,7 +60,9 @@ const PREV_WEEK = `to_char(date_trunc('week', now() at time zone 'Europe/Paris')
 const PREV_MONTH = `to_char(date_trunc('month', now() at time zone 'Europe/Paris') - interval '1 month', 'YYYY-MM')`;
 const BOARD_COLS = `p.id, p.name, p.cos, coalesce((select x.xp from pxp x where x.player = p.id), 0) as xp, p.bal::float8 as bal, p.peak::float8 as peak, p.won, p.lost, p.avatar_v, p.fav, p.badges,
   coalesce((select x.gain from sprofits x where x.player = p.id and x.per = ${WEEK}), 0)::float8 as week_gain,
-  coalesce((select x.gain from sprofits x where x.player = p.id and x.per = ${MONTH}), 0)::float8 as month_gain`;
+  coalesce((select x.gain from sprofits x where x.player = p.id and x.per = ${MONTH}), 0)::float8 as month_gain,
+  exists (select 1 from sprofits x where x.player = p.id and x.per = ${WEEK}) as week_on, exists (select 1 from sprofits x where x.player = p.id and x.per = ${MONTH}) as month_on,
+  exists (select 1 from bets x where x.player = p.id and x.status in ('won', 'lost', 'cashed')) as ever_on`;
 // Gains par semaine (ou par mois) des membres d'une guilde, y compris la dernière période de ceux
 // qui n'ont pas rouvert l'app depuis ; rk = place dans la guilde pour cette période.
 // Depuis le 9 novembre 2026, seuls les PARIS comptent (vue sprofits : paris réglés par le serveur, impossible à trafiquer) :
@@ -1953,7 +1955,7 @@ const ACTIONS = {
     return {
       me: p.id, leagues, code: code && leagues.some((l) => l.code === code) ? code : "", total, rank, last, lastSeason,
       season: { month: cur.m, label: monthName(cur.m), end: Math.round(Number(cur.mend)) }, week: cur.w,
-      rows: rows.map((r) => ({ id: r.id, name: r.name, bal: Math.round(r.bal), peak: Math.round(r.peak), won: r.won, lost: r.lost, week: Math.round(r.week_gain), season: Math.round(r.month_gain), tr: trophies[r.id] || 0, sc: crowns[r.id] || 0, av: r.avatar_v || 0, fav: r.fav ? { n: r.fav.name, l: r.fav.logo } : null, nb: Array.isArray(r.badges) ? r.badges.length : 0, xp: r.xp || 0, cos: r.cos || null })),
+      rows: rows.map((r) => ({ id: r.id, name: r.name, bal: Math.round(r.bal), peak: Math.round(r.peak), won: r.won, lost: r.lost, week: Math.round(r.week_gain), season: Math.round(r.month_gain), on: { week: !!r.week_on, season: !!r.month_on, bal: !!r.ever_on || r.won + r.lost > 0 }, tr: trophies[r.id] || 0, sc: crowns[r.id] || 0, av: r.avatar_v || 0, fav: r.fav ? { n: r.fav.name, l: r.fav.logo } : null, nb: Array.isArray(r.badges) ? r.badges.length : 0, xp: r.xp || 0, cos: r.cos || null })),
     };
   },
 
