@@ -405,7 +405,7 @@ const TVCH={"TF1":{u:"https://www.tf1.fr/tf1/direct",free:1},"M6":{u:"https://ww
   "France 2":{u:"https://www.france.tv/france-2/direct.html",free:1},"France 3":{u:"https://www.france.tv/france-3/direct.html",free:1},"France 4":{u:"https://www.france.tv/france-4/direct.html",free:1},
   "L'Équipe":{u:"https://www.lequipe.fr/tv/",free:1},"Canal+":{u:"https://www.canalplus.com/"},"beIN":{u:"https://www.beinsports.com/fr-fr"},"Ligue 1+":{u:"https://www.ligue1plus.fr/"},"DAZN":{u:"https://www.dazn.com/fr-FR"},"Prime Video":{u:"https://www.primevideo.com/"}};
 function tvFor(m,ovr){if(!m)return null;const o=ovr&&ovr[m.id];if(o)return o==="-"?null:o;if(m.src!=="espn")return null;const fr=m.h==="France"||m.a==="France";
-  if(m.sp==="foot"){if(fr&&m.lv>=24)return"TF1";if(m.lv===11)return"Ligue 1+";if(m.lv===14)return"Canal+";if(m.lv===15)return"beIN"}
+  if(m.sp==="foot"){if(fr&&m.lv>=24)return"TF1";if(m.lv===11)return"Ligue 1+";if(m.lv===14)return"Canal+"}   // Coupe de France : seuls quelques matchs sont diffusés, on les pose à la main
   return null}
 // niveau d'une compétition d'après son flux ESPN (ex. "soccer/fra.1" → 11)
 function lvOfPath(sp,path){const F=SP[sp]&&SP[sp].feeds;if(F)for(const l in F)if(F[l].includes(path))return+l;return null}

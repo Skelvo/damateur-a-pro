@@ -250,7 +250,7 @@ function ghostLive(m){if(!m||m.src!=="espn"||m.state!=="pre")return null;const e
   if(m.sp==="rugby")return{t:e<=42?`⏱️ En cours · ~${Math.floor(e)}’`:e<=57?"⏱️ Mi-temps (estimée)":`⏱️ En cours · ~${Math.min(80,Math.floor(e-15))}’`};
   return{t:"⏱️ En cours"}}
 function mid(m){const st=status(m),gl=ghostLive(m);
-  if(gl)return`<div class="mid"><div class="ko">${gl.done?"—":"⏱️"}</div><small class="live-t">${esc(gl.t.replace(/^⏱️ |^⏳ /,""))}</small></div>`;
+  if(gl)return`<div class="mid"><div class="ko">${gl.done?"—":"⏱️"}</div><small class="live-t">${esc(gl.t.replace(/^⏱️ |^⏳ /,""))}</small>${gl.done?"":`<small class="nolive">Score en direct indisponible</small>`}</div>`;
   if(st==="pre")return`<div class="mid"><div class="ko">${fTime(m.t)}</div><small>${fShort(m.t)}</small></div>`;
   if(st==="live"){const L=liveInfo(m);return`<div class="mid">${L.sc?`<div class="score">${L.sc[0]}–${L.sc[1]}</div>`:`<div class="ko">—</div>`}<small class="live-t">${esc(L.clock)}</small></div>`}
   if(st==="cancel")return`<div class="mid"><div class="ko">—</div><small>Reporté</small></div>`;
@@ -2877,7 +2877,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.11";
+const VERSION="3.12";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
