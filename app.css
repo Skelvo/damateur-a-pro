@@ -1118,3 +1118,4 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 /* « Mon style » : équipe de cœur */
 .stfav{margin-top:6px}.stfavc{display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;background:var(--card);border:1px solid var(--line);margin-bottom:6px}
 .stfavc img{width:44px;height:44px;object-fit:contain}.stfavc b{display:block;font-size:16px}.stfavc small{color:var(--mute)}
+.gtabs button{position:relative}.gtabs button .tdd{top:4px;right:6px;width:10px;height:10px}

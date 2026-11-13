@@ -335,7 +335,7 @@ async function reminders(s, slot) {
     if (!msg && lm && lm.cur && lm.cur.day === t.ymd && lm.cur.match.t > now + 20 * 60e3 && !(await s.query(`select 1 from lm_picks where day = $1 and player = $2`, [lm.cur.day, p.id]))[0]) {
       const lg = (await s.query(`select m.code, (select count(*)::int from lm_picks x join league_members m2 on m2.player = x.player and m2.code = m.code where x.day = $2) as n
           from league_members m where m.player = $1 and m.code not in (select code from leagues where dark) order by m.joined_at limit 1`, [p.id, lm.cur.day]))[0];
-      if (lg) msg = { title: "⚽ Match de la guilde", body: `${lm.cur.match.h} – ${lm.cur.match.a} à ${hhmm(lm.cur.match.t)}. ${lg.n ? `${lg.n} collègue${lg.n > 1 ? "s ont" : " a"} déjà voté` : "Personne n'a encore voté"}, et toi ? Bonne réponse = +${LM_PRIZE} jetons.`, url: go("rank", lg.code), tag: "remind-lm" };
+      if (lg) msg = { title: "⚽ Match de la guilde", body: `${lm.cur.match.h} – ${lm.cur.match.a} à ${hhmm(lm.cur.match.t)}. ${lg.n ? `${lg.n} collègue${lg.n > 1 ? "s ont" : " a"} déjà voté` : "Personne n'a encore voté"}, et toi ? Bonne réponse = +${LM_PRIZE} jetons.`, url: go("prono", lg.code), tag: "remind-lm" };
     }
     if (!msg && slot === "soir") {
       // rivalité : le joueur juste devant moi cette semaine dans ma guilde la plus active

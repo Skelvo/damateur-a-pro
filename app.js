@@ -731,7 +731,8 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"favset":favSet(+d.i);break;
     case"favnone":S.fav=null;save();api("set_fav",{fav:null}).catch(()=>{});closeLayer();toast("Équipe de cœur retirée.");break;
     case"lmpick":lmPick(d.day,+d.k);break;
-    case"lmgo":{const L0=U.lg.data&&U.lg.data.leagues[0];if(!L0)break;U.tab="l";U.lg.code=U.lg.code||L0.code;U.lg.view="rank";render();loadBoards();window.scrollTo({top:0});break}
+    case"lmgo":{const L0=U.lg.data&&U.lg.data.leagues[0];if(!L0)break;U.tab="l";U.lg.code=U.lg.code||L0.code;U.lg.view="prono";U.dark=false;render();loadBoards();loadProno();
+      setTimeout(()=>{const t=document.querySelector(".gtabs");if(t)window.scrollTo({top:t.getBoundingClientRect().top+scrollY-80,behavior:"smooth"})},350);break}
     case"prno":{const m=(U.pr.data.matches||[]).find(x=>x.mid===d.mid);if(!m||m.t<=Date.now())break;const my=m.my||(m.my={sh:0,sa:0,joker:false,_new:1});
       my[d.side]=cl((my[d.side]||0)+(+d.d),0,20);delete my._new;render();pronoSave(m);break}
     case"prjk":pronoJoker(d.mid);break;
@@ -1019,7 +1020,7 @@ function viewLeagues(){const L=U.lg,d=L.data;
   if(cur){const nd=(L.duels||[]).filter(x=>x.status==="open"&&String(x.a)!==String(d.me)).length;
     const nc=chatUnread(cur.code);
     const talk=["chat","feed"].includes(L.view),fight=["fights","duels"].includes(L.view),bt=(U.bt||{})[cur.code],nb=bt?bt.battles.filter(x=>x.status==="pending"&&x.incoming).length:0;
-    h+=`<div class="seg gtabs"><button data-act="lgview" data-v="rank" aria-pressed="${L.view==="rank"}">Classement</button><button data-act="lgview" data-v="${U.lg.fsub||"fights"}" aria-pressed="${fight}">Combats${nb+nd?` <span class="pill">${nb+nd}</span>`:""}</button><button data-act="lgview" data-v="prono" aria-pressed="${L.view==="prono"}">Pronos</button><button data-act="lgview" data-v="${U.lg.talk||"chat"}" aria-pressed="${talk}">Discussion${nc?` <span class="pill">${nc}</span>`:""}</button></div>`;
+    h+=`<div class="seg gtabs"><button data-act="lgview" data-v="rank" aria-pressed="${L.view==="rank"}">Classement</button><button data-act="lgview" data-v="${U.lg.fsub||"fights"}" aria-pressed="${fight}">Combats${nb+nd?` <span class="pill">${nb+nd}</span>`:""}</button><button data-act="lgview" data-v="prono" aria-pressed="${L.view==="prono"}">Pronos${lmBanner()||pronoTodo()?`<i class="tdd"></i>`:""}</button><button data-act="lgview" data-v="${U.lg.talk||"chat"}" aria-pressed="${talk}">Discussion${nc?` <span class="pill">${nc}</span>`:""}</button></div>`;
     if(talk)h+=`<div class="seg mini gsub"><button data-act="lgview" data-v="chat" aria-pressed="${L.view==="chat"}">💬 Chat${nc?` <span class="pill">${nc}</span>`:""}</button><button data-act="lgview" data-v="feed" aria-pressed="${L.view==="feed"}">📰 Fil</button></div>`;
     if(fight)h+=`<div class="seg mini gsub"><button data-act="lgview" data-v="fights" aria-pressed="${L.view==="fights"}">⚔️ Contre les guildes${nb?` <span class="pill">${nb}</span>`:""}</button><button data-act="lgview" data-v="duels" aria-pressed="${L.view==="duels"}">🤺 Duels entre membres${nd?` <span class="pill">${nd}</span>`:""}</button></div>`;
     if(L.view==="chat")return h+viewChat(cur);
@@ -2102,6 +2103,8 @@ function viewLm(code){const j=LM[code];if(!j)return"";const c=j.cur;let h="";
       ${j.month.length?`<div class="lmm">Ce mois : ${j.month.slice(0,4).map(x=>`<b>${esc(x.name)}</b> ${x.ok}/${x.n}`).join(" · ")}</div>`:""}
       ${j.hist.length?`<div class="lmhist">${j.hist.slice(0,4).map(e=>`<span class="${e.my==null||e.res==null?"":e.my===e.res?"ok":"ko"}">${esc(e.match.h)} ${e.match.sh??"–"}-${e.match.sa??"–"} ${esc(e.match.a)}</span>`).join("")}</div>`:""}</div>`}
   return h}
+// prono du week-end avec des matchs pas encore pronostiqués (pastille rouge sur l'onglet Pronos)
+function pronoTodo(){try{const j=U.pr&&U.pr.data;return!!(j&&j.matches&&j.matches.some(m=>m.t>Date.now()&&!m.my))}catch(e){return false}}
 function lmBanner(){const L0=U.lg.data&&U.lg.data.leagues[0];if(!L0)return"";const j=LM[U.lg.code||L0.code];if(!j||!j.cur||j.cur.my!=null||j.cur.match.t<=Date.now())return"";const m=j.cur.match;
   return`<button class="prban lmban" data-act="lmgo">${ic("target")}<span><b>Match de la guilde</b><small>${esc(m.h)} – ${esc(m.a)} · ${esc(lmWhen(m.t))} · ${j.cur.picks.length} vote${j.cur.picks.length>1?"s":""}</small></span><span class="arr">›</span></button>`}
 
@@ -2847,7 +2850,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.03";
+const VERSION="3.04";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
