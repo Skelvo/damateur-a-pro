@@ -1614,6 +1614,14 @@ const ACTIONS = {
       from social_posts where at > now() - interval '14 days' or status <> 'published' order by at`),
       configured: !!(await SOCIAL.kvGet(s, "meta_page_token")) };
   },
+  // changer les réseaux d'une publication pas encore publiée (ex. Instagram seulement)
+  async admin_social_nets(s, b) {
+    admin(b);
+    const nets = (Array.isArray(b.networks) ? b.networks : []).filter((x) => x === "instagram" || x === "facebook");
+    if (!nets.length) throw fail(400, "networks");
+    const r = await s.query(`update social_posts set networks = $2::jsonb where id = $1 and status <> 'published' returning id, networks`, [String(int(b.id, 0, 1e15)), JSON.stringify(nets)]);
+    return { ok: !!r[0], post: r[0] || null };
+  },
   async admin_social_set(s, b) {
     admin(b);
     const st = ["draft", "approved", "cancelled"].includes(b.status) ? b.status : null;
