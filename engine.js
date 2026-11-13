@@ -197,7 +197,8 @@ const TEAM_FR={"Albania":"Albanie","Andorra":"Andorre","Armenia":"Arménie","Aus
 function parseTeamEvent(ev,sp,lv,path){const c=ev.competitions&&ev.competitions[0];if(!c||!c.competitors||c.competitors.length<2)return null;
   const Hc=c.competitors.find(x=>x.homeAway==="home")||c.competitors[0],Ac=c.competitors.find(x=>x.homeAway==="away")||c.competitors[1];
   const ty=(ev.status&&ev.status.type)||{},state=ty.state||"pre";
-  const nm=t=>frTeam((t.team&&(t.team.shortDisplayName||t.team.displayName))||"?");
+  // NBA : noms d'origine (la liste de traduction est faite pour le foot et le rugby : « Spurs » y veut dire Tottenham)
+  const nm=t=>{const n=(t.team&&(t.team.shortDisplayName||t.team.displayName))||"?";return sp==="basket"?n:frTeam(n)};
   const m={id:"e-"+path.replace(/\W/g,"")+"-"+ev.id,src:"espn",path,eid:ev.id,sp,lv,bo:3,comp:SP[sp].lv[lv],h:nm(Hc),a:nm(Ac),
     hl:Hc.team&&Hc.team.logo,al:Ac.team&&Ac.team.logo,hid:Hc.team&&Hc.team.id,aid:Ac.team&&Ac.team.id,t:Date.parse(ev.date),
     state,clock:ty.shortDetail||"",done:!!ty.completed,cancel:state==="post"&&!ty.completed};
