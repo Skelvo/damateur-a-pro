@@ -1052,6 +1052,9 @@ function viewLeagues(){const L=U.lg,d=L.data;
     <button data-act="gstats">📈 <span>Stats</span></button>
     <button data-act="lgview" data-v="fights">⚔️ <span>${lv?`<b class="${lv.my>lv.their?"pos":lv.my<lv.their?"neg":""}">${lv.my>0?"+":""}${tok(lv.my)}</b> / ${lv.their>0?"+":""}${tok(lv.their)}`:b?`${b.guild.div.i} ${b.guild.div.n}`:"Combats"}</span></button></div>`}
   h+=`<div class="seg tabs3"><button data-act="lgmode" data-v="season" aria-pressed="${M==="season"}">Mois</button><button data-act="lgmode" data-v="week" aria-pressed="${M==="week"}">Semaine</button><button data-act="lgmode" data-v="total" aria-pressed="${M==="total"}">Jetons</button></div>`;
+  {const pz=(t,L,R,n)=>`<div class="przcard"><div class="pzh">🎁 <b>${t}</b></div><div class="pzl">${L.map((r,i)=>`<span class="${i===0?"g":""}"><small>${r}</small><b>+${tok(R[i])}</b></span>`).join("")}</div><small class="pzn">${n}</small></div>`;
+    if(M==="week")h+=pz(cur?"Récompenses de la semaine":"Semaine",["1er","2e","3e"],[200,100,50],cur?"Versées le lundi matin aux 3 premiers de la guilde · il faut avoir au moins un pari terminé dans la semaine":"Les récompenses de la semaine se jouent dans chaque guilde (1er +200, 2e +100, 3e +50)");
+    else if(M==="season"&&!cur)h+=pz("Récompenses du classement général",["👑 1er","2e","3e"],[1500,750,400],"Versées le 1er du mois aux 3 meilleurs joueurs de Tribune · il faut avoir au moins un pari terminé dans le mois")}
   if(M==="season"&&SN){const left=Math.max(0,Math.ceil((SN.end-Date.now())/864e5));
     if(cur){const P=prizesOf(cur);h+=`<div class="przcard"><div class="pzh">🎁 <b>Récompenses de fin de mois</b></div>
       <div class="pzl">${["1er","2e","3e","Les autres"].map((r,i)=>`<span class="${i===0?"g":""}"><small>${r}</small><b>+${tok(P[i])}</b></span>`).join("")}</div>
@@ -2874,7 +2877,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.10";
+const VERSION="3.11";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

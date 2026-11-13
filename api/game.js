@@ -404,6 +404,33 @@ async function dayMatch(s) {
 // Montants IDENTIQUES pour toutes les guildes, fixés ici (même liste dans index.html : PRZ).
 const PRIZES = [1000, 500, 250, 25];
 const prizeOf = (P, rk) => PRIZES[Math.min(rk, 4) - 1] || 0;
+// Récompenses de la SEMAINE (dans chaque guilde) et du MOIS au classement GÉNÉRAL : versées une fois, via les cadeaux
+// (le téléphone les crédite à l'ouverture avec un message). Seuls les joueurs avec au moins un pari terminé sur la période sont classés.
+const WEEK_PRIZES = [200, 100, 50], GEN_PRIZES = [1500, 750, 400];
+async function periodPrizes(s) {
+  const t = (await s.query(`select ${PREV_WEEK} as w, ${PREV_MONTH} as m, extract(isodow from now() at time zone 'Europe/Paris')::int as dow`))[0];
+  const out = { week: 0, gen: 0 };
+  if (t.w >= CUT.week && (await s.query(`insert into meta (key, value) values ($1, '1') on conflict do nothing returning key`, ["wprize:" + t.w]))[0]) {
+    const leagues = await s.query(`select l.code, l.name from leagues l where not l.dark and (select count(*) from league_members m where m.code = l.code) >= 2`);
+    for (const L of leagues) {
+      const R = await s.query(`select x.player, x.gain::float8 as gain, rank() over (order by x.gain desc)::int as rk from sprofits x join league_members m on m.player = x.player and m.code = $1 where x.per = $2`, [L.code, t.w]);
+      for (const x of R) if (x.rk <= 3) {
+        const r = await s.query(`insert into gifts (player, kind, ref, amount, label) values ($1, 'wprize', $2, $3, $4) on conflict do nothing returning player`,
+          [x.player, t.w + ":" + L.code, WEEK_PRIZES[x.rk - 1], `${["🥇", "🥈", "🥉"][x.rk - 1]} ${x.rk === 1 ? "1er" : x.rk + "e"} de la semaine dans « ${L.name} »`]);
+        if (r[0]) out.week++;
+      }
+    }
+  }
+  if (t.m >= CUT.month && (await s.query(`insert into meta (key, value) values ($1, '1') on conflict do nothing returning key`, ["gprize:" + t.m]))[0]) {
+    const R = await s.query(`select x.player, rank() over (order by x.gain desc)::int as rk from sprofits x where x.per = $1`, [t.m]);
+    for (const x of R) if (x.rk <= 3) {
+      const r = await s.query(`insert into gifts (player, kind, ref, amount, label) values ($1, 'gprize', $2, $3, $4) on conflict do nothing returning player`,
+        [x.player, t.m, GEN_PRIZES[x.rk - 1], `${["👑", "🥈", "🥉"][x.rk - 1]} ${x.rk === 1 ? "Champion" : x.rk + "e"} du classement général de ${monthName(t.m)}`]);
+      if (r[0]) { out.gen++; await notify(s, [x.player], { title: x.rk === 1 ? `👑 Champion de Tribune en ${monthName(t.m)} !` : `🏆 ${x.rk}e du classement général de ${monthName(t.m)}`, body: `+${GEN_PRIZES[x.rk - 1]} jetons t'attendent : ouvre l'appli pour les récupérer.`, url: "./", tag: "gprize-" + t.m }); }
+    }
+  }
+  return out;
+}
 async function ensurePrizes(s, month) {
   if (!(await s.query(`insert into meta (key, value) values ($1, '1') on conflict do nothing returning key`, ["prizes:" + month]))[0]) return false;
   const leagues = await s.query(`select l.code, l.prizes from leagues l where not l.dark and (select count(*) from league_members m where m.code = l.code) >= 2`);
@@ -464,6 +491,7 @@ async function tick(s) {
       await notify(s, [x.player], { title: `🔥 Plus qu'un match pour ton combiné de ${L.length} !`, body: `${w} sélection${w > 1 ? "s" : ""} déjà bonne${w > 1 ? "s" : ""}. Reste : ${left[0].l}${left[0].ml ? " (" + left[0].ml + ")" : ""} · gain possible ${Math.round(x.stake * x.odds)} jetons`, url: "./?go=bets", tag: "last-" + x.id });
     }
   } catch (e) { console.error("last", e); }
+  try { await periodPrizes(s); } catch (e) { console.error("prizes", e); }
   let battles = null;
   try { battles = await battlesTick(s); } catch (e) { console.error("battles", e); }
   const ppl = await s.query(`select p.id, p.bets from players p where p.bets is not null and exists (select 1 from push_subs x where x.player = p.id)`);
