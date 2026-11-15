@@ -1,6 +1,6 @@
 # Notes de reprise (pour une nouvelle session Claude)
 
-Dernière mise à jour : 15 novembre 2026, version **v3.16**.
+Dernière mise à jour : 15 novembre 2026, version **v3.17**.
 
 ## Le projet
 - **Tribune** : appli web installable (PWA) de pronostics sportifs entre potes, 100 % gratuite, jetons fictifs, 18+. Tout en français.
@@ -22,7 +22,8 @@ Puis commit + push sur `main`, et vérifier `https://damateur-a-pro.vercel.app/v
 
 ## Où on en est
 - **15/11 : bascule « serveur maître des soldes » (v3.16)**. Chaque compte bascule à la prochaine ouverture de l'appli à jour (`players.master = true`). Ensuite le serveur fait tous les mouvements (mises, gains, roue, défis, duels, récompenses) via `credit()` / `masterCredit()`, et le téléphone affiche le solde renvoyé par `sync`. Une sauvegarde complète a été faite juste avant (fichier temporaire de l'ancienne session, pas dans le dépôt).
-- À vérifier : que les comptes basculés ont des soldes cohérents (`admin_audit`, champ `master`).
+- Bascule vérifiée le 15/11 au soir : 10 comptes maîtres, aucun solde négatif, mouvements cohérents.
+- **v3.17** : buts contre son camp (ESPN met l'équipe *bénéficiaire* dans `team`) ; `admin_reopen {mid}` re-règle tous les tickets d'un match (retire le gain versé, rouvre, règle à nouveau) ; `sync` renvoie `srv` (résultats serveur des 4 derniers jours) et le téléphone s'aligne dessus ; étiquette « ⏳ Jetons en route » tant que le gain serveur n'est pas versé.
 - Récompenses : guilde au mois (+1000/+500/+250/+25), semaine dans chaque guilde (+200/+100/+50, le lundi), général du mois (+1500/+750/+400, le 1er). Seuls les joueurs avec au moins un pari terminé sur la période sont classés.
 
 ## Règles à respecter
