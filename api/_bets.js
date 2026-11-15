@@ -112,6 +112,10 @@ export async function settleOpen(s, { limit = 300, budget = 40e3, player = null 
     if (status !== "open") {
       await s.query(`update bets set status = $2, pay = $3, legs = $4::jsonb, settled_at = now() where id = $1 and status = 'open'`, [row.id, status, pay, JSON.stringify(legs)]);
       done.push({ id: row.id, player: row.player, cid: row.cid, status, pay, legs });
+      // serveur maître : le gain est versé sur le compte (une seule fois, même si le règlement repasse)
+      if (pay > 0) await s.query(`with m as (select master from players where id = $1)
+          , l as (insert into ledger (player, delta, kind, ref) select $1, $2, 'betpay', $3 from m where m.master on conflict do nothing returning delta)
+          update players set bal = bal + (select delta from l), peak = greatest(peak, bal + (select delta from l)) where id = $1 and exists (select 1 from l)`, [row.player, Math.round(pay), row.cid]);
       // week-end des combinés : bonus sur le bénéfice d'un combiné gagné de 3 sélections ou plus, parié le week-end
       if (status === "won" && legs.length >= 3) {
         const day = new Date(Number(row.at_ms)).toLocaleDateString("sv-SE", { timeZone: "Europe/Paris" }).replace(/-/g, "");

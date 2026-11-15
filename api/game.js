@@ -549,8 +549,16 @@ async function tick(s) {
 }
 
 // ---- Registre des jetons : chaque gain ou dépense hors paris, une seule fois par (joueur, type, référence) ----
+// Registre des jetons. Une fois le compte passé « serveur maître », chaque écriture change aussi le solde du compte (une seule fois par ref).
 async function credit(s, pid, delta, kind, ref) {
-  return !!(await s.query(`insert into ledger (player, delta, kind, ref) values ($1, $2, $3, $4) on conflict do nothing returning id`, [pid, Math.round(delta), kind, String(ref)]))[0];
+  const ok = !!(await s.query(`insert into ledger (player, delta, kind, ref) values ($1, $2, $3, $4) on conflict do nothing returning id`, [pid, Math.round(delta), kind, String(ref)]))[0];
+  if (ok && Math.round(delta)) await s.query(`update players set bal = greatest(0, bal + $2::numeric), peak = greatest(peak, bal + $2::numeric) where id = $1 and master`, [pid, Math.round(delta)]);
+  return ok;
+}
+// mouvement qui n'existe qu'en mode serveur maître (mise, gain d'un pari) : rien n'est écrit pour les comptes encore tenus par le téléphone
+async function masterCredit(s, pid, delta, kind, ref) {
+  const m = (await s.query(`select master from players where id = $1`, [pid]))[0];
+  return m && m.master ? credit(s, pid, delta, kind, ref) : false;
 }
 const parisDay = async (s) => (await s.query(`select to_char(now() at time zone 'Europe/Paris', 'YYYYMMDD') as d`))[0].d;
 const EG = globalThis.ENGINE;
@@ -869,6 +877,36 @@ const ACTIONS = {
   // Si le pseudo demandé est déjà pris, le reste est enregistré et on répond name_taken.
   async sync(s, b) {
     const p = await me(s, b.token);
+    let master = !!(await s.query(`select master from players where id = $1`, [p.id]))[0].master;
+    // Bascule « serveur maître » (une seule fois, à l'ouverture d'une appli à jour qui a fini de régler ses paris) :
+    // le solde du téléphone devient celui du compte, plus les gains que le serveur a déjà réglés et que le téléphone ne connaît pas encore.
+    if (b.adopt && !master && Array.isArray(b.bets)) {
+      const cb = b.bets.filter((x) => x && x.id).slice(0, 40), ids = cb.map((x) => String(x.id)), paid = (st) => ["won", "void", "cashed"].includes(st);
+      const srv = ids.length ? await s.query(`select cid, status, coalesce(pay, 0)::float8 as pay from bets where player = $1 and cid = any($2::text[])`, [p.id, ids]) : [];
+      let add = 0;
+      for (const r of srv) {
+        const c = cb.find((x) => String(x.id) === r.cid); if (!c) continue;
+        let amt = 0;
+        if (paid(r.status) && r.pay > 0) { amt = Math.round(r.pay); if (c.st === "open") add += amt; }   // réglé par le serveur : compté s'il manque au téléphone
+        else if (r.status === "open" && paid(c.st) && Number(c.pay) > 0) amt = Math.round(Number(c.pay));   // déjà versé par le téléphone : le serveur ne le reversera pas
+        if (amt) await s.query(`insert into ledger (player, delta, kind, ref) values ($1, $2, 'betpay', $3) on conflict do nothing`, [p.id, amt, r.cid]);
+      }
+      const nb = Math.min(MAX_BAL, num(b.bal, 0, MAX_BAL) + add);
+      const u = await s.query(`update players set master = true, master_at = now(), bal = $2::numeric, peak = greatest(peak, $2::numeric) where id = $1 and not master returning id`, [p.id, nb]);
+      if (u[0]) { master = true; await s.query(`insert into audit_base (player, bal, at) values ($1, $2, now()) on conflict (player) do update set bal = excluded.bal, at = now()`, [p.id, nb]); }
+    }
+    // paris d'avant le suivi par le serveur (seulement sur le téléphone) qui se règlent après la bascule : leur gain est versé une fois
+    if (master && Array.isArray(b.legacy) && b.legacy.length) {
+      const cut = Number((await s.query(`select extract(epoch from min(at)) * 1000 as t from bets where player = $1`, [p.id]))[0].t) || Date.now();
+      for (const x of b.legacy.slice(0, 20)) {
+        const cid = cleanName(x && x.id, 40), ts = Number(String(cid).replace(/^b/, "").split("-")[0]), pay = Math.round(num(x && x.pay, 0, 1e6));
+        if (!cid || !(ts < cut) || !(pay > 0)) continue;
+        if ((await s.query(`select 1 from bets where player = $1 and cid = $2`, [p.id, cid]))[0]) continue;
+        await credit(s, p.id, pay, "legacy", cid);
+      }
+    }
+    // le téléphone vient de voir un de ses paris se terminer : on le règle tout de suite pour lui renvoyer le bon solde
+    if (master && b.settle) { try { await settleOpen(s, { player: p.id, budget: 4e3 }); } catch (e) { console.error("settle sync", e); } }
     await s.query(
       `insert into weekly (player, week, gain)
          select id, week, bal - coalesce(week_bal, bal) from players where id = $1 and week is not null and week <> ${WEEK}
@@ -883,12 +921,14 @@ const ACTIONS = {
          week = ${WEEK},
          month_bal = case when month is distinct from ${MONTH} then bal else month_bal end,
          month = ${MONTH},
-         bal = $2::numeric, peak = greatest(peak, $3::numeric, $2::numeric), won = $4::int, lost = $5::int, seen_at = now()
+         bal = case when master then bal else $2::numeric end, peak = case when master then greatest(peak, bal) else greatest(peak, $3::numeric, $2::numeric) end,
+         won = $4::int, lost = $5::int, seen_at = now()
        where id = $1`,
       [p.id, num(b.bal, 0, MAX_BAL), num(b.peak, 0, MAX_BAL), int(b.won, 0, 1e7), int(b.lost, 0, 1e7)]);
     await s.query(`insert into audit_base (player, bal) values ($1, $2::numeric) on conflict do nothing`, [p.id, num(b.bal, 0, MAX_BAL)]);
-    await s.query(`insert into bal_hist (player, day, bal) values ($1, to_char(now() at time zone 'Europe/Paris', 'YYYYMMDD'), $2::numeric)
-       on conflict (player, day) do update set bal = excluded.bal`, [p.id, num(b.bal, 0, MAX_BAL)]);
+    await s.query(`insert into bal_hist (player, day, bal) select id, to_char(now() at time zone 'Europe/Paris', 'YYYYMMDD'), bal from players where id = $1
+       on conflict (player, day) do update set bal = excluded.bal`, [p.id]);
+    const sb = (await s.query(`select bal::float8 as bal, peak::float8 as peak from players where id = $1`, [p.id]))[0];
     const day = (v) => (/^\d{8}$/.test(String(v || "")) ? String(v) : "");
     // roue remise à zéro par les organisateurs (clé r) : tant que l'appli ne l'a pas prise en compte, on ignore ses anciennes dates
     const wr = (await s.query(`update players set wheel = case when coalesce(wheel->>'r', '') <> '' and coalesce(wheel->>'r', '') <> $4::text
@@ -921,12 +961,12 @@ const ACTIONS = {
     if (typeof b.so === "boolean") await s.query(`update players set social_ok = $2 where id = $1 and social_ok is distinct from $2`, [p.id, b.so]);
     if (typeof b.tos === "string" && b.tos) await s.query(`update players set tos = $2, tos_at = now() where id = $1 and tos is distinct from $2`, [p.id, cleanName(b.tos, 12)]);
     const name = cleanName(b.name, 18);
-    if (name && name !== p.name && await badName(s, name)) return { ok: true, name_bad: true, name: p.name, wheel: wr && wr.wheel, av: wr ? wr.avatar_v || 0 : null };
+    if (name && name !== p.name && await badName(s, name)) return { ok: true, name_bad: true, name: p.name, wheel: wr && wr.wheel, av: wr ? wr.avatar_v || 0 : null, master, bal: master ? Math.round(sb.bal) : undefined };
     if (name && name !== p.name) {
       try {
         await s.query(`update players set name = $2 where id = $1`, [p.id, name]);
       } catch (e) {
-        if (isTaken(e)) return { ok: true, name_taken: true, name: p.name, wheel: wr && wr.wheel, av: wr ? wr.avatar_v || 0 : null };
+        if (isTaken(e)) return { ok: true, name_taken: true, name: p.name, wheel: wr && wr.wheel, av: wr ? wr.avatar_v || 0 : null, master, bal: master ? Math.round(sb.bal) : undefined };
         throw e;
       }
     }
@@ -938,7 +978,8 @@ const ACTIONS = {
     const xp = (await s.query(`select xp from pxp where player = $1`, [p.id]))[0];
     // gains de roue des derniers jours : le téléphone récupère ceux qu'il n'a pas reçus (réponse perdue pendant une coupure)
     const wgot = await s.query(`select ref, delta from ledger where player = $1 and kind = 'wheel' and at > now() - interval '3 days'`, [p.id]);
-    return { ok: true, name: name || p.name, wheel: wr && wr.wheel, av: wr ? wr.avatar_v || 0 : null, cancel, xp: xp ? xp.xp : 0, wgot };
+    return { ok: true, name: name || p.name, wheel: wr && wr.wheel, av: wr ? wr.avatar_v || 0 : null, cancel, xp: xp ? xp.xp : 0, wgot,
+      master, bal: master ? Math.round(sb.bal) : undefined, peak: master ? Math.round(sb.peak) : undefined };
   },
 
   // Code de transfert : emporter son compte (jetons, paris, défis…) dans l'app installée ou sur un
@@ -997,6 +1038,7 @@ const ACTIONS = {
         o: Number(L.o), live: !!L.live, l: cleanName(L.l, 80), ml: cleanName(L.ml, 80), mt: cleanName(L.mt, 60) }));
       const row = (await s.query(`insert into bets (player, cid, stake, odds, combo, legs, groups) values ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb)
          on conflict (player, cid) do nothing returning id`, [p.id, cid, int(x.stake, 1, 1e9), r.odds, !!(x.combo && legs.length > 1), JSON.stringify(legs), JSON.stringify(r.groups)]))[0];
+      if (row) await masterCredit(s, p.id, -int(x.stake, 1, 1e9), "bet", cid);
       out.push({ cid, id: row ? row.id : null, odds: r.odds });
     }
     return { ok: true, bets: out };
@@ -1058,6 +1100,7 @@ const ACTIONS = {
     const v = await cashValueServer(row);
     if (!v) return { error: "closed" };
     const u = await s.query(`update bets set status = 'cashed', pay = $2, settled_at = now() where id = $1 and status = 'open' returning id`, [row.id, v]);
+    if (u[0]) await masterCredit(s, p.id, v, "betpay", cleanName(b.cid, 40));
     return u[0] ? { ok: true, pay: v } : { error: "closed" };
   },
   async admin_settle_report(s, b) {
@@ -1736,15 +1779,16 @@ const ACTIONS = {
   async reset_log(s, b) {
     const p = await me(s, b.token);
     await s.query(`insert into audit_base (player, bal, at) values ($1, 1000, now()) on conflict (player) do update set bal = 1000, at = now()`, [p.id]);
+    await s.query(`update players set bal = 1000 where id = $1 and master`, [p.id]);
     return { ok: true };
   },
   // anti-triche : pour chaque joueur, solde attendu d'après le serveur (référence + registre + paris) comparé au solde annoncé par son téléphone,
   // et gains de la semaine / du mois annoncés comparés à ceux calculés par le serveur
   async admin_audit(s, b) {
     admin(b);
-    const rows = await s.query(`with a as (select p.id, p.name, p.bal::float8 as bal, p.seen_at, ab.bal::float8 as base, ab.at from players p join audit_base ab on ab.player = p.id)
+    const rows = await s.query(`with a as (select p.id, p.name, p.master, p.bal::float8 as bal, p.seen_at, ab.bal::float8 as base, ab.at from players p join audit_base ab on ab.player = p.id)
       select a.id, a.name, a.bal, a.base, a.at, a.seen_at,
-        coalesce((select sum(l.delta) from ledger l where l.player = a.id and l.at > a.at and l.at <= a.seen_at), 0)::float8 as led,
+        coalesce((select sum(l.delta) from ledger l where l.player = a.id and l.at > a.at and l.at <= a.seen_at and l.kind not in ('bet', 'betpay', 'legacy')), 0)::float8 as led, a.master,
         coalesce((select sum(-x.stake) from bets x where x.player = a.id and x.at > a.at and x.at <= a.seen_at), 0)::float8 as placed,
         coalesce((select sum(coalesce(x.pay, 0)) from bets x where x.player = a.id and x.settled_at > a.at and x.settled_at <= a.seen_at and x.status in ('won', 'cashed', 'void')), 0)::float8 as paid,
         (select count(*)::int from bets x where x.player = a.id and x.status = 'open') as open,
@@ -1754,8 +1798,8 @@ const ACTIONS = {
     const out = rows.map((r) => {
       const expected = Math.round(r.base + r.led + r.placed + r.paid), gap = Math.round(r.bal - expected);
       // drapeau seulement quand le téléphone annonce PLUS que ce que le serveur peut expliquer (un retard de synchro donne un écart négatif)
-      const flag = gap > Math.max(150, expected * 0.05) || r.cw - r.sw > 150 || r.cm - r.sm > 150;
-      return { id: r.id, name: r.name, reported: Math.round(r.bal), expected, gap, open: r.open, week: { phone: Math.round(r.cw), server: Math.round(r.sw) }, month: { phone: Math.round(r.cm), server: Math.round(r.sm) }, flag };
+      const flag = !r.master && (gap > Math.max(150, expected * 0.05) || r.cw - r.sw > 150 || r.cm - r.sm > 150);
+      return { id: r.id, name: r.name, master: !!r.master, reported: Math.round(r.bal), expected, gap, open: r.open, week: { phone: Math.round(r.cw), server: Math.round(r.sw) }, month: { phone: Math.round(r.cm), server: Math.round(r.sm) }, flag };
     });
     return { players: out.length, flagged: out.filter((x) => x.flag), all: out };
   },
@@ -1823,7 +1867,8 @@ const ACTIONS = {
   // annuler un pari pas encore réglé : remboursé, et le téléphone du joueur l'apprend à la prochaine synchro
   async admin_void(s, b) {
     admin(b);
-    const r = await s.query(`update bets set status = 'void', pay = stake, cancelled = true, settled_at = now() where id = $1 and status = 'open' returning id, cid, stake`, [String(int(b.id, 0, 1e15))]);
+    const r = await s.query(`update bets set status = 'void', pay = stake, cancelled = true, settled_at = now() where id = $1 and status = 'open' returning id, cid, stake, player`, [String(int(b.id, 0, 1e15))]);
+    if (r[0]) await masterCredit(s, r[0].player, r[0].stake, "betpay", r[0].cid);
     return r[0] ? { ok: true, ...r[0] } : { error: "not_open" };
   },
   // paris encore ouverts sur les téléphones (copie envoyée à chaque synchro) : pour comprendre un pari bloqué
@@ -1885,6 +1930,13 @@ const ACTIONS = {
   async tv_list(s) {
     const cur = (await s.query(`select value from meta where key = 'tv'`))[0];
     return { tv: cur ? JSON.parse(cur.value || "{}") : {} };
+  },
+  // copie de sauvegarde (soldes, paris, registre) avant une opération sensible
+  async admin_backup(s, b) {
+    admin(b);
+    return { at: new Date().toISOString(),
+      players: await s.query(`select id, name, bal::float8 as bal, peak::float8 as peak, won, lost, master, wheel, bets as phone, week, week_bal, month, month_bal from players`),
+      bets: await s.query(`select * from bets`), ledger: await s.query(`select * from ledger`), gifts: await s.query(`select * from gifts`), audit_base: await s.query(`select * from audit_base`) };
   },
   async admin_transfer(s, b) {
     admin(b);

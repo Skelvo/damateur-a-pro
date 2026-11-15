@@ -630,6 +630,9 @@ function render(){if(window.__gate)return;   // page d'installation : on ne dess
   renderSlipBar()}
 
 /* ---------- règlement des paris ---------- */
+// gain d'un pari réglé par le téléphone : en mode serveur maître, c'est le serveur qui le verse (le solde revient à la synchro) ;
+// un vieux pari que le serveur ne connaît pas est signalé pour être versé une fois
+function mPay(b){if(!S.master){S.bal+=b.pay;return}if(!b.sid&&b.pay>0){S.legQ=S.legQ||[];if(!S.legQ.some(x=>x.id===b.id))S.legQ.push({id:b.id,pay:b.pay})}}
 // série en cours : pronos gagnés (ou perdus) d'affilée, dans l'ordre où ils ont été réglés
 function streakNow(){const L=S.bets.filter(b=>(b.st==="won"||b.st==="lost")&&b.done).sort((a,b)=>b.done-a.done);if(!L.length)return{w:true,n:0};
   const w=L[0].st==="won";let n=0;for(const b of L){if((b.st==="won")!==w)break;n++}return{w,n}}
@@ -656,11 +659,12 @@ async function settle(){if(settling)return;settling=true;
         const n=b.legs.length,ok=b.legs.filter(L=>L.r==="w").length,one=n>=3&&ok===n-1;
         if(!ouch&&(one||b.stake>=500)){ouch++;postAct("lost",{stake:b.stake,n,one:one?1:0,odds:b.odds,last:(b.legs.find(L=>L.r==="l")||{}).l||""})}}
       else if(b.legs.every(L=>L.r)){const live=b.legs.filter(L=>L.r==="w");b.done=Date.now();
-        if(!live.length){b.st="void";b.pay=b.stake;S.bal+=b.stake;voids++}
-        else{const R=betResult(b);b.odds=R.odds;b.pay=R.pay;b.st="won";S.bal+=b.pay;gain+=b.pay;won++;
+        if(!live.length){b.st="void";b.pay=b.stake;mPay(b);voids++}
+        else{const R=betResult(b);b.odds=R.odds;b.pay=R.pay;b.st="won";mPay(b);gain+=b.pay;won++;
           if(won<=3)postAct("won",{pay:b.pay,odds:b.odds,n:b.legs.length,big:b.odds>=5||b.pay>=1000||b.legs.length>=4?1:0,legs:b.legs.slice(0,3).map(L=>L.l)})}}}
     if(won||lost){const s1=streakNow(),T=s1.w?[3,5,7,10,15]:[5,8,12],hit=T.filter(t=>s1.n>=t&&(s0.w!==s1.w||s0.n<t)).pop();if(hit)postAct("streak",{n:hit,w:s1.w?1:0})}
     {let fill=0;for(const b of lostOpen)for(const L of b.legs)if(!L.r){const r=legResult(L),m=findMatch(L.mid);if(r&&(r!=="v"||(m&&status(m)==="cancel"))){L.r=r;fill++}}if(fill&&!won&&!lost&&!voids){save();if(U.tab==="b"&&!U.open)render()}}
+    if((won||lost||voids)&&S.master){U.wantSettle=1;syncNow()}
     if(won||lost||voids){S.peak=Math.max(S.peak,S.bal);save();render();bump();
       if(won){toast(`${ic("trophy")} ${won} pari${won>1?"s":""} gagné${won>1?"s":""} : +${tok(gain)} jetons !`,"win");winFx()}
       if(lost)toast(`${lost} pari${lost>1?"s":""} perdu${lost>1?"s":""}. La revanche ?`);
@@ -976,7 +980,7 @@ function wheelRecover(list){if(spinning||!Array.isArray(list)||!list.length)retu
 function wheelSync(j){wheelRecover(j&&j.wgot);if(j&&j.av!=null&&j.av!==(S.avv||0)){S.avv=j.av;S.avatar=null;saveLocal();if(!U.open)render()}   // photo du compte (après reconnexion, autre téléphone…)
   const w=j&&j.wheel;if(!w)return;let ch=false;if(w.r&&w.r!==S.wheelR){S.wheelR=w.r;S.bonus=w.b||"";S.extraSpin=w.x||"";S.wheelAuto="";ch=true}if(w.b&&w.b>(S.bonus||"")){S.bonus=w.b;ch=true}if(w.x&&w.x>(S.extraSpin||"")){S.extraSpin=w.x;ch=true}if(ch){saveLocal();if(!U.open)render()}}
 // paris annulés par les organisateurs : remboursés et marqués « Remboursé »
-function applyCancel(j){if(!j||!Array.isArray(j.cancel))return;let n=0;for(const c of j.cancel){const b=S.bets.find(x=>x.id===c.cid&&x.st==="open");if(!b)continue;b.st="void";b.pay=b.stake;b.done=Date.now();S.bal+=b.stake;n++}
+function applyCancel(j){if(!j||!Array.isArray(j.cancel))return;let n=0;for(const c of j.cancel){const b=S.bets.find(x=>x.id===c.cid&&x.st==="open");if(!b)continue;b.st="void";b.pay=b.stake;b.done=Date.now();if(!S.master)S.bal+=b.stake;n++}
   if(n){save();render();toast(`↺ ${n>1?n+" paris annulés":"Un pari annulé"} par les organisateurs : mise remboursée.`)}}
 const myStats=()=>{const d=S.bets.filter(b=>b.st==="won"||b.st==="lost");return{won:d.filter(b=>b.st==="won").length,lost:d.filter(b=>b.st==="lost").length}};
 let sessP=null;
@@ -987,9 +991,15 @@ function ensureSession(){if(S.tok)return Promise.resolve(true);if(!S.name)return
 let askedName=false;
 function askNewName(bad){if(GATE||askedName||U.open==="welcome"||U.open==="tos")return;askedName=true;U.open="welcome";layer(viewWelcome(true,bad?`Le pseudo « ${esc(S.name)} » n’est pas accepté (mot interdit ou signalé par plusieurs joueurs). Choisis-en un autre.`:`Le pseudo « ${esc(S.name)} » est déjà pris par un autre joueur. Choisis-en un autre pour apparaître dans les classements.`))}
 let syncT=0;
+// ---- serveur maître des soldes : le téléphone affiche le solde du compte, le serveur fait tous les mouvements ----
+function syncBody(){const o={name:S.name,bal:S.bal,peak:S.peak,wb:S.bonus,wx:S.extraSpin,wr:S.wheelR||"",tos:S.tosV||"",so:!S.socialOff,...myStats(),...betsPayload()};
+  if(!S.master&&U.adoptOk)o.adopt=1;if(S.master&&S.legQ&&S.legQ.length)o.legacy=S.legQ.slice(0,20);if(S.master&&U.wantSettle){o.settle=1;U.wantSettle=0}return o}
+function masterSync(j){if(!j||!j.master)return;const first=!S.master;S.master=1;if(S.legQ&&S.legQ.length)S.legQ=[];
+  if(typeof j.bal==="number"&&Math.round(S.bal)!==j.bal){S.bal=j.bal;S.peak=Math.max(S.peak||0,j.peak||0,j.bal);saveLocal();const e=$("#bal");if(e)e.textContent=tok(S.bal);if(!U.open)render();else bump()}
+  else if(first)saveLocal()}
 function syncSoon(){if(!S.name)return;clearTimeout(syncT);syncT=setTimeout(async()=>{if(!(await ensureSession()))return;
-  try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,wb:S.bonus,wx:S.extraSpin,wr:S.wheelR||"",tos:S.tosV||"",so:!S.socialOff,...myStats(),...betsPayload()});wheelSync(j);applyCancel(j);xpUpdate(j.xp);if(j.name_taken)askNewName();if(j.name_bad)askNewName(true);backupSoon()}catch(e){if(e.code==="no_session"&&await ensureSession())syncSoon()}},2000)}
-async function syncNow(){clearTimeout(syncT);if(!(await ensureSession()))return false;try{const j=await api("sync",{name:S.name,bal:S.bal,peak:S.peak,wb:S.bonus,wx:S.extraSpin,wr:S.wheelR||"",tos:S.tosV||"",so:!S.socialOff,...myStats(),...betsPayload()});wheelSync(j);applyCancel(j);xpUpdate(j.xp);if(j.name_bad)askNewName(true);return true}catch(e){return false}}
+  try{const j=await api("sync",syncBody());masterSync(j);wheelSync(j);applyCancel(j);xpUpdate(j.xp);if(j.name_taken)askNewName();if(j.name_bad)askNewName(true);backupSoon()}catch(e){if(e.code==="no_session"&&await ensureSession())syncSoon()}},2000)}
+async function syncNow(){clearTimeout(syncT);if(!(await ensureSession()))return false;try{const j=await api("sync",syncBody());masterSync(j);wheelSync(j);applyCancel(j);xpUpdate(j.xp);if(j.name_bad)askNewName(true);return true}catch(e){return false}}
 const pickKey=s=>s.mk+(s.line!=null?s.line:"");
 function sendPicks(sel){const picks=sel.filter(s=>!PMK[s.mk]).map(s=>({mid:s.mid,mk:pickKey(s),k:s.k}));if(!picks.length)return;ensureSession().then(ok=>ok&&api("picks",{picks}).catch(()=>{}));
   for(const p of picks){const c=CROWD[p.mid];if(c&&c.data){const m=((c.data[p.mk]??={}));m[p.k]=(m[p.k]||0)+1}}}
@@ -1599,7 +1609,7 @@ function introEnd(coach){S.introSeen=INTRO_V;save();closeLayer();if(!coach)setTi
 // 2) match d'entraînement : un faux match qui se joue en quelques secondes, sans toucher aux vrais matchs.
 // Le premier pari est forcément gagné et débloque les 1 000 premiers jetons du nouveau joueur.
 const TR_O=[1.85,3.4,4.2],TR_T=["Les Novices FC","Tribune United"];
-function grantStarter(quiet){if(S.starter!=="pending")return false;S.starter="done";S.bal+=1000;if(S.tok)api("starter_log",{}).catch(()=>{});S.peak=Math.max(S.peak,S.bal);save();render();bump();
+function grantStarter(quiet){if(S.starter!=="pending")return false;S.starter="done";if(!S.master)S.bal+=1000;if(S.tok)api("starter_log",{}).then(()=>{if(S.master)syncNow()}).catch(()=>{});S.peak=Math.max(S.peak,S.bal);save();render();bump();
   if(!quiet){confetti();toast(`${ic("coin")} Tes 1 000 premiers jetons sont arrivés. À toi de jouer !`,"win")}return true}
 function openTraining(){U.tr={k:null,s:0,ph:"pick",min:0,sc:[0,0],ev:[]};U.open="train";layer(viewTrain())}
 function viewTrain(){const T=U.tr,o=T.k!=null?TR_O[T.k]:0,lab=["Victoire des Novices","Match nul","Victoire de Tribune United"];
@@ -2884,7 +2894,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.15";
+const VERSION="3.16";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -2928,7 +2938,7 @@ function preloadArt(){const L=["roue-anneau.webp?v=1","roue-centre.webp?v=1",...
   if(S.cos&&S.cos.f&&/^f([1-9]|1[0-2])$/.test(S.cos.f))L.push(`fr/${S.cos.f}.webp?v=2`);
   if(S.cos&&S.cos.b&&BN_TEX[S.cos.b])L.push(`bn/${S.cos.b}.webp?v=1`);
   L.forEach((u,i)=>setTimeout(()=>{const im=new Image();im.decoding="async";im.src=u},i*60))}
-var afterBoot=function(){setTimeout(preloadArt,1200);pushRefresh();if(S.introSeen===INTRO_V&&S.tosV===TOS_V){setTimeout(pariPending,600);setTimeout(pendingTicket,900);setTimeout(()=>matchPending(),1200)}if(S.name&&S.starter==="pending"&&S.introSeen===INTRO_V&&!U.coach)grantStarter(false);if(S.name&&S.tosV!==TOS_V)openTos();else if(S.name&&S.introSeen!==INTRO_V){openIntro();S.newsSeen=NEWS_V;saveLocal()}else if(S.name&&S.newsSeen!==NEWS_V)setTimeout(openNews,2500);if(S.name){claimPrizes();claimBattles();claimGifts();ensureRcode()}if(S.name)Promise.resolve().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels();autoWheel()};
+var afterBoot=function(){setTimeout(async()=>{for(let i=0;i<30&&settling;i++)await new Promise(r=>setTimeout(r,500));try{await settle()}catch(e){}for(let i=0;i<30&&settling;i++)await new Promise(r=>setTimeout(r,500));U.adoptOk=1;if(S.name&&!S.master)syncNow()},4000);setTimeout(preloadArt,1200);pushRefresh();if(S.introSeen===INTRO_V&&S.tosV===TOS_V){setTimeout(pariPending,600);setTimeout(pendingTicket,900);setTimeout(()=>matchPending(),1200)}if(S.name&&S.starter==="pending"&&S.introSeen===INTRO_V&&!U.coach)grantStarter(false);if(S.name&&S.tosV!==TOS_V)openTos();else if(S.name&&S.introSeen!==INTRO_V){openIntro();S.newsSeen=NEWS_V;saveLocal()}else if(S.name&&S.newsSeen!==NEWS_V)setTimeout(openNews,2500);if(S.name){claimPrizes();claimBattles();claimGifts();ensureRcode()}if(S.name)Promise.resolve().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels();autoWheel()};
 setInterval(()=>{if(!document.hidden&&S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},12e4);
 // matchs en direct qui te concernent (regardé, parié, équipe de cœur) : leur compétition est rafraîchie toutes les 20 s pour les animations
 setInterval(()=>{if(document.hidden)return;const hot=new Set([...REG.values()].filter(m=>m.src==="espn"&&m.state==="in"&&(m.sp==="foot"||m.sp==="rugby")&&fxMine(m)).map(m=>m.sp+"|"+m.lv));
