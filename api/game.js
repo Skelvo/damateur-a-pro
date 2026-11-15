@@ -1812,7 +1812,8 @@ const ACTIONS = {
       profits: await s.query(`select per, gain::float8 as gain from profits where player = $1 order by per desc limit 6`, [p.id]),
       sprofits: await s.query(`select per, gain::float8 as gain from sprofits where player = $1 order by per desc limit 6`, [p.id]),
       bets: await s.query(`select cid, stake, odds::float8 as odds, status, pay::float8 as pay, cancelled, at, settled_at, legs from bets where player = $1 order by at desc limit 25`, [p.id]),
-      gifts: await s.query(`select kind, ref, amount, claimed, at from gifts where player = $1 order by at desc limit 20`, [p.id]) };
+      gifts: await s.query(`select kind, ref, amount, claimed, at from gifts where player = $1 order by at desc limit 20`, [p.id]),
+      phone: ((await s.query(`select bets from players where id = $1`, [p.id]))[0].bets || {}).list || [] };
   },
   async admin_bets(s, b) {
     admin(b);
