@@ -370,7 +370,7 @@ function statsBlock(m,st){if(!st)return`<div class="empty">${ic("chart")}<b>Stat
 // temps forts (buts, cartons) dans l'ordre du match
 function timeline(m){if(m.sp!=="foot"||!Array.isArray(m.ev)||!m.ev.length)return"";const E={g:"⚽",og:"⚽",yc:"🟨",rc:"🟥",pk:"🎯"},N={g:"But",og:"CSC",yc:"Carton jaune",rc:"Carton rouge",pk:"Penalty"};
   const L=m.ev.filter(e=>E[e.ty]).slice().sort((a,b)=>(parseInt(a.min)||0)-(parseInt(b.min)||0));if(!L.length)return"";
-  return`<div class="h3t">Temps forts</div><div class="tln">${L.map(e=>{const side=e.s==null?-1:e.ty==="og"?1-e.s:e.s;return`<div class="tle${side===1?" aw":""}"><span class="tm">${esc(String(e.min||""))}’</span><span class="ic">${E[e.ty]}</span><span><b>${esc(e.n||N[e.ty])}</b><small>${N[e.ty]}${side>=0?" · "+esc(side?m.a:m.h):""}</small></span></div>`}).join("")}</div>`}
+  return`<div class="h3t">Temps forts</div><div class="tln">${L.map(e=>{const side=e.s==null?-1:e.s;return`<div class="tle${side===1?" aw":""}"><span class="tm">${esc(String(e.min||""))}’</span><span class="ic">${E[e.ty]}</span><span><b>${esc(e.n||N[e.ty])}</b><small>${N[e.ty]}${side>=0?(e.ty==="og"?" · pour ":" · ")+esc(side?m.a:m.h):""}</small></span></div>`}).join("")}</div>`}
 
 /* ---------- ballons illustrés ---------- */
 function ballArt(sp,cls){
@@ -489,7 +489,7 @@ function viewBets(){const B=S.bets.slice().reverse(),op=B.filter(b=>b.st==="open
   <div class="seg"><button data-act="btab" data-t="o" aria-pressed="${U.btab==="o"}">En cours (${op.length})</button><button data-act="btab" data-t="c" aria-pressed="${U.btab==="c"}">Terminés (${cl_.length})</button></div>`;
   const list=U.btab==="o"?op:cl_;
   if(!list.length)h+=`<div class="empty">${ic("ticket")}<b>${U.btab==="o"?"Aucun pari en cours":"Pas encore de résultat"}</b>${U.btab==="o"?"Choisis un match et touche une cote.":"Tes tickets réglés apparaîtront ici."}<br><button class="btn" style="margin-top:12px" data-act="tab" data-tab="m">Voir les matchs</button></div>`;
-  h+=list.map(b=>{const tag=b.st==="won"?`<span class="tag won">+${tok(b.pay)}</span>`:b.st==="lost"?`<span class="tag lost">Perdu</span>`:b.st==="void"?`<span class="tag void">Remboursé</span>`:b.st==="cashed"?`<span class="tag cashed">Encaissé +${tok(b.pay)}</span>`:`<span class="tag open">En cours</span>`;
+  h+=list.map(b=>{const tag=b.st==="won"?(S.master&&b.sid&&!b.paid&&(b.done||0)>PAYT?`<span class="tag pend">⏳ Jetons en route</span>`:`<span class="tag won">+${tok(b.pay)}</span>`):b.st==="lost"?`<span class="tag lost">Perdu</span>`:b.st==="void"?`<span class="tag void">Remboursé</span>`:b.st==="cashed"?`<span class="tag cashed">Encaissé +${tok(b.pay)}</span>`:`<span class="tag open">En cours</span>`;
     const cv=b.st==="open"?cashValue(b):0;
     return`<div class="ticket ${b.st}" data-bid="${esc(b.id)}"><div class="th"><b>${b.legs.length>1?"Combiné · "+b.legs.length:"Simple"}</b><span>Parié le ${new Date(b.at).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})} · ${fTime(b.at)}</span></div>
     ${(()=>{if(b.st!=="open")return"";const S_=b.legs.map(L=>L.r==="w"?"sure":L.r==="l"?"dead":(liveLeg(L,L.mid&&findMatch(L.mid))||{}).c);
@@ -980,6 +980,18 @@ function wheelRecover(list){if(spinning||!Array.isArray(list)||!list.length)retu
 function wheelSync(j){wheelRecover(j&&j.wgot);if(j&&j.av!=null&&j.av!==(S.avv||0)){S.avv=j.av;S.avatar=null;saveLocal();if(!U.open)render()}   // photo du compte (après reconnexion, autre téléphone…)
   const w=j&&j.wheel;if(!w)return;let ch=false;if(w.r&&w.r!==S.wheelR){S.wheelR=w.r;S.bonus=w.b||"";S.extraSpin=w.x||"";S.wheelAuto="";ch=true}if(w.b&&w.b>(S.bonus||"")){S.bonus=w.b;ch=true}if(w.x&&w.x>(S.extraSpin||"")){S.extraSpin=w.x;ch=true}if(ch){saveLocal();if(!U.open)render()}}
 // paris annulés par les organisateurs : remboursés et marqués « Remboursé »
+const PAYT=Date.parse("2026-11-15T21:30:00Z");
+// résultats du serveur (référence) : on aligne le ticket du téléphone (règlement corrigé, gain versé)
+function applySrv(j){if(!j||!Array.isArray(j.srv))return;let ch=0,fixW=0,got=0;
+  for(const x of j.srv){const b=S.bets.find(y=>y.id===x.cid);if(!b||b.st==="cashed")continue;
+    if(b.st===x.st&&(x.st!=="won"||b.pay===x.pay)){if(x.st==="won"&&S.master&&!b.paid){b.paid=1;ch++;if((b.done||0)>PAYT)got+=x.pay}continue}
+    if(!S.master){const cr=t=>t.st==="won"||t.st==="void"?t.pay||0:0;S.bal+=cr(x)-(b.st==="open"?0:cr(b))}
+    if(x.st==="won"&&b.st==="lost")fixW+=x.pay;
+    b.st=x.st;b.pay=x.pay;b.done=b.done||Date.now();if(S.master&&x.st==="won")b.paid=1;
+    (x.r||[]).forEach((r,i)=>{if(r&&b.legs[i])b.legs[i].r=r});ch++}
+  if(!ch)return;save();if(!U.open)render();
+  if(fixW)toast(`${ic("trophy")} Ticket corrigé : gagné ! +${tok(fixW)} jetons`,"win");
+  else if(got)toast(`💰 +${tok(got)} jetons reçus`,"win")}
 function applyCancel(j){if(!j||!Array.isArray(j.cancel))return;let n=0;for(const c of j.cancel){const b=S.bets.find(x=>x.id===c.cid&&x.st==="open");if(!b)continue;b.st="void";b.pay=b.stake;b.done=Date.now();if(!S.master)S.bal+=b.stake;n++}
   if(n){save();render();toast(`↺ ${n>1?n+" paris annulés":"Un pari annulé"} par les organisateurs : mise remboursée.`)}}
 const myStats=()=>{const d=S.bets.filter(b=>b.st==="won"||b.st==="lost");return{won:d.filter(b=>b.st==="won").length,lost:d.filter(b=>b.st==="lost").length}};
@@ -998,8 +1010,8 @@ function masterSync(j){if(!j||!j.master)return;const first=!S.master;S.master=1;
   if(typeof j.bal==="number"&&Math.round(S.bal)!==j.bal){S.bal=j.bal;S.peak=Math.max(S.peak||0,j.peak||0,j.bal);saveLocal();const e=$("#bal");if(e)e.textContent=tok(S.bal);if(!U.open)render();else bump()}
   else if(first)saveLocal()}
 function syncSoon(){if(!S.name)return;clearTimeout(syncT);syncT=setTimeout(async()=>{if(!(await ensureSession()))return;
-  try{const j=await api("sync",syncBody());masterSync(j);wheelSync(j);applyCancel(j);xpUpdate(j.xp);if(j.name_taken)askNewName();if(j.name_bad)askNewName(true);backupSoon()}catch(e){if(e.code==="no_session"&&await ensureSession())syncSoon()}},2000)}
-async function syncNow(){clearTimeout(syncT);if(!(await ensureSession()))return false;try{const j=await api("sync",syncBody());masterSync(j);wheelSync(j);applyCancel(j);xpUpdate(j.xp);if(j.name_bad)askNewName(true);return true}catch(e){return false}}
+  try{const j=await api("sync",syncBody());masterSync(j);wheelSync(j);applyCancel(j);applySrv(j);xpUpdate(j.xp);if(j.name_taken)askNewName();if(j.name_bad)askNewName(true);backupSoon()}catch(e){if(e.code==="no_session"&&await ensureSession())syncSoon()}},2000)}
+async function syncNow(){clearTimeout(syncT);if(!(await ensureSession()))return false;try{const j=await api("sync",syncBody());masterSync(j);wheelSync(j);applyCancel(j);applySrv(j);xpUpdate(j.xp);if(j.name_bad)askNewName(true);return true}catch(e){return false}}
 const pickKey=s=>s.mk+(s.line!=null?s.line:"");
 function sendPicks(sel){const picks=sel.filter(s=>!PMK[s.mk]).map(s=>({mid:s.mid,mk:pickKey(s),k:s.k}));if(!picks.length)return;ensureSession().then(ok=>ok&&api("picks",{picks}).catch(()=>{}));
   for(const p of picks){const c=CROWD[p.mid];if(c&&c.data){const m=((c.data[p.mk]??={}));m[p.k]=(m[p.k]||0)+1}}}
@@ -1187,7 +1199,7 @@ const FLASH={},FXQ=[];let fxOn=false;
 const fxMine=m=>U.open===m.id||S.bets.some(b=>b.st==="open"&&b.legs.some(L=>L.mid===m.id))||!!(S.fav&&(String(m.hid)===String(S.fav.id)||String(m.aid)===String(S.fav.id)));
 function liveDiff(o,m){if(!o||m.src!=="espn"||m.state!=="in"||!o.st||!m.st)return;const out=[],tm=k=>k===0?m.h:m.a;
   if(m.sp==="foot"){const key=e=>e.ty+"|"+e.id+"|"+e.min,had=new Set((o.ev||[]).map(key)),nv=(m.ev||[]).filter(e=>!had.has(key(e)));
-    if(nv.length)for(const e of nv)out.push({k:e.ty,team:e.s!=null?tm(e.ty==="og"?1-e.s:e.s):"",who:e.n,min:e.min});
+    if(nv.length)for(const e of nv)out.push({k:e.ty,team:e.s!=null?tm(e.s):"",who:e.n,min:e.min});
     else{const a=o.st.g||[0,0],b=m.st.g||[0,0];for(const k of [0,1])for(let i=a[k];i<b[k];i++)out.push({k:"g",team:tm(k),min:m.min})}}
   else if(m.sp==="rugby"){const a=o.st.pts||[0,0],b=m.st.pts||[0,0];for(const k of [0,1]){const d=b[k]-a[k];if(d<=0)continue;
     out.push({k:d>=7?"try7":d>=5?"try":d===3?"pen":d===2?"conv":"pts",team:tm(k),d,min:m.min})}}
@@ -1962,7 +1974,7 @@ async function openProfile(id){const me=U.lg.data&&String(id)===String(U.lg.data
   catch(e){if(U.open==="prof")layer(`<div class="grab"><h3>Profil</h3><button class="x" data-act="close">${ic("x")}</button></div><div class="empty">${ic("info")}<b>${e.code==="not_friend"?"Profil privé":"Pas de connexion"}</b>${e.code==="not_friend"?"Tu ne vois que les joueurs de tes guildes.":"Réessaie dans un instant."}</div>`)}}
 function viewProfile(p){U.prof=p;const done=p.won+p.lost,rate=done?Math.round(p.won/done*100):0,B=p.bets||[],open=B.filter(b=>b.st==="open"),past=B.filter(b=>b.st!=="open").slice(0,12);
   const row=(U.lg.data&&U.lg.data.rows||[]).find(r=>String(r.id)===String(p.id)),tr=row?row.tr:0,sc=row?row.sc:0;
-  const bet=b=>{const tag=b.st==="won"?`<span class="tag won">+${tok(b.pay)}</span>`:b.st==="lost"?`<span class="tag lost">Perdu</span>`:b.st==="void"?`<span class="tag void">Remboursé</span>`:b.st==="cashed"?`<span class="tag cashed">Encaissé +${tok(b.pay)}</span>`:`<span class="tag open">En cours</span>`;
+  const bet=b=>{const tag=b.st==="won"?(S.master&&b.sid&&!b.paid&&(b.done||0)>PAYT?`<span class="tag pend">⏳ Jetons en route</span>`:`<span class="tag won">+${tok(b.pay)}</span>`):b.st==="lost"?`<span class="tag lost">Perdu</span>`:b.st==="void"?`<span class="tag void">Remboursé</span>`:b.st==="cashed"?`<span class="tag cashed">Encaissé +${tok(b.pay)}</span>`:`<span class="tag open">En cours</span>`;
     return`<div class="pbet"><div class="pbh"><b>${b.legs.length>1?"Combiné · "+b.legs.length:"Simple"}</b>${tag}</div>
       ${b.legs.map(L=>{const mid=L.p&&L.e?"e-"+String(L.p).replace(/\W/g,"")+"-"+L.e:"",LL={...L,mid};
         return`<div class="pleg${mid?" legx":""}"${mid?` data-act="pleg" data-mid="${esc(mid)}" data-p="${esc(L.p)}" data-t="${+L.t||0}" data-sp="${esc(L.sp||"")}"`:""}>${mid&&!L.r?legStatus(LL):L.r==="w"?`<span class="st w">✓</span>`:L.r==="l"?`<span class="st l">✗</span>`:L.r==="v"?`<span class="st v">↺</span>`:`<span class="st p"></span>`}<div><b>${esc(L.l)}</b><small>${esc(L.ml)}</small>${mid&&!L.r&&L.mk?legWhen(LL):""}</div></div>`}).join("")}
@@ -2894,7 +2906,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.16";
+const VERSION="3.17";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

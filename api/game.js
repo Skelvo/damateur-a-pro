@@ -471,10 +471,10 @@ async function tick(s) {
       if (!m || m.state !== "in" || !m.st) continue;
       const sc = (m.st.g || m.st.pts || [0, 0]).slice(), lines = [];
       // le score du flux est parfois en retard sur la liste des buts : on prend le plus grand des deux
-      if (m.sp === "foot" && Array.isArray(m.ev)) { const n = [0, 0]; for (const e of m.ev) if (e.s != null && (e.ty === "g" || e.ty === "og")) n[e.ty === "og" ? 1 - e.s : e.s]++; sc[0] = Math.max(sc[0], n[0]); sc[1] = Math.max(sc[1], n[1]); }
+      if (m.sp === "foot" && Array.isArray(m.ev)) { const n = [0, 0]; for (const e of m.ev) if (e.s != null && (e.ty === "g" || e.ty === "og")) n[e.s]++; sc[0] = Math.max(sc[0], n[0]); sc[1] = Math.max(sc[1], n[1]); }
       if (m.sp === "foot" && Array.isArray(m.ev)) {
         for (const e of m.ev) if (EVT[e.ty] && await sentOnce(s, `ev:${x.player}:${L.mid}:${e.ty}:${e.id}:${e.min}`))
-          lines.push(`${e.min}’ ${EVT[e.ty]}${e.n ? " " + e.n : ""}${e.s != null ? " (" + ((e.ty === "og" ? 1 - e.s : e.s) ? m.a : m.h) + ")" : ""}`);
+          lines.push(`${e.min}’ ${EVT[e.ty]}${e.n ? " " + e.n : ""}${e.s != null ? " (" + (e.ty === "og" ? "pour " : "") + (e.s ? m.a : m.h) + ")" : ""}`);
       } else if (sc[0] + sc[1] > 0 && await sentOnce(s, `goal:${x.player}:${L.mid}:${sc[0]}-${sc[1]}`)) lines.push(`${m.min != null ? m.min + "’ " : ""}Ça marque !`);
       if (!lines.length) continue;
       const goal = lines.some((l) => /But|CSC|marque/.test(l));
@@ -971,6 +971,9 @@ const ACTIONS = {
       }
     }
     const cancel = await s.query(`select cid from bets where player = $1 and cancelled and at > now() - interval '30 days'`, [p.id]);
+    // résultats réglés par le serveur (référence) : le téléphone s'aligne dessus (correction d'un règlement, gain versé)
+    const srv = (await s.query(`select cid, status, pay::float8 as pay, legs from bets where player = $1 and status <> 'open' and not cancelled and settled_at > now() - interval '4 days'`, [p.id]))
+      .map((r) => ({ cid: r.cid, st: r.status, pay: Math.round(r.pay || 0), r: (r.legs || []).map((L) => L.r || null) }));
     // passage aux niveaux d'XP : chacun repart du niveau qui correspond à son ancienne division (une seule fois, jamais au-dessus de Capo)
     const pk = (await s.query(`select peak::float8 as peak, xp_seed from players where id = $1`, [p.id]))[0];
     if (pk && pk.xp_seed == null) { const D = [0, 1300, 1700, 2200, 3000, 4000, 5500, 7500, 10000, 14000, 20000, 30000, 50000]; let di = 0; D.forEach((v, i) => { if (pk.peak >= v) di = i; });
@@ -978,7 +981,7 @@ const ACTIONS = {
     const xp = (await s.query(`select xp from pxp where player = $1`, [p.id]))[0];
     // gains de roue des derniers jours : le téléphone récupère ceux qu'il n'a pas reçus (réponse perdue pendant une coupure)
     const wgot = await s.query(`select ref, delta from ledger where player = $1 and kind = 'wheel' and at > now() - interval '3 days'`, [p.id]);
-    return { ok: true, name: name || p.name, wheel: wr && wr.wheel, av: wr ? wr.avatar_v || 0 : null, cancel, xp: xp ? xp.xp : 0, wgot,
+    return { ok: true, name: name || p.name, wheel: wr && wr.wheel, av: wr ? wr.avatar_v || 0 : null, cancel, srv, xp: xp ? xp.xp : 0, wgot,
       master, bal: master ? Math.round(sb.bal) : undefined, peak: master ? Math.round(sb.peak) : undefined };
   },
 
@@ -1863,6 +1866,23 @@ const ACTIONS = {
     admin(b);
     return { bets: await s.query(`select b.id, p.name, b.cid, b.stake, b.odds::float8 as odds, b.status, b.legs, b.at from bets b join players p on p.id = b.player
        where lower(p.name) = lower($1) order by b.id desc limit 30`, [String(b.name || "")]) };
+  },
+  // re-régler les tickets d'un match (résultat corrigé) : on retire le gain versé, on rouvre, puis le serveur règle à nouveau
+  async admin_reopen(s, b) {
+    admin(b);
+    const mid = String(b.mid || "");
+    if (!mid) return { error: "mid" };
+    const rows = await s.query(`select id, player, cid, status, pay::float8 as pay, legs from bets where status in ('won', 'lost', 'void') and not cancelled
+      and exists (select 1 from jsonb_array_elements(legs) l where l->>'mid' = $1)`, [mid]);
+    const before = rows.map((r) => ({ id: r.id, cid: r.cid, status: r.status, pay: r.pay }));
+    for (const r of rows) {
+      const back = await s.query(`delete from ledger where player = $1 and kind = 'betpay' and ref = $2 returning delta::float8 as d`, [r.player, r.cid]);
+      if (back[0]) await s.query(`update players set bal = greatest(0, bal - $2::numeric) where id = $1 and master`, [r.player, back[0].d]);
+      const legs = r.legs.map((L) => { if (L.mid === mid) { const c = { ...L }; delete c.r; return c; } return L; });
+      await s.query(`update bets set status = 'open', pay = null, settled_at = null, legs = $2::jsonb where id = $1`, [r.id, JSON.stringify(legs)]);
+    }
+    const done = rows.length ? await settleOpen(s, { budget: 20e3 }) : [];
+    return { before, after: done.map((d) => ({ id: d.id, cid: d.cid, status: d.status, pay: d.pay })) };
   },
   // annuler un pari pas encore réglé : remboursé, et le téléphone du joueur l'apprend à la prochaine synchro
   async admin_void(s, b) {

@@ -718,6 +718,7 @@ html.cv .mc,html.cv .res-row,html.cv .prow,html.cv .ticket{content-visibility:au
 .ticket .tf small{display:block;color:var(--mute);font-size:12px}
 .ticket .tf b{font:800 22px "Barlow Condensed";font-variant-numeric:tabular-nums}
 .tag{font:800 13px "Barlow Condensed";text-transform:uppercase;letter-spacing:.6px;padding:5px 9px;border-radius:7px}
+.tag.pend{background:rgba(255,210,63,.16);color:#ffd23f;border:1px solid rgba(255,210,63,.4);animation:pendp 1.6s ease-in-out infinite}@keyframes pendp{50%{opacity:.55}}
 .tag.won{background:var(--win);color:#04130b}.tag.lost{background:var(--loss);color:#fff}.tag.open{background:var(--sel);color:var(--sel-ink)}.tag.void{background:var(--void);color:#111}.tag.cashed{background:#5fa8ff;color:#06121f}
 .cashbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 24px);margin:0 12px 12px;padding:10px;border-radius:10px;border:1px dashed var(--sel);background:color-mix(in srgb,var(--sel) 10%,transparent);color:var(--sel);font:700 15px Barlow}
 .cashbtn b{font:800 20px "Barlow Condensed"}
