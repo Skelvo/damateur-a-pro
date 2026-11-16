@@ -1217,10 +1217,10 @@ const FXT={g:["BUUUT !","⚽","#35d07f"],og:["CONTRE SON CAMP !","⚽","#ff7a45"
 function fxNext(){if(fxOn||!FXQ.length||document.hidden)return;const e=FXQ.shift(),[title,icon,col]=FXT[e.k]||FXT.g;fxOn=true;
   const el=document.createElement("div");el.className="fx fx-"+e.k;el.style.setProperty("--fc",col);
   el.innerHTML=`<div class="fxbg"></div><div class="fxin">${icon==="card"?`<div class="fxcard"></div>`:`<div class="fxic">${icon}</div>`}<b class="fxt">${title}</b>
-    <div class="fxs">${e.team?esc(e.team):""}${e.who?` · ${esc(e.who)}`:""}${e.min?` · ${e.min}’`:""}</div><div class="fxsc">${esc(e.m.h)} <b>${e.m.sc[0]} – ${e.m.sc[1]}</b> ${esc(e.m.a)}</div></div>`;
+    <div class="fxs">${e.team?esc(e.team):""}${e.who?` · ${esc(e.who)}`:""}${e.min?` · ${e.min}’`:""}</div><div class="fxsc">${esc(e.m.h)} <b>${e.m.sc[0]} – ${e.m.sc[1]}</b> ${esc(e.m.a)}</div></div><button class="fxskip" type="button">${FXQ.length?`Tout passer (${FXQ.length+1})`:"Passer"} ✕</button>`;
   document.body.appendChild(el);try{if(navigator.vibrate)navigator.vibrate(e.k==="rc"?[80,60,80,60,200]:e.k==="g"||e.k.startsWith("try")?[120,60,120]:[100])}catch(x){}
   if(e.k==="g"||e.k.startsWith("try"))setTimeout(confetti,250);
-  el.addEventListener("click",()=>el.classList.add("out"));setTimeout(()=>el.classList.add("out"),2900);setTimeout(()=>{el.remove();fxOn=false;fxNext()},3300)}
+  el.addEventListener("click",()=>el.classList.add("out"));el.querySelector(".fxskip").addEventListener("click",ev=>{ev.stopPropagation();FXQ.length=0;el.classList.add("out")});setTimeout(()=>el.classList.add("out"),2900);setTimeout(()=>{el.remove();fxOn=false;fxNext()},3300)}
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(fxNext,600)});
 
 /* ---------- mon style : bannière, couleur du pseudo, titre (débloqués en jouant, vérifiés par le serveur) ---------- */
@@ -2914,7 +2914,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.24";
+const VERSION="3.25";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
