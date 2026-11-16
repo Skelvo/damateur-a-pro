@@ -393,7 +393,14 @@ COS.push(
 COS.push(["t25","t","🤝 Recruteur","ref3","Parrainer 3 amis qui jouent"]);
 COS.push(["b22","b","Stade Tribune","lv2","Atteindre le niveau 2"]);
 COS.push(["f18","f","Laurier d’or","concours","Gagner un concours Tribune"],["t26","t","🏆 Roi du prono","concours","Gagner un concours Tribune"]);
-const COS_SECRET=["corbeau","teckel","concours"],COS_SEASON={noel:"🎄 Saisonnier"};   // conditions « offertes » : les objets restent cachés tant qu'on ne les a pas
+COS.push(
+  // pack exclusif « La Livraison » (offert, invisible pour les autres)
+  ["b23","b","En tournée","livraison","Style exclusif"],["b24","b","Entrepôt","livraison","Style exclusif"],["b25","b","Camion géant","livraison","Style exclusif"],
+  ["c16","c","Kraft","livraison","Style exclusif"],["t27","t","📦 Livré à l’heure","livraison","Style exclusif"],["t28","t","🚚 Express 24h","livraison","Style exclusif"],
+  ["t29","t","📍 Colis en route","livraison","Style exclusif"],["y15","y","Étiquette colis","livraison","Style exclusif"],["f19","f","Carton","livraison","Style exclusif"],
+  ["f20","f","Tampon Livré","livraison","Style exclusif"],["e24","e","📦 Colis","livraison","Style exclusif"],["e25","e","🚚 Camion","livraison","Style exclusif"],
+  ["e26","e","✅ Livré","livraison","Style exclusif"],["v13","v","📦 Pluie de colis","livraison","Style exclusif"]);
+const COS_SECRET=["corbeau","teckel","concours","livraison"],COS_SEASON={noel:"🎄 Saisonnier"};   // conditions « offertes » : les objets restent cachés tant qu'on ne les a pas
 const cosEmoji=id=>{const x=COS.find(c=>c[0]===id&&c[1]==="e");return x&&id!=="e0"?x[2].split(" ")[0]:""};
 const MONTHS_FR=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 // objets débloqués à partir des drapeaux du serveur : {lvl, months:["2026-11",…], podium, battles, odds10, …, all}

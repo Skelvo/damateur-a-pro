@@ -1136,3 +1136,24 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 /* notifications : glisser vers le haut pour fermer ; quand une fenêtre est ouverte (roue, fiche…), elles passent sous la croix */
 .toast{touch-action:none;user-select:none;-webkit-user-select:none}
 body:has(#layer .sheet) .toasts{top:calc(150px + var(--safe-t))}
+
+/* pack exclusif « La Livraison » */
+.bn-b23,.mcard.bn-b23{background:linear-gradient(90deg,#050906e6,#05090680 40%,#05090610 78%),url(bn/b23.webp?v=1) 78% 50%/cover!important}
+.bn-b24,.mcard.bn-b24{background:linear-gradient(90deg,#050906e6,#05090680 40%,#05090610 78%),url(bn/b24.webp?v=1) 70% 50%/cover!important}
+.bn-b25,.mcard.bn-b25{background:url(livr-camion.webp?v=1) right 2% bottom 6%/40% auto no-repeat,radial-gradient(60% 80% at 80% 90%,#a8743f55,transparent 70%),linear-gradient(180deg,#0c100a,#22170c)!important}
+.stsw.bn-b25,.csw.bn-b25{background:url(livr-camion.webp?v=1) center/86% auto no-repeat,linear-gradient(180deg,#0c100a,#22170c)!important}
+.bn-b23::before,.bn-b23::after,.bn-b24::before,.bn-b24::after,.mcard.bn-b23::before,.mcard.bn-b23::after,.mcard.bn-b24::before,.mcard.bn-b24::after,.bn-b25::before,.mcard.bn-b25::before,.bn-b25::after,.mcard.bn-b25::after{display:none!important}
+.bn-b23 .hfx,.bn-b23 .hho,.bn-b24 .hfx,.bn-b24 .hho,.bn-b25 .hfx,.bn-b25 .hho{display:none}
+.nc-c16{-webkit-background-clip:text;background-clip:text;color:transparent;background-image:linear-gradient(100deg,#e8c59a,#a8743f 30%,#fff3dc 50%,#a8743f 70%,#e8c59a);background-size:250% 100%;animation:tyshine 3.5s linear infinite}
+.ttl.ty-y15{color:#2a1a08;background:repeating-linear-gradient(90deg,#241a10 0 2px,transparent 2px 3px,#241a10 3px 4px,transparent 4px 6px,#241a10 6px 9px,transparent 9px 10px) 7px 50%/22px 62% no-repeat,#f3e9d4;border:1px dashed #8a6a40;padding-left:34px!important}
+.fr-f19{overflow:visible!important;box-shadow:0 4px 14px #0007}
+.fr-f19,.fr-f19 img{border-radius:50%!important}
+.fr-f19::after{content:"";position:absolute;inset:-26%;z-index:2;pointer-events:none;background:url("livr-cadre.webp?v=1") center/100% 100% no-repeat}
+.fr-f20{overflow:visible!important;box-shadow:0 0 0 2.5px #2f9e4f,0 4px 14px #0007}
+.fr-f20,.fr-f20 img{border-radius:50%!important}
+.fr-f20::after{content:"";position:absolute;right:-24%;bottom:-20%;width:62%;height:62%;z-index:2;pointer-events:none;background:url("livr-tampon.webp?v=1") center/contain no-repeat;transform:rotate(-14deg)}
+.erain.colis i{background:url("livr-colis.webp?v=1") center/contain no-repeat;font-size:0!important;rotate:var(--r)}
+.erain.colis b{position:absolute;left:0;bottom:8%;width:min(70vw,360px);aspect-ratio:760/324;background:url("livr-camion.webp?v=1") center/contain no-repeat;transform:translateX(-110%);animation:lvdrive 2.6s .3s ease-in forwards}
+.erain.colis u{position:absolute;left:50%;top:38%;width:min(52vw,240px);aspect-ratio:1;margin:calc(min(52vw,240px)/-2) 0 0 calc(min(52vw,240px)/-2);background:url("livr-tampon.webp?v=1") center/contain no-repeat;opacity:0;animation:lvstamp 2.2s 1s ease-out forwards}
+@keyframes lvdrive{to{transform:translateX(calc(100vw + 10%))}}
+@keyframes lvstamp{0%{opacity:0;transform:scale(2.4) rotate(-24deg)}18%{opacity:1;transform:scale(.92) rotate(-12deg)}26%{transform:scale(1) rotate(-12deg)}80%{opacity:1}100%{opacity:0;transform:scale(1) rotate(-12deg)}}

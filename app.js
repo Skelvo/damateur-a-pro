@@ -1225,14 +1225,15 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout
 const nameH=(name,cos)=>{const e=cos&&cos.e&&cosEmoji(cos.e);return`<span class="${cos&&cos.c&&cos.c!=="c0"?"nc-"+cos.c:""}">${esc(name)}</span>${e?`<span class="nemo e-${cos.e}">${e}</span>`:""}`};
 const frC=cos=>cos&&cos.f&&cos.f!=="f0"?" fr-"+cos.f:"";
 // effet quand un de mes paris passe
-const WFX={v12:["🦴","🐾","🦴","🌭"],v11:["❄️","❄️","❅","❆"],v10:["🪶","🪶","🪶"],v1:["⚽"],v2:["🎈","🎈","🎉"],v3:["🎆","🎇","✨"],v4:["🪙","🪙","💰"],v5:["⚡","⚡","🌩️"],v6:["👑","✨"],v7:["💸","💵","💶"],v8:["🔥","🔥","💥"],v9:["🌱","🌸","🌼"]};
+const WFX={v13:["📦"],v12:["🦴","🐾","🦴","🌭"],v11:["❄️","❄️","❅","❆"],v10:["🪶","🪶","🪶"],v1:["⚽"],v2:["🎈","🎈","🎉"],v3:["🎆","🎇","✨"],v4:["🪙","🪙","💰"],v5:["⚡","⚡","🌩️"],v6:["👑","✨"],v7:["💸","💵","💶"],v8:["🔥","🔥","💥"],v9:["🌱","🌸","🌼"]};
 function winFx(v){v=v||(S.cos&&S.cos.v);if(!v||v==="v0"||!WFX[v]){confetti();return}if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;
   const c=document.createElement("div");c.className="erain";const E=WFX[v],up=v==="v2";
   for(let i=0;i<38;i++){const p=document.createElement("i");p.textContent=E[i%E.length];p.style.left=Math.random()*100+"%";p.style.fontSize=(22+Math.random()*22)+"px";
-    p.style.animationDelay=(Math.random()*.9)+"s";p.style.animationDuration=(1.6+Math.random()*1.4)+"s";if(up)p.classList.add("up");c.appendChild(p)}
+    p.style.animationDelay=(Math.random()*.9)+"s";p.style.animationDuration=(1.6+Math.random()*1.4)+"s";if(up)p.classList.add("up");if(v==="v13"){p.textContent="";const z=30+Math.random()*34;p.style.width=p.style.height=z+"px";p.style.setProperty("--r",(Math.random()*80-40)+"deg")}c.appendChild(p)}
   if(v==="v5"){c.classList.add("flash")}
   if(v==="v10"){c.classList.add("raven");for(let i=0;i<9;i++){const r=document.createElement("b");r.textContent="🐦‍⬛";r.style.top=(8+Math.random()*70)+"%";r.style.fontSize=(30+Math.random()*30)+"px";r.style.animationDelay=(Math.random()*1.2)+"s";c.appendChild(r)}}
   if(v==="v12"){c.classList.add("teckel");for(let i=0;i<6;i++){const r=document.createElement("b");r.style.top=(10+Math.random()*70)+"%";const k=.7+Math.random()*.6;r.style.width=150*k+"px";r.style.height=65*k+"px";r.style.animationDelay=(Math.random()*1.3)+"s";c.appendChild(r)}}
+  if(v==="v13"){c.classList.add("colis");c.appendChild(document.createElement("b"));c.appendChild(document.createElement("u"))}
   document.body.appendChild(c);setTimeout(()=>c.remove(),4000)}
 const ttlH=cos=>{const t=cos&&cos.t&&cosTitle(cos.t);return t?`<span class="ttl${cos.y&&cos.y!=="y0"?" ty-"+cos.y:""}">${esc(t)}</span>`:""};
 // finitions « mini-carte » (même métal, liserés et reflet que la carte de joueur) pour le haut des profils
@@ -1285,9 +1286,9 @@ const CARD_T=[[90,"LÉGENDE",["#2a0d5c","#7a3cff","#ffd23f"],"#ffe680"],[80,"ÉL
 // palettes « métal » par rang : fond (4 teintes), encre, liseré (3 teintes), holographique
 // textures dessinées par rang (images), posées sur la forme de la carte
 // bannières illustrées (une image 3:2 : bande pour le profil, centre pour la carte)
-const BN_TEX={b1:"bn/b1-c.webp?v=1",b2:"bn/b2-c.webp?v=1",b3:"bn/b3-c.webp?v=1",b4:"bn/b4-c.webp?v=1",b5:"bn/b5-c.webp?v=1",b6:"bn/b6-c.webp?v=1",b7:"bn/b7-c.webp?v=1",b8:"bn/b8-c.webp?v=1",b9:"bn/b9-c.webp?v=1",b10:"bn/b10-c.webp?v=1",b11:"bn/b11-c.webp?v=1",b12:"bn/b12-c.webp?v=1",b13:"bn/b13-c.webp?v=1",b14:"bn/b14-c.webp?v=1",b15:"bn/b15-c.webp?v=1",b16:"bn/b16-c.webp?v=1",b17:"bn/b17-c.webp?v=1",b18:"bn/b18-c.webp?v=1",b19:"bn/b19-c.webp?v=1",b22:"bn/b22-c.webp?v=1",b20:"bn/b20-c.webp?v=1",b21:"bn/b21-c.webp?v=1"};
+const BN_TEX={b1:"bn/b1-c.webp?v=1",b2:"bn/b2-c.webp?v=1",b3:"bn/b3-c.webp?v=1",b4:"bn/b4-c.webp?v=1",b5:"bn/b5-c.webp?v=1",b6:"bn/b6-c.webp?v=1",b7:"bn/b7-c.webp?v=1",b8:"bn/b8-c.webp?v=1",b9:"bn/b9-c.webp?v=1",b10:"bn/b10-c.webp?v=1",b11:"bn/b11-c.webp?v=1",b12:"bn/b12-c.webp?v=1",b13:"bn/b13-c.webp?v=1",b14:"bn/b14-c.webp?v=1",b15:"bn/b15-c.webp?v=1",b16:"bn/b16-c.webp?v=1",b17:"bn/b17-c.webp?v=1",b18:"bn/b18-c.webp?v=1",b19:"bn/b19-c.webp?v=1",b22:"bn/b22-c.webp?v=1",b20:"bn/b20-c.webp?v=1",b21:"bn/b21-c.webp?v=1",b23:"bn/b23-c.webp?v=1",b24:"bn/b24-c.webp?v=1",b25:"bn/b25-c.webp?v=1"};
 // étincelles sur la carte « Ma bannière » : 0 sobre, 1 quelques-unes, 2 beaucoup (bannières rares)
-const BN_FX={b20:1,b21:1,b5:1,b6:1,b7:1,b9:1,b12:1,b18:1,b19:1};
+const BN_FX={b20:1,b21:1,b23:1,b24:1,b25:1,b5:1,b6:1,b7:1,b9:1,b12:1,b18:1,b19:1};
 // encre adaptée quand la texture dessinée est sombre
 const CARD_INK={"BRONZE":"#ffe8cf","OR":"#fff3d0"};
 const CARD_TEX={"BRONZE":"card-bronze.webp?v=3","ARGENT":"card-argent.webp?v=1","OR":"card-or.webp?v=3","ÉLITE":"card-elite.webp?v=1","LÉGENDE":"card-legende.webp?v=1"};
@@ -1461,7 +1462,7 @@ const BN_COL={b1:["#0b2a17","#06140b","rgba(53,208,127,.4)","rgba(36,128,63,.4)"
   b13:["#2a0610","#06102a","rgba(179,18,43,.5)","rgba(18,64,179,.5)"],b14:["#2a1407","#0c0603","rgba(143,71,25,.5)","rgba(255,122,69,.3)"],
   b15:["#3a1a0a","#120804","rgba(199,91,43,.5)","rgba(255,255,255,.12)"],b16:["#3a2410","#120b04","rgba(196,139,71,.5)","rgba(255,210,63,.2)"],
   b17:["#0e3b28","#05120c","rgba(53,208,127,.4)","rgba(255,210,63,.3)"],b18:["#1a1033","#050308","rgba(143,134,255,.4)","rgba(232,226,255,.2)"],
-  b21:["#b8652a","#2a170a","rgba(255,208,138,.45)","rgba(194,122,58,.35)"],b20:["#b8652a","#2a170a","rgba(255,208,138,.45)","rgba(194,122,58,.35)"],b19:["#0b1d3a","#050b18","rgba(255,255,255,.3)","rgba(255,90,95,.3)"]};
+  b21:["#b8652a","#2a170a","rgba(255,208,138,.45)","rgba(194,122,58,.35)"],b20:["#b8652a","#2a170a","rgba(255,208,138,.45)","rgba(194,122,58,.35)"],b19:["#0b1d3a","#050b18","rgba(255,255,255,.3)","rgba(255,90,95,.3)"],b23:["#a8743f","#1a1208","rgba(255,200,120,.4)","rgba(53,208,127,.3)"],b24:["#a8743f","#1a1208","rgba(255,200,120,.4)","rgba(53,208,127,.3)"],b25:["#a8743f","#1a1208","rgba(255,200,120,.4)","rgba(53,208,127,.3)"]};
 async function ticketImage(b,link){
   const W=1080,legs=b.legs.slice(0,8),more=b.legs.length-legs.length,RH=128,tkH=110+legs.length*RH+(more?50:0)+60+190,H=Math.max(1350,560+tkH+230);
   const cv=document.createElement("canvas");cv.width=W;cv.height=H;const c=cv.getContext("2d");
@@ -2911,7 +2912,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.21";
+const VERSION="3.22";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
