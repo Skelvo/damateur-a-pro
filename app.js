@@ -2159,8 +2159,8 @@ function viewLm(code){const j=LM[code];if(!j)return"";const c=j.cur;let h="";
       ${j.month.length?`<div class="lmm">Ce mois : ${j.month.slice(0,4).map(x=>`<b>${esc(x.name)}</b> ${x.ok}/${x.n}`).join(" · ")}</div>`:""}
       ${j.hist.length?`<div class="lmhist">${j.hist.slice(0,4).map(e=>`<span class="${e.my==null||e.res==null?"":e.my===e.res?"ok":"ko"}">${esc(e.match.h)} ${e.match.sh??"–"}-${e.match.sa??"–"} ${esc(e.match.a)}</span>`).join("")}</div>`:""}</div>`}
   return h}
-// prono du week-end avec des matchs pas encore pronostiqués (pastille rouge sur l'onglet Pronos)
-function pronoTodo(){try{const j=U.pr&&U.pr.data;return!!(j&&j.matches&&j.matches.some(m=>m.t>Date.now()&&!m.my))}catch(e){return false}}
+// prono du week-end pas encore commencé du tout (pastille rouge sur l'onglet Pronos) : pas besoin de tout remplir
+function pronoTodo(){try{const j=U.pr&&U.pr.data;return!!(j&&j.matches&&!j.matches.some(m=>m.my)&&j.matches.some(m=>m.t>Date.now()))}catch(e){return false}}
 function lmBanner(){const L0=U.lg.data&&U.lg.data.leagues[0];if(!L0)return"";const j=LM[U.lg.code||L0.code];if(!j||!j.cur||j.cur.my!=null||j.cur.match.t<=Date.now())return"";const m=j.cur.match;
   return`<button class="prban lmban" data-act="lmgo">${ic("target")}<span><b>Match de la guilde</b><small>${esc(m.h)} – ${esc(m.a)} · ${esc(lmWhen(m.t))} · ${j.cur.picks.length} vote${j.cur.picks.length>1?"s":""}</small></span><span class="arr">›</span></button>`}
 
@@ -2456,7 +2456,7 @@ function pronoBanner(){const j=U.pr.data;if(!j||!j.matches.length||!(U.lg.data&&
 function viewProno(cur){const j=U.pr.data;if(!j){loadProno();return`<div class="skel"></div><div class="skel"></div>`}
   if(Date.now()-(U.pr.at||0)>6e4)setTimeout(loadProno,0);
   const now=Date.now(),pts=j.matches.reduce((a,m)=>a+(m.pts||0),0),jk=j.matches.find(m=>m.my&&m.my.joker);
-  let h=`<div class="prhead"><div><small>${esc(prDays(j))}</small><h3>Prono du week-end</h3><p>Devine les scores exacts. <b>5 pts</b> score exact · <b>3 pts</b> bon vainqueur et bon écart · <b>2 pts</b> bon vainqueur · <b>joker ×2</b>. 1 point = 10 jetons.</p></div><div class="prpts"><b>${pts}</b><small>pts</small></div></div>`;
+  let h=`<div class="prhead"><div><small>${esc(prDays(j))}</small><h3>Prono du week-end</h3><p>Devine les scores exacts. <b>5 pts</b> score exact · <b>3 pts</b> bon vainqueur et bon écart · <b>2 pts</b> bon vainqueur. 1 point = 10 jetons. Pas obligé de tout remplir.</p><p class="prjkx">⚡ <b>1 seul joker</b> par week-end : il double les points du match de ton choix. Tu peux le déplacer jusqu’au coup d’envoi.</p></div><div class="prpts"><b>${pts}</b><small>pts</small></div></div>`;
   if(j.board&&j.board.lastWin)h+=`<div class="champ">${ic("target")}<div><small>Prono d’or de la semaine dernière</small><b>${j.board.lastWin.names.map(esc).join(" · ")} <span class="pos">${j.board.lastWin.pts} pts</span></b></div></div>`;
   if(!j.matches.length)return h+`<div class="empty">${ic("ball")}<b>Pas encore de matchs</b>Les matchs du week-end arrivent bientôt.</div>`;
   let day="";
@@ -2467,7 +2467,7 @@ function viewProno(cur){const j=U.pr.data;if(!j){loadProno();return`<div class="
     const oth=j.board&&j.board.others&&j.board.others[m.mid];
     h+=`<div class="prm${my&&my.joker?" jk":""}"><div class="prtop"><span>${esc(lg)}</span><span>${open?fTime(m.t):m.done?"Terminé":"Commencé"}</span></div>
       <div class="prrow"><div class="prt">${crest(m.h,"foot",m.hl)}<b>${esc(m.h)}</b></div>${step("sh")}<span class="prsep">–</span>${step("sa")}<div class="prt r">${crest(m.a,"foot",m.al)}<b>${esc(m.a)}</b></div></div>
-      ${open?`<button class="prjk" data-act="prjk" data-mid="${esc(m.mid)}" aria-pressed="${!!(my&&my.joker)}">${ic("bolt")} ${my&&my.joker?"Joker ×2 sur ce match":"Mettre mon joker ici"}</button>`:my&&my.joker?`<div class="prjk on">${ic("bolt")} Joker ×2</div>`:""}
+      ${open?`<button class="prjk" data-act="prjk" data-mid="${esc(m.mid)}" aria-pressed="${!!(my&&my.joker)}">${ic("bolt")} ${my&&my.joker?"Joker ×2 sur ce match":jk?"Déplacer mon joker ici":"Mettre mon joker ici"}</button>`:my&&my.joker?`<div class="prjk on">${ic("bolt")} Joker ×2</div>`:""}
       ${!open&&!my?`<small class="mut">Tu n’as pas pronostiqué ce match.</small>`:""}${real}
       ${oth&&oth.length?`<div class="proth">${oth.map(o=>`<span>${esc(o.name)} <b>${o.sh}–${o.sa}</b>${o.joker?" ⚡":""}${o.pts!=null?` <i class="${o.pts?"pos":""}">${o.pts}</i>`:""}</span>`).join("")}</div>`:""}</div>`}
   if(j.board){const t=U.pr.tab,key=t==="week"?"week":"season",rows=j.board.rows.slice().sort((a,b)=>b[key]-a[key]||b.exact-a.exact);
@@ -2906,7 +2906,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.17";
+const VERSION="3.18";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
