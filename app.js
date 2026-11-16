@@ -1009,7 +1009,7 @@ function syncBody(){const o={...(S.rsOk?{reset_ok:1}:{}),name:S.name,bal:S.bal,p
 // NOUVELLE SAISON : le serveur a tout remis à zéro ; on efface le téléphone (on garde le compte, les réglages et les guildes) puis on relance
 const KEEPS=["v","name","tok","pid","rcode","rcodeOther","tosV","introSeen","push","remind","mute","socialOff","filter","igDone","fbDone","igNever","guideHide","coachDone","launches","bkAt","fav","favOk","chatSeen","recapSeen","newsSeen","refBy","sim","orgMode","org","map","blocked"];
 function seasonReset(j){if(!j||!j.reset)return false;const n={};for(const k of KEEPS)if(k in S)n[k]=S[k];
-  if(j.keep_av){n.avatar=S.avatar;n.avv=S.avv}Object.assign(n,{bal:1000,peak:1000,bets:[],master:1,rsOk:1,seasonMsg:1,bonus:"",org:n.org||[]});
+  n.avatar=S.avatar;n.avv=S.avv;if(j.keep_cos){n.cos=S.cos;n.cardOpt=S.cardOpt}Object.assign(n,{bal:1000,peak:1000,bets:[],master:1,rsOk:1,seasonMsg:1,bonus:"",org:n.org||[]});
   for(const k of Object.keys(S))delete S[k];Object.assign(S,n);saveLocal();setTimeout(()=>location.reload(),300);return true}
 function masterSync(j){if(!j||!j.master)return;const first=!S.master;S.master=1;if(S.legQ&&S.legQ.length)S.legQ=[];
   if(typeof j.bal==="number"&&Math.round(S.bal)!==j.bal){S.bal=j.bal;S.peak=Math.max(S.peak||0,j.peak||0,j.bal);saveLocal();const e=$("#bal");if(e)e.textContent=tok(S.bal);if(!U.open)render();else bump()}
@@ -2911,7 +2911,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.19";
+const VERSION="3.20";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

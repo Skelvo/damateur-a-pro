@@ -878,9 +878,9 @@ const ACTIONS = {
   async sync(s, b) {
     const p = await me(s, b.token);
     // nouvelle saison : tant que le téléphone n'a pas tout effacé, on ignore ce qu'il envoie (ancien solde, anciens paris)
-    const rp = (await s.query(`select reset_pending, avatar_v, avatar is not null as has_av from players where id = $1`, [p.id]))[0];
+    const rp = (await s.query(`select reset_pending, avatar_v, jsonb_array_length(coalesce(cos_grant, '[]'::jsonb)) > 0 as keep_cos from players where id = $1`, [p.id]))[0];
     if (rp && rp.reset_pending) {
-      if (!b.reset_ok) return { ok: true, reset: 1, keep_av: !!rp.has_av, av: rp.avatar_v || 0 };
+      if (!b.reset_ok) return { ok: true, reset: 1, keep_cos: !!rp.keep_cos, av: rp.avatar_v || 0 };
       await s.query(`update players set reset_pending = false where id = $1`, [p.id]);
     }
     let master = !!(await s.query(`select master from players where id = $1`, [p.id]))[0].master;
@@ -1891,11 +1891,10 @@ const ACTIONS = {
     return { before, after: done.map((d) => ({ id: d.id, cid: d.cid, status: d.status, pay: d.pay })) };
   },
   // NOUVELLE SAISON : tout le monde repart de zéro (jetons, niveau, styles, historique) ; les guildes restent.
-  // keep_av : joueurs qui gardent leur photo de profil.
+  // On garde : photos de profil, styles offerts (cos_grant : teckel, corbeau…) et le style porté par ceux qui en ont.
   async admin_season(s, b) {
     admin(b);
     if (b.confirm !== "SAISON") return { error: "confirm" };
-    const keep = (Array.isArray(b.keep_av) ? b.keep_av : []).map(Number).filter(Number.isInteger);
     const today = await parisDay(s);
     const del = ["shared_bets", "bets", "ledger", "gifts", "bal_hist", "profits", "weekly", "monthly", "month_prizes", "reactions", "activity", "settle_diff",
       "duel_entries", "duels", "dark_flags", "dark_stakes", "dark_bets", "battle_rewards", "battle_members", "battles", "picks", "audit_base"];
@@ -1905,10 +1904,8 @@ const ACTIONS = {
       (select 1 from jsonb_array_elements(w.matches) m where not coalesce((m->>'done')::boolean, false) and not coalesce((m->>'cancel')::boolean, false)) returning 1) select count(*)::int as c from d`))[0].c;
     n.lm_picks = (await s.query(`with d as (delete from lm_picks where day < $1 returning 1) select count(*)::int as c from d`, [today]))[0].c;
     n.players = (await s.query(`with u as (update players set bal = 1000, peak = 1000, won = 0, lost = 0, week = ${WEEK}, week_bal = 1000, month = ${MONTH}, month_bal = 1000,
-        bets = null, badges = null, backup = null, backup_at = null, wheel = null, xp_seed = 0, cos = null, cos_all = false, cos_grant = null,
-        master = true, master_at = now(), reset_pending = true,
-        avatar = case when id = any($1::bigint[]) then avatar else null end,
-        avatar_v = case when id = any($1::bigint[]) then avatar_v else avatar_v + 1 end returning 1) select count(*)::int as c from u`, [keep]))[0].c;
+        bets = null, badges = null, backup = null, backup_at = null, wheel = null, xp_seed = 0, cos = case when jsonb_array_length(coalesce(cos_grant, '[]'::jsonb)) > 0 then cos else null end, cos_all = false,
+        master = true, master_at = now(), reset_pending = true returning 1) select count(*)::int as c from u`))[0].c;
     await s.query(`insert into audit_base (player, bal) select id, 1000 from players on conflict do nothing`);
     await s.query(`insert into meta (key, value) values ('season', '1') on conflict (key) do update set value = (meta.value::int + 1)::text`);
     return { ok: true, n };
