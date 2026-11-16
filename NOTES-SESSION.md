@@ -36,6 +36,8 @@ Puis commit + push sur `main`, et vérifier `https://damateur-a-pro.vercel.app/v
 - Pas d'usage des logos de clubs dans des bannières ou styles (marques déposées).
 - Ne jamais committer de secret (clés Meta, clé admin…).
 
+- **v3.22 → v3.26** : pack exclusif « La Livraison » (`cos_grant` livraison : La Livraison + Axoo) ; badge « Exclusif » par pack ; couleurs Poil de feu / Kraft distinctes ; bouton « Tout passer » sur les animations ; filet de sécurité si app.css ne charge pas ; **écran « En direct »** (`viewLive`, bandeau rouge en haut de Matchs et Mes paris quand un match d'un ticket est en cours).
+
 ## Idées en attente
 - Paris sur un joueur : les ajouter à « Parier pareil » et leur donner un état en direct.
 - Bilan de la guilde le dimanche soir ; mini-classements (le plus précis, le plus fou, le chat noir).

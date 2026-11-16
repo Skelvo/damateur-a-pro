@@ -292,7 +292,7 @@ function ladder(){const cfg=SP[U.sp],now=Date.now();
     return`<button class="lvl${c?"":" zero"}" data-act="lv" data-lv="${l}" aria-pressed="${U.lv===l}"><span class="bars">${bars}</span><span>${esc(cfg.lv[l])}<em>${c?c+" match"+(c>1?"s":""):(cfg.feeds[l]&&FEED[U.sp+l]&&FEED[U.sp+l].ok===false?"Hors ligne":"—")}</em></span></button>`};
   return`<div class="ladder" id="ladder"><div class="tier"><small>Tous</small><div><button class="lvl star" data-act="lv" data-lv="-1" aria-pressed="${U.lv<0}">${ic("fire")}<span>À la une<em>Prochains</em></span></button></div></div>
     ${cfg.tiers.map(([t,ix])=>[t,ix.filter(l=>cfg.feeds[l])]).filter(([,ix])=>ix.length).map(([t,ix])=>`<div class="tier"><small>${t}</small><div>${ix.map(chip).join("")}</div></div>`).join("")}</div>`}
-function viewMatches(){setTimeout(crowdCounts,0);const cfg=SP[U.sp];let h=`<div class="sbar sbar5"><button style="--c:#ffd23f" data-act="sp" data-sp="all" aria-pressed="${U.sp==="all"}"><span class="ball allb">🔥</span><span>Tout</span></button>${Object.entries(SP).map(([k,s])=>`<button style="--c:${s.c}" data-act="sp" data-sp="${k}" aria-pressed="${U.sp===k}">${ballArt(k,"ball")}<span>${{foot:"Foot",basket:"NBA",tennis:"Tennis",rugby:"Rugby"}[k]||s.n}</span></button>`).join("")}</div>`;
+function viewMatches(){setTimeout(crowdCounts,0);const cfg=SP[U.sp];let h=liveBar()+`<div class="sbar sbar5"><button style="--c:#ffd23f" data-act="sp" data-sp="all" aria-pressed="${U.sp==="all"}"><span class="ball allb">🔥</span><span>Tout</span></button>${Object.entries(SP).map(([k,s])=>`<button style="--c:${s.c}" data-act="sp" data-sp="${k}" aria-pressed="${U.sp===k}">${ballArt(k,"ball")}<span>${{foot:"Foot",basket:"NBA",tennis:"Tennis",rugby:"Rugby"}[k]||s.n}</span></button>`).join("")}</div>`;
   if(U.ev){const e=EVENTS.find(x=>x.id===U.ev);if(e)return h+viewEvent(e)+foot();U.ev=null}
   if(U.sp==="all")return h+todayRow()+viewAll()+foot();
   h+=todayRow()+ladder();
@@ -479,11 +479,11 @@ function legWhen(L){const m=L.mid&&findMatch(L.mid),t=(m&&m.t)||L.t;if(!t)return
   return`<small class="lw">📅 ${esc(fShort(t))} à ${fTime(t)}</small>`}
 function legStatus(L){if(L.r==="w")return`<span class="st w">✓</span>`;if(L.r==="l")return`<span class="st l">✗</span>`;if(L.r==="v")return`<span class="st v">↺</span>`;
   const ll=liveLeg(L,L.mid&&findMatch(L.mid));return ll?`<span class="st p ls-${ll.c}">${ll.c==="sure"?"✓":ll.c==="dead"?"✗":""}</span>`:`<span class="st p"></span>`}
-function viewBets(){const B=S.bets.slice().reverse(),op=B.filter(b=>b.st==="open"),cl_=B.filter(b=>b.st!=="open");
+function viewBets(){const B=S.bets.slice().reverse(),op=B.filter(b=>b.st==="open"),cl_=B.filter(b=>b.st!=="open");const LB=liveBar();
   const W=cl_.filter(b=>b.st==="won").length,Lo=cl_.filter(b=>b.st==="lost").length,rate=W+Lo?W/(W+Lo):0;
   const net=cl_.reduce((a,b)=>a+(b.st==="won"||b.st==="cashed"?b.pay-b.stake:b.st==="lost"?-b.stake:0),0);
   const C=2*Math.PI*34;
-  let h=`<div class="h2"><h2>Mes paris</h2><span>${tok(S.bets.length)} au total</span></div>
+  let h=LB+`<div class="h2"><h2>Mes paris</h2><span>${tok(S.bets.length)} au total</span></div>
   <div class="kpis"><svg class="ring" viewBox="0 0 84 84"><circle cx="42" cy="42" r="34" fill="none" stroke="var(--line)" stroke-width="8"/>
     <circle cx="42" cy="42" r="34" fill="none" stroke="var(--acc)" stroke-width="8" stroke-linecap="${rate?"round":"butt"}" stroke-dasharray="${C*rate} ${C}" transform="rotate(-90 42 42)"/>
     <text x="42" y="49" text-anchor="middle">${Math.round(rate*100)}%</text></svg>
@@ -617,12 +617,12 @@ function layer(html){clearTimeout(pendT);const was=!!$("#layer").innerHTML,bs=do
 function openDetail(id,keepScroll){const m=findMatch(id);if(!m)return;if(!keepScroll){loadCrowd(id);U.pside=0;U.pmore=false;loadLineup(m).then(()=>{if(m.lineup&&U.open===id)refreshLayer()})}const sc=keepScroll&&$(".sheet")?$(".sheet").scrollTop:0;U.open=id;layer(viewDetail(m));if(sc)$(".sheet").scrollTop=sc;renderSlipBar()}
 function closeLayer(){U.open=null;layer("");render()}
 function refreshLayer(){if(!U.open)return;const sc=$(".sheet")?$(".sheet").scrollTop:0;
-  if(U.open==="slip")layer(viewSlip());else if(U.open==="add")return;else if(U.open.startsWith("res:"))return;else if(U.open==="welcome")return;else{const m=findMatch(U.open);if(m)layer(viewDetail(m))}
+  if(U.open==="slip")layer(viewSlip());else if(U.open==="live")layer(viewLive());else if(U.open==="add")return;else if(U.open.startsWith("res:"))return;else if(U.open==="welcome")return;else{const m=findMatch(U.open);if(m)layer(viewDetail(m))}
   if($(".sheet"))$(".sheet").scrollTop=sc}
 
 /* ---------- rendu global ---------- */
 function render(){if(window.__gate)return;   // page d'installation : on ne dessine jamais le jeu dans le navigateur
-  if(U.tab==="m"&&S.name&&!U.open)loadGuide();if(U.open&&U.open.startsWith("td:")){const v=U.open.slice(3),h=viewToday(v);if(h)layer(h)}document.body.dataset.sp=SP[U.sp]?U.sp:"foot";document.body.classList.toggle("darkside",U.tab==="l"&&!!U.dark);$("#bal").textContent=tok(S.bal);{const st=pushState(),bd=$("#belldot"),bl=$("#bell");if(bd)bd.hidden=st==="on"||st==="na"&&!(IOS&&!STANDALONE);if(bl)bl.classList.toggle("on",st==="on")}
+  if(U.tab==="m"&&S.name&&!U.open)loadGuide();if(U.open&&U.open.startsWith("td:")){const v=U.open.slice(3),h=viewToday(v);if(h)layer(h)}if(U.open==="live")layer(viewLive());document.body.dataset.sp=SP[U.sp]?U.sp:"foot";document.body.classList.toggle("darkside",U.tab==="l"&&!!U.dark);$("#bal").textContent=tok(S.bal);{const st=pushState(),bd=$("#belldot"),bl=$("#bell");if(bd)bd.hidden=st==="on"||st==="na"&&!(IOS&&!STANDALONE);if(bl)bl.classList.toggle("on",st==="on")}
   $("#hello").innerHTML=S.name?`<span class="hi">Salut </span>${esc(S.name)}<span class="dv"> · ${esc(myLv().tier)} niv. ${myLv().lvl}</span>`:"Paris gratuits · du district aux pros";
   document.querySelectorAll(".nav button").forEach(b=>b.dataset.tab===U.tab?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
   const op=S.bets.filter(b=>b.st==="open").length,nb=$("#nb");nb.hidden=!op;nb.textContent=op;
@@ -827,6 +827,8 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"sp":U.sp=d.sp;U.lv=-1;U.dep="";U.ev=null;render();if(SP[d.sp])loadSport(d.sp);break;
     case"lv":U.lv=+d.lv;render();break;
     case"open":U.dtab="p";openDetail(d.mid);break;
+    case"live":U.open="live";U.lvi=0;layer(viewLive());break;
+    case"lvi":U.lvi=+d.i;layer(viewLive());break;
     case"close":closeLayer();break;
     case"legal":openLegal();break;
     case"help":openHelp();break;
@@ -1201,6 +1203,41 @@ async function shareMonth(){toast("Préparation de l’image…");try{const{blob
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="mon-mois-tribune.png";document.body.appendChild(a);a.click();a.remove();toast("Image enregistrée.","win")}
   catch(e){toast("Impossible de créer l’image.","bad")}}
 
+
+/* ---------- écran « En direct » : mes matchs en cours, l'état de mes tickets et le fil du match ---------- */
+function liveMatches(){const ids=new Set();for(const b of S.bets)if(b.st==="open")for(const L of b.legs)if(!L.r)ids.add(L.mid);
+  return[...ids].map(id=>findMatch(id)).filter(m=>m&&(status(m)==="live"||(ghostLive(m)&&!ghostLive(m).done))).sort((a,b)=>a.t-b.t)}
+function liveBar(){let L=[];try{L=liveMatches()}catch(e){}if(!L.length)return"";
+  return`<button class="livebar" data-act="live"><span class="ldot"></span><b>EN DIRECT</b><span>${L.length} match${L.length>1?"s":""} de tes tickets</span><span class="arr">›</span></button>`}
+function legLiveState(L){const m=findMatch(L.mid);if(L.r==="w")return{c:"sure",t:"✅ Gagné"};if(L.r==="l")return{c:"dead",t:"❌ Perdu"};if(L.r==="v")return{c:"sure",t:"↺ Remboursé"};
+  const ll=liveLeg(L,m);if(ll)return ll;const gl=ghostLive(m);if(m&&status(m)==="pre"&&!gl)return{c:"pre",t:"📅 "+fTime(m.t)};
+  if(m&&status(m)==="post")return{c:"wait",t:"🏁 Terminé, résultat attendu"};return{c:"wait",t:gl?gl.t:"⏳ En cours"}}
+function ticketLive(b){const R=b.legs.map(L=>({L,s:legLiveState(L)}));const dead=R.some(x=>x.s.c==="dead"),ko=R.some(x=>x.s.c==="ko"),
+  good=R.every(x=>x.s.c==="ok"||x.s.c==="sure"),ok=R.filter(x=>x.s.c==="ok"||x.s.c==="sure").length,pot=Math.round(b.stake*b.odds);
+  const head=dead?`<span class="tlv dead">❌ Raté</span>`:good?`<span class="tlv ok">✅ Ça passe pour l’instant</span>`:ko?`<span class="tlv ko">⚠️ En danger</span>`:`<span class="tlv wait">⏳ En attente</span>`;
+  return`<div class="lvt${dead?" dead":good?" good":""}"><div class="lvtt">${head}<span class="lvc">${ok}/${R.length}</span></div>
+    ${R.map(({L,s})=>`<div class="lvl"><div><b>${esc(L.l)}</b><small>${esc(L.ml||"")}</small></div><span class="ll ll-${s.c}">${s.t}</span></div>`).join("")}
+    <div class="lvpot"><span>Mise ${tok(b.stake)}</span><span>${dead?"Perdu":`Gain si ça tient <b>+${tok(pot)}</b>`}</span></div></div>`}
+function liveFeed(m,mine){if(m.sp!=="foot"||!Array.isArray(m.ev)||!m.ev.length)return"";const E={g:"⚽",og:"⚽",yc:"🟨",rc:"🟥",pk:"🎯"},N={g:"But",og:"Contre son camp",yc:"Carton jaune",rc:"Carton rouge",pk:"Penalty"};
+  const L=m.ev.filter(e=>E[e.ty]).slice().sort((a,b)=>(parseInt(b.min)||0)-(parseInt(a.min)||0)),res=mine.filter(x=>x.mk==="res"||x.mk==="1x2"||x.mk==="win");
+  if(!L.length)return"";
+  return`<div class="h3t">Fil du match</div><div class="lvf">${L.map(e=>{const tm=e.s==null?"":e.s?m.a:m.h;let imp="";
+    if((e.ty==="g"||e.ty==="og")&&tm){for(const x of mine){if(x.l===tm){imp=`<i class="imp ok">👍 Bon pour ton ticket</i>`;break}if(x.l===(tm===m.h?m.a:m.h)){imp=`<i class="imp ko">😬 Pas bon pour ton ticket</i>`;break}}}
+    return`<div class="lvfe"><span class="tm">${esc(String(e.min||""))}’</span><span class="ic">${E[e.ty]}</span><div><b>${esc(e.n||N[e.ty])}</b><small>${N[e.ty]}${tm?(e.ty==="og"?" · pour ":" · ")+esc(tm):""}</small>${imp}</div></div>`}).join("")}</div>`}
+function viewLive(){const x=`<button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button>`,M=liveMatches();
+  let h=`<div class="grab"><h3><span class="ldot"></span> En direct</h3>${x}</div>`;
+  if(!M.length)return h+`<div class="empty">📺<b>Aucun de tes matchs n’est en cours</b>L’écran se remplira tout seul au coup d’envoi.</div>`;
+  if(U.lvi==null||U.lvi>=M.length)U.lvi=0;
+  if(M.length>1)h+=`<div class="lvtabs">${M.map((m,i)=>{const I=status(m)==="live"?liveInfo(m):null;return`<button data-act="lvi" data-i="${i}" aria-pressed="${i===U.lvi}">${esc(m.h)} ${I&&I.sc?`<b>${I.sc[0]}–${I.sc[1]}</b>`:"·"} ${esc(m.a)}</button>`}).join("")}</div>`;
+  const m=M[U.lvi],live=status(m)==="live",I=live?liveInfo(m):null,gl=live?null:ghostLive(m),el=Math.max(0,(Date.now()-m.t)/6e4),dur=(SP[m.sp]&&SP[m.sp].dur)||100;
+  const pct=Math.min(100,Math.round(100*el/(dur+(m.sp==="foot"?17:m.sp==="rugby"?15:0))));
+  h+=`<div class="lvm" data-act="open" data-mid="${esc(m.id)}"><div class="lvh">${crest(m.h,m.sp,m.hl,m.hf)}<div class="lvsc">${I&&I.sc?`<b>${I.sc[0]} – ${I.sc[1]}</b>`:`<b class="mut">– : –</b>`}<small>${live?"🔴 "+esc(I.clock||"En direct"):esc(gl?gl.t:"")}</small></div>${crest(m.a,m.sp,m.al,m.af)}</div>
+    <div class="lvn"><span>${esc(m.h)}</span><span>${esc(m.a)}</span></div><div class="lvbar"><i style="width:${pct}%"></i></div>${tvChip(m)||""}<small class="lvmore">Toucher pour les stats du match ›</small></div>`;
+  const B=S.bets.filter(b=>b.st==="open"&&b.legs.some(L=>L.mid===m.id)),mine=B.flatMap(b=>b.legs.filter(L=>L.mid===m.id));
+  h+=`<div class="h3t">Tes tickets sur ce match</div>${B.map(ticketLive).join("")}`;
+  h+=liveFeed(m,mine)||(gl?`<p class="mut lvnote">Pas de direct détaillé pour ce match : le score arrivera à la fin.</p>`:"");
+  return h}
+setInterval(()=>{if(U.open==="live"&&!document.hidden)refreshLayer()},30000);
 /* ---------- animations en direct : but, carton, essai… quand il se passe quelque chose dans un match qui te concerne ---------- */
 const FLASH={},FXQ=[];let fxOn=false;
 const fxMine=m=>U.open===m.id||S.bets.some(b=>b.st==="open"&&b.legs.some(L=>L.mid===m.id))||!!(S.fav&&(String(m.hid)===String(S.fav.id)||String(m.aid)===String(S.fav.id)));
@@ -1263,7 +1300,7 @@ function viewStyle(){const j=U.cosD,E=U.cosEdit,un=new Set(j.unlocked),T=U.cosTa
     <button class="btn gold wide" data-act="fav">❤️ ${S.fav?"Changer d’équipe":"Choisir mon équipe"}</button>${S.fav?`<button class="link" data-act="favnone" style="display:block;margin:10px auto 0">Retirer mon équipe de cœur</button>`:""}</div>`:""}
   ${T==="v"?`<p class="note" style="text-align:left">L’animation qui se lance quand un de tes paris passe. Touche un effet débloqué pour le voir.</p>`:T==="y"?`<p class="note" style="text-align:left">La couleur de ton titre (choisis aussi un titre dans 🏷️ Titres).</p>`:""}
   <div class="stgrid ${T}">${items.map(x=>`<button class="sti${x.ok?"":" lock"}${E[T]===x.id?" on":""}" data-act="stpick" data-v="${esc(x.id)}" ${x.ok?"":"aria-disabled=\"true\""}>
-    ${T==="b"?`<span class="stsw bnr bn-${x.id}"></span>`:T==="c"?`<span class="stc nc-${x.id}">Aa</span>`:T==="f"?avatar(S.pid||"me",S.name||"?",S.avv,"av stav"+(x.id!=="f0"?" fr-"+x.id:""),true):T==="e"?`<span class="ste${x.pk==="corbeau"?" raven":""}">${x.id==="e0"?"∅":esc(x.n.split(" ")[0])}</span>`:T==="v"?`<span class="ste${x.pk==="corbeau"?" raven":""}">${x.id==="v0"?"🎊":esc(x.n.split(" ")[0])}</span>`:T==="y"?`<span class="ttl${x.id!=="y0"?" ty-"+x.id:""}">${esc(cosTitle(E.t&&E.t!=="t0"?E.t:"t2"))}</span>`:""}${x.sec?x.pk==="teckel"?`<span class="stsec tk">🐕 Exclusif</span>`:`<span class="stsec">🐦‍⬛ Exclusif</span>`:""}${COS_SEASON[(COS.find(y=>y[0]===x.id)||[])[3]]?`<span class="stsea">${COS_SEASON[COS.find(y=>y[0]===x.id)[3]]}</span>`:""}<b>${esc(T==="e"&&x.id!=="e0"?x.n.split(" ").slice(1).join(" "):T==="v"&&x.id!=="v0"?x.n.split(" ").slice(1).join(" "):x.n)}</b>${x.ok?"":`<small>🔒 ${esc(x.d)}</small>`}</button>`).join("")}</div>
+    ${T==="b"?`<span class="stsw bnr bn-${x.id}"></span>`:T==="c"?`<span class="stc nc-${x.id}">Aa</span>`:T==="f"?avatar(S.pid||"me",S.name||"?",S.avv,"av stav"+(x.id!=="f0"?" fr-"+x.id:""),true):T==="e"?`<span class="ste${x.pk==="corbeau"?" raven":""}">${x.id==="e0"?"∅":esc(x.n.split(" ")[0])}</span>`:T==="v"?`<span class="ste${x.pk==="corbeau"?" raven":""}">${x.id==="v0"?"🎊":esc(x.n.split(" ")[0])}</span>`:T==="y"?`<span class="ttl${x.id!=="y0"?" ty-"+x.id:""}">${esc(cosTitle(E.t&&E.t!=="t0"?E.t:"t2"))}</span>`:""}${x.sec?(k=>`<span class="stsec ${k[0]}">${k[1]} Exclusif</span>`)({teckel:["tk","🐕"],livraison:["lv","📦"],concours:["cc","🏆"]}[x.pk]||["","🐦‍⬛"]):""}${COS_SEASON[(COS.find(y=>y[0]===x.id)||[])[3]]?`<span class="stsea">${COS_SEASON[COS.find(y=>y[0]===x.id)[3]]}</span>`:""}<b>${esc(T==="e"&&x.id!=="e0"?x.n.split(" ").slice(1).join(" "):T==="v"&&x.id!=="v0"?x.n.split(" ").slice(1).join(" "):x.n)}</b>${x.ok?"":`<small>🔒 ${esc(x.d)}</small>`}</button>`).join("")}</div>
   <button class="btn gold wide" data-act="stsave" style="margin-top:12px">Enregistrer mon style</button>
   <p class="note">Ton style se voit sur ton profil, dans les classements et dans le chat. Tout se débloque en jouant : rien ne s’achète.</p>`}
 // réaffiche l'éditeur sans perdre la position des onglets ni de la liste
@@ -2914,7 +2951,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.25";
+const VERSION="3.26";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
