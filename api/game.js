@@ -334,7 +334,7 @@ async function reminders(s, slot) {
     }
     const fm = p.fav && slot === "midi" ? M.find((m) => m.hid === p.fav.id || m.aid === p.fav.id) : null;
     if (!msg && fm) msg = { title: `❤️ ${p.fav.name} joue aujourd'hui`, body: `${fm.h} – ${fm.a} à ${hhmm(fm.t)}. Tu paries sur ton équipe ?`, url: "./", tag: "remind-fav" };
-    if (!msg && lm && lm.cur && lm.cur.day === t.ymd && lm.cur.match.t > now + 20 * 60e3 && !(await s.query(`select 1 from lm_picks where day = $1 and player = $2`, [lm.cur.day, p.id]))[0]) {
+    if (!msg && lm && lm.cur && lm.cur.day.startsWith(t.ymd) && lm.cur.match.t > now + 20 * 60e3 && !(await s.query(`select 1 from lm_picks where day = $1 and player = $2`, [lm.cur.day, p.id]))[0]) {
       const lg = (await s.query(`select m.code, (select count(*)::int from lm_picks x join league_members m2 on m2.player = x.player and m2.code = m.code where x.day = $2) as n
           from league_members m where m.player = $1 and m.code not in (select code from leagues where dark) order by m.joined_at limit 1`, [p.id, lm.cur.day]))[0];
       if (lg) msg = { title: "⚽ Match de la guilde", body: `${lm.cur.match.h} – ${lm.cur.match.a} à ${hhmm(lm.cur.match.t)}. ${lg.n ? `${lg.n} collègue${lg.n > 1 ? "s ont" : " a"} déjà voté` : "Personne n'a encore voté"}, et toi ? Bonne réponse = +${LM_PRIZE} jetons.`, url: go("prono", lg.code), tag: "remind-lm" };
@@ -374,17 +374,23 @@ async function dayMatch(s) {
   const t = (await s.query(`select to_char(now() at time zone 'Europe/Paris', 'YYYYMMDD') as d,
       extract(epoch from (date_trunc('day', now() at time zone 'Europe/Paris') at time zone 'Europe/Paris')) * 1000 as sod`))[0];
   const sod = Math.round(Number(t.sod));
-  let cur = (await s.query(`select day, match, extract(epoch from updated_at) * 1000 as up from day_match where day >= $1 and match is not null order by day limit 1`, [t.d]))[0];
-  if (!cur && !(await s.query(`select 1 from day_match where day = $1`, [t.d]))[0]) {
-    // pas encore choisi : aujourd'hui, sinon le prochain jour avec des matchs (5 jours au plus) ; les jours vides sont notés
+  // match en cours de vote : le premier pas encore terminé (dès qu'un match est fini, on passe au suivant)
+  const pickCur = async () => (await s.query(`select day, match from day_match where day >= $1 and match is not null
+      and (match->>'done')::boolean is not true and (match->>'cancel')::boolean is not true order by day limit 1`, [t.d]))[0];
+  let cur = await pickCur();
+  if (!cur) {
+    // on prépare les jours suivants (5 au plus) jusqu'à trouver un match ; le week-end : un match l'après-midi et un le soir
     for (let i = 0; i < 6 && !cur; i++) {
-      const from = sod + i * 864e5, ymd = new Date(from + 12 * 3600e3).toLocaleDateString("sv-SE", { timeZone: "Europe/Paris" }).replace(/-/g, "");
-      if ((await s.query(`select 1 from day_match where day = $1`, [ymd]))[0]) break;
-      const m = await bestOfDay(ymd, from, from + 864e5);
-      await s.query(`insert into day_match (day, match) values ($1, $2::jsonb) on conflict (day) do nothing`, [ymd, m ? JSON.stringify(m) : null]);
-      if (m) cur = { day: ymd, match: m, up: Date.now() };
+      const from = sod + i * 864e5, mid = new Date(from + 12 * 3600e3), ymd = mid.toLocaleDateString("sv-SE", { timeZone: "Europe/Paris" }).replace(/-/g, "");
+      const we = ["Sat", "Sun"].includes(mid.toLocaleDateString("en-GB", { weekday: "short", timeZone: "Europe/Paris" }));
+      const slots = we ? [[ymd, from, from + 18 * 3600e3], [ymd + "s", from + 18 * 3600e3, from + 864e5]] : [[ymd, from, from + 864e5]];
+      for (const [key, a, z] of slots) {
+        if ((await s.query(`select 1 from day_match where day = $1`, [key]))[0]) continue;
+        const m = await bestOfDay(ymd, a, z);
+        await s.query(`insert into day_match (day, match) values ($1, $2::jsonb) on conflict (day) do nothing`, [key, m ? JSON.stringify(m) : null]);
+      }
+      cur = await pickCur();
     }
-    if (!cur) cur = (await s.query(`select day, match, extract(epoch from updated_at) * 1000 as up from day_match where day >= $1 and match is not null order by day limit 1`, [t.d]))[0];
   }
   // matchs commencés et pas finis (celui du jour et ceux d'avant) : score rafraîchi toutes les 3 min
   const open = await s.query(`select day, match from day_match where match is not null and day >= to_char(now() - interval '8 days', 'YYYYMMDD')
@@ -395,6 +401,7 @@ async function dayMatch(s) {
     const changed = await refreshResults(M).catch(() => false);
     for (const r of started) await s.query(`update day_match set match = $2::jsonb, updated_at = now() where day = $1`, [r.day, JSON.stringify(r.match)]);
     if (changed && cur) { const c = started.find((r) => r.day === cur.day); if (c) cur.match = c.match; }
+    if (changed && cur && cur.match.done) cur = await pickCur();
   }
   return { today: t.d, cur: cur ? { day: cur.day, match: cur.match } : null };
 }
@@ -2405,7 +2412,7 @@ const ACTIONS = {
       const res = outcome(d.match), P = byDay[d.day] || [];
       if (d.day.startsWith(month) && res != null) for (const x of P) { const T = (tally[x.player] ??= { ok: 0, n: 0 }); T.n++; if (x.pick === res) T.ok++; }
       if (cur && d.day === cur.day) continue;
-      if (hist.length < 7 && d.day < today) {
+      if (hist.length < 7 && (d.day < today || d.match.done)) {
         const my = P.find((x) => String(x.player) === String(p.id));
         hist.push({ day: d.day, match: pub(d.match), res, my: my ? my.pick : null, n: P.length, ok: res == null ? 0 : P.filter((x) => x.pick === res).length });
       }
