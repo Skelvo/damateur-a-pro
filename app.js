@@ -829,7 +829,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"sp":U.sp=d.sp;U.lv=-1;U.dep="";U.ev=null;render();if(SP[d.sp])loadSport(d.sp);break;
     case"lv":U.lv=+d.lv;render();break;
     case"open":U.dtab="p";openDetail(d.mid);break;
-    case"live":U.open="live";U.lvi=0;layer(viewLive());break;
+    case"live":U.open="live";U.lvi=0;U.lvAnim=0;layer(viewLive());U.lvAnim=1;break;
     case"lvi":U.lvi=+d.i;layer(viewLive());break;
     case"close":closeLayer();break;
     case"legal":openLegal();break;
@@ -1225,7 +1225,8 @@ function liveFeed(m,mine){if(m.sp!=="foot"||!Array.isArray(m.ev)||!m.ev.length)r
   if(!L.length)return"";
   return`<div class="h3t">Fil du match</div><div class="lvf">${L.map(e=>{const tm=e.s==null?"":e.s?m.a:m.h;let imp="";
     if((e.ty==="g"||e.ty==="og")&&tm){for(const x of mine){if(x.l===tm){imp=`<i class="imp ok">👍 Bon pour ton ticket</i>`;break}if(x.l===(tm===m.h?m.a:m.h)){imp=`<i class="imp ko">😬 Pas bon pour ton ticket</i>`;break}}}
-    return`<div class="lvfe"><span class="tm">${esc(String(e.min||""))}’</span><span class="ic">${E[e.ty]}</span><div><b>${esc(e.n||N[e.ty])}</b><small>${N[e.ty]}${tm?(e.ty==="og"?" · pour ":" · ")+esc(tm):""}</small>${imp}</div></div>`}).join("")}</div>`}
+    const k=m.id+"|"+e.ty+"|"+e.id+"|"+e.min,nw=!(U.lvSeen||(U.lvSeen=new Set())).has(k);U.lvSeen.add(k);
+    return`<div class="lvfe ${e.s===1?"aw":"hm"} t-${e.ty}${nw&&U.lvAnim?" new":""}"><span class="tm">${esc(String(e.min||""))}’</span><span class="ic">${E[e.ty]}</span><div><b>${esc(e.n||N[e.ty])}</b><small>${N[e.ty]}${tm?(e.ty==="og"?" · pour ":" · ")+esc(tm):""}</small>${imp}</div></div>`}).join("")}</div>`}
 function viewLive(){const x=`<button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button>`,M=liveMatches();
   let h=`<div class="grab"><h3><span class="ldot"></span> En direct</h3>${x}</div>`;
   if(!M.length)return h+`<div class="empty">📺<b>Aucun de tes matchs n’est en cours</b>L’écran se remplira tout seul au coup d’envoi.</div>`;
@@ -1233,8 +1234,15 @@ function viewLive(){const x=`<button class="x" data-act="close" aria-label="Ferm
   if(M.length>1)h+=`<div class="lvtabs">${M.map((m,i)=>{const I=status(m)==="live"?liveInfo(m):null;return`<button data-act="lvi" data-i="${i}" aria-pressed="${i===U.lvi}">${esc(m.h)} ${I&&I.sc?`<b>${I.sc[0]}–${I.sc[1]}</b>`:"·"} ${esc(m.a)}</button>`}).join("")}</div>`;
   const m=M[U.lvi],live=status(m)==="live",I=live?liveInfo(m):null,gl=live?null:ghostLive(m),el=Math.max(0,(Date.now()-m.t)/6e4),dur=(SP[m.sp]&&SP[m.sp].dur)||100;
   const pct=Math.min(100,Math.round(100*el/(dur+(m.sp==="foot"?17:m.sp==="rugby"?15:0))));
-  h+=`<div class="lvm" data-act="open" data-mid="${esc(m.id)}"><div class="lvh">${crest(m.h,m.sp,m.hl,m.hf)}<div class="lvsc">${I&&I.sc?`<b>${I.sc[0]} – ${I.sc[1]}</b>`:`<b class="mut">– : –</b>`}<small>${live?"🔴 "+esc(I.clock||"En direct"):esc(gl?gl.t:"")}</small></div>${crest(m.a,m.sp,m.al,m.af)}</div>
-    <div class="lvn"><span>${esc(m.h)}</span><span>${esc(m.a)}</span></div><div class="lvbar"><i style="width:${pct}%"></i></div>${tvChip(m)||""}<small class="lvmore">Toucher pour les stats du match ›</small></div>`;
+  const EV=(m.sp==="foot"&&Array.isArray(m.ev)?m.ev:[]).filter(e=>["g","og","yc","rc"].includes(e.ty)),EI={g:"⚽",og:"⚽",yc:"🟨",rc:"🟥"},EN={g:"BUT !",og:"CONTRE SON CAMP",yc:"CARTON JAUNE",rc:"CARTON ROUGE"};
+  const last=EV.slice().sort((a,b)=>(parseInt(b.min)||0)-(parseInt(a.min)||0))[0],lk=last?m.id+"|"+last.ty+"|"+last.id+"|"+last.min:"",fresh=last&&U.lvLast!==lk;U.lvLast=lk;
+  const scK=I&&I.sc?m.id+":"+I.sc.join("-"):"",scNew=scK&&U.lvSc&&U.lvSc!==scK&&U.lvSc.split(":")[0]===m.id;U.lvSc=scK;
+  const tot=m.sp==="foot"?95:m.sp==="rugby"?82:100;
+  h+=`<div class="lvm pitch sp-${m.sp}" data-act="open" data-mid="${esc(m.id)}"><div class="lvlive">${live?`<span class="ldot"></span> ${esc(I.clock||"EN DIRECT")}`:esc(gl?gl.t:"")}</div>
+    <div class="lvh"><div class="lvteam">${crest(m.h,m.sp,m.hl,m.hf)}<span>${esc(m.h)}</span></div><div class="lvsc${scNew?" pop":""}">${I&&I.sc?`<b>${I.sc[0]}<i>–</i>${I.sc[1]}</b>`:`<b class="mut">–<i>:</i>–</b>`}</div><div class="lvteam">${crest(m.a,m.sp,m.al,m.af)}<span>${esc(m.a)}</span></div></div>
+    ${last?`<div class="lvspot ${last.s===1?"aw":"hm"} t-${last.ty}${fresh&&U.lvAnim?" new":""}"><span class="ic">${EI[last.ty]}</span><div><b>${EN[last.ty]}</b><small>${esc(last.n||"")} · ${esc(String(last.min))}’${last.s!=null?" · "+(last.ty==="og"?"pour ":"")+esc(last.s?m.a:m.h):""}</small></div></div>`:""}
+    <div class="lvfrise"><div class="lvbar"><i style="width:${pct}%"></i></div>${EV.map(e=>`<span class="fe ${e.s===1?"aw":"hm"}" style="left:${Math.min(100,100*(parseInt(e.min)||0)/tot)}%">${EI[e.ty]}</span>`).join("")}<span class="ht" style="left:${100*45/tot}%"></span></div>
+    ${tvChip(m)||""}<small class="lvmore">Toucher pour les stats du match ›</small></div>`;
   const B=S.bets.filter(b=>b.st==="open"&&b.legs.some(L=>L.mid===m.id)),mine=B.flatMap(b=>b.legs.filter(L=>L.mid===m.id));
   h+=`<div class="h3t">Tes tickets sur ce match</div>${B.map(ticketLive).join("")}`;
   h+=liveFeed(m,mine)||(gl?`<p class="mut lvnote">Pas de direct détaillé pour ce match : le score arrivera à la fin.</p>`:"");
@@ -2953,7 +2961,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.27";
+const VERSION="3.28";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
