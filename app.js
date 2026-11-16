@@ -38,6 +38,8 @@ const RK=[["NC","40","30/5","30/4","30/3"],["30/2","30/1","30","15/5","15/4"],["
 
 /* ---------- état ---------- */
 const LS="dap.v2";
+// filet de sécurité : si la feuille de style ne s'est pas chargée (réseau coupé pendant une mise à jour), on la recharge directement
+setTimeout(function cssGuard(n){try{if(getComputedStyle(document.documentElement).getPropertyValue("--cssok").trim())return;const l=document.createElement("link");l.rel="stylesheet";l.href="app.css?v="+(typeof VERSION!=="undefined"?VERSION:"x")+"&r="+Date.now();document.head.appendChild(l);if((n||0)<3)setTimeout(()=>cssGuard((n||0)+1),4000)}catch(e){}},2500);
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(LS));if(x&&x.v===2)return x}catch(e){}return{v:2,name:"",bal:1000,peak:1000,bonus:"",bets:[],org:[],orgMode:false,sim:true,seen:0}})();
 let GONE=false;   // compte supprimé : plus rien n’est réécrit sur le téléphone
 const saveLocal=()=>{if(GONE)return;try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}};
@@ -2912,7 +2914,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.22";
+const VERSION="3.23";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

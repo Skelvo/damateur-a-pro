@@ -1157,3 +1157,6 @@ body:has(#layer .sheet) .toasts{top:calc(150px + var(--safe-t))}
 .erain.colis u{position:absolute;left:50%;top:38%;width:min(52vw,240px);aspect-ratio:1;margin:calc(min(52vw,240px)/-2) 0 0 calc(min(52vw,240px)/-2);background:url("livr-tampon.webp?v=1") center/contain no-repeat;opacity:0;animation:lvstamp 2.2s 1s ease-out forwards}
 @keyframes lvdrive{to{transform:translateX(calc(100vw + 10%))}}
 @keyframes lvstamp{0%{opacity:0;transform:scale(2.4) rotate(-24deg)}18%{opacity:1;transform:scale(.92) rotate(-12deg)}26%{transform:scale(1) rotate(-12deg)}80%{opacity:1}100%{opacity:0;transform:scale(1) rotate(-12deg)}}
+
+/* repère : la feuille de style est chargée en entier (vérifié par app.js) */
+:root{--cssok:1}
