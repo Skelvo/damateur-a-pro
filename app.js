@@ -617,7 +617,7 @@ function layer(html){clearTimeout(pendT);const was=!!$("#layer").innerHTML,bs=do
   if(html&&!was){lockY=window.scrollY;Object.assign(bs,{position:"fixed",top:-lockY+"px",left:"0",right:"0"})}
   else if(!html&&was){Object.assign(bs,{position:"",top:"",left:"",right:""});window.scrollTo(0,lockY)}}
 function openDetail(id,keepScroll){const m=findMatch(id);if(!m)return;if(!keepScroll){loadCrowd(id);U.pside=0;U.pmore=false;loadLineup(m).then(()=>{if(m.lineup&&U.open===id)refreshLayer()})}const sc=keepScroll&&$(".sheet")?$(".sheet").scrollTop:0;U.open=id;layer(viewDetail(m));if(sc)$(".sheet").scrollTop=sc;renderSlipBar()}
-function closeLayer(){U.open=null;layer("");render()}
+function closeLayer(){if(U.back==="live"&&U.open!=="live"){U.back=null;U.open="live";U.lvAnim=0;layer(viewLive());U.lvAnim=1;return}U.back=null;U.open=null;layer("");render()}
 function refreshLayer(){if(!U.open)return;const sc=$(".sheet")?$(".sheet").scrollTop:0;
   if(U.open==="slip")layer(viewSlip());else if(U.open==="live")layer(viewLive());else if(U.open==="add")return;else if(U.open.startsWith("res:"))return;else if(U.open==="welcome")return;else{const m=findMatch(U.open);if(m)layer(viewDetail(m))}
   if($(".sheet"))$(".sheet").scrollTop=sc}
@@ -828,7 +828,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"lgretry":U.lg.err=null;loadBoards();render();break;
     case"sp":U.sp=d.sp;U.lv=-1;U.dep="";U.ev=null;render();if(SP[d.sp])loadSport(d.sp);break;
     case"lv":U.lv=+d.lv;render();break;
-    case"open":U.dtab="p";openDetail(d.mid);break;
+    case"open":if(U.open==="live")U.back="live";U.dtab="p";openDetail(d.mid);break;
     case"live":U.open="live";U.lvi=0;U.lvAnim=0;layer(viewLive());U.lvAnim=1;break;
     case"lvi":U.lvi=+d.i;layer(viewLive());break;
     case"close":closeLayer();break;
@@ -2961,7 +2961,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.28";
+const VERSION="3.29";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
