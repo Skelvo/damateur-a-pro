@@ -1,6 +1,6 @@
 # Notes de reprise (pour une nouvelle session Claude)
 
-Dernière mise à jour : 15 novembre 2026, version **v3.17**.
+Dernière mise à jour : 15 novembre 2026, version **v3.19**.
 
 ## Le projet
 - **Tribune** : appli web installable (PWA) de pronostics sportifs entre potes, 100 % gratuite, jetons fictifs, 18+. Tout en français.
@@ -25,6 +25,8 @@ Puis commit + push sur `main`, et vérifier `https://damateur-a-pro.vercel.app/v
 - Bascule vérifiée le 15/11 au soir : 10 comptes maîtres, aucun solde négatif, mouvements cohérents.
 - **v3.17** : buts contre son camp (ESPN met l'équipe *bénéficiaire* dans `team`) ; `admin_reopen {mid}` re-règle tous les tickets d'un match (retire le gain versé, rouvre, règle à nouveau) ; `sync` renvoie `srv` (résultats serveur des 4 derniers jours) et le téléphone s'aligne dessus ; étiquette « ⏳ Jetons en route » tant que le gain serveur n'est pas versé.
 - Récompenses : guilde au mois (+1000/+500/+250/+25), semaine dans chaque guilde (+200/+100/+50, le lundi), général du mois (+1500/+750/+400, le 1er). Seuls les joueurs avec au moins un pari terminé sur la période sont classés.
+
+- **16/11 : NOUVELLE SAISON (v3.19)**. `admin_season {confirm:"SAISON", keep_av:[ids]}` a tout remis à zéro (jetons 1000, XP, styles, historique, fil, défis, duels) ; guildes et discussion gardées ; Axoo (2) et Huginn (15) gardent leur photo. Chaque compte a `reset_pending` : le téléphone efface ses données à la synchro suivante (`reset_ok`). Sauvegarde juste avant : fichier temporaire de la session.
 
 ## Règles à respecter
 - Réponses à l'utilisateur **en français**, simples et claires.
