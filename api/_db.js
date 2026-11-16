@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { createHash, randomBytes } from "node:crypto";
 
-const SCHEMA_VERSION = "46";
+const SCHEMA_VERSION = "47";
 const STATEMENTS = [
   `create table if not exists meta (key text primary key, value text)`,
   `create table if not exists players (
@@ -392,6 +392,8 @@ const STATEMENTS = [
   // serveur maître des soldes : true = le solde du compte est tenu par le serveur (le téléphone ne fait plus que l'afficher)
   `alter table players add column if not exists master boolean not null default false`,
   `alter table players add column if not exists master_at timestamptz`,
+  // nouvelle saison : le téléphone doit tout effacer avant que ses anciennes données soient prises en compte
+  `alter table players add column if not exists reset_pending boolean not null default false`,
   // défis de guilde à plusieurs (pot commun) : une ligne par participant
   `create table if not exists duel_entries (duel bigint not null references duels(id) on delete cascade, player bigint not null references players(id) on delete cascade,
      k int not null, stake int not null, payout int, at timestamptz not null default now(), primary key (duel, player))`,

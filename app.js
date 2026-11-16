@@ -1004,14 +1004,19 @@ let askedName=false;
 function askNewName(bad){if(GATE||askedName||U.open==="welcome"||U.open==="tos")return;askedName=true;U.open="welcome";layer(viewWelcome(true,bad?`Le pseudo « ${esc(S.name)} » n’est pas accepté (mot interdit ou signalé par plusieurs joueurs). Choisis-en un autre.`:`Le pseudo « ${esc(S.name)} » est déjà pris par un autre joueur. Choisis-en un autre pour apparaître dans les classements.`))}
 let syncT=0;
 // ---- serveur maître des soldes : le téléphone affiche le solde du compte, le serveur fait tous les mouvements ----
-function syncBody(){const o={name:S.name,bal:S.bal,peak:S.peak,wb:S.bonus,wx:S.extraSpin,wr:S.wheelR||"",tos:S.tosV||"",so:!S.socialOff,...myStats(),...betsPayload()};
+function syncBody(){const o={...(S.rsOk?{reset_ok:1}:{}),name:S.name,bal:S.bal,peak:S.peak,wb:S.bonus,wx:S.extraSpin,wr:S.wheelR||"",tos:S.tosV||"",so:!S.socialOff,...myStats(),...betsPayload()};
   if(!S.master&&U.adoptOk)o.adopt=1;if(S.master&&S.legQ&&S.legQ.length)o.legacy=S.legQ.slice(0,20);if(S.master&&U.wantSettle){o.settle=1;U.wantSettle=0}return o}
+// NOUVELLE SAISON : le serveur a tout remis à zéro ; on efface le téléphone (on garde le compte, les réglages et les guildes) puis on relance
+const KEEPS=["v","name","tok","pid","rcode","rcodeOther","tosV","introSeen","push","remind","mute","socialOff","filter","igDone","fbDone","igNever","guideHide","coachDone","launches","bkAt","fav","favOk","chatSeen","recapSeen","newsSeen","refBy","sim","orgMode","org","map","blocked"];
+function seasonReset(j){if(!j||!j.reset)return false;const n={};for(const k of KEEPS)if(k in S)n[k]=S[k];
+  if(j.keep_av){n.avatar=S.avatar;n.avv=S.avv}Object.assign(n,{bal:1000,peak:1000,bets:[],master:1,rsOk:1,seasonMsg:1,bonus:"",org:n.org||[]});
+  for(const k of Object.keys(S))delete S[k];Object.assign(S,n);saveLocal();setTimeout(()=>location.reload(),300);return true}
 function masterSync(j){if(!j||!j.master)return;const first=!S.master;S.master=1;if(S.legQ&&S.legQ.length)S.legQ=[];
   if(typeof j.bal==="number"&&Math.round(S.bal)!==j.bal){S.bal=j.bal;S.peak=Math.max(S.peak||0,j.peak||0,j.bal);saveLocal();const e=$("#bal");if(e)e.textContent=tok(S.bal);if(!U.open)render();else bump()}
   else if(first)saveLocal()}
 function syncSoon(){if(!S.name)return;clearTimeout(syncT);syncT=setTimeout(async()=>{if(!(await ensureSession()))return;
-  try{const j=await api("sync",syncBody());masterSync(j);wheelSync(j);applyCancel(j);applySrv(j);xpUpdate(j.xp);if(j.name_taken)askNewName();if(j.name_bad)askNewName(true);backupSoon()}catch(e){if(e.code==="no_session"&&await ensureSession())syncSoon()}},2000)}
-async function syncNow(){clearTimeout(syncT);if(!(await ensureSession()))return false;try{const j=await api("sync",syncBody());masterSync(j);wheelSync(j);applyCancel(j);applySrv(j);xpUpdate(j.xp);if(j.name_bad)askNewName(true);return true}catch(e){return false}}
+  try{const j=await api("sync",syncBody());if(seasonReset(j))return;if(S.rsOk&&!j.reset){delete S.rsOk;saveLocal()}masterSync(j);wheelSync(j);applyCancel(j);applySrv(j);xpUpdate(j.xp);if(j.name_taken)askNewName();if(j.name_bad)askNewName(true);backupSoon()}catch(e){if(e.code==="no_session"&&await ensureSession())syncSoon()}},2000)}
+async function syncNow(){clearTimeout(syncT);if(!(await ensureSession()))return false;try{const j=await api("sync",syncBody());if(seasonReset(j))return;if(S.rsOk&&!j.reset){delete S.rsOk;saveLocal()}masterSync(j);wheelSync(j);applyCancel(j);applySrv(j);xpUpdate(j.xp);if(j.name_bad)askNewName(true);return true}catch(e){return false}}
 const pickKey=s=>s.mk+(s.line!=null?s.line:"");
 function sendPicks(sel){const picks=sel.filter(s=>!PMK[s.mk]).map(s=>({mid:s.mid,mk:pickKey(s),k:s.k}));if(!picks.length)return;ensureSession().then(ok=>ok&&api("picks",{picks}).catch(()=>{}));
   for(const p of picks){const c=CROWD[p.mid];if(c&&c.data){const m=((c.data[p.mk]??={}));m[p.k]=(m[p.k]||0)+1}}}
@@ -2906,7 +2911,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.18";
+const VERSION="3.19";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
@@ -2950,7 +2955,7 @@ function preloadArt(){const L=["roue-anneau.webp?v=1","roue-centre.webp?v=1",...
   if(S.cos&&S.cos.f&&/^f([1-9]|1[0-2])$/.test(S.cos.f))L.push(`fr/${S.cos.f}.webp?v=2`);
   if(S.cos&&S.cos.b&&BN_TEX[S.cos.b])L.push(`bn/${S.cos.b}.webp?v=1`);
   L.forEach((u,i)=>setTimeout(()=>{const im=new Image();im.decoding="async";im.src=u},i*60))}
-var afterBoot=function(){setTimeout(async()=>{for(let i=0;i<30&&settling;i++)await new Promise(r=>setTimeout(r,500));try{await settle()}catch(e){}for(let i=0;i<30&&settling;i++)await new Promise(r=>setTimeout(r,500));U.adoptOk=1;if(S.name&&!S.master)syncNow()},4000);setTimeout(preloadArt,1200);pushRefresh();if(S.introSeen===INTRO_V&&S.tosV===TOS_V){setTimeout(pariPending,600);setTimeout(pendingTicket,900);setTimeout(()=>matchPending(),1200)}if(S.name&&S.starter==="pending"&&S.introSeen===INTRO_V&&!U.coach)grantStarter(false);if(S.name&&S.tosV!==TOS_V)openTos();else if(S.name&&S.introSeen!==INTRO_V){openIntro();S.newsSeen=NEWS_V;saveLocal()}else if(S.name&&S.newsSeen!==NEWS_V)setTimeout(openNews,2500);if(S.name){claimPrizes();claimBattles();claimGifts();ensureRcode()}if(S.name)Promise.resolve().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels();autoWheel()};
+var afterBoot=function(){if(S.seasonMsg){delete S.seasonMsg;saveLocal();setTimeout(()=>toast(`🔥 <b>Nouvelle saison !</b> Tout le monde repart à 1 000 jetons. Bonne chance !`,"win"),1200)}setTimeout(async()=>{for(let i=0;i<30&&settling;i++)await new Promise(r=>setTimeout(r,500));try{await settle()}catch(e){}for(let i=0;i<30&&settling;i++)await new Promise(r=>setTimeout(r,500));U.adoptOk=1;if(S.name&&!S.master)syncNow()},4000);setTimeout(preloadArt,1200);pushRefresh();if(S.introSeen===INTRO_V&&S.tosV===TOS_V){setTimeout(pariPending,600);setTimeout(pendingTicket,900);setTimeout(()=>matchPending(),1200)}if(S.name&&S.starter==="pending"&&S.introSeen===INTRO_V&&!U.coach)grantStarter(false);if(S.name&&S.tosV!==TOS_V)openTos();else if(S.name&&S.introSeen!==INTRO_V){openIntro();S.newsSeen=NEWS_V;saveLocal()}else if(S.name&&S.newsSeen!==NEWS_V)setTimeout(openNews,2500);if(S.name){claimPrizes();claimBattles();claimGifts();ensureRcode()}if(S.name)Promise.resolve().then(()=>{if(U.lg.data&&U.lg.data.leagues.length){const c0=U.lg.code;for(const l of U.lg.data.leagues){U.lg.code=l.code;loadChat()}U.lg.code=c0}});if(S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels();autoWheel()};
 setInterval(()=>{if(!document.hidden&&S.duel&&Object.values(S.duel).some(x=>!x.settled))loadDuels()},12e4);
 // matchs en direct qui te concernent (regardé, parié, équipe de cœur) : leur compétition est rafraîchie toutes les 20 s pour les animations
 setInterval(()=>{if(document.hidden)return;const hot=new Set([...REG.values()].filter(m=>m.src==="espn"&&m.state==="in"&&(m.sp==="foot"||m.sp==="rugby")&&fxMine(m)).map(m=>m.sp+"|"+m.lv));

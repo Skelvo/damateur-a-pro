@@ -877,6 +877,12 @@ const ACTIONS = {
   // Si le pseudo demandé est déjà pris, le reste est enregistré et on répond name_taken.
   async sync(s, b) {
     const p = await me(s, b.token);
+    // nouvelle saison : tant que le téléphone n'a pas tout effacé, on ignore ce qu'il envoie (ancien solde, anciens paris)
+    const rp = (await s.query(`select reset_pending, avatar_v, avatar is not null as has_av from players where id = $1`, [p.id]))[0];
+    if (rp && rp.reset_pending) {
+      if (!b.reset_ok) return { ok: true, reset: 1, keep_av: !!rp.has_av, av: rp.avatar_v || 0 };
+      await s.query(`update players set reset_pending = false where id = $1`, [p.id]);
+    }
     let master = !!(await s.query(`select master from players where id = $1`, [p.id]))[0].master;
     // Bascule « serveur maître » (une seule fois, à l'ouverture d'une appli à jour qui a fini de régler ses paris) :
     // le solde du téléphone devient celui du compte, plus les gains que le serveur a déjà réglés et que le téléphone ne connaît pas encore.
@@ -1883,6 +1889,29 @@ const ACTIONS = {
     }
     const done = rows.length ? await settleOpen(s, { budget: 20e3 }) : [];
     return { before, after: done.map((d) => ({ id: d.id, cid: d.cid, status: d.status, pay: d.pay })) };
+  },
+  // NOUVELLE SAISON : tout le monde repart de zéro (jetons, niveau, styles, historique) ; les guildes restent.
+  // keep_av : joueurs qui gardent leur photo de profil.
+  async admin_season(s, b) {
+    admin(b);
+    if (b.confirm !== "SAISON") return { error: "confirm" };
+    const keep = (Array.isArray(b.keep_av) ? b.keep_av : []).map(Number).filter(Number.isInteger);
+    const today = await parisDay(s);
+    const del = ["shared_bets", "bets", "ledger", "gifts", "bal_hist", "profits", "weekly", "monthly", "month_prizes", "reactions", "activity", "settle_diff",
+      "duel_entries", "duels", "dark_flags", "dark_stakes", "dark_bets", "battle_rewards", "battle_members", "battles", "picks", "audit_base"];
+    const n = {};
+    for (const t of del) n[t] = (await s.query(`with d as (delete from ${t} returning 1) select count(*)::int as c from d`))[0].c;
+    n.prono_picks = (await s.query(`with d as (delete from prono_picks p using prono_weeks w where w.week = p.week and not exists
+      (select 1 from jsonb_array_elements(w.matches) m where not coalesce((m->>'done')::boolean, false) and not coalesce((m->>'cancel')::boolean, false)) returning 1) select count(*)::int as c from d`))[0].c;
+    n.lm_picks = (await s.query(`with d as (delete from lm_picks where day < $1 returning 1) select count(*)::int as c from d`, [today]))[0].c;
+    n.players = (await s.query(`with u as (update players set bal = 1000, peak = 1000, won = 0, lost = 0, week = ${WEEK}, week_bal = 1000, month = ${MONTH}, month_bal = 1000,
+        bets = null, badges = null, backup = null, backup_at = null, wheel = null, xp_seed = 0, cos = null, cos_all = false, cos_grant = null,
+        master = true, master_at = now(), reset_pending = true,
+        avatar = case when id = any($1::bigint[]) then avatar else null end,
+        avatar_v = case when id = any($1::bigint[]) then avatar_v else avatar_v + 1 end returning 1) select count(*)::int as c from u`, [keep]))[0].c;
+    await s.query(`insert into audit_base (player, bal) select id, 1000 from players on conflict do nothing`);
+    await s.query(`insert into meta (key, value) values ('season', '1') on conflict (key) do update set value = (meta.value::int + 1)::text`);
+    return { ok: true, n };
   },
   // annuler un pari pas encore réglé : remboursé, et le téléphone du joueur l'apprend à la prochaine synchro
   async admin_void(s, b) {
