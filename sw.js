@@ -1,5 +1,5 @@
 // Service worker : réseau d'abord (toujours revérifié auprès du serveur), cache en secours hors ligne.
-const C="dap-v173",IMG="dap-img-1",SHELL=["./","index.html","manifest.webmanifest","icon-192.png","icon-180.png","icon-512.png","logo-tribune.png","engine.js?v=3.26","app.js?v=3.26","app.css?v=3.26"];
+const C="dap-v174",IMG="dap-img-1",SHELL=["./","index.html","manifest.webmanifest","icon-192.png","icon-180.png","icon-512.png","logo-tribune.png","engine.js?v=3.27","app.js?v=3.27","app.css?v=3.27"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C&&x!==IMG&&!x.startsWith("dap-feed")).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
 // logos des équipes, drapeaux et photos de profil : gardés sur le téléphone (plus rapide, moins de données), 500 au plus
@@ -8,7 +8,8 @@ async function trimImg(c){const k=await c.keys();for(let i=0;i<k.length-500;i++)
 function imgFetch(e,u){return caches.open(IMG).then(async c=>{const hit=await c.match(e.request.url);if(hit)return hit;
   const same=u.origin===location.origin;let r;try{r=await fetch(same?e.request:new Request(e.request.url,{mode:"cors",credentials:"omit"}))}catch(x){return fetch(e.request)}
   if(r&&r.ok&&r.type!=="opaque"){c.put(e.request.url,r.clone());if(++imgPuts%25===0)trimImg(c)}return r})}
-self.addEventListener("fetch",e=>{const u=new URL(e.request.url);if(e.request.method!=="GET")return;
+self.addEventListener("fetch",e=>{const u=new URL(e.request.url);if(e.request.method!=="GET")return;if(u.searchParams.has("nosw"))return;   // secours de l'appli : directement au réseau, sans passer par ici
+
   if(e.request.destination==="image"&&(/(^|\.)espncdn\.com$/.test(u.hostname)||(u.origin===location.origin&&(u.pathname.startsWith("/logos/")||u.pathname.startsWith("/g/")||(u.pathname.includes("/api/")&&(u.searchParams.has("avatar")||u.searchParams.has("glogo"))&&u.searchParams.has("v")))))){e.respondWith(imgFetch(e,u));return}
   // images du site (bannières, cadres, logos de guilde…) : versionnées (?v=), donc chargées une seule fois puis servies depuis le téléphone
   if(e.request.destination==="image"&&u.origin===location.origin&&/\.(png|webp|jpe?g|svg|gif)$/i.test(u.pathname)){e.respondWith(imgFetch(e,u));return}

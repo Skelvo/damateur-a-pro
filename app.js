@@ -39,7 +39,9 @@ const RK=[["NC","40","30/5","30/4","30/3"],["30/2","30/1","30","15/5","15/4"],["
 /* ---------- état ---------- */
 const LS="dap.v2";
 // filet de sécurité : si la feuille de style ne s'est pas chargée (réseau coupé pendant une mise à jour), on la recharge directement
-setTimeout(function cssGuard(n){try{if(getComputedStyle(document.documentElement).getPropertyValue("--cssok").trim())return;const l=document.createElement("link");l.rel="stylesheet";l.href="app.css?v="+(typeof VERSION!=="undefined"?VERSION:"x")+"&r="+Date.now();document.head.appendChild(l);if((n||0)<3)setTimeout(()=>cssGuard((n||0)+1),4000)}catch(e){}},2500);
+(function(){function ok(){try{return!!getComputedStyle(document.documentElement).getPropertyValue("--cssok").trim()}catch(e){return true}}
+  function fix(n){if(ok())return;const l=document.createElement("link");l.rel="stylesheet";l.href="app.css?nosw=1&r="+Date.now();document.head.appendChild(l);if(n<4)setTimeout(()=>fix(n+1),3000)}
+  setTimeout(()=>fix(0),900);addEventListener("pageshow",()=>setTimeout(()=>fix(0),400))})();
 let S=(()=>{try{const x=JSON.parse(localStorage.getItem(LS));if(x&&x.v===2)return x}catch(e){}return{v:2,name:"",bal:1000,peak:1000,bonus:"",bets:[],org:[],orgMode:false,sim:true,seen:0}})();
 let GONE=false;   // compte supprimé : plus rien n’est réécrit sur le téléphone
 const saveLocal=()=>{if(GONE)return;try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}};
@@ -2951,14 +2953,14 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.26";
+const VERSION="3.27";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
 async function checkUpdate(){try{const r=await fetch("version.txt?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const v=(await r.text()).trim();if(!/^\d+\.\d{1,3}$/.test(v))return;   // hors connexion : le service worker peut renvoyer une page à la place
   if(v&&v!==VERSION&&!$(".upd")){const b=document.createElement("button");b.className="upd";b.innerHTML=`<span>Nouvelle version ${esc(v)} disponible</span><b>Recharger</b>`;
     // mise à jour : on attend la nouvelle version du réseau (pas la copie du téléphone), sans repasser par le bandeau
-    b.onclick=async()=>{b.disabled=true;b.innerHTML=`<span>Mise à jour…</span>`;try{const r=navigator.serviceWorker&&await navigator.serviceWorker.getRegistration();if(r)await Promise.race([r.update(),new Promise(z=>setTimeout(z,4000))])}catch(e){}
+    b.onclick=async()=>{b.disabled=true;b.innerHTML=`<span>Mise à jour…</span>`;try{const r=navigator.serviceWorker&&await navigator.serviceWorker.getRegistration();if(r){await Promise.race([r.update(),new Promise(z=>setTimeout(z,4000))]);const w=r.installing||r.waiting;if(w)await Promise.race([new Promise(z=>{const f=()=>{if(w.state==="activated"||w.state==="redundant")z()};w.addEventListener("statechange",f);f()}),new Promise(z=>setTimeout(z,6000))]);await new Promise(z=>setTimeout(z,400))}}catch(e){}
       location.replace(location.pathname+"?upd="+Date.now())};document.body.appendChild(b)}}catch(e){}}
 if(/[?&]upd=/.test(location.search))history.replaceState(null,"",location.pathname);
 showVersion();checkUpdate();
