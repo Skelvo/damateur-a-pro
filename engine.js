@@ -230,7 +230,8 @@ function parseTennis(ev,lv,path){const out=[];const groups=ev.groupings||[{group
         comp:(ev.shortName||ev.name||"Tour")+(path.endsWith("wta")?" · WTA":" · ATP"),h:nm(A),a:nm(B),
         hf:A.athlete&&A.athlete.flag&&A.athlete.flag.href,af:B.athlete&&B.athlete.flag&&B.athlete.flag.href,
         t:Date.parse(c.date||ev.date),state,clock:ty.shortDetail||"",done:!!ty.completed,cancel:state==="post"&&!ty.completed};
-      m.s=[strength(m.h,"tennis",lv)*.5,strength(m.a,"tennis",lv)*.5];
+      // niveau = classement ATP/WTA fourni par ESPN (curatedRank) : n°1 ≈ +0, n°10 ≈ −1, n°100 ≈ −2,1 ; sans classement : comme un n°250
+      {const rk=x=>{const v=+(x.curatedRank&&x.curatedRank.current);return v>0&&v<5000?v:250};m.rk=[rk(A),rk(B)];m.s=m.rk.map(v=>-.45*Math.log(v))}
       const la=(A.linescores||[]).map(x=>+x.value),lb=(B.linescores||[]).map(x=>+x.value);
       if(state!=="pre"&&la.length){const sets=[0,0],gm=[0,0];let tb=0;
         la.forEach((v,i)=>{const w=lb[i]??0;gm[0]+=v;gm[1]+=w;if(Math.max(v,w)>=6&&v!==w&&(state==="post"||i<la.length-1))sets[v>w?0:1]++;if((v===7&&w===6)||(v===6&&w===7))tb++});
