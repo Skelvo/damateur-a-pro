@@ -1869,6 +1869,7 @@ const ACTIONS = {
     admin(b);
     const p = (await s.query(`select id, name, bal::float8 as bal, seen_at, cos from players where lower(name) = lower($1)`, [String(b.name || "")]))[0];
     if (!p) throw fail(404, "unknown");
+    p.guilds = (await s.query(`select l.name, l.code, m.role, m.joined_at from league_members m join leagues l on l.code = m.code where m.player = $1`, [p.id]));
     return { p,
       base: (await s.query(`select bal::float8 as bal, at from audit_base where player = $1`, [p.id]))[0] || null,
       ledger: await s.query(`select kind, ref, delta, at from ledger where player = $1 order by at desc limit 60`, [p.id]),
