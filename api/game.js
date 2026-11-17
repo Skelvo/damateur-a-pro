@@ -1556,6 +1556,10 @@ const ACTIONS = {
       if (!j) return { ok: false };
       return { ok: true, league: j.leagues && j.leagues[0] && { id: j.leagues[0].id, uid: j.leagues[0].uid, name: j.leagues[0].name, slug: j.leagues[0].slug },
         events: (j.events || []).slice(0, 40).map((e) => [e.date, e.name]) }; }
+    if (b.sample) { const j = await get0(`https://site.api.espn.com/apis/site/v2/sports/${String(b.sample).replace(/[^a-z0-9./_-]/gi, "")}/scoreboard?limit=50`);
+      const g = j && j.events && j.events[0] && (j.events[0].groupings || [{ competitions: j.events[0].competitions }]);
+      const c = g && g.flatMap((x) => x.competitions || []).slice(0, 3);
+      return { comp: c && c.map((x) => (x.competitors || []).map((k) => ({ ...k, linescores: undefined, statistics: undefined }))) }; }
     if (b.raw) return { raw: await get0(`https://sports.core.api.espn.com/v2/sports/${sport}/leagues/${String(b.raw).replace(/[^0-9]/g, "")}`) };
     const get = async (u) => { const c = new AbortController(), t = setTimeout(() => c.abort(), 6000); try { const r = await fetch(u, { signal: c.signal }); return r.ok ? r.json() : null; } catch (e) { return null; } finally { clearTimeout(t); } };
     const list = await get(`https://sports.core.api.espn.com/v2/sports/${sport}/leagues?limit=400`);
