@@ -1556,7 +1556,7 @@ const ACTIONS = {
       if (!j) return { ok: false };
       return { ok: true, league: j.leagues && j.leagues[0] && { id: j.leagues[0].id, uid: j.leagues[0].uid, name: j.leagues[0].name, slug: j.leagues[0].slug },
         events: (j.events || []).slice(0, 40).map((e) => [e.date, e.name]) }; }
-    if (b.url && /^https:\/\/(site|sports\.core)\.api\.espn\.com\//.test(String(b.url))) { const j = await get0(String(b.url)); return { j: j && JSON.parse(JSON.stringify(j).slice(0, 6000) + (JSON.stringify(j).length > 6000 ? "" : "")) .constructor === Object ? JSON.stringify(j).slice(0, 6000) : j }; }
+    if (b.url && /^https:\/\/(site|sports\.core)\.api\.espn\.com\//.test(String(b.url))) { const j = await get0(String(b.url)); return { j: JSON.stringify(j).slice(0, +b.n || 6000) }; }
     if (b.sample) { const j = await get0(`https://site.api.espn.com/apis/site/v2/sports/${String(b.sample).replace(/[^a-z0-9./_-]/gi, "")}/scoreboard?limit=50`);
       const g = j && j.events && j.events[0] && (j.events[0].groupings || [{ competitions: j.events[0].competitions }]);
       const c = g && g.flatMap((x) => x.competitions || []).slice(0, 3);
