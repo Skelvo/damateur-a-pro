@@ -204,9 +204,11 @@ function parseTeamEvent(ev,sp,lv,path){const c=ev.competitions&&ev.competitions[
     state,clock:ty.shortDetail||"",done:!!ty.completed,cancel:state==="post"&&!ty.completed};
   {const st_=ev.status||{},dc=parseInt(st_.displayClock,10);m.min=/^(HT|MT)/i.test(ty.shortDetail||"")||ty.name==="STATUS_HALFTIME"?(sp==="foot"?45:40):!isNaN(dc)?dc:Math.round((st_.clock||0)/60)}
   m.s=[recStrength(Hc,m.h,sp,lv),recStrength(Ac,m.a,sp,lv)];
-  if(sp==="foot"){const d=bookDiff(c);if(d!=null)m.s=[d/2,-d/2];else if(FR_TIER[m.hid]||FR_TIER[m.aid]||/coupe_de_france/.test(path)){
+  if(sp==="foot"){const d=bookDiff(c);if(d!=null){m.s=[d/2,-d/2];m.book=1}else if(FR_TIER[m.hid]||FR_TIER[m.aid]||/coupe_de_france/.test(path)){
     // coupe sans cotes de bookmaker : niveau du club (Ligue 1, Ligue 2, sinon amateur) plutôt qu'un niveau au hasard
     const tv=(id,n)=>({1:2.1,2:1.1}[FR_TIER[id]]??-.3)+strength(n,sp,lv)*.15;m.s=[tv(m.hid,m.h),tv(m.aid,m.a)]}}
+  // garde-fou : sans vraies cotes de bookmaker, le niveau est estimé → jamais d'écart extrême (pas de cote ridicule à 1,02 / 15)
+  if(sp==="foot"&&!m.book)capGap(m,1.2);
   if(state!=="pre"){const k=sp==="foot"?"g":"pts";m.st={[k]:[+Hc.score||0,+Ac.score||0]};
     if(sp==="foot")[Hc,Ac].forEach((x,p)=>(x.statistics||[]).forEach(s=>{const k2=SOCSTAT[s.name];if(k2){(m.st[k2]||(m.st[k2]=[null,null]))[p]=parseFloat(s.displayValue)}}));
     if(sp==="basket"){const BK={threePointFieldGoalsMade:"tp",rebounds:"reb",assists:"ast"};
@@ -220,6 +222,7 @@ function parseTeamEvent(ev,sp,lv,path){const c=ev.competitions&&ev.competitions[
   // le score du flux est parfois en retard sur la liste des buts : on garde le plus grand des deux
   if(m.ev&&m.st&&m.st.g){const n=[0,0];for(const e of m.ev)if(e.s!=null&&(e.ty==="g"||e.ty==="og"))n[e.s]++;m.st.g=[Math.max(m.st.g[0],n[0]),Math.max(m.st.g[1],n[1])]}
   return m}
+function capGap(m,max){const d=m.s[0]-m.s[1];if(Math.abs(d)>max){const c=(m.s[0]+m.s[1])/2,h=Math.sign(d)*max/2;m.s=[c+h,c-h]}}
 let TRANK={};function setTennisRanks(r){if(r&&typeof r==="object")TRANK=r}
 function parseTennis(ev,lv,path){const out=[];const groups=ev.groupings||[{grouping:{slug:"singles"},competitions:ev.competitions||[]}];
   for(const g of groups){const slug=((g.grouping&&(g.grouping.slug||g.grouping.displayName))||"").toLowerCase();if(slug.includes("double"))continue;
@@ -234,7 +237,7 @@ function parseTennis(ev,lv,path){const out=[];const groups=ev.groupings||[{group
       // niveau = vrai classement ATP/WTA (top 150, chargé à part : setTennisRanks) ; hors top 150 : tête de série ≈ n°140, sinon ≈ n°220.
       // (attention : curatedRank du flux = tête de série du tournoi, pas le classement)
       // ancien repère : n°1 ≈ +0, n°10 ≈ −1, n°100 ≈ −2,1 ; sans classement : comme un n°250
-      {const T=TRANK[path.endsWith("wta")?"wta":"atp"]||{},rk=x=>{const v=+T[String(x.id)];if(v>0)return v;return x.curatedRank&&x.curatedRank.current?140:220};m.rk=[rk(A),rk(B)];m.s=m.rk.map(v=>-.45*Math.log(v))}
+      {const T=TRANK[path.endsWith("wta")?"wta":"atp"]||{},real=x=>+T[String(x.id)]>0,rk=x=>{const v=+T[String(x.id)];if(v>0)return v;return x.curatedRank&&x.curatedRank.current?140:220};m.rk=[rk(A),rk(B)];m.s=m.rk.map(v=>-.45*Math.log(v));if(!real(A)||!real(B))capGap(m,.7)}
       const la=(A.linescores||[]).map(x=>+x.value),lb=(B.linescores||[]).map(x=>+x.value);
       if(state!=="pre"&&la.length){const sets=[0,0],gm=[0,0];let tb=0;
         la.forEach((v,i)=>{const w=lb[i]??0;gm[0]+=v;gm[1]+=w;if(Math.max(v,w)>=6&&v!==w&&(state==="post"||i<la.length-1))sets[v>w?0:1]++;if((v===7&&w===6)||(v===6&&w===7))tb++});
