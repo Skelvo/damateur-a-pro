@@ -220,6 +220,7 @@ function parseTeamEvent(ev,sp,lv,path){const c=ev.competitions&&ev.competitions[
   // le score du flux est parfois en retard sur la liste des buts : on garde le plus grand des deux
   if(m.ev&&m.st&&m.st.g){const n=[0,0];for(const e of m.ev)if(e.s!=null&&(e.ty==="g"||e.ty==="og"))n[e.s]++;m.st.g=[Math.max(m.st.g[0],n[0]),Math.max(m.st.g[1],n[1])]}
   return m}
+let TRANK={};function setTennisRanks(r){if(r&&typeof r==="object")TRANK=r}
 function parseTennis(ev,lv,path){const out=[];const groups=ev.groupings||[{grouping:{slug:"singles"},competitions:ev.competitions||[]}];
   for(const g of groups){const slug=((g.grouping&&(g.grouping.slug||g.grouping.displayName))||"").toLowerCase();if(slug.includes("double"))continue;
     for(const c of g.competitions||[]){const cs=c.competitors||[];if(cs.length<2)continue;const A=cs[0],B=cs[1];
@@ -230,8 +231,10 @@ function parseTennis(ev,lv,path){const out=[];const groups=ev.groupings||[{group
         comp:(ev.shortName||ev.name||"Tour")+(path.endsWith("wta")?" · WTA":" · ATP"),h:nm(A),a:nm(B),
         hf:A.athlete&&A.athlete.flag&&A.athlete.flag.href,af:B.athlete&&B.athlete.flag&&B.athlete.flag.href,
         t:Date.parse(c.date||ev.date),state,clock:ty.shortDetail||"",done:!!ty.completed,cancel:state==="post"&&!ty.completed};
-      // niveau = classement ATP/WTA fourni par ESPN (curatedRank) : n°1 ≈ +0, n°10 ≈ −1, n°100 ≈ −2,1 ; sans classement : comme un n°250
-      {const rk=x=>{const v=+(x.curatedRank&&x.curatedRank.current);return v>0&&v<5000?v:250};m.rk=[rk(A),rk(B)];m.s=m.rk.map(v=>-.45*Math.log(v))}
+      // niveau = vrai classement ATP/WTA (top 150, chargé à part : setTennisRanks) ; hors top 150 : tête de série ≈ n°140, sinon ≈ n°220.
+      // (attention : curatedRank du flux = tête de série du tournoi, pas le classement)
+      // ancien repère : n°1 ≈ +0, n°10 ≈ −1, n°100 ≈ −2,1 ; sans classement : comme un n°250
+      {const T=TRANK[path.endsWith("wta")?"wta":"atp"]||{},rk=x=>{const v=+T[String(x.id)];if(v>0)return v;return x.curatedRank&&x.curatedRank.current?140:220};m.rk=[rk(A),rk(B)];m.s=m.rk.map(v=>-.45*Math.log(v))}
       const la=(A.linescores||[]).map(x=>+x.value),lb=(B.linescores||[]).map(x=>+x.value);
       if(state!=="pre"&&la.length){const sets=[0,0],gm=[0,0];let tb=0;
         la.forEach((v,i)=>{const w=lb[i]??0;gm[0]+=v;gm[1]+=w;if(Math.max(v,w)>=6&&v!==w&&(state==="post"||i<la.length-1))sets[v>w?0:1]++;if((v===7&&w===6)||(v===6&&w===7))tb++});
@@ -419,5 +422,5 @@ function tvFor(m,ovr){if(!m)return null;const o=ovr&&ovr[m.id];if(o)return o==="
   return null}
 // niveau d'une compétition d'après son flux ESPN (ex. "soccer/fra.1" → 11)
 function lvOfPath(sp,path){const F=SP[sp]&&SP[sp].feeds;if(F)for(const l in F)if(F[l].includes(path))return+l;return null}
-if(typeof globalThis!=="undefined")globalThis.ENGINE={TVCH,tvFor,lvOfPath,COS,COS_SECRET,COS_SEASON,cosUnlocked,cosTitle,cosEmoji,TIERS,xpFor,levelOf,resMarket,marketInfo,mkOne,WEEKENDS,COMBO_BOOST,weekendOf,fr,strength,SP,SIM,MK,N,ALLSTATS,STATL,ESPN,MCC,MKC,ONE,cl,hash,rng,pois,binom,H,DAY,lvA,sims,simOne,tot,cmp3,avail,odd,mt,liveOK,canBet,liveSims,marketSims,markets,outcome,
+if(typeof globalThis!=="undefined")globalThis.ENGINE={setTennisRanks,TVCH,tvFor,lvOfPath,COS,COS_SECRET,COS_SEASON,cosUnlocked,cosTitle,cosEmoji,TIERS,xpFor,levelOf,resMarket,marketInfo,mkOne,WEEKENDS,COMBO_BOOST,weekendOf,fr,strength,SP,SIM,MK,N,ALLSTATS,STATL,ESPN,MCC,MKC,ONE,cl,hash,rng,pois,binom,H,DAY,lvA,sims,simOne,tot,cmp3,avail,odd,mt,liveOK,canBet,liveSims,marketSims,markets,outcome,
   SOCSTAT,recStrength,amer,bookDiff,footProbs,TEAM_FR,frTeam,parseTeamEvent,parseTennis,status,realStats,PMK,legIdx,jointP,comboCalc,readLineup,applySummary,playerLegResult,legResultM,betResult,cashValueM,WHEEL,WP,JACKPOT,JACK_ODDS,EXTRA_DAY,DEFIS,DEFI_BONUS,defisFor,legsOf};

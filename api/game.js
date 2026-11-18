@@ -6,6 +6,7 @@ import { timingSafeEqual, randomInt, scryptSync, randomBytes } from "node:crypto
 import { buildWeek, refreshResults, points, todayMatches, bestOfDay } from "./_prono.js";
 import { notify, members } from "./_push.js";
 import { checkBet, settleOpen, cashValueServer, loadMatch } from "./_bets.js";
+import { tennisRanks } from "./_ranks.js";
 
 const ORIGINS = [
   "https://skelvo.fr", "https://www.skelvo.fr", "https://skelvo.github.io",
@@ -2771,6 +2772,11 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method === "GET") {
     const q = req.query || Object.fromEntries(new URL(req.url || "/", "http://x").searchParams);
+    if (q.ranks) {
+      const r = await tennisRanks().catch(() => ({ atp: {}, wta: {} }));
+      res.setHeader("Cache-Control", "public, s-maxage=21600, max-age=3600");
+      return res.status(200).json(r);
+    }
     if (q.avatar) {
       try {
         const s = await db();

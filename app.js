@@ -38,6 +38,10 @@ const RK=[["NC","40","30/5","30/4","30/3"],["30/2","30/1","30","15/5","15/4"],["
 
 /* ---------- état ---------- */
 const LS="dap.v2";
+// classements ATP/WTA (cotes du tennis) : la copie du téléphone tout de suite, puis la version du jour
+try{const r=JSON.parse(localStorage.getItem("dap.trk")||"null");if(r&&r.d)setTennisRanks(r.d)}catch(e){}
+setTimeout(async()=>{try{const o=JSON.parse(localStorage.getItem("dap.trk")||"null");if(o&&Date.now()-o.at<6*3600e3)return;
+  const r=await fetch(API+"?ranks=1");if(!r.ok)return;const d=await r.json();if(d&&(Object.keys(d.atp||{}).length||Object.keys(d.wta||{}).length)){setTennisRanks(d);localStorage.setItem("dap.trk",JSON.stringify({at:Date.now(),d}))}}catch(e){}},300);
 // filet de sécurité : si la feuille de style ne s'est pas chargée (réseau coupé pendant une mise à jour), on la recharge directement
 (function(){function ok(){try{return!!getComputedStyle(document.documentElement).getPropertyValue("--cssok").trim()}catch(e){return true}}
   function fix(n){if(ok())return;const l=document.createElement("link");l.rel="stylesheet";l.href="app.css?nosw=1&r="+Date.now();document.head.appendChild(l);if(n<4)setTimeout(()=>fix(n+1),3000)}
@@ -2961,7 +2965,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.30";
+const VERSION="3.31";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

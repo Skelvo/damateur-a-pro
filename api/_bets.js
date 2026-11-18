@@ -1,6 +1,7 @@
 // Paris contrôlés par le serveur : on retrouve chaque match dans le flux ESPN, on recalcule la cote avec le même
 // moteur que l'appli (engine.js) et on refuse un pari sur un match commencé ou à une cote plus haute que la vraie.
 import "../engine.js";
+import { tennisRanks } from "./_ranks.js";
 const E = globalThis.ENGINE;
 
 // compétition ESPN → sport et niveau (on ne fait jamais confiance au téléphone pour ça)
@@ -27,6 +28,7 @@ const ymdUTC = (t) => new Date(t).toISOString().slice(0, 10).replace(/-/g, "");
 export async function loadMatch(sel) {
   const P = LV[sel.path], t = Number(sel.t);
   if (!P || !t || !/^e-/.test(String(sel.mid || ""))) return null;
+  if (P.sp === "tennis") await tennisRanks().catch(() => null);
   const live = Math.abs(Date.now() - t) < 4 * 3600e3;
   for (const d of [0, -864e5, 864e5]) {
     let j;
