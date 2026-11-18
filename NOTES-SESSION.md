@@ -38,6 +38,8 @@ Puis commit + push sur `main`, et vérifier `https://damateur-a-pro.vercel.app/v
 
 - **v3.22 → v3.26** : pack exclusif « La Livraison » (`cos_grant` livraison : La Livraison + Axoo) ; badge « Exclusif » par pack ; couleurs Poil de feu / Kraft distinctes ; bouton « Tout passer » sur les animations ; filet de sécurité si app.css ne charge pas ; **écran « En direct »** (`viewLive`, bandeau rouge en haut de Matchs et Mes paris quand un match d'un ticket est en cours).
 
+- **Cotes (v3.30 → v3.32)** : tennis = vrai classement ATP/WTA top 150 (`api/_ranks.js`, `/api/game?ranks=1`, `setTennisRanks`) ; ATTENTION `curatedRank` du flux ESPN = tête de série, pas le classement. Garde-fous `capGap` : foot sans cotes bookmaker écart ≤ 1,2 (favori ≥ ~1,22), tennis avec un joueur hors top 150 écart ≤ 0,7 (favori ≥ ~1,31). Toute nouvelle source de niveau : tester avec des matchs réels avant de publier.
+
 ## Idées en attente
 - Paris sur un joueur : les ajouter à « Parier pareil » et leur donner un état en direct.
 - Bilan de la guilde le dimanche soir ; mini-classements (le plus précis, le plus fou, le chat noir).
