@@ -87,9 +87,9 @@ async function loadFeed(sp,lv){const paths=SP[sp].feeds[lv],key=sp+lv,now=Date.n
 const FCACHE="dap-feed-1";
 function feedSave(){if(!("caches"in window))return;clearTimeout(feedSave.t);feedSave.t=setTimeout(async()=>{try{const o={};
   for(const k in FEED){const f=FEED[k];if(f&&f.ok&&f.list.length)o[k]={at:f.at,list:f.list}}
-  await (await caches.open(FCACHE)).put("./__feeds",new Response(JSON.stringify({v:1,o}),{headers:{"content-type":"application/json"}}))}catch(e){}},2500)}
+  await (await caches.open(FCACHE)).put("./__feeds",new Response(JSON.stringify({v:VERSION,o}),{headers:{"content-type":"application/json"}}))}catch(e){}},2500)}
 async function feedLoadCache(){try{if(!("caches"in window))return false;const r=await (await caches.open(FCACHE)).match("./__feeds");if(!r)return false;
-  const j=await r.json(),now=Date.now();let n=0;
+  const j=await r.json(),now=Date.now();let n=0;if(j.v!==VERSION)return false;   // nouvelle version : cotes recalculées, on ne ressert pas l'ancienne copie
   for(const k in j.o||{}){const f=j.o[k],cur=FEED[k];if(!f||!Array.isArray(f.list)||now-f.at>36*36e5||(cur&&(cur.ok!==null||cur.list.length)))continue;
     const list=f.list.filter(m=>m&&m.id&&m.t>now-5*DAY);list.forEach(m=>{m._c=1;if(!REG.has(m.id))REG.set(m.id,m)});FEED[k]={ok:true,list,at:f.at,stale:true};if(list.length)n++}
   return n>0}catch(e){return false}}
@@ -2965,7 +2965,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.32";
+const VERSION="3.33";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}
