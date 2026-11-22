@@ -370,6 +370,8 @@ async function reminders(s, slot) {
 
 // ---- Match de la guilde : un match par jour (le même pour tout le monde), on vote 1 / N / 2 ----
 const LM_PRIZE = 30;
+// jetons de chaque case du calendrier de l'Avent (les dimanches et le 24 : plus gros ; le 24 débloque aussi le pack Noël)
+const ADVENT = [50, 60, 70, 80, 90, 250, 60, 70, 80, 90, 100, 110, 300, 70, 80, 90, 100, 120, 150, 350, 100, 150, 200, 500];
 const outcome = (m) => (m && m.done && m.sh != null ? (m.sh > m.sa ? 0 : m.sh === m.sa ? 1 : 2) : null);
 async function dayMatch(s) {
   const t = (await s.query(`select to_char(now() at time zone 'Europe/Paris', 'YYYYMMDD') as d,
@@ -2430,6 +2432,25 @@ const ACTIONS = {
     return { me: p.id, today, prize: LM_PRIZE,
       cur: cur ? { day: cur.day, match: pub(cur.match), res: outcome(cur.match), picks: curPicks, my: myCur ? myCur.pick : null } : null,
       hist, month: Object.entries(tally).map(([id, t]) => ({ id, name: (who[id] || {}).name, av: (who[id] || {}).avatar_v || 0, ...t })).filter((x) => x.name).sort((a, b) => b.ok - a.ok || a.n - b.n) };
+  },
+  // ---- Calendrier de l'Avent : du 1er au 24 décembre, une case par jour (heure de Paris), à ouvrir le jour même ----
+  async advent_get(s, b) {
+    const p = await me(s, b.token);
+    const t = (await s.query(`select to_char(now() at time zone 'Europe/Paris', 'YYYYMMDD') as d`))[0].d;
+    const y = t.slice(0, 4), on = t.slice(4, 6) === "12" && +t.slice(6) <= 24;
+    const got = await s.query(`select ref, delta::float8 as d from ledger where player = $1 and kind = 'advent' and ref like $2`, [p.id, y + "12%"]);
+    return { on, day: on ? +t.slice(6) : 0, year: +y, opened: Object.fromEntries(got.map((x) => [+x.ref.slice(6), Math.round(x.d)])) };
+  },
+  async advent_open(s, b) {
+    const p = await me(s, b.token);
+    const t = (await s.query(`select to_char(now() at time zone 'Europe/Paris', 'YYYYMMDD') as d`))[0].d, day = +t.slice(6);
+    if (t.slice(4, 6) !== "12" || day > 24) throw fail(409, "closed");
+    const amt = ADVENT[day - 1] || 100;
+    const ok = await credit(s, p.id, amt, "advent", t);
+    let gift = null;
+    if (ok && day === 24) { await s.query(`update players set cos_grant = (select coalesce(jsonb_agg(distinct x), '[]'::jsonb) from jsonb_array_elements_text(coalesce(cos_grant, '[]'::jsonb) || '["noel"]'::jsonb) x) where id = $1`, [p.id]); gift = "noel"; }
+    const bal = (await s.query(`select bal::float8 as bal, master from players where id = $1`, [p.id]))[0];
+    return { ok: true, already: !ok, day, amount: amt, gift, bal: bal.master ? Math.round(bal.bal) : undefined };
   },
   async lm_pick(s, b) {
     const p = await me(s, b.token);

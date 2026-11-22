@@ -298,7 +298,7 @@ function ladder(){const cfg=SP[U.sp],now=Date.now();
     return`<button class="lvl${c?"":" zero"}" data-act="lv" data-lv="${l}" aria-pressed="${U.lv===l}"><span class="bars">${bars}</span><span>${esc(cfg.lv[l])}<em>${c?c+" match"+(c>1?"s":""):(cfg.feeds[l]&&FEED[U.sp+l]&&FEED[U.sp+l].ok===false?"Hors ligne":"—")}</em></span></button>`};
   return`<div class="ladder" id="ladder"><div class="tier"><small>Tous</small><div><button class="lvl star" data-act="lv" data-lv="-1" aria-pressed="${U.lv<0}">${ic("fire")}<span>À la une<em>Prochains</em></span></button></div></div>
     ${cfg.tiers.map(([t,ix])=>[t,ix.filter(l=>cfg.feeds[l])]).filter(([,ix])=>ix.length).map(([t,ix])=>`<div class="tier"><small>${t}</small><div>${ix.map(chip).join("")}</div></div>`).join("")}</div>`}
-function viewMatches(){setTimeout(crowdCounts,0);const cfg=SP[U.sp];let h=liveBar()+`<div class="sbar sbar5"><button style="--c:#ffd23f" data-act="sp" data-sp="all" aria-pressed="${U.sp==="all"}"><span class="ball allb">🔥</span><span>Tout</span></button>${Object.entries(SP).map(([k,s])=>`<button style="--c:${s.c}" data-act="sp" data-sp="${k}" aria-pressed="${U.sp===k}">${ballArt(k,"ball")}<span>${{foot:"Foot",basket:"NBA",tennis:"Tennis",rugby:"Rugby"}[k]||s.n}</span></button>`).join("")}</div>`;
+function viewMatches(){setTimeout(crowdCounts,0);const cfg=SP[U.sp];let h=liveBar()+adventBar()+`<div class="sbar sbar5"><button style="--c:#ffd23f" data-act="sp" data-sp="all" aria-pressed="${U.sp==="all"}"><span class="ball allb">🔥</span><span>Tout</span></button>${Object.entries(SP).map(([k,s])=>`<button style="--c:${s.c}" data-act="sp" data-sp="${k}" aria-pressed="${U.sp===k}">${ballArt(k,"ball")}<span>${{foot:"Foot",basket:"NBA",tennis:"Tennis",rugby:"Rugby"}[k]||s.n}</span></button>`).join("")}</div>`;
   if(U.ev){const e=EVENTS.find(x=>x.id===U.ev);if(e)return h+viewEvent(e)+foot();U.ev=null}
   if(U.sp==="all")return h+todayRow()+viewAll()+foot();
   h+=todayRow()+ladder();
@@ -623,7 +623,7 @@ function layer(html){clearTimeout(pendT);const was=!!$("#layer").innerHTML,bs=do
 function openDetail(id,keepScroll){const m=findMatch(id);if(!m)return;if(!keepScroll){loadCrowd(id);U.pside=0;U.pmore=false;loadLineup(m).then(()=>{if(m.lineup&&U.open===id)refreshLayer()})}const sc=keepScroll&&$(".sheet")?$(".sheet").scrollTop:0;U.open=id;layer(viewDetail(m));if(sc)$(".sheet").scrollTop=sc;renderSlipBar()}
 function closeLayer(){if(U.back==="live"&&U.open!=="live"){U.back=null;U.open="live";U.lvAnim=0;layer(viewLive());U.lvAnim=1;return}U.back=null;U.open=null;layer("");render()}
 function refreshLayer(){if(!U.open)return;const sc=$(".sheet")?$(".sheet").scrollTop:0;
-  if(U.open==="slip")layer(viewSlip());else if(U.open==="live")layer(viewLive());else if(U.open==="add")return;else if(U.open.startsWith("res:"))return;else if(U.open==="welcome")return;else{const m=findMatch(U.open);if(m)layer(viewDetail(m))}
+  if(U.open==="slip")layer(viewSlip());else if(U.open==="live")layer(viewLive());else if(U.open==="advent")layer(viewAdvent());else if(U.open==="add")return;else if(U.open.startsWith("res:"))return;else if(U.open==="welcome")return;else{const m=findMatch(U.open);if(m)layer(viewDetail(m))}
   if($(".sheet"))$(".sheet").scrollTop=sc}
 
 /* ---------- rendu global ---------- */
@@ -833,6 +833,8 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-act]");if(
     case"sp":U.sp=d.sp;U.lv=-1;U.dep="";U.ev=null;render();if(SP[d.sp])loadSport(d.sp);break;
     case"lv":U.lv=+d.lv;render();break;
     case"open":if(U.open==="live")U.back="live";U.dtab="p";openDetail(d.mid);break;
+    case"advent":U.open="advent";layer(viewAdvent());loadAdvent(true);break;
+    case"advopen":adventOpen();break;
     case"live":U.open="live";U.lvi=0;U.lvAnim=0;layer(viewLive());U.lvAnim=1;break;
     case"lvi":U.lvi=+d.i;layer(viewLive());break;
     case"close":closeLayer();break;
@@ -1210,6 +1212,24 @@ async function shareMonth(){toast("Préparation de l’image…");try{const{blob
   catch(e){toast("Impossible de créer l’image.","bad")}}
 
 
+
+/* ---------- calendrier de l'Avent (1er → 24 décembre, heure de Paris) ---------- */
+const parisYmd=()=>new Date().toLocaleDateString("sv-SE",{timeZone:"Europe/Paris"});
+const adventOn=()=>{const d=parisYmd();return d.slice(5,7)==="12"&&+d.slice(8)<=24};
+async function loadAdvent(force){if(!S.tok||(!force&&U.adv&&U.adv.at&&Date.now()-U.adv.at<10*6e4&&U.adv.ymd===parisYmd()))return;
+  try{const j=await api("advent_get",{});U.adv={...j,at:Date.now(),ymd:parisYmd()};if(U.open==="advent")layer(viewAdvent());else if(!U.open)render()}catch(e){}}
+function adventBar(){if(!adventOn()||!S.name)return"";if(!U.adv)setTimeout(loadAdvent,0);const A=U.adv,day=+parisYmd().slice(8),done=A&&A.opened&&A.opened[day]!=null;
+  return`<button class="advbar${done?" done":""}" data-act="advent"><span class="advic">🎄</span><span><b>Calendrier de l’Avent</b><small>${done?`Case ${day} ouverte ✅ · reviens demain`:`La case n°${day} t’attend !`}</small></span><span class="arr">›</span></button>`}
+function viewAdvent(){const x=`<button class="x" data-act="close" aria-label="Fermer">${ic("x")}</button>`,A=U.adv||{opened:{}},day=+parisYmd().slice(8);
+  let h=`<div class="grab"><h3>🎄 Calendrier de l’Avent</h3>${x}</div><p class="mut advp">Une case par jour jusqu’au 24 décembre. Le 24 : la plus grosse… et le pack de Noël 🎅</p><div class="advg">`;
+  for(let d=1;d<=24;d++){const got=A.opened&&A.opened[d],st=got!=null?"open":d===day?"today":d<day?"miss":"lock";
+    h+=`<button class="advd ${st}" ${st==="today"?`data-act="advopen"`:"disabled"} style="--r:${(d*37%7-3)*1.2}deg"><span class="n">${d}</span>${st==="open"?`<small>+${tok(got)}</small>`:st==="today"?`<small>Ouvrir</small>`:st==="miss"?`<small>raté</small>`:`<small>🔒</small>`}</button>`}
+  return h+`</div>`}
+async function adventOpen(){const b=document.querySelector(".advd.today");if(b){b.classList.add("opening");b.disabled=true}
+  try{const j=await api("advent_open",{});if(j.error)throw j;U.adv=U.adv||{opened:{}};U.adv.opened={...(U.adv.opened||{}),[j.day]:j.amount};
+    if(typeof j.bal==="number"){S.bal=j.bal;S.peak=Math.max(S.peak||0,j.bal);saveLocal();const e=$("#bal");if(e)e.textContent=tok(S.bal)}
+    setTimeout(()=>{layer(viewAdvent());if(!j.already){confetti();toast(`🎁 Case ${j.day} : <b>+${tok(j.amount)} jetons</b>${j.gift==="noel"?" et le <b>pack de Noël</b> débloqué 🎅":""}`,"win");bump()}},500)}
+  catch(e){toast(e&&e.code==="closed"?"Le calendrier est fermé.":"Pas de connexion, réessaie.","bad");layer(viewAdvent())}}
 /* ---------- écran « En direct » : mes matchs en cours, l'état de mes tickets et le fil du match ---------- */
 function liveMatches(){const ids=new Set();for(const b of S.bets)if(b.st==="open")for(const L of b.legs)if(!L.r)ids.add(L.mid);
   return[...ids].map(id=>findMatch(id)).filter(m=>m&&(status(m)==="live"||(ghostLive(m)&&!ghostLive(m).done))).sort((a,b)=>a.t-b.t)}
@@ -2965,7 +2985,7 @@ async function transferIn(){const code=($("#x-code").value||"").trim(),err=$("#x
 /* ---------- version ----------
    Numéro affiché à côté du titre. version.txt (même numéro) permet à une app restée ouverte
    de voir qu'une mise à jour est sortie et de proposer de recharger. */
-const VERSION="3.33";
+const VERSION="3.34";
 function showVersion(){const v=$("#ver");if(!v)return;v.textContent="v"+VERSION;let last="";try{last=localStorage.getItem("dap.ver")||""}catch(e){}
   if(last&&last!==VERSION){v.classList.add("new");toast(`Mise à jour installée : version ${VERSION}`,"win");setTimeout(()=>v.classList.remove("new"),6000)}
   try{localStorage.setItem("dap.ver",VERSION)}catch(e){}}

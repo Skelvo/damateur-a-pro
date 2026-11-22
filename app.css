@@ -1210,3 +1210,18 @@ body:has(#layer .sheet) .toasts{top:calc(150px + var(--safe-t))}
 .lvfe.aw .imp{margin-left:auto}
 .lvfe.new{animation:fein .6s ease-out}.lvfe.new.aw{animation-name:feinr}
 @keyframes fein{from{opacity:0;transform:translateX(-30px)}}@keyframes feinr{from{opacity:0;transform:translateX(30px)}}
+
+/* calendrier de l'Avent */
+.advbar{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 12px;padding:10px 14px;border-radius:14px;border:1px solid #ffd23f66;background:linear-gradient(100deg,#3a0f12,#1a2a14);color:#fff;text-align:left}
+.advbar .advic{font-size:26px}.advbar b{display:block;font:800 14px Barlow,sans-serif;color:#ffd23f}.advbar small{color:#ffffffc8;font:600 12.5px Barlow,sans-serif}.advbar>span:nth-child(2){flex:1}.advbar .arr{color:#ffd23f;font-size:20px}
+.advbar.done{border-color:#ffffff22;background:var(--card)}.advbar.done b{color:#fff}
+.advp{margin:0 0 12px;font-size:13px}
+.advg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;padding:4px}
+.advd{position:relative;aspect-ratio:1;width:100%;min-width:0;height:auto;padding:0;margin:0;border-radius:14px;border:1px solid #ffffff1f;background:linear-gradient(145deg,#7a1a1f,#3a0b0f);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transform:rotate(var(--r));box-shadow:inset 0 0 0 3px #ffd23f22}
+.advd:nth-child(3n){background:linear-gradient(145deg,#1d5a37,#0b2a18)}.advd:nth-child(4n){background:linear-gradient(145deg,#6b4d10,#2e2006)}
+.advd .n{font:900 26px/1 "Barlow Condensed",sans-serif}.advd small{font:700 11px Barlow,sans-serif;color:#ffffffc0}
+.advd.today{border:2px solid #ffd23f;box-shadow:0 0 18px #ffd23f88;animation:advpulse 1.6s ease-in-out infinite}.advd.today small{color:#ffd23f}
+@keyframes advpulse{50%{transform:rotate(var(--r)) scale(1.05)}}
+.advd.open{background:#0d1a14;border-style:dashed;box-shadow:none;transform:none}.advd.open small{color:#35d07f;font-size:12px}
+.advd.lock{opacity:.55}.advd.miss{opacity:.35;filter:grayscale(.7)}
+.advd.opening{animation:advflip .5s ease-in forwards}@keyframes advflip{to{transform:perspective(400px) rotateY(90deg)}}
