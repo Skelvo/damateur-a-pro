@@ -1723,7 +1723,7 @@ const ACTIONS = {
   },
   async admin_social_set(s, b) {
     admin(b);
-    const st = ["draft", "approved", "cancelled"].includes(b.status) ? b.status : null;
+    const st = ["draft", "approved", "cancelled", "manual_done"].includes(b.status) ? b.status : null;
     if (!st) throw fail(400, "status");
     const r = await s.query(`update social_posts set status = $2, error = null where id = $1 and status <> 'published' returning id, status`, [String(int(b.id, 0, 1e15)), st]);
     return { ok: !!r[0] };
