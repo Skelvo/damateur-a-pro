@@ -461,6 +461,7 @@ const ESPN_API = "https://site.api.espn.com/apis/site/v2/sports/";
 const FAV_PATHS = ["soccer/fra.1", "soccer/fra.2", "rugby/270559", "soccer/eng.1", "soccer/esp.1", "soccer/ita.1", "soccer/ger.1", "soccer/por.1", "basketball/nba"];
 async function espnJSON(u) { const c = new AbortController(), t = setTimeout(() => c.abort(), 7000); try { const r = await fetch(u, { signal: c.signal }); if (!r.ok) throw new Error(r.status); return await r.json(); } finally { clearTimeout(t); } }
 const sentOnce = async (s, key) => !!(await s.query(`insert into sent_notes (key) values ($1) on conflict do nothing returning key`, [key]))[0];
+let LIVE_UNTIL = 0;   // réveils à la minute tant qu'un pari en cours concerne un match en direct (voir la route ?cron=1&slot=tick)
 async function tick(s) {
   if (await overLimit("tick:global", 1, 50)) return { skipped: "trop tôt" };
   let settled = 0;
@@ -470,6 +471,7 @@ async function tick(s) {
   // match où tu as un pari en cours (foot et rugby réels) : buts, cartons, essais… regroupés en une notification par passage
   try {
     const now = Date.now(), open = await s.query(`select player, legs from bets where status = 'open' and at > now() - interval '3 days'`), seen = {}, M = {};
+    if (open.some((x) => (x.legs || []).some((L) => !L.r && L.t > now - 3 * 3600e3 && L.t < now + 20 * 60e3))) LIVE_UNTIL = now + 12 * 60e3;
     const EVT = { g: "⚽ But", og: "⚽ CSC", yc: "🟨 Carton jaune", rc: "🟥 Carton rouge" };
     for (const x of open) for (const L of x.legs || []) {
       if (!L.mid || !L.path || !(L.sp === "foot" || L.sp === "rugby") || !(L.t < now && now < L.t + 3 * 3600e3)) continue;
@@ -2845,11 +2847,12 @@ export default async function handler(req, res) {
       try {
         const ua = String(req.headers["user-agent"] || ""), src = /vercel/i.test(ua) ? "vercel" : /cron-job/i.test(ua) ? "cronjob" : /^curl/i.test(ua) ? "github" : "appli";
         // économie de la base (offre gratuite Neon = 100 h de calcul par mois, la base s'endort après 5 min sans requête) :
-        // les réveils automatiques ne passent que toutes les 10 min le jour et une fois par heure la nuit (0 h – 9 h) ;
+        // la nuit (0 h – 9 h) : aucun réveil automatique ; le jour : toutes les 10 min, et TOUTES LES MINUTES quand un pari en cours
+        // concerne un match en direct ou qui commence bientôt (repère LIVE_UNTIL posé par tick() sur l'instance du serveur) ;
         // les applis ouvertes réveillent toujours (les joueurs utilisent déjà la base à ce moment-là)
         if (src !== "appli") {
           const pt = new Date().toLocaleString("en-GB", { timeZone: "Europe/Paris", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).split(":").map(Number);
-          const night = pt[0] < 9, ok = src === "cronjob" ? (night ? pt[1] === 0 : pt[1] % 10 === 0) : (pt[1] === 0 && !night);
+          const night = pt[0] < 9, ok = !night && (src === "cronjob" ? (Date.now() < LIVE_UNTIL || pt[1] % 10 === 0) : pt[1] === 0);
           if (!ok) return res.status(200).json({ skipped: true });
         }
         const s = await db();
