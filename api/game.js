@@ -2843,7 +2843,16 @@ export default async function handler(req, res) {
     }
     if (q.cron && q.slot === "tick") {
       try {
-        const s = await db(), ua = String(req.headers["user-agent"] || ""), src = /vercel/i.test(ua) ? "vercel" : /cron-job/i.test(ua) ? "cronjob" : /^curl/i.test(ua) ? "github" : "appli";
+        const ua = String(req.headers["user-agent"] || ""), src = /vercel/i.test(ua) ? "vercel" : /cron-job/i.test(ua) ? "cronjob" : /^curl/i.test(ua) ? "github" : "appli";
+        // économie de la base (offre gratuite Neon = 100 h de calcul par mois, la base s'endort après 5 min sans requête) :
+        // les réveils automatiques ne passent que toutes les 10 min le jour et une fois par heure la nuit (0 h – 9 h) ;
+        // les applis ouvertes réveillent toujours (les joueurs utilisent déjà la base à ce moment-là)
+        if (src !== "appli") {
+          const pt = new Date().toLocaleString("en-GB", { timeZone: "Europe/Paris", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).split(":").map(Number);
+          const night = pt[0] < 9, ok = src === "cronjob" ? (night ? pt[1] === 0 : pt[1] % 10 === 0) : (pt[1] === 0 && !night);
+          if (!ok) return res.status(200).json({ skipped: true });
+        }
+        const s = await db();
         // dernier réveil par source (diagnostic) + nombre de réveils du jour
         await s.query(`insert into meta (key, value) values ($1, $2) on conflict (key) do update set value = excluded.value`, ["wake:" + src, new Date().toISOString()]).catch(() => {});
         return res.status(200).json(await tick(s));
